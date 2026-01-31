@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
 import '../models/invoice_models.dart';
+import '../models/customer_model.dart';
 import '../services/pdf_generator.dart';
+import 'product_picker_modal.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
@@ -16,7 +18,7 @@ class InvoiceDetailPage extends StatefulWidget {
 }
 
 class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
-  late TextEditingController _clientController;
+  late TextEditingController _formalNameController;
   late TextEditingController _notesController;
   late List<InvoiceItem> _items;
   late bool _isEditing;
@@ -28,7 +30,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     super.initState();
     _currentInvoice = widget.invoice;
     _currentFilePath = widget.invoice.filePath;
-    _clientController = TextEditingController(text: _currentInvoice.clientName);
+    _formalNameController = TextEditingController(text: _currentInvoice.customer.formalName);
     _notesController = TextEditingController(text: _currentInvoice.notes ?? "");
     _items = List.from(_currentInvoice.items);
     _isEditing = false;
@@ -36,7 +38,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
   @override
   void dispose() {
-    _clientController.dispose();
+    _formalNameController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -53,17 +55,41 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     });
   }
 
+  void _pickFromMaster() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.9,
+        child: ProductPickerModal(
+          onItemSelected: (item) {
+            setState(() {
+              _items.add(item);
+            });
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveChanges() async {
-    final String clientName = _clientController.text.trim();
-    if (clientName.isEmpty) {
+    final String formalName = _formalNameController.text.trim();
+    if (formalName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('取引先名を入力してください')),
+        const SnackBar(content: Text('取引先の正式名称を入力してください')),
       );
       return;
     }
 
+    // 顧客情報を更新
+    final updatedCustomer = _currentInvoice.customer.copyWith(
+      formalName: formalName,
+    );
+
     final updatedInvoice = _currentInvoice.copyWith(
-      clientName: clientName,
+      customer: updatedCustomer,
       items: _items,
       notes: _notesController.text,
     );
@@ -84,7 +110,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
   void _exportCsv() {
     final csvData = _currentInvoice.toCsv();
-    // 実際にはファイル保存ダイアログなどを出すのが望ましいが、ここでは簡易的に共有
     Share.share(csvData, subject: '請求書データ_CSV');
   }
 
@@ -119,10 +144,25 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             if (_isEditing)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: ElevatedButton.icon(
-                  onPressed: _addItem,
-                  icon: const Icon(Icons.add),
-                  label: const Text("行を追加"),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _addItem,
+                      icon: const Icon(Icons.add),
+                      label: const Text("空の行を追加"),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _pickFromMaster,
+                      icon: const Icon(Icons.list_alt),
+                      label: const Text("マスターから選択"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueGrey.shade700,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             const SizedBox(height: 24),
@@ -136,13 +176,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   Widget _buildHeaderSection() {
+    final dateFormatter = DateFormat('yyyy年MM月dd日');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_isEditing) ...[
           TextField(
-            controller: _clientController,
-            decoration: const InputDecoration(labelText: "取引先名", border: OutlineInputBorder()),
+            controller: _formalNameController,
+            decoration: const InputDecoration(labelText: "取引先 正式名称", border: OutlineInputBorder()),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -151,9 +192,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             decoration: const InputDecoration(labelText: "備考", border: OutlineInputBorder()),
           ),
         ] else ...[
-          Text("宛名: ${_currentInvoice.clientName} 御中", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text("${_currentInvoice.customer.formalName} ${_currentInvoice.customer.title}",
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
+            Text(_currentInvoice.customer.department!, style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 4),
           Text("請求番号: ${_currentInvoice.invoiceNumber}"),
+          Text("発行日: ${dateFormatter.format(_currentInvoice.date)}"),
           if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             Text("備考: ${_currentInvoice.notes}", style: const TextStyle(color: Colors.black87)),

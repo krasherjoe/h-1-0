@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'customer_model.dart';
 
 /// 請求書の各明細行を表すモデル
 class InvoiceItem {
@@ -27,11 +28,29 @@ class InvoiceItem {
       unitPrice: unitPrice ?? this.unitPrice,
     );
   }
+
+  // JSON変換
+  Map<String, dynamic> toJson() {
+    return {
+      'description': description,
+      'quantity': quantity,
+      'unit_price': unitPrice,
+    };
+  }
+
+  // JSONから復元
+  factory InvoiceItem.fromJson(Map<String, dynamic> json) {
+    return InvoiceItem(
+      description: json['description'] as String,
+      quantity: json['quantity'] as int,
+      unitPrice: json['unit_price'] as int,
+    );
+  }
 }
 
 /// 請求書全体を管理するモデル
 class Invoice {
-  String clientName;
+  Customer customer; // 顧客情報
   DateTime date;
   List<InvoiceItem> items;
   String? filePath; // 保存されたPDFのパス
@@ -39,13 +58,16 @@ class Invoice {
   String? notes; // 備考
 
   Invoice({
-    required this.clientName,
+    required this.customer,
     required this.date,
     required this.items,
     this.filePath,
     String? invoiceNumber,
     this.notes,
   }) : invoiceNumber = invoiceNumber ?? DateFormat('yyyyMMdd-HHmm').format(date);
+
+  // 互換性のためのゲッター
+  String get clientName => customer.formalName;
 
   // 税抜合計金額
   int get subtotal {
@@ -64,7 +86,7 @@ class Invoice {
 
   // 状態更新のためのコピーメソッド
   Invoice copyWith({
-    String? clientName,
+    Customer? customer,
     DateTime? date,
     List<InvoiceItem>? items,
     String? filePath,
@@ -72,7 +94,7 @@ class Invoice {
     String? notes,
   }) {
     return Invoice(
-      clientName: clientName ?? this.clientName,
+      customer: customer ?? this.customer,
       date: date ?? this.date,
       items: items ?? this.items,
       filePath: filePath ?? this.filePath,
@@ -81,13 +103,43 @@ class Invoice {
     );
   }
 
-  // CSV形式への変換 (将来的なCSV編集用)
+  // CSV形式への変換
   String toCsv() {
     StringBuffer sb = StringBuffer();
+    sb.writeln("Customer,${customer.formalName}");
+    sb.writeln("Invoice Number,$invoiceNumber");
+    sb.writeln("Date,${DateFormat('yyyy/MM/dd').format(date)}");
+    sb.writeln("");
     sb.writeln("Description,Quantity,UnitPrice,Subtotal");
     for (var item in items) {
       sb.writeln("${item.description},${item.quantity},${item.unitPrice},${item.subtotal}");
     }
     return sb.toString();
+  }
+
+  // JSON変換 (データベース保存用)
+  Map<String, dynamic> toJson() {
+    return {
+      'customer': customer.toJson(),
+      'date': date.toIso8601String(),
+      'items': items.map((item) => item.toJson()).toList(),
+      'file_path': filePath,
+      'invoice_number': invoiceNumber,
+      'notes': notes,
+    };
+  }
+
+  // JSONから復元 (データベース読み込み用)
+  factory Invoice.fromJson(Map<String, dynamic> json) {
+    return Invoice(
+      customer: Customer.fromJson(json['customer'] as Map<String, dynamic>),
+      date: DateTime.parse(json['date'] as String),
+      items: (json['items'] as List)
+          .map((i) => InvoiceItem.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      filePath: json['file_path'] as String?,
+      invoiceNumber: json['invoice_number'] as String,
+      notes: json['notes'] as String?,
+    );
   }
 }

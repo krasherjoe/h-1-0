@@ -59,7 +59,7 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
                       decoration: const pw.BoxDecoration(
                         border: pw.Border(bottom: pw.BorderSide(width: 1)),
                       ),
-                      child: pw.Text("${invoice.clientName} 御中",
+                      child: pw.Text(invoice.customer.invoiceName,
                         style: const pw.TextStyle(fontSize: 18)),
                     ),
                     pw.SizedBox(height: 10),
@@ -169,7 +169,7 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
     final Uint8List bytes = await pdf.save();
     final String hash = sha256.convert(bytes).toString().substring(0, 8);
     final String dateFileStr = DateFormat('yyyyMMdd').format(invoice.date);
-    String fileName = "Invoice_${dateFileStr}_${invoice.clientName}_$hash.pdf";
+    String fileName = "Invoice_${dateFileStr}_${invoice.customer.formalName}_$hash.pdf";
 
     final directory = await getExternalStorageDirectory();
     if (directory == null) return null;

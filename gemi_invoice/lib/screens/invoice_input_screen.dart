@@ -1,8 +1,10 @@
-// lib/screens/invoice_input_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:uuid/uuid.dart';
+import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
+import '../services/invoice_repository.dart';
+import 'customer_picker_modal.dart';
 
 /// 請求書の初期入力（ヘッダー部分）を管理するウィジェット
 class InvoiceInputForm extends StatefulWidget {
@@ -18,9 +20,32 @@ class InvoiceInputForm extends StatefulWidget {
 }
 
 class _InvoiceInputFormState extends State<InvoiceInputForm> {
-  final _clientController = TextEditingController(text: "佐々木製作所");
+  final _clientController = TextEditingController();
   final _amountController = TextEditingController(text: "250000");
-  String _status = "取引先と基本金額を入力してPDFを生成してください";
+  final _repository = InvoiceRepository();
+  String _status = "取引先を選択してPDFを生成してください";
+
+  List<Customer> _customerBuffer = [];
+  Customer? _selectedCustomer;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCustomer = Customer(
+      id: const Uuid().v4(),
+      displayName: "佐々木製作所",
+      formalName: "株式会社 佐々木製作所",
+    );
+    _customerBuffer.add(_selectedCustomer!);
+    _clientController.text = _selectedCustomer!.formalName;
+
+    // 起動時に不要なPDFを掃除する
+    _repository.cleanupOrphanedPdfs().then((count) {
+      if (count > 0) {
+        debugPrint('Cleaned up $count orphaned PDF files.');
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -29,64 +54,43 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     super.dispose();
   }
 
-  // 連絡先を選択する処理
-  Future<void> _pickContact() async {
-    setState(() => _status = "連絡先をスキャン中...");
-    try {
-      if (await FlutterContacts.requestPermission(readonly: true)) {
-        final List<Contact> contacts = await FlutterContacts.getContacts(
-          withProperties: false,
-          withThumbnail: false,
-        );
+  Future<void> _openCustomerPicker() async {
+    setState(() => _status = "顧客マスターを開いています...");
 
-        if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.9,
+        child: CustomerPickerModal(
+          existingCustomers: _customerBuffer,
+          onCustomerSelected: (customer) {
+            setState(() {
+              bool exists = _customerBuffer.any((c) => c.id == customer.id);
+              if (!exists) {
+                _customerBuffer.add(customer);
+              }
 
-        if (contacts.isEmpty) {
-          setState(() => _status = "連絡先が空、または取得できませんでした。");
-          return;
-        }
-
-        contacts.sort((a, b) => a.displayName.compareTo(b.displayName));
-
-        final Contact? selected = await showModalBottomSheet<Contact>(
-          context: context,
-          isScrollControlled: true,
-          builder: (BuildContext modalContext) => FractionallySizedBox(
-            heightFactor: 0.8,
-            child: ContactPickerModal(
-              contacts: contacts,
-              onContactSelected: (selectedContact) {
-                Navigator.pop(modalContext, selectedContact);
-              },
-            ),
-          ),
-        );
-
-        if (selected != null) {
-          setState(() {
-            _clientController.text = selected.displayName;
-            _status = "「${selected.displayName}」をセットしました";
-          });
-        }
-      } else {
-        setState(() => _status = "電話帳の権限が拒否されています。");
-      }
-    } catch (e) {
-      setState(() => _status = "エラーが発生しました: $e");
-    }
+              _selectedCustomer = customer;
+              _clientController.text = customer.formalName;
+              _status = "「${customer.formalName}」を選択しました";
+            });
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
   }
 
-  // 初期PDFを生成して保存する処理（ここから詳細ページへ遷移する）
   Future<void> _handleInitialGenerate() async {
-    final clientName = _clientController.text.trim();
-    final unitPrice = int.tryParse(_amountController.text) ?? 0;
-
-    if (clientName.isEmpty) {
-      setState(() => _status = "取引先名を入力してください");
+    if (_selectedCustomer == null) {
+      setState(() => _status = "取引先を選択してください");
       return;
     }
 
-    // 初期の1行明細を作成
+    final unitPrice = int.tryParse(_amountController.text) ?? 0;
+
     final initialItems = [
       InvoiceItem(
         description: "ご請求分",
@@ -96,7 +100,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     ];
 
     final invoice = Invoice(
-      clientName: clientName,
+      customer: _selectedCustomer!,
       date: DateTime.now(),
       items: initialItems,
     );
@@ -106,8 +110,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     if (path != null) {
       final updatedInvoice = invoice.copyWith(filePath: path);
+
+      // オリジナルDBに保存
+      await _repository.saveInvoice(updatedInvoice);
+
       widget.onInvoiceGenerated(updatedInvoice, path);
-      setState(() => _status = "PDFを生成しました。詳細ページで表編集が可能です。");
+      setState(() => _status = "PDFを生成しDBに登録しました。");
     } else {
       setState(() => _status = "PDFの生成に失敗しました");
     }
@@ -119,21 +127,30 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
         child: Column(children: [
+          const Text(
+            "ステップ1: 宛先と基本金額の設定",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+          ),
+          const SizedBox(height: 16),
           Row(children: [
             Expanded(
               child: TextField(
                 controller: _clientController,
+                readOnly: true,
+                onTap: _openCustomerPicker,
                 decoration: const InputDecoration(
-                  labelText: "取引先名",
-                  hintText: "会社名や個人名",
+                  labelText: "取引先名 (タップして選択)",
+                  hintText: "電話帳から取り込むか、マスターから選択",
+                  prefixIcon: Icon(Icons.business),
                   border: OutlineInputBorder(),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.person_search, color: Colors.blue, size: 40),
-              onPressed: _pickContact,
+              icon: const Icon(Icons.person_add_alt_1, color: Colors.indigo, size: 40),
+              onPressed: _openCustomerPicker,
+              tooltip: "顧客を選択・登録",
             ),
           ]),
           const SizedBox(height: 16),
@@ -142,7 +159,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
               labelText: "基本金額 (税抜)",
-              hintText: "後で詳細ページで変更・追加できます",
+              hintText: "明細の1行目として登録されます",
+              prefixIcon: Icon(Icons.currency_yen),
               border: OutlineInputBorder(),
             ),
           ),
@@ -155,6 +173,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               minimumSize: const Size(double.infinity, 60),
               backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
           const SizedBox(height: 24),
@@ -164,6 +184,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             decoration: BoxDecoration(
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
             ),
             child: Text(
               _status,
@@ -172,82 +193,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             ),
           ),
         ]),
-      ),
-    );
-  }
-}
-
-// 連絡先選択用のモーダルウィジェット
-class ContactPickerModal extends StatefulWidget {
-  final List<Contact> contacts;
-  final Function(Contact) onContactSelected;
-
-  const ContactPickerModal({
-    Key? key,
-    required this.contacts,
-    required this.onContactSelected,
-  }) : super(key: key);
-
-  @override
-  State<ContactPickerModal> createState() => _ContactPickerModalState();
-}
-
-class _ContactPickerModalState extends State<ContactPickerModal> {
-  String _searchQuery = "";
-  List<Contact> _filteredContacts = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _filteredContacts = widget.contacts;
-  }
-
-  void _filterContacts(String query) {
-    setState(() {
-      _searchQuery = query.toLowerCase();
-      _filteredContacts = widget.contacts
-          .where((c) => c.displayName.toLowerCase().contains(_searchQuery))
-          .toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "取引先を選択 (${_filteredContacts.length}件)",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "名前で検索...",
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-                  ),
-                  onChanged: _filterContacts,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredContacts.length,
-              itemBuilder: (c, i) => ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person)),
-                title: Text(_filteredContacts[i].displayName),
-                onTap: () => widget.onContactSelected(_filteredContacts[i]),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
