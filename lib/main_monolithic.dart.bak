@@ -1,0 +1,219 @@
+// version: 1.4.3c (Bug Fix: PDF layout error)
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:crypto/crypto.dart';
+import 'package:intl/intl.dart';
+
+void main() => runApp(const MaterialApp(home: InvoiceApp()));
+
+class InvoiceApp extends StatefulWidget {
+  const InvoiceApp({super.key});
+  @override
+  State<InvoiceApp> createState() => _InvoiceAppState();
+}
+
+class _InvoiceAppState extends State<InvoiceApp> {
+  final _clientController = TextEditingController(text: "佐々木製作所");
+  final _amountController = TextEditingController(text: "250000");
+  String _status = "内容を入力してPDFを発行してください";
+  String? _lastFilePath;
+
+  Future<void> _pickContact() async {
+    setState(() => _status = "連絡先をスキャン中...");
+    try {
+      if (await FlutterContacts.requestPermission()) {
+        final List<Contact> contacts = await FlutterContacts.getContacts(
+          withProperties: false,
+          withThumbnail: false,
+        );
+
+        if (!mounted) return;
+
+        if (contacts.isEmpty) {
+          setState(() => _status = "連絡先が空、または取得できませんでした。");
+          return;
+        }
+
+        final Contact? selected = await showDialog<Contact>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text("取引先を選択 (${contacts.length}件)"),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: ListView.builder(
+                itemCount: contacts.length,
+                itemBuilder: (c, i) => ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                  title: Text(contacts[i].displayName),
+                  onTap: () => Navigator.pop(c, contacts[i]),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        if (selected != null) {
+          setState(() {
+            _clientController.text = selected.displayName;
+            _status = "「${selected.displayName}」をセットしました";
+          });
+        }
+      } else {
+        setState(() => _status = "電話帳の権限が拒否されています。");
+      }
+    } catch (e) {
+      setState(() => _status = "エラーが発生しました: $e");
+    }
+  }
+
+  Future<void> _methodDirectOpen() async {
+    if (_lastFilePath != null) {
+      await OpenFilex.open(_lastFilePath!);
+    }
+  }
+
+  Future<void> _methodShare() async {
+    if (_lastFilePath != null) {
+      await Share.shareXFiles([XFile(_lastFilePath!)], text: '請求書送付');
+    }
+  }
+
+  Future<void> _generateInvoice() async {
+    final pdf = pw.Document();
+    final fontData = await rootBundle.load("assets/fonts/ipaexg.ttf");
+    final ttf = pw.Font.ttf(fontData);
+
+    final clientName = _clientController.text;
+    final int unitPrice = int.tryParse(_amountController.text) ?? 0;
+    final int total = (unitPrice * 1.1).floor();
+
+    final now = DateTime.now();
+    final dateFileStr = DateFormat('yyyyMMdd').format(now);
+    final amountFormatter = NumberFormat("#,###");
+
+    pdf.addPage(pw.Page(
+      theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
+      build: (context) => pw.Center(
+        child: pw.Column(
+          // --- ここを修正しました ---
+          mainAxisAlignment: pw.MainAxisAlignment.center,
+          children: [
+            pw.Text("請求書", style: pw.TextStyle(fontSize: 24)),
+            pw.SizedBox(height: 20),
+            pw.Text("宛名: $clientName 様"),
+            pw.Text("合計金額: ${amountFormatter.format(total)} 円 (税込)"),
+            pw.SizedBox(height: 10),
+            pw.Text("日付: ${DateFormat('yyyy/MM/dd').format(now)}"),
+          ],
+        )
+      ),
+    ));
+
+    final Uint8List bytes = await pdf.save();
+    final String hash = sha256.convert(bytes).toString().substring(sha256.convert(bytes).toString().length - 8);
+
+    String fileName = "${dateFileStr}(請求)${clientName}_${amountFormatter.format(total)}円_${hash}.pdf";
+
+    final directory = await getExternalStorageDirectory();
+    if (directory == null) return;
+
+    final file = File("${directory.path}/$fileName");
+    await file.writeAsBytes(bytes);
+
+    setState(() {
+      _lastFilePath = file.path;
+      _status = "【原本保存完了】\n$fileName";
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("じぇみエモン V1.4.3c"), backgroundColor: Colors.blueGrey),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(children: [
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _clientController,
+                  decoration: const InputDecoration(labelText: "取引先名", border: OutlineInputBorder())
+                )
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.person_search, color: Colors.blue, size: 40),
+                onPressed: _pickContact,
+              ),
+            ]),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "単価 (税抜)", border: OutlineInputBorder())
+            ),
+            const SizedBox(height: 24),
+
+            ElevatedButton.icon(
+              onPressed: _generateInvoice,
+              icon: const Icon(Icons.save),
+              label: const Text("原本PDFをローカル保存"),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 60),
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            Row(children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _lastFilePath == null ? null : _methodDirectOpen,
+                  icon: const Icon(Icons.launch),
+                  label: const Text("内容確認(A)"),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 50),
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _lastFilePath == null ? null : _methodShare,
+                  icon: const Icon(Icons.share),
+                  label: const Text("外部共有(B)"),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 50),
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white
+                  ),
+                ),
+              ),
+            ]),
+
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              color: Colors.grey[100],
+              child: Text(_status, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
