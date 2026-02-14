@@ -1,0 +1,304 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../models/invoice_models.dart';
+import '../models/customer_model.dart';
+import '../services/invoice_repository.dart';
+import '../services/customer_repository.dart';
+import 'invoice_detail_page.dart';
+import 'management_screen.dart';
+import '../main.dart'; // InvoiceFlowScreen 用
+
+class InvoiceHistoryScreen extends StatefulWidget {
+  const InvoiceHistoryScreen({Key? key}) : super(key: key);
+
+  @override
+  State<InvoiceHistoryScreen> createState() => _InvoiceHistoryScreenState();
+}
+
+class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
+  final InvoiceRepository _invoiceRepo = InvoiceRepository();
+  final CustomerRepository _customerRepo = CustomerRepository();
+  List<Invoice> _invoices = [];
+  List<Invoice> _filteredInvoices = [];
+  bool _isLoading = true;
+  bool _isUnlocked = false; // 保護解除フラグ
+  String _searchQuery = "";
+  String _sortBy = "date"; // "date", "amount", "customer"
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    final customers = await _customerRepo.getAllCustomers();
+    final invoices = await _invoiceRepo.getAllInvoices(customers);
+    setState(() {
+      _invoices = invoices;
+      _applyFilterAndSort();
+      _isLoading = false;
+    });
+  }
+
+  void _applyFilterAndSort() {
+    setState(() {
+      _filteredInvoices = _invoices.where((inv) {
+        final query = _searchQuery.toLowerCase();
+        final matchesQuery = inv.customer.formalName.toLowerCase().contains(query) ||
+               inv.invoiceNumber.toLowerCase().contains(query) ||
+               (inv.notes?.toLowerCase().contains(query) ?? false);
+        
+        bool matchesDate = true;
+        if (_startDate != null && inv.date.isBefore(_startDate!)) matchesDate = false;
+        if (_endDate != null && inv.date.isAfter(_endDate!.add(const Duration(days: 1)))) matchesDate = false;
+        
+        return matchesQuery && matchesDate;
+      }).toList();
+
+      if (_sortBy == "date") {
+        _filteredInvoices.sort((a, b) => b.date.compareTo(a.date));
+      } else if (_sortBy == "amount") {
+        _filteredInvoices.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+      } else if (_sortBy == "customer") {
+        _filteredInvoices.sort((a, b) => a.customer.formalName.compareTo(b.customer.formalName));
+      }
+    });
+  }
+
+  void _toggleUnlock() {
+    setState(() {
+      _isUnlocked = !_isUnlocked;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_isUnlocked ? "編集プロテクトを解除しました" : "編集プロテクトを有効にしました")),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final amountFormatter = NumberFormat("#,###");
+    final dateFormatter = DateFormat('yyyy/MM/dd');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("伝票マスター一覧"),
+        backgroundColor: _isUnlocked ? Colors.blueGrey : Colors.blueGrey.shade800,
+        actions: [
+          IconButton(
+            icon: Icon(_isUnlocked ? Icons.lock_open : Icons.lock, color: _isUnlocked ? Colors.orangeAccent : Colors.white70),
+            onPressed: _toggleUnlock,
+            tooltip: _isUnlocked ? "プロテクトする" : "アンロックする",
+          ),
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: () {
+              showMenu<String>(
+                context: context,
+                position: const RelativeRect.fromLTRB(100, 80, 0, 0),
+                items: [
+                  const PopupMenuItem(value: "date", child: Text("日付順")),
+                  const PopupMenuItem(value: "amount", child: Text("金額順")),
+                  const PopupMenuItem(value: "customer", child: Text("顧客名順")),
+                ],
+              ).then((val) {
+                if (val != null) {
+                  setState(() => _sortBy = val);
+                  _applyFilterAndSort();
+                }
+              });
+            },
+            tooltip: "ソート切り替え",
+          ),
+          IconButton(
+            icon: Icon(Icons.date_range, color: (_startDate != null || _endDate != null) ? Colors.orange : Colors.white),
+            onPressed: () async {
+              final picked = await showDateRangePicker(
+                context: context,
+                initialDateRange: (_startDate != null && _endDate != null) 
+                    ? DateTimeRange(start: _startDate!, end: _endDate!) 
+                    : null,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+              );
+              if (picked != null) {
+                setState(() {
+                  _startDate = picked.start;
+                  _endDate = picked.end;
+                });
+                _applyFilterAndSort();
+              } else if (_startDate != null) {
+                // リセット
+                setState(() {
+                  _startDate = null;
+                  _endDate = null;
+                });
+                _applyFilterAndSort();
+              }
+            },
+            tooltip: "日付範囲で絞り込み",
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "検索 (顧客名、伝票番号...)",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                isDense: true,
+              ),
+              onChanged: (val) {
+                _searchQuery = val;
+                _applyFilterAndSort();
+              },
+            ),
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blueGrey),
+              child: Text("販売アシスト1号", style: TextStyle(color: Colors.white, fontSize: 24)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text("伝票マスター一覧"),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_task),
+              title: const Text("新規伝票作成"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => InvoiceFlowScreen(onComplete: _loadData)),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings),
+              title: const Text("マスター管理・同期"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ManagementScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _filteredInvoices.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(_searchQuery.isEmpty ? "保存された伝票がありません" : "該当する伝票が見つかりません"),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: _filteredInvoices.length,
+                  itemBuilder: (context, index) {
+                    final invoice = _filteredInvoices[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200,
+                        child: Icon(Icons.description_outlined, color: _isUnlocked ? Colors.indigo : Colors.grey),
+                      ),
+                      title: Text(invoice.customer.formalName),
+                      subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text("￥${amountFormatter.format(invoice.totalAmount)}", 
+                               style: const TextStyle(fontWeight: FontWeight.bold)),
+                          if (invoice.isSynced)
+                            const Icon(Icons.sync, size: 16, color: Colors.green)
+                          else
+                            const Icon(Icons.sync_disabled, size: 16, color: Colors.orange),
+                        ],
+                      ),
+                      onTap: () async {
+                        if (!_isUnlocked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("詳細の閲覧・編集にはアンロックが必要です"), duration: Duration(seconds: 1)),
+                          );
+                          return;
+                        }
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => InvoiceDetailPage(invoice: invoice),
+                          ),
+                        );
+                        _loadData(); // 戻ってきたら再読込
+                      },
+                      onLongPress: () async {
+                        if (!_isUnlocked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("削除するにはアンロックが必要です")),
+                          );
+                          return;
+                        }
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("伝票の削除"),
+                            content: Text("「${invoice.customer.formalName}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text("削除", style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await _invoiceRepo.deleteInvoice(invoice.id);
+                          _loadData();
+                        }
+                      },
+                    );
+                  },
+                ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => InvoiceFlowScreen(onComplete: _loadData),
+            ),
+          );
+        },
+        label: const Text("新規伝票作成"),
+        icon: const Icon(Icons.add),
+        backgroundColor: Colors.indigo,
+      ),
+    );
+  }
+}

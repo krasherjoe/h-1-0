@@ -1,11 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
 import '../models/invoice_models.dart';
-import '../models/customer_model.dart';
 import '../services/pdf_generator.dart';
+import '../services/invoice_repository.dart';
+import '../services/customer_repository.dart';
 import 'product_picker_modal.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
@@ -24,6 +24,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   late bool _isEditing;
   late Invoice _currentInvoice;
   String? _currentFilePath;
+  final _invoiceRepo = InvoiceRepository();
+  final _customerRepo = CustomerRepository();
 
   @override
   void initState() {
@@ -94,16 +96,27 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       notes: _notesController.text,
     );
 
+    // データベースに保存
+    await _invoiceRepo.saveInvoice(updatedInvoice);
+    
+    // 顧客の正式名称が変更されている可能性があるため、マスターも更新
+    if (updatedCustomer.formalName != widget.invoice.customer.formalName) {
+      await _customerRepo.saveCustomer(updatedCustomer);
+    }
+
     setState(() => _isEditing = false);
 
     final newPath = await generateInvoicePdf(updatedInvoice);
     if (newPath != null) {
+      final finalInvoice = updatedInvoice.copyWith(filePath: newPath);
+      await _invoiceRepo.saveInvoice(finalInvoice); // パスを更新して再保存
+      
       setState(() {
-        _currentInvoice = updatedInvoice.copyWith(filePath: newPath);
+        _currentInvoice = finalInvoice;
         _currentFilePath = newPath;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A4請求書PDFを更新しました')),
+        const SnackBar(content: Text('データベースとPDFを更新しました')),
       );
     }
   }
@@ -309,7 +322,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   Future<void> _openPdf() async => await OpenFilex.open(_currentFilePath!);
-  Future<void> _sharePdf() async => await Share.shareXFiles([XFile(_currentFilePath!)], text: '請求書送付');
+  Future<void> _sharePdf() async {
+    if (_currentFilePath != null) {
+      await Share.shareXFiles([XFile(_currentFilePath!)], text: '請求書送付');
+    }
+  }
 }
 
 class _TableCell extends StatelessWidget {

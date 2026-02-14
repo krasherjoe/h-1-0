@@ -4,6 +4,7 @@ import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
+import '../services/customer_repository.dart';
 import 'customer_picker_modal.dart';
 
 /// 請求書の初期入力（ヘッダー部分）を管理するウィジェット
@@ -25,26 +26,42 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final _repository = InvoiceRepository();
   String _status = "取引先を選択してPDFを生成してください";
 
-  List<Customer> _customerBuffer = [];
   Customer? _selectedCustomer;
 
   @override
   void initState() {
     super.initState();
-    _selectedCustomer = Customer(
-      id: const Uuid().v4(),
-      displayName: "佐々木製作所",
-      formalName: "株式会社 佐々木製作所",
-    );
-    _customerBuffer.add(_selectedCustomer!);
-    _clientController.text = _selectedCustomer!.formalName;
+    _loadInitialData();
+  }
 
+  Future<void> _loadInitialData() async {
     // 起動時に不要なPDFを掃除する
     _repository.cleanupOrphanedPdfs().then((count) {
       if (count > 0) {
         debugPrint('Cleaned up $count orphaned PDF files.');
       }
     });
+
+    final customerRepo = CustomerRepository();
+    final customers = await customerRepo.getAllCustomers();
+    if (customers.isNotEmpty) {
+      setState(() {
+        _selectedCustomer = customers.first;
+        _clientController.text = _selectedCustomer!.formalName;
+      });
+    } else {
+      // マスターが空の場合は、デフォルトのサンプルを登録しておく
+      final defaultCustomer = Customer(
+        id: const Uuid().v4(),
+        displayName: "佐々木製作所",
+        formalName: "株式会社 佐々木製作所",
+      );
+      await customerRepo.saveCustomer(defaultCustomer);
+      setState(() {
+        _selectedCustomer = defaultCustomer;
+        _clientController.text = _selectedCustomer!.formalName;
+      });
+    }
   }
 
   @override
@@ -64,14 +81,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       builder: (context) => FractionallySizedBox(
         heightFactor: 0.9,
         child: CustomerPickerModal(
-          existingCustomers: _customerBuffer,
           onCustomerSelected: (customer) {
             setState(() {
-              bool exists = _customerBuffer.any((c) => c.id == customer.id);
-              if (!exists) {
-                _customerBuffer.add(customer);
-              }
-
               _selectedCustomer = customer;
               _clientController.text = customer.formalName;
               _status = "「${customer.formalName}」を選択しました";

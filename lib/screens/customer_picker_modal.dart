@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:uuid/uuid.dart';
 import '../models/customer_model.dart';
+import '../services/customer_repository.dart';
 
 /// 顧客マスターからの選択、登録、編集、削除を行うモーダル
 class CustomerPickerModal extends StatefulWidget {
-  final List<Customer> existingCustomers;
   final Function(Customer) onCustomerSelected;
-  final Function(Customer)? onCustomerDeleted; // 削除通知用（オプション）
 
   const CustomerPickerModal({
     Key? key,
-    required this.existingCustomers,
     required this.onCustomerSelected,
-    this.onCustomerDeleted,
   }) : super(key: key);
 
   @override
@@ -21,20 +18,33 @@ class CustomerPickerModal extends StatefulWidget {
 }
 
 class _CustomerPickerModalState extends State<CustomerPickerModal> {
+  final CustomerRepository _repository = CustomerRepository();
   String _searchQuery = "";
+  List<Customer> _allCustomers = [];
   List<Customer> _filteredCustomers = [];
   bool _isImportingFromContacts = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredCustomers = widget.existingCustomers;
+    _loadCustomers();
+  }
+
+  Future<void> _loadCustomers() async {
+    setState(() => _isLoading = true);
+    final customers = await _repository.getAllCustomers();
+    setState(() {
+      _allCustomers = customers;
+      _filteredCustomers = customers;
+      _isLoading = false;
+    });
   }
 
   void _filterCustomers(String query) {
     setState(() {
       _searchQuery = query.toLowerCase();
-      _filteredCustomers = widget.existingCustomers.where((customer) {
+      _filteredCustomers = _allCustomers.where((customer) {
         return customer.formalName.toLowerCase().contains(_searchQuery) ||
             customer.displayName.toLowerCase().contains(_searchQuery);
       }).toList();
@@ -50,7 +60,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
         if (!mounted) return;
         setState(() => _isImportingFromContacts = false);
 
-        final Contact? selectedContact = await showModalBottomSheet<Contact>(
+        final Contact? selectedContact = await showModalBottomSheet<Contact?>(
           context: context,
           isScrollControlled: true,
           builder: (context) => _PhoneContactListSelector(contacts: contacts),
@@ -121,11 +131,13 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final updatedCustomer = existingCustomer?.copyWith(
                     formalName: formalNameController.text.trim(),
                     department: departmentController.text.trim(),
                     address: addressController.text.trim(),
+                    updatedAt: DateTime.now(),
+                    isSynced: false,
                   ) ??
                   Customer(
                     id: const Uuid().v4(),
@@ -134,10 +146,15 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                     department: departmentController.text.trim(),
                     address: addressController.text.trim(),
                   );
-              Navigator.pop(context);
-              widget.onCustomerSelected(updatedCustomer);
+              
+              await _repository.saveCustomer(updatedCustomer);
+              Navigator.pop(context); // エディットダイアログを閉じる
+              _loadCustomers(); // リストを再読込
+              
+              // 保存のついでに選択状態にするなら以下を有効化（今回は明示的にリストから選ばせる）
+              // widget.onCustomerSelected(updatedCustomer);
             },
-            child: const Text("保存して確定"),
+            child: const Text("保存してマスターに登録"),
           ),
         ],
       ),
@@ -154,14 +171,10 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              await _repository.deleteCustomer(customer.id);
               Navigator.pop(context);
-              if (widget.onCustomerDeleted != null) {
-                widget.onCustomerDeleted!(customer);
-                setState(() {
-                  _filterCustomers(_searchQuery); // リスト更新
-                });
-              }
+              _loadCustomers();
             },
             child: const Text("削除する", style: TextStyle(color: Colors.red)),
           ),
@@ -213,37 +226,39 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
           ),
           const Divider(),
           Expanded(
-            child: _filteredCustomers.isEmpty
-                ? const Center(child: Text("該当する顧客がいません"))
-                : ListView.builder(
-                    itemCount: _filteredCustomers.length,
-                    itemBuilder: (context, index) {
-                      final customer = _filteredCustomers[index];
-                      return ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.business)),
-                        title: Text(customer.formalName),
-                        subtitle: Text(customer.department?.isNotEmpty == true ? customer.department! : "部署未設定"),
-                        onTap: () => widget.onCustomerSelected(customer),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blueGrey, size: 20),
-                              onPressed: () => _showCustomerEditDialog(
-                                displayName: customer.displayName,
-                                initialFormalName: customer.formalName,
-                                existingCustomer: customer,
-                              ),
+            child: _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredCustomers.isEmpty
+                    ? const Center(child: Text("該当する顧客がいません"))
+                    : ListView.builder(
+                        itemCount: _filteredCustomers.length,
+                        itemBuilder: (context, index) {
+                          final customer = _filteredCustomers[index];
+                          return ListTile(
+                            leading: const CircleAvatar(child: Icon(Icons.business)),
+                            title: Text(customer.formalName),
+                            subtitle: Text(customer.department?.isNotEmpty == true ? customer.department! : "部署未設定"),
+                            onTap: () => widget.onCustomerSelected(customer),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit, color: Colors.blueGrey, size: 20),
+                                  onPressed: () => _showCustomerEditDialog(
+                                    displayName: customer.displayName,
+                                    initialFormalName: customer.formalName,
+                                    existingCustomer: customer,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                  onPressed: () => _confirmDelete(customer),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                              onPressed: () => _confirmDelete(customer),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),

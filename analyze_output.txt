@@ -1,0 +1,62 @@
+Analyzing gemi_invoice_backup2...                               
+
+warning • The value of the field '_lastGeneratedInvoice' isn't used • lib/main.dart:43:12 • unused_field
+  error • The body might complete normally, causing 'null' to be returned, but the return type, 'Widget', is a potentially non-nullable type • lib/main.dart:61:10 • body_might_complete_normally
+warning • The label 'appBar' isn't used • lib/main.dart:62:7 • unused_label
+  error • Expected to find ';' • lib/main.dart:65:7 • expected_token
+  error • Expected an identifier • lib/main.dart:65:8 • missing_identifier
+  error • Unexpected text ';' • lib/main.dart:65:8 • unexpected_token
+warning • The label 'drawer' isn't used • lib/main.dart:66:7 • unused_label
+  error • Expected to find ';' • lib/main.dart:92:7 • expected_token
+  error • Expected an identifier • lib/main.dart:92:8 • missing_identifier
+  error • Unexpected text ';' • lib/main.dart:92:8 • unexpected_token
+warning • The label 'body' isn't used • lib/main.dart:94:7 • unused_label
+  error • Expected to find ';' • lib/main.dart:106:7 • expected_token
+  error • Expected an identifier • lib/main.dart:106:8 • missing_identifier
+  error • Expected to find ';' • lib/main.dart:106:8 • expected_token
+  error • Unexpected text ';' • lib/main.dart:106:8 • unexpected_token
+  error • Expected an identifier • lib/main.dart:107:5 • missing_identifier
+  error • Unexpected text ';' • lib/main.dart:107:5 • unexpected_token
+   info • Unnecessary empty statement • lib/main.dart:107:6 • empty_statements
+   info • The imported package 'uuid' isn't a dependency of the importing package • lib/models/customer_model.dart:1:8 • depend_on_referenced_packages
+warning • Unused import: 'package:uuid/uuid.dart' • lib/models/customer_model.dart:1:8 • unused_import
+  error • The named parameter 'unitPrice' is required, but there's no corresponding argument • lib/models/invoice_models.dart:30:12 • missing_required_argument
+  error • The named parameter 'unit_price' isn't defined • lib/models/invoice_models.dart:34:7 • undefined_named_parameter
+warning • The value of the local variable 'amountFormatter' isn't used • lib/models/invoice_models.dart:88:11 • unused_local_variable
+   info • The imported package 'uuid' isn't a dependency of the importing package • lib/screens/customer_picker_modal.dart:3:8 • depend_on_referenced_packages
+  error • Undefined class 'Customer' • lib/screens/customer_picker_modal.dart:8:18 • undefined_class
+   info • Parameter 'key' could be a super parameter • lib/screens/customer_picker_modal.dart:10:9 • use_super_parameters
+  error • The name 'Customer' isn't a type, so it can't be used as a type argument • lib/screens/customer_picker_modal.dart:22:8 • non_type_as_type_argument
+  error • The name 'Customer' isn't a type, so it can't be used as a type argument • lib/screens/customer_picker_modal.dart:23:8 • non_type_as_type_argument
+  error • The property 'formalName' can't be unconditionally accessed because the receiver can be 'null' • lib/screens/customer_picker_modal.dart:47:25 • unchecked_use_of_nullable_value
+  error • The property 'displayName' can't be unconditionally accessed because the receiver can be 'null' • lib/screens/customer_picker_modal.dart:48:22 • unchecked_use_of_nullable_value
+   info • Don't use 'BuildContext's across async gaps • lib/screens/customer_picker_modal.dart:77:28 • use_build_context_synchronously
+  error • Undefined class 'Customer' • lib/screens/customer_picker_modal.dart:87:5 • undefined_class
+  error • The method 'Customer' isn't defined for the type '_CustomerPickerModalState' • lib/screens/customer_picker_modal.dart:141:19 • undefined_method
+   info • Don't use 'BuildContext's across async gaps • lib/screens/customer_picker_modal.dart:150:29 • use_build_context_synchronously
+  error • Undefined class 'Customer' • lib/screens/customer_picker_modal.dart:164:23 • undefined_class
+   info • Don't use 'BuildContext's across async gaps • lib/screens/customer_picker_modal.dart:175:29 • use_build_context_synchronously
+warning • Unused import: 'dart:io' • lib/screens/invoice_detail_page.dart:1:8 • unused_import
+warning • Unused import: '../models/customer_model.dart' • lib/screens/invoice_detail_page.dart:7:8 • unused_import
+   info • Parameter 'key' could be a super parameter • lib/screens/invoice_detail_page.dart:16:9 • use_super_parameters
+   info • Don't use 'BuildContext's across async gaps • lib/screens/invoice_detail_page.dart:120:28 • use_build_context_synchronously
+   info • 'Share' is deprecated and shouldn't be used. Use SharePlus instead • lib/screens/invoice_detail_page.dart:128:5 • deprecated_member_use
+   info • 'share' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead • lib/screens/invoice_detail_page.dart:128:11 • deprecated_member_use
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/screens/invoice_detail_page.dart:283:14 • sized_box_for_whitespace
+   info • 'Share' is deprecated and shouldn't be used. Use SharePlus instead • lib/screens/invoice_detail_page.dart:327:43 • deprecated_member_use
+   info • 'shareXFiles' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead • lib/screens/invoice_detail_page.dart:327:49 • deprecated_member_use
+warning • Unused import: '../models/customer_model.dart' • lib/screens/invoice_history_screen.dart:4:8 • unused_import
+   info • Parameter 'key' could be a super parameter • lib/screens/invoice_history_screen.dart:10:9 • use_super_parameters
+   info • The imported package 'uuid' isn't a dependency of the importing package • lib/screens/invoice_input_screen.dart:2:8 • depend_on_referenced_packages
+   info • Parameter 'key' could be a super parameter • lib/screens/invoice_input_screen.dart:14:9 • use_super_parameters
+   info • The private field _customerBuffer could be 'final' • lib/screens/invoice_input_screen.dart:29:18 • prefer_final_fields
+warning • The value of the field '_customerBuffer' isn't used • lib/screens/invoice_input_screen.dart:29:18 • unused_field
+  error • A value of type 'Object?' can't be assigned to a variable of type 'Customer?' • lib/screens/invoice_input_screen.dart:87:35 • invalid_assignment
+  error • The property 'formalName' can't be unconditionally accessed because the receiver can be 'null' • lib/screens/invoice_input_screen.dart:88:49 • unchecked_use_of_nullable_value
+  error • The property 'formalName' can't be unconditionally accessed because the receiver can be 'null' • lib/screens/invoice_input_screen.dart:89:38 • unchecked_use_of_nullable_value
+   info • Parameter 'key' could be a super parameter • lib/screens/product_picker_modal.dart:8:9 • use_super_parameters
+   info • 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings • lib/services/location_service.dart:28:9 • deprecated_member_use
+   info • 'timeLimit' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings • lib/services/location_service.dart:29:9 • deprecated_member_use
+   info • The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart' • lib/services/pdf_generator.dart:2:8 • unnecessary_import
+
+58 issues found. (ran in 23.0s)
