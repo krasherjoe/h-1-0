@@ -1,5 +1,7 @@
-import 'customer_model.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:intl/intl.dart';
+import 'customer_model.dart';
 
 class InvoiceItem {
   final String? id;
@@ -62,6 +64,7 @@ class Invoice {
   final DateTime updatedAt;
   final double? latitude; // 追加
   final double? longitude; // 追加
+  final String terminalId; // 追加: 端末識別子
 
   Invoice({
     String? id,
@@ -78,8 +81,17 @@ class Invoice {
     DateTime? updatedAt,
     this.latitude, // 追加
     this.longitude, // 追加
+    String? terminalId, // 追加
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        terminalId = terminalId ?? "T1", // デフォルト端末ID
         updatedAt = updatedAt ?? DateTime.now();
+
+  /// 伝票内容から決定論的なハッシュを生成する (SHA256の一部)
+  String get contentHash {
+    final input = "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString().substring(0, 8).toUpperCase();
+  }
 
   String get documentTypeName {
     switch (documentType) {
@@ -99,7 +111,7 @@ class Invoice {
     }
   }
 
-  String get invoiceNumber => "$invoiceNumberPrefix-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
+  String get invoiceNumber => "$invoiceNumberPrefix-$terminalId-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
 
   // 表示用の宛名（スナップショットがあれば優先）
   String get customerNameForDisplay => customerFormalNameSnapshot ?? customer.formalName;
@@ -124,6 +136,8 @@ class Invoice {
       'updated_at': updatedAt.toIso8601String(),
       'latitude': latitude, // 追加
       'longitude': longitude, // 追加
+      'terminal_id': terminalId, // 追加
+      'content_hash': contentHash, // 追加
     };
   }
 

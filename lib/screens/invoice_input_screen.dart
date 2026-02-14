@@ -74,7 +74,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   int get _subTotal => _items.fold(0, (sum, item) => sum + (item.unitPrice * item.quantity));
-  int get _tax => _includeTax ? (_subTotal * _taxRate).round() : 0;
+  int get _tax => _includeTax ? (_subTotal * _taxRate).floor() : 0;
   int get _total => _subTotal + _tax;
 
   Future<void> _saveInvoice({bool generatePdf = true}) async {

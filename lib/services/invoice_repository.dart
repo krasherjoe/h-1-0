@@ -107,6 +107,7 @@ class InvoiceRepository {
         updatedAt: DateTime.parse(iMap['updated_at']),
         latitude: iMap['latitude'],
         longitude: iMap['longitude'],
+        terminalId: iMap['terminal_id'] ?? "T1",
       ));
     }
     return invoices;

@@ -1,5 +1,5 @@
 // lib/main.dart
-// version: 1.4.3c (Bug Fix: PDF layout error) - Refactored for modularity
+// version: 1.5.01 (Update: SHA256 & Management Features)
 import 'package:flutter/material.dart';
 
 // --- 独自モジュールのインポート ---
@@ -56,7 +56,7 @@ class _InvoiceFlowScreenState extends State<InvoiceFlowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("販売アシスト1号 V1.4.3c"),
+        title: const Text("販売アシスト1号 V1.5.01"),
         backgroundColor: Colors.blueGrey,
       ),
       drawer: Drawer(

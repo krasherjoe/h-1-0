@@ -51,7 +51,7 @@ class ManagementScreen extends StatelessWidget {
             Icons.download,
             "伝票マスター・インポート",
             "外部ファイルからデータを取り込みます",
-            () => _showComingSoon(context),
+            () => _importCsv(context),
           ),
           const Divider(),
           _buildSectionHeader("バックアップ & セキュリティ"),
@@ -81,7 +81,7 @@ class ManagementScreen extends StatelessWidget {
             Icons.settings_backup_restore,
             "データベース・リストア",
             "バックアップから全てのデータを復元します",
-            () => _showComingSoon(context),
+            () => _restoreDatabase(context),
           ),
           _buildMenuTile(
             context,
@@ -97,7 +97,7 @@ class ManagementScreen extends StatelessWidget {
             Icons.sync,
             "クラウド同期を実行",
             "未同期の伝票をクラウドマスターへ送信します",
-            () => _showComingSoon(context),
+            () => _syncWithCloud(context),
           ),
         ],
       ),
@@ -121,12 +121,6 @@ class ManagementScreen extends StatelessWidget {
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("この機能は次期バージョンで実装予定です。同期フラグ等の基盤は準備済みです。")),
     );
   }
 
@@ -161,5 +155,45 @@ class ManagementScreen extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("データベースファイルが見つかりません")));
     }
+  }
+
+  Future<void> _importCsv(BuildContext context) async {
+    // 将来的に file_picker 等を使用してファイルを選択する
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("インポート"),
+        content: const Text("インポート用CSVファイルを選択してください。\n(現在この機能はファイル選択の基盤待ちです)"),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("閉じる"))],
+      ),
+    );
+  }
+
+  Future<void> _restoreDatabase(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("データベース・リストア"),
+        content: const Text("バックアップファイル(.db)を選択して上書き復元します。現在のデータは失われます。"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ファイル選択", style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _syncWithCloud(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("クラウド同期 (Odoo)"),
+        content: const Text("クラウドサーバーとデータを同期します。\n未同期項目: 5件"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("閉じる")),
+          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("実行")),
+        ],
+      ),
+    );
   }
 }

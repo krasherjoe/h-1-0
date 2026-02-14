@@ -182,8 +182,9 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
         ),
 
         // 備考
+        // 備考
         if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
-          pw.SizedBox(height: 40),
+          pw.SizedBox(height: 10),
           pw.Text("備考:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
           pw.Container(
             width: double.infinity,
@@ -192,6 +193,31 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
             child: pw.Text(invoice.notes!),
           ),
         ],
+
+        pw.SizedBox(height: 20),
+        // 監査用ハッシュとQRコード
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("Verification Hash (SHA256):", style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                pw.Text(invoice.contentHash, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+              ],
+            ),
+            pw.Container(
+              width: 50,
+              height: 50,
+              child: pw.BarcodeWidget(
+                barcode: pw.Barcode.qrCode(),
+                data: invoice.contentHash,
+                drawText: false,
+              ),
+            ),
+          ],
+        ),
       ],
       footer: (context) => pw.Container(
         alignment: pw.Alignment.centerRight,
@@ -212,16 +238,15 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
   try {
     final pdf = await buildInvoiceDocument(invoice);
 
-    // 保存処理
-    final Uint8List bytes = await pdf.save();
-    final String hash = sha256.convert(bytes).toString().substring(0, 4);
+    final String hash = invoice.contentHash;
     final String timeStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    String fileName = "${invoice.invoiceNumberPrefix}_${invoice.invoiceNumber}_${timeStr}_$hash.pdf";
+    String fileName = "${invoice.invoiceNumberPrefix}_${invoice.terminalId}_${invoice.id.substring(invoice.id.length - 4)}_${timeStr}_$hash.pdf";
 
     final directory = await getExternalStorageDirectory();
     if (directory == null) return null;
 
     final file = File("${directory.path}/$fileName");
+    final Uint8List bytes = await pdf.save();
     await file.writeAsBytes(bytes);
 
     // 生成をログに記録

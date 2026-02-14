@@ -27,25 +27,41 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double maxWidth = constraints.maxWidth;
-        final double trackWidth = maxWidth - _thumbSize;
+        final double trackWidth = maxWidth - _thumbSize - 8; // 余白を考慮
 
         return Container(
-          height: 60,
-          margin: const EdgeInsets.all(16),
+          height: 64,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.blueGrey.shade100,
-            borderRadius: BorderRadius.circular(30),
+            color: Colors.blueGrey.shade900,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(color: Colors.black26, blurRadius: 8, offset: const Offset(0, 4)),
+            ],
           ),
           child: Stack(
             children: [
+              // 背景テキストとアニメーション効果（簡易）
               Center(
-                child: Text(
-                  widget.text,
-                  style: TextStyle(color: Colors.blueGrey.shade700, fontWeight: FontWeight.bold),
+                child: Opacity(
+                  opacity: (1 - (_position / trackWidth)).clamp(0.2, 1.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.keyboard_double_arrow_right, color: Colors.white54, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.text,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              // スライドつまみ
               Positioned(
-                left: _position,
+                left: _position + 4,
+                top: 4,
                 child: GestureDetector(
                   onHorizontalDragUpdate: (details) {
                     setState(() {
@@ -55,24 +71,32 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
                     });
                   },
                   onHorizontalDragEnd: (details) {
-                    if (_position >= trackWidth * 0.9) {
+                    if (_position >= trackWidth * 0.95) {
                       widget.onUnlocked();
-                      setState(() => _position = 0); // 念のためリセット
+                      // 成功時はアニメーションで戻すのではなく、状態が変わるのでリセット
+                      setState(() => _position = 0);
                     } else {
+                      // 失敗時はバネのように戻る（簡易）
                       setState(() => _position = 0);
                     }
                   },
                   child: Container(
-                    width: _thumbSize,
-                    height: 60,
+                    width: maxWidth * 0.25, // 少し横長に
+                    height: 56,
                     decoration: BoxDecoration(
-                      color: Colors.orangeAccent,
-                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Colors.orangeAccent, Colors.deepOrange],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(2, 2)),
+                        BoxShadow(color: Colors.black45, blurRadius: 4, offset: const Offset(2, 2)),
                       ],
                     ),
-                    child: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                    child: const Center(
+                      child: Icon(Icons.key, color: Colors.white, size: 24),
+                    ),
                   ),
                 ),
               ),
