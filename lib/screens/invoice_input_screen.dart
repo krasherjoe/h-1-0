@@ -64,7 +64,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   int get _tax => _includeTax ? (_subTotal * _taxRate).round() : 0;
   int get _total => _subTotal + _tax;
 
-  Future<void> _handleGenerate() async {
+  Future<void> _saveInvoice({bool generatePdf = true}) async {
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("取引先を選択してください")));
       return;
@@ -79,17 +79,51 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       date: DateTime.now(),
       items: _items,
       taxRate: _includeTax ? _taxRate : 0.0,
-      customerFormalNameSnapshot: _selectedCustomer!.formalName, // 追加
+      customerFormalNameSnapshot: _selectedCustomer!.formalName,
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
     );
 
-    setState(() => _status = "PDFを生成中...");
-    final path = await generateInvoicePdf(invoice);
-    if (path != null) {
-      final updatedInvoice = invoice.copyWith(filePath: path);
-      await _repository.saveInvoice(updatedInvoice);
-      widget.onInvoiceGenerated(updatedInvoice, path);
+    if (generatePdf) {
+      setState(() => _status = "PDFを生成中...");
+      final path = await generateInvoicePdf(invoice);
+      if (path != null) {
+        final updatedInvoice = invoice.copyWith(filePath: path);
+        await _repository.saveInvoice(updatedInvoice);
+        widget.onInvoiceGenerated(updatedInvoice, path);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
+      }
+    } else {
+      await _repository.saveInvoice(invoice);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
+      Navigator.pop(context); // 入力を閉じる
     }
+  }
+
+  void _showPreview() {
+    if (_selectedCustomer == null) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("伝票プレビュー(仮)"),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("宛名: ${_selectedCustomer!.formalName} ${_selectedCustomer!.title}"),
+              const Divider(),
+              ..._items.map((it) => Text("・${it.description} x ${it.quantity} = ￥${it.subtotal}")),
+              const Divider(),
+              Text("小計: ￥${NumberFormat("#,###").format(_subTotal)}"),
+              Text("消費税: ￥${NumberFormat("#,###").format(_tax)}"),
+              Text("合計: ￥${NumberFormat("#,###").format(_total)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("閉じる")),
+        ],
+      ),
+    );
   }
 
   @override
@@ -295,20 +329,56 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   Widget _buildBottomActionBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -5))],
       ),
-      child: ElevatedButton.icon(
-        onPressed: _handleGenerate,
-        icon: const Icon(Icons.picture_as_pdf),
-        label: const Text("伝票を確定してPDF生成"),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 60),
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _showPreview,
+                    icon: const Icon(Icons.remove_red_eye),
+                    label: const Text("仮表示"),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Colors.indigo),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _saveInvoice(generatePdf: false),
+                    icon: const Icon(Icons.save),
+                    label: const Text("保存のみ"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () => _saveInvoice(generatePdf: true),
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text("確定してPDF生成"),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 56),
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
         ),
       ),
     );

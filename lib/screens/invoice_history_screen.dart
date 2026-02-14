@@ -274,19 +274,16 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               ],
                             ),
                             onTap: () async {
-                              if (!_isUnlocked) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("詳細の閲覧・編集にはアンロックが必要です"), duration: Duration(seconds: 1)),
-                                );
-                                return;
-                              }
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => InvoiceDetailPage(invoice: invoice),
+                                  builder: (context) => InvoiceDetailPage(
+                                    invoice: invoice,
+                                    isUnlocked: _isUnlocked, // 状態を渡す
+                                  ),
                                 ),
                               );
-                              _loadData(); // 戻ってきたら再読込
+                              _loadData();
                             },
                             onLongPress: () async {
                               if (!_isUnlocked) {

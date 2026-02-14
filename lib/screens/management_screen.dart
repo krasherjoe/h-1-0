@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
-import '../models/invoice_models.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'product_master_screen.dart';
+import 'customer_master_screen.dart';
 
 class ManagementScreen extends StatelessWidget {
   const ManagementScreen({Key? key}) : super(key: key);
@@ -27,6 +27,13 @@ class ManagementScreen extends StatelessWidget {
             "商品マスター管理",
             "販売商品の名称や単価を管理します",
             () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen())),
+          ),
+          _buildMenuTile(
+            context,
+            Icons.people,
+            "顧客マスター管理",
+            "取引先（請求先）の名称や敬称を管理します",
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomerMasterScreen())),
           ),
           _buildMenuTile(
             context,

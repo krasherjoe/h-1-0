@@ -10,8 +10,9 @@ import 'product_picker_modal.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
+  final bool isUnlocked;
 
-  const InvoiceDetailPage({Key? key, required this.invoice}) : super(key: key);
+  const InvoiceDetailPage({Key? key, required this.invoice, this.isUnlocked = false}) : super(key: key);
 
   @override
   State<InvoiceDetailPage> createState() => _InvoiceDetailPageState();
@@ -137,7 +138,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         actions: [
           if (!_isEditing) ...[
             IconButton(icon: const Icon(Icons.grid_on), onPressed: _exportCsv, tooltip: "CSV出力"),
-            IconButton(icon: const Icon(Icons.edit), onPressed: () => setState(() => _isEditing = true)),
+            if (widget.isUnlocked)
+              IconButton(icon: const Icon(Icons.edit), onPressed: () => setState(() => _isEditing = true)),
           ] else ...[
             IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
             IconButton(icon: const Icon(Icons.cancel), onPressed: () => setState(() => _isEditing = false)),
