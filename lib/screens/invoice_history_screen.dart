@@ -99,6 +99,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(), // 常に表示
         title: GestureDetector(
           onLongPress: () {
             Navigator.push(
@@ -231,10 +232,13 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       ),
       body: Column(
         children: [
-          SlideToUnlock(
-            isLocked: !_isUnlocked,
-            onUnlocked: _toggleUnlock,
-            text: "スライドでロック解除",
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SlideToUnlock(
+              isLocked: !_isUnlocked,
+              onUnlocked: _toggleUnlock,
+              text: "スライドでロック解除",
+            ),
           ),
           Expanded(
             child: _isLoading
@@ -251,6 +255,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         ),
                       )
                     : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 100), // キーボードやFAB考慮
                         itemCount: _filteredInvoices.length,
                         itemBuilder: (context, index) {
                           final invoice = _filteredInvoices[index];

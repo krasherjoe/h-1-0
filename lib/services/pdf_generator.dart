@@ -96,6 +96,8 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                       if (companyInfo.zipCode != null) pw.Text("〒${companyInfo.zipCode}"),
                       if (companyInfo.address != null) pw.Text(companyInfo.address!),
                       if (companyInfo.tel != null) pw.Text("TEL: ${companyInfo.tel}"),
+                      if (companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty) 
+                        pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
                     ],
                   ),
                   if (sealImage != null)
@@ -256,7 +258,20 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
     final String subjectStr = invoice.subject?.isNotEmpty == true ? "_${invoice.subject}" : "";
     
     // {日付}({タイプ}){顧客名}_{案件}_{金額}_{HASH下8桁}.pdf
-    String fileName = "${dateStr}(${invoice.documentTypeName})${invoice.customerNameForDisplay}${subjectStr}_${amountStr}円_$hash.pdf";
+    // 顧客名から敬称を除去
+    String safeCustomerName = invoice.customerNameForDisplay
+      .replaceAll('株式会社', '')
+      .replaceAll('（株）', '')
+      .replaceAll('(株)', '')
+      .replaceAll('有限会社', '')
+      .replaceAll('（有）', '')
+      .replaceAll('(有)', '')
+      .replaceAll('合同会社', '')
+      .replaceAll('（同）', '')
+      .replaceAll('(同)', '')
+      .trim();
+
+    String fileName = "${dateStr}(${invoice.documentTypeName})${safeCustomerName}${subjectStr}_${amountStr}円_$hash.pdf";
 
     final directory = await getExternalStorageDirectory();
     if (directory == null) return null;

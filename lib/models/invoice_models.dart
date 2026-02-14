@@ -40,6 +40,22 @@ class InvoiceItem {
       unitPrice: map['unit_price'],
     );
   }
+
+  InvoiceItem copyWith({
+    String? id, // Added this to be complete
+    String? description,
+    int? quantity,
+    int? unitPrice,
+    String? productId,
+  }) {
+    return InvoiceItem(
+      id: id ?? this.id, // Added this to be complete
+      description: description ?? this.description,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      productId: productId ?? this.productId,
+    );
+  }
 }
 
 enum DocumentType {

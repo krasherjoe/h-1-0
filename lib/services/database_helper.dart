@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 12;
+  static const _databaseVersion = 13;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -93,6 +93,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 12) {
       await db.execute('ALTER TABLE invoices ADD COLUMN subject TEXT');
+    }
+    if (oldVersion < 13) {
+      await db.execute('ALTER TABLE company_info ADD COLUMN registration_number TEXT');
     }
   }
 
@@ -193,7 +196,8 @@ class DatabaseHelper {
         tel TEXT,
         default_tax_rate REAL DEFAULT 0.10,
         seal_path TEXT,
-        tax_display_mode TEXT DEFAULT "normal"
+        tax_display_mode TEXT DEFAULT "normal",
+        registration_number TEXT
       )
     ''');
 

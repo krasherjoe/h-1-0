@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'invoice_input_screen.dart'; // Add this line
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
@@ -220,7 +221,29 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           if (!_isEditing) ...[
             IconButton(icon: const Icon(Icons.grid_on), onPressed: _exportCsv, tooltip: "CSV出力"),
             if (widget.isUnlocked)
-              IconButton(icon: const Icon(Icons.edit), onPressed: () => setState(() => _isEditing = true)),
+              IconButton(
+                icon: const Icon(Icons.edit_note), // アイコン変更
+                tooltip: "詳細編集",
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InvoiceInputForm(
+                        onInvoiceGenerated: (inv, path) {
+                          // 保存完了時のコールバック（必要なら）
+                        },
+                        existingInvoice: _currentInvoice,
+                      ),
+                    ),
+                  );
+                  // 戻ってきたらデータを再読み込み（リポジトリから取得）
+                  final repo = InvoiceRepository();
+                  final customerRepo = CustomerRepository();
+                  final customers = await customerRepo.getAllCustomers();
+                  final updated = (await repo.getAllInvoices(customers)).firstWhere((i) => i.id == _currentInvoice.id, orElse: () => _currentInvoice);
+                  setState(() => _currentInvoice = updated);
+                },
+              ),
           ] else ...[
             if (isDraft)
               TextButton.icon(
@@ -430,12 +453,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     return Column(
       children: [
         _buildSummaryRow("小計", formatter.format(subtotal), textColor),
-        if (_companyInfo?.taxDisplayMode == 'normal')
-          _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", formatter.format(tax), textColor),
-        if (_companyInfo?.taxDisplayMode == 'text_only')
-          _buildSummaryRow("消費税", "（税別）", textColor),
+        if (currentTaxRate > 0) ...[
+          if (_companyInfo?.taxDisplayMode == 'normal')
+            _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", formatter.format(tax), textColor),
+          if (_companyInfo?.taxDisplayMode == 'text_only')
+            _buildSummaryRow("消費税", "（税別）", textColor),
+        ],
         const Divider(color: Colors.grey),
-        _buildSummaryRow("合計金額", "￥${formatter.format(total)}", textColor, isTotal: true),
+        _buildSummaryRow(currentTaxRate > 0 ? "合計金額 (税込)" : "合計金額", "￥${formatter.format(total)}", textColor, isTotal: true),
       ],
     );
   }
