@@ -1,0 +1,22 @@
+# Project: 販売アシスト1号 (gemi_invoice) - Status Report
+
+## 1. 開発の基本方針
+- 言語: 日本語主体（コメントは日英併記）
+- 優先事項: AI開発効率の最大化（可読性より機能実装スピード）
+- 命名規則: {date}({種別}){顧客名}_{件名}_{金額}円_{hash}.pdf
+
+## 2. 実装済みコンポーネント
+- [lib/models/]: Invoice, Customer, InvoiceItem の基本モデル。
+- [lib/services/pdf_generator.dart]: 
+  - IPAexゴシック埋め込みによる日本語対応。
+  - SHA256ハッシュを含む命名規則実装済み。
+- [lib/screens/invoice_detail_page.dart]: 
+  - 編集、保存、PDF生成、即時プレビュー(printing)連動済み。
+- [lib/screens/invoice_input_screen.dart]:
+  - 新規作成・保存フロー構築済み。
+
+## 3. 次のターゲット (README.md 仕様)
+- SQLite (drift) による永続化層の構築。
+- GPS連動による顧客自動選出機能。
+- 見積/納品/請求/領収の種別切り替え対応。
+- OCR / Google Lens 連携。
