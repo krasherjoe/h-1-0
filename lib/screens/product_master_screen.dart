@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../services/product_repository.dart';
+import 'barcode_scanner_screen.dart';
 
 class ProductMasterScreen extends StatefulWidget {
   const ProductMasterScreen({Key? key}) : super(key: key);
@@ -34,41 +35,70 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     final isEdit = product != null;
     final nameController = TextEditingController(text: product?.name ?? "");
     final priceController = TextEditingController(text: product?.defaultUnitPrice.toString() ?? "0");
+    final barcodeController = TextEditingController(text: product?.barcode ?? "");
 
     final result = await showDialog<Product>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEdit ? "商品を編集" : "商品を新規登録"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: "商品名"),
-            ),
-            TextField(
-              controller: priceController,
-              decoration: const InputDecoration(labelText: "初期単価"),
-              keyboardType: TextInputType.number,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(isEdit ? "商品を編集" : "商品を新規登録"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "商品名"),
+              ),
+              TextField(
+                controller: priceController,
+                decoration: const InputDecoration(labelText: "初期単価"),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: barcodeController,
+                      decoration: const InputDecoration(labelText: "バーコード"),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    onPressed: () async {
+                      final code = await Navigator.push<String>(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                      );
+                      if (code != null) {
+                        setDialogState(() {
+                          barcodeController.text = code;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+            TextButton(
+              onPressed: () {
+                if (nameController.text.isEmpty) return;
+                final newProduct = Product(
+                  id: product?.id ?? const Uuid().v4(),
+                  name: nameController.text,
+                  defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
+                  barcode: barcodeController.text.isEmpty ? null : barcodeController.text,
+                  odooId: product?.odooId,
+                );
+                Navigator.pop(context, newProduct);
+              },
+              child: const Text("保存"),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-          TextButton(
-            onPressed: () {
-              if (nameController.text.isEmpty) return;
-              final newProduct = Product(
-                id: product?.id ?? const Uuid().v4(),
-                name: nameController.text,
-                defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
-                odooId: product?.odooId,
-              );
-              Navigator.pop(context, newProduct);
-            },
-            child: const Text("保存"),
-          ),
-        ],
       ),
     );
 

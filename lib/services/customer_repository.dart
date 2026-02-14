@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../models/customer_model.dart';
 import 'database_helper.dart';
+import 'package:uuid/uuid.dart';
 
 class CustomerRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -8,7 +9,31 @@ class CustomerRepository {
   Future<List<Customer>> getAllCustomers() async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query('customers', orderBy: 'display_name ASC');
+    
+    if (maps.isEmpty) {
+      await _generateSampleCustomers();
+      return getAllCustomers(); // 再帰的に読み込み
+    }
+    
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
+  }
+
+  Future<void> _generateSampleCustomers() async {
+    final samples = [
+      Customer(id: const Uuid().v4(), displayName: "佐々木製作所", formalName: "株式会社 佐々木製作所", title: "御中"),
+      Customer(id: const Uuid().v4(), displayName: "田中商事", formalName: "田中商事 株式会社", title: "様"),
+      Customer(id: const Uuid().v4(), displayName: "山田建材", formalName: "有限会社 山田建材", title: "御中"),
+      Customer(id: const Uuid().v4(), displayName: "鈴木運送", formalName: "鈴木運送 合同会社", title: "様"),
+      Customer(id: const Uuid().v4(), displayName: "伊藤工務店", formalName: "伊藤工務店", title: "様"),
+      Customer(id: const Uuid().v4(), displayName: "渡辺興業", formalName: "株式会社 渡辺興業", title: "御中"),
+      Customer(id: const Uuid().v4(), displayName: "高橋電気", formalName: "高橋電気工業所", title: "様"),
+      Customer(id: const Uuid().v4(), displayName: "佐藤商店", formalName: "佐藤商店", title: "様"),
+      Customer(id: const Uuid().v4(), displayName: "中村機械", formalName: "中村機械製作所", title: "殿"),
+      Customer(id: const Uuid().v4(), displayName: "小林産業", formalName: "小林産業 株式会社", title: "御中"),
+    ];
+    for (var s in samples) {
+      await saveCustomer(s);
+    }
   }
 
   Future<void> saveCustomer(Customer customer) async {

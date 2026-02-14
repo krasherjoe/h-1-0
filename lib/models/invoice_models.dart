@@ -43,7 +43,8 @@ class Invoice {
   final List<InvoiceItem> items;
   final String? notes;
   final String? filePath;
-  final double taxRate; // 追加
+  final double taxRate;
+  final String? customerFormalNameSnapshot; // 追加
   final String? odooId;
   final bool isSynced;
   final DateTime updatedAt;
@@ -56,6 +57,7 @@ class Invoice {
     this.notes,
     this.filePath,
     this.taxRate = 0.10, // デフォルト10%
+    this.customerFormalNameSnapshot, // 追加
     this.odooId,
     this.isSynced = false,
     DateTime? updatedAt,
@@ -63,6 +65,9 @@ class Invoice {
         updatedAt = updatedAt ?? DateTime.now();
 
   String get invoiceNumber => "INV-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
+
+  // 表示用の宛名（スナップショットがあれば優先）
+  String get customerNameForDisplay => customerFormalNameSnapshot ?? customer.formalName;
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
   int get tax => (subtotal * taxRate).floor(); // taxRateを使用
@@ -77,6 +82,7 @@ class Invoice {
       'file_path': filePath,
       'total_amount': totalAmount,
       'tax_rate': taxRate, // 追加
+      'customer_formal_name': customerFormalNameSnapshot ?? customer.formalName, // 追加
       'odoo_id': odooId,
       'is_synced': isSynced ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
@@ -91,7 +97,7 @@ class Invoice {
     
     StringBuffer buffer = StringBuffer();
     buffer.writeln("日付,請求番号,取引先,合計金額,備考");
-    buffer.writeln("${dateFormatter.format(date)},$invoiceNumber,${customer.formalName},$totalAmount,${notes ?? ""}");
+    buffer.writeln("${dateFormatter.format(date)},$invoiceNumber,$customerNameForDisplay,$totalAmount,${notes ?? ""}");
     buffer.writeln("");
     buffer.writeln("品名,数量,単価,小計");
     
@@ -110,6 +116,7 @@ class Invoice {
     String? notes,
     String? filePath,
     double? taxRate,
+    String? customerFormalNameSnapshot,
     String? odooId,
     bool? isSynced,
     DateTime? updatedAt,
@@ -122,6 +129,7 @@ class Invoice {
       notes: notes ?? this.notes,
       filePath: filePath ?? this.filePath,
       taxRate: taxRate ?? this.taxRate,
+      customerFormalNameSnapshot: customerFormalNameSnapshot ?? this.customerFormalNameSnapshot,
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,

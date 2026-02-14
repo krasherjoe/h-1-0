@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -8,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart';
 import 'package:intl/intl.dart';
 import '../models/invoice_models.dart';
+import 'company_repository.dart';
 
 /// A4サイズのプロフェッショナルな請求書PDFを生成し、保存する
 Future<String?> generateInvoicePdf(Invoice invoice) async {
@@ -21,6 +21,20 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
 
     final dateFormatter = DateFormat('yyyy年MM月dd日');
     final amountFormatter = NumberFormat("#,###");
+
+    // 自社情報の取得
+    final companyRepo = CompanyRepository();
+    final companyInfo = await companyRepo.getCompanyInfo();
+
+    // 印影画像のロード
+    pw.MemoryImage? sealImage;
+    if (companyInfo.sealPath != null) {
+      final file = File(companyInfo.sealPath!);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        sealImage = pw.MemoryImage(bytes);
+      }
+    }
 
     pdf.addPage(
       pw.MultiPage(
@@ -68,13 +82,27 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
                 ),
               ),
               pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                child: pw.Stack(
+                  alignment: pw.Alignment.topRight,
                   children: [
-                    pw.Text("自社名が入ります", style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                    pw.Text("〒000-0000"),
-                    pw.Text("住所がここに入ります"),
-                    pw.Text("TEL: 00-0000-0000"),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(companyInfo.name, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                        if (companyInfo.zipCode != null) pw.Text("〒${companyInfo.zipCode}"),
+                        if (companyInfo.address != null) pw.Text(companyInfo.address!),
+                        if (companyInfo.tel != null) pw.Text("TEL: ${companyInfo.tel}"),
+                      ],
+                    ),
+                    if (sealImage != null)
+                      pw.Positioned(
+                        right: 10,
+                        top: 0,
+                        child: pw.Opacity(
+                          opacity: 0.8,
+                          child: pw.Image(sealImage, width: 40, height: 40),
+                        ),
+                      ),
                   ],
                 ),
               ),

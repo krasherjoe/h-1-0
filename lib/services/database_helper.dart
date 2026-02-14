@@ -19,7 +19,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'gemi_invoice.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -28,6 +28,26 @@ class DatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT 0.10');
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE company_info (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          zip_code TEXT,
+          address TEXT,
+          tel TEXT,
+          default_tax_rate REAL DEFAULT 0.10,
+          seal_path TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE products ADD COLUMN barcode TEXT');
+    }
+    if (oldVersion < 5) {
+      // 顧客情報のスナップショット
+      await db.execute('ALTER TABLE invoices ADD COLUMN customer_formal_name TEXT');
     }
   }
 
@@ -66,6 +86,7 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         default_unit_price INTEGER,
+        barcode TEXT,
         odoo_id TEXT
       )
     ''');
@@ -80,6 +101,7 @@ class DatabaseHelper {
         file_path TEXT,
         total_amount INTEGER,
         tax_rate REAL DEFAULT 0.10,
+        customer_formal_name TEXT,
         odoo_id TEXT,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT NOT NULL,
@@ -96,6 +118,19 @@ class DatabaseHelper {
         quantity INTEGER NOT NULL,
         unit_price INTEGER NOT NULL,
         FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // 自社情報
+    await db.execute('''
+      CREATE TABLE company_info (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        zip_code TEXT,
+        address TEXT,
+        tel TEXT,
+        default_tax_rate REAL DEFAULT 0.10,
+        seal_path TEXT
       )
     ''');
   }

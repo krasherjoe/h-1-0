@@ -18,10 +18,28 @@
 @import geolocator_apple;
 #endif
 
+#if __has_include(<image_picker_ios/FLTImagePickerPlugin.h>)
+#import <image_picker_ios/FLTImagePickerPlugin.h>
+#else
+@import image_picker_ios;
+#endif
+
+#if __has_include(<mobile_scanner/MobileScannerPlugin.h>)
+#import <mobile_scanner/MobileScannerPlugin.h>
+#else
+@import mobile_scanner;
+#endif
+
 #if __has_include(<open_filex/OpenFilePlugin.h>)
 #import <open_filex/OpenFilePlugin.h>
 #else
 @import open_filex;
+#endif
+
+#if __has_include(<package_info_plus/FPPPackageInfoPlusPlugin.h>)
+#import <package_info_plus/FPPPackageInfoPlusPlugin.h>
+#else
+@import package_info_plus;
 #endif
 
 #if __has_include(<permission_handler_apple/PermissionHandlerPlugin.h>)
@@ -53,7 +71,10 @@
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [FlutterContactsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterContactsPlugin"]];
   [GeolocatorPlugin registerWithRegistrar:[registry registrarForPlugin:@"GeolocatorPlugin"]];
+  [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];
+  [MobileScannerPlugin registerWithRegistrar:[registry registrarForPlugin:@"MobileScannerPlugin"]];
   [OpenFilePlugin registerWithRegistrar:[registry registrarForPlugin:@"OpenFilePlugin"]];
+  [FPPPackageInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPPackageInfoPlusPlugin"]];
   [PermissionHandlerPlugin registerWithRegistrar:[registry registrarForPlugin:@"PermissionHandlerPlugin"]];
   [FPPSharePlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPSharePlusPlugin"]];
   [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];

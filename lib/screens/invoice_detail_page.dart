@@ -205,7 +205,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             decoration: const InputDecoration(labelText: "備考", border: OutlineInputBorder()),
           ),
         ] else ...[
-          Text("${_currentInvoice.customer.formalName} ${_currentInvoice.customer.title}",
+          Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
             Text(_currentInvoice.customer.department!, style: const TextStyle(fontSize: 16)),

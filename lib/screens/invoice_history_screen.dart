@@ -6,8 +6,10 @@ import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'invoice_detail_page.dart';
 import 'management_screen.dart';
+import 'company_info_screen.dart';
 import '../widgets/slide_to_unlock.dart';
 import '../main.dart'; // InvoiceFlowScreen 用
+import 'package:package_info_plus/package_info_plus.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
   const InvoiceHistoryScreen({Key? key}) : super(key: key);
@@ -27,11 +29,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   String _sortBy = "date"; // "date", "amount", "customer"
   DateTime? _startDate;
   DateTime? _endDate;
+  String _appVersion = "1.0.0";
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+    });
   }
 
   Future<void> _loadData() async {
@@ -49,7 +60,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     setState(() {
       _filteredInvoices = _invoices.where((inv) {
         final query = _searchQuery.toLowerCase();
-        final matchesQuery = inv.customer.formalName.toLowerCase().contains(query) ||
+        final matchesQuery = inv.customerNameForDisplay.toLowerCase().contains(query) ||
                inv.invoiceNumber.toLowerCase().contains(query) ||
                (inv.notes?.toLowerCase().contains(query) ?? false);
         
@@ -65,7 +76,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       } else if (_sortBy == "amount") {
         _filteredInvoices.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
       } else if (_sortBy == "customer") {
-        _filteredInvoices.sort((a, b) => a.customer.formalName.compareTo(b.customer.formalName));
+        _filteredInvoices.sort((a, b) => a.customerNameForDisplay.compareTo(b.customerNameForDisplay));
       }
     });
   }
@@ -88,7 +99,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("伝票マスター一覧"),
+        title: GestureDetector(
+          onLongPress: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CompanyInfoScreen()),
+            ).then((_) => _loadData());
+          },
+          child: Text("伝票マスター v$_appVersion"),
+        ),
         backgroundColor: _isUnlocked ? Colors.blueGrey : Colors.blueGrey.shade800,
         actions: [
           if (_isUnlocked)
@@ -240,7 +259,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               backgroundColor: _isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200,
                               child: Icon(Icons.description_outlined, color: _isUnlocked ? Colors.indigo : Colors.grey),
                             ),
-                            title: Text(invoice.customer.formalName),
+                            title: Text(invoice.customerNameForDisplay),
                             subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -280,7 +299,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text("伝票の削除"),
-                                  content: Text("「${invoice.customer.formalName}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
+                                  content: Text("「${invoice.customerNameForDisplay}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
                                   actions: [
                                     TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
                                     TextButton(

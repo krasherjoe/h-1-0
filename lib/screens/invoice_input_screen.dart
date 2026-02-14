@@ -78,7 +78,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       customer: _selectedCustomer!,
       date: DateTime.now(),
       items: _items,
-      taxRate: _includeTax ? _taxRate : 0.0, // 追加
+      taxRate: _includeTax ? _taxRate : 0.0,
+      customerFormalNameSnapshot: _selectedCustomer!.formalName, // 追加
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
     );
 

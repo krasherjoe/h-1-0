@@ -2,12 +2,14 @@ class Product {
   final String id;
   final String name;
   final int defaultUnitPrice;
+  final String? barcode;
   final String? odooId;
 
   Product({
     required this.id,
     required this.name,
     this.defaultUnitPrice = 0,
+    this.barcode,
     this.odooId,
   });
 
@@ -16,6 +18,7 @@ class Product {
       'id': id,
       'name': name,
       'default_unit_price': defaultUnitPrice,
+      'barcode': barcode,
       'odoo_id': odooId,
     };
   }
@@ -25,6 +28,7 @@ class Product {
       id: map['id'],
       name: map['name'],
       defaultUnitPrice: map['default_unit_price'] ?? 0,
+      barcode: map['barcode'],
       odooId: map['odoo_id'],
     );
   }
@@ -33,6 +37,7 @@ class Product {
     String? id,
     String? name,
     int? defaultUnitPrice,
+    String? barcode,
     String? odooId,
   }) {
     return Product(
