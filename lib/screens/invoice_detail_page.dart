@@ -222,6 +222,33 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             IconButton(icon: const Icon(Icons.grid_on), onPressed: _exportCsv, tooltip: "CSV出力"),
             if (widget.isUnlocked)
               IconButton(
+                icon: const Icon(Icons.copy),
+                tooltip: "コピーして新規作成",
+                onPressed: () async {
+                  // 新しいIDを生成して複製
+                  final newId = DateTime.now().millisecondsSinceEpoch.toString();
+                  final duplicateInvoice = _currentInvoice.copyWith(
+                    id: newId,
+                    date: DateTime.now(),
+                    isDraft: true, // 下書きとして開始
+                  );
+                  
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InvoiceInputForm(
+                        onInvoiceGenerated: (inv, path) {
+                           // ここでは特に何もしない（詳細画面は元の伝票を表示し続けるため）
+                           // ただし、履歴画面に戻った時にリロードされる必要がある（HistoryScreen側で対応済み）
+                        },
+                        existingInvoice: duplicateInvoice,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            if (widget.isUnlocked)
+              IconButton(
                 icon: const Icon(Icons.edit_note), // アイコン変更
                 tooltip: "詳細編集",
                 onPressed: () async {

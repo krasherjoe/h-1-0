@@ -38,6 +38,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   DateTime _selectedDate = DateTime.now(); // 追加: 伝票日付
   bool _isDraft = false; // 追加: 下書きモード
   final TextEditingController _subjectController = TextEditingController(); // 追加
+  bool _isSaving = false; // 保存中フラグ
   String _status = "取引先と商品を入力してください";
   
   // 署名用の実験的パス
@@ -121,26 +122,31 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
       subject: _subjectController.text.isNotEmpty ? _subjectController.text : null, // 追加
-      notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
+      notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : null,
       latitude: pos?.latitude,
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
     );
 
+    setState(() => _isSaving = true);
+    
+    // PDF生成有無に関わらず、まずは保存
     if (generatePdf) {
       setState(() => _status = "PDFを生成中...");
       final path = await generateInvoicePdf(invoice);
       if (path != null) {
         final updatedInvoice = invoice.copyWith(filePath: path);
         await _repository.saveInvoice(updatedInvoice);
-        widget.onInvoiceGenerated(updatedInvoice, path);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
+        if (mounted) widget.onInvoiceGenerated(updatedInvoice, path);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
       }
     } else {
       await _repository.saveInvoice(invoice);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
-      Navigator.pop(context); // 入力を閉じる
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
+      if (mounted) Navigator.pop(context);
     }
+    
+    if (mounted) setState(() => _isSaving = false);
   }
 
   void _showPreview() {
@@ -196,39 +202,57 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       backgroundColor: themeColor,
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text(_isDraft ? "伝票作成 (下書き)" : "販売アシスト1号 V1.5.04"),
+        title: Text(_isDraft ? "伝票作成 (下書き)" : "販売アシスト1号 V1.5.05"),
         backgroundColor: _isDraft ? Colors.black87 : Colors.blueGrey,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDraftToggle(), // 追加
-                  const SizedBox(height: 16),
-                  _buildDocumentTypeSection(),
-                  const SizedBox(height: 16),
-                  _buildDateSection(),
-                  const SizedBox(height: 16),
-                  _buildCustomerSection(),
-                  const SizedBox(height: 16),
-                  _buildSubjectSection(textColor), // 追加
-                  const SizedBox(height: 20),
-                  _buildItemsSection(fmt),
-                  const SizedBox(height: 20),
-                  _buildExperimentalSection(),
-                  const SizedBox(height: 20),
-                  _buildSummarySection(fmt),
-                  const SizedBox(height: 20),
-                  _buildSignatureSection(),
-                ],
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDraftToggle(),
+                      const SizedBox(height: 16),
+                      _buildDocumentTypeSection(),
+                      const SizedBox(height: 16),
+                      _buildDateSection(),
+                      const SizedBox(height: 16),
+                      _buildCustomerSection(),
+                      const SizedBox(height: 16),
+                      _buildSubjectSection(textColor),
+                      const SizedBox(height: 20),
+                      _buildItemsSection(fmt),
+                      const SizedBox(height: 20),
+                      _buildTaxSettings(),
+                      const SizedBox(height: 20),
+                      _buildSummarySection(fmt),
+                      const SizedBox(height: 20),
+                      _buildSignatureSection(),
+                    ],
+                  ),
+                ),
+              ),
+              _buildBottomActionBar(),
+            ],
+          ),
+          if (_isSaving)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 16),
+                    Text("保存中...", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ),
-          ),
-          _buildBottomActionBar(),
         ],
       ),
     );
@@ -362,9 +386,31 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text("￥${fmt.format(item.unitPrice * item.quantity)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    if (idx > 0)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_upward, size: 20),
+                        onPressed: () => setState(() {
+                          final temp = _items[idx];
+                          _items[idx] = _items[idx - 1];
+                          _items[idx - 1] = temp;
+                        }),
+                        tooltip: "上へ",
+                      ),
+                    if (idx < _items.length - 1)
+                      IconButton(
+                        icon: const Icon(Icons.arrow_downward, size: 20),
+                        onPressed: () => setState(() {
+                          final temp = _items[idx];
+                          _items[idx] = _items[idx + 1];
+                          _items[idx + 1] = temp;
+                        }),
+                        tooltip: "下へ",
+                      ),
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
                       onPressed: () => setState(() => _items.removeAt(idx)),
+                      tooltip: "削除",
                     ),
                   ],
                 ),
@@ -386,6 +432,23 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         ],
                       ),
                       actions: [
+                        TextButton.icon(
+                          icon: const Icon(Icons.search, size: 18),
+                          label: const Text("マスター参照"),
+                          onPressed: () {
+                             showModalBottomSheet(
+                               context: context,
+                               isScrollControlled: true,
+                               builder: (context) => ProductPickerModal(
+                                 onItemSelected: (selected) {
+                                   descCtrl.text = selected.description;
+                                   priceCtrl.text = selected.unitPrice.toString();
+                                   Navigator.pop(context); // close picker
+                                 },
+                               ),
+                             );
+                          },
+                        ),
                         TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
                         ElevatedButton(
                           onPressed: () {
@@ -411,42 +474,37 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildExperimentalSection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("実験的オプション", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (_includeTax) ...[
-                const Text("消費税: "),
-                ChoiceChip(
-                  label: const Text("10%"),
-                  selected: _taxRate == 0.10,
-                  onSelected: (val) => setState(() => _taxRate = 0.10),
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text("8%"),
-                  selected: _taxRate == 0.08,
-                  onSelected: (val) => setState(() => _taxRate = 0.08),
-                ),
-              ] else
-                const Text("（税別設定のため設定なし）", style: TextStyle(color: Colors.grey)),
-              const Spacer(),
-              Switch(
-                value: _includeTax,
-                onChanged: (val) => setState(() => _includeTax = val),
+  Widget _buildTaxSettings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (_includeTax) ...[
+              const Text("消費税率: ", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text("10%"),
+                selected: _taxRate == 0.10,
+                onSelected: (val) => setState(() => _taxRate = 0.10),
               ),
-              Text(_includeTax ? "税込表示" : "非課税"),
-            ],
-          ),
-        ],
-      ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text("8%"),
+                selected: _taxRate == 0.08,
+                onSelected: (val) => setState(() => _taxRate = 0.08),
+              ),
+            ] else
+              const Text("消費税設定: 非課税", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            const Spacer(),
+            Switch(
+              value: _includeTax,
+              onChanged: (val) => setState(() => _includeTax = val),
+            ),
+            Text(_includeTax ? "税込計算" : "非課税"),
+          ],
+        ),
+      ],
     );
   }
 

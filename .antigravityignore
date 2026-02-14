@@ -1,0 +1,10 @@
+# AIに読ませても枠を溶かすだけのゴミたち
+.dart_tool/
+build/
+ios/
+android/
+web/
+*.lock
+*.svg
+assets/
+.env

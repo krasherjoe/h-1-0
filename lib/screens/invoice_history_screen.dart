@@ -99,7 +99,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(), // 常に表示
+        // leading removed
         title: GestureDetector(
           onLongPress: () {
             Navigator.push(
@@ -136,34 +136,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               });
             },
             tooltip: "ソート切り替え",
-          ),
-          IconButton(
-            icon: Icon(Icons.date_range, color: (_startDate != null || _endDate != null) ? Colors.orange : Colors.white),
-            onPressed: () async {
-              final picked = await showDateRangePicker(
-                context: context,
-                initialDateRange: (_startDate != null && _endDate != null) 
-                    ? DateTimeRange(start: _startDate!, end: _endDate!) 
-                    : null,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-              );
-              if (picked != null) {
-                setState(() {
-                  _startDate = picked.start;
-                  _endDate = picked.end;
-                });
-                _applyFilterAndSort();
-              } else if (_startDate != null) {
-                // リセット
-                setState(() {
-                  _startDate = null;
-                  _endDate = null;
-                });
-                _applyFilterAndSort();
-              }
-            },
-            tooltip: "日付範囲で絞り込み",
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -260,9 +232,17 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         itemBuilder: (context, index) {
                           final invoice = _filteredInvoices[index];
                           return ListTile(
+                            tileColor: invoice.isDraft ? Colors.orange.shade50 : null, // 下書きは背景色を変更
                             leading: CircleAvatar(
-                              backgroundColor: _isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200,
-                              child: Icon(Icons.description_outlined, color: _isUnlocked ? Colors.indigo : Colors.grey),
+                              backgroundColor: invoice.isDraft 
+                                  ? Colors.orange.shade100 
+                                  : (_isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200),
+                              child: Icon(
+                                invoice.isDraft ? Icons.edit_note : Icons.description_outlined,
+                                color: invoice.isDraft 
+                                    ? Colors.orange 
+                                    : (_isUnlocked ? Colors.indigo : Colors.grey),
+                              ),
                             ),
                             title: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,6 +322,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               builder: (context) => InvoiceFlowScreen(onComplete: _loadData),
             ),
           );
+          _loadData();
         },
         label: const Text("新規伝票作成"),
         icon: const Icon(Icons.add),
