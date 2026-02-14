@@ -6,8 +6,12 @@ import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
+import 'package:printing/printing.dart';
+import '../services/gps_service.dart';
 import 'customer_picker_modal.dart';
 import 'product_picker_modal.dart';
+import '../models/company_model.dart';
+import '../services/company_repository.dart';
 
 class InvoiceInputForm extends StatefulWidget {
   final Function(Invoice invoice, String filePath) onInvoiceGenerated;
@@ -27,6 +31,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final List<InvoiceItem> _items = [];
   double _taxRate = 0.10;
   bool _includeTax = true;
+  CompanyInfo? _companyInfo;
+  DocumentType _documentType = DocumentType.invoice; // 追加
   String _status = "取引先と商品を入力してください";
   
   // 署名用の実験的パス
@@ -45,6 +51,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (customers.isNotEmpty) {
       setState(() => _selectedCustomer = customers.first);
     }
+    
+    final companyRepo = CompanyRepository();
+    final companyInfo = await companyRepo.getCompanyInfo();
+    setState(() {
+      _companyInfo = companyInfo;
+      _taxRate = companyInfo.defaultTaxRate;
+    });
   }
 
   void _addItem() {
@@ -74,13 +87,23 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       return;
     }
 
+    // GPS情報の取得
+    final gpsService = GpsService();
+    final pos = await gpsService.getCurrentLocation();
+    if (pos != null) {
+      await gpsService.logLocation(); // 履歴テーブルにも保存
+    }
+
     final invoice = Invoice(
       customer: _selectedCustomer!,
       date: DateTime.now(),
       items: _items,
       taxRate: _includeTax ? _taxRate : 0.0,
+      documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
+      latitude: pos?.latitude,
+      longitude: pos?.longitude,
     );
 
     if (generatePdf) {
@@ -101,27 +124,43 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   void _showPreview() {
     if (_selectedCustomer == null) return;
+    final invoice = Invoice(
+      customer: _selectedCustomer!,
+      date: DateTime.now(),
+      items: _items,
+      taxRate: _includeTax ? _taxRate : 0.0,
+      documentType: _documentType,
+      customerFormalNameSnapshot: _selectedCustomer!.formalName,
+      notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
+    );
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("伝票プレビュー(仮)"),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("宛名: ${_selectedCustomer!.formalName} ${_selectedCustomer!.title}"),
-              const Divider(),
-              ..._items.map((it) => Text("・${it.description} x ${it.quantity} = ￥${it.subtotal}")),
-              const Divider(),
-              Text("小計: ￥${NumberFormat("#,###").format(_subTotal)}"),
-              Text("消費税: ￥${NumberFormat("#,###").format(_tax)}"),
-              Text("合計: ￥${NumberFormat("#,###").format(_total)}", style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
+      builder: (context) => Dialog.fullscreen(
+        child: Column(
+          children: [
+            AppBar(
+              title: Text("${invoice.documentTypeName}プレビュー"),
+              leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+            ),
+            Expanded(
+              child: PdfPreview(
+                build: (format) async {
+                  // PdfGeneratorを少しリファクタして pw.Document を返す関数に分離することも可能だが
+                  // ここでは generateInvoicePdf の中身を模したバイト生成を行う
+                  // (もしくは generateInvoicePdf のシグネチャを変えてバイトを返すようにする)
+                  // 簡易化のため、一時ファイルを作ってそれを読み込むか、Generatorを修正する
+                  // 今回は Generator に pw.Document を生成する内部関数を作る
+                  final pdfDoc = await buildInvoiceDocument(invoice);
+                  return pdfDoc.save();
+                },
+                allowPrinting: false,
+                allowSharing: false,
+                canChangePageFormat: false,
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("閉じる")),
-        ],
       ),
     );
   }
@@ -138,6 +177,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildDocumentTypeSection(), // 追加
+                const SizedBox(height: 16),
                 _buildCustomerSection(),
                 const SizedBox(height: 20),
                 _buildItemsSection(fmt),
@@ -153,6 +194,51 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ),
         _buildBottomActionBar(),
       ],
+    );
+  }
+
+  Widget _buildDocumentTypeSection() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: DocumentType.values.map((type) {
+          final isSelected = _documentType == type;
+          String label = "";
+          IconData icon = Icons.description;
+          switch (type) {
+            case DocumentType.estimation: label = "見積"; icon = Icons.article_outlined; break;
+            case DocumentType.delivery: label = "納品"; icon = Icons.local_shipping_outlined; break;
+            case DocumentType.invoice: label = "請求"; icon = Icons.receipt_long_outlined; break;
+            case DocumentType.receipt: label = "領収"; icon = Icons.payments_outlined; break;
+          }
+          return Expanded(
+            child: InkWell(
+              onTap: () => setState(() => _documentType = type),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.indigo : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Icon(icon, color: isSelected ? Colors.white : Colors.grey.shade600, size: 20),
+                    Text(label, style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey.shade600,
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    )),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -267,12 +353,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.indigo.shade900, borderRadius: BorderRadius.circular(12)),
       child: Column(
-        children: [
-          _buildSummaryRow("小計", "￥${fmt.format(_subTotal)}", Colors.white70),
-          _buildSummaryRow("消費税", "￥${fmt.format(_tax)}", Colors.white70),
-          const Divider(color: Colors.white24),
-          _buildSummaryRow("合計金額", "￥${fmt.format(_total)}", Colors.white, fontSize: 24),
-        ],
+          children: [
+            _buildSummaryRow("小計 (税抜)", "￥${fmt.format(_subTotal)}", Colors.white70),
+            if (_companyInfo?.taxDisplayMode == 'normal')
+              _buildSummaryRow("消費税 (${(_taxRate * 100).toInt()}%)", "￥${fmt.format(_tax)}", Colors.white70),
+            if (_companyInfo?.taxDisplayMode == 'text_only')
+              _buildSummaryRow("消費税", "(税別)", Colors.white70),
+            const Divider(color: Colors.white24),
+            _buildSummaryRow("合計金額", "￥${fmt.format(_total)}", Colors.white, fontSize: 24),
+          ],
       ),
     );
   }

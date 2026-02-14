@@ -21,6 +21,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   final _addressController = TextEditingController();
   final _telController = TextEditingController();
   double _taxRate = 0.10;
+  String _taxDisplayMode = 'normal';
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     _addressController.text = _info.address ?? "";
     _telController.text = _info.tel ?? "";
     _taxRate = _info.defaultTaxRate;
+    _taxDisplayMode = _info.taxDisplayMode;
     setState(() => _isLoading = false);
   }
 
@@ -55,6 +57,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       address: _addressController.text,
       tel: _telController.text,
       defaultTaxRate: _taxRate,
+      taxDisplayMode: _taxDisplayMode,
     );
     await _companyRepo.saveCompanyInfo(updated);
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("自社情報を保存しました")));
@@ -92,6 +95,29 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 ChoiceChip(label: const Text("10%"), selected: _taxRate == 0.10, onSelected: (_) => setState(() => _taxRate = 0.10)),
                 const SizedBox(width: 8),
                 ChoiceChip(label: const Text("8%"), selected: _taxRate == 0.08, onSelected: (_) => setState(() => _taxRate = 0.08)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text("消費税の表示設定（T番号非取得時など）", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text("通常表示"),
+                  selected: _taxDisplayMode == 'normal',
+                  onSelected: (_) => setState(() => _taxDisplayMode = 'normal'),
+                ),
+                ChoiceChip(
+                  label: const Text("表示しない"),
+                  selected: _taxDisplayMode == 'hidden',
+                  onSelected: (_) => setState(() => _taxDisplayMode = 'hidden'),
+                ),
+                ChoiceChip(
+                  label: const Text("「税別」と表示"),
+                  selected: _taxDisplayMode == 'text_only',
+                  onSelected: (_) => setState(() => _taxDisplayMode = 'text_only'),
+                ),
               ],
             ),
             const SizedBox(height: 24),

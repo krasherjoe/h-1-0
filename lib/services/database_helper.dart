@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
+  static const _databaseVersion = 9;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -19,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'gemi_invoice.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: _databaseVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -46,13 +47,46 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE products ADD COLUMN barcode TEXT');
     }
     if (oldVersion < 5) {
-      // 顧客情報のスナップショット
       await db.execute('ALTER TABLE invoices ADD COLUMN customer_formal_name TEXT');
+    }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE products ADD COLUMN category TEXT');
+      await db.execute('CREATE INDEX idx_products_name ON products(name)');
+      await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
+      await db.execute('''
+        CREATE TABLE activity_logs (
+          id TEXT PRIMARY KEY,
+          action TEXT NOT NULL,
+          target_type TEXT NOT NULL,
+          target_id TEXT,
+          details TEXT,
+          timestamp TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE products ADD COLUMN stock_quantity INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE invoices ADD COLUMN document_type TEXT DEFAULT "invoice"');
+      await db.execute('ALTER TABLE invoice_items ADD COLUMN product_id TEXT');
+    }
+    if (oldVersion < 8) {
+      await db.execute('ALTER TABLE invoices ADD COLUMN latitude REAL');
+      await db.execute('ALTER TABLE invoices ADD COLUMN longitude REAL');
+      await db.execute('''
+        CREATE TABLE app_gps_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          latitude REAL NOT NULL,
+          longitude REAL NOT NULL,
+          timestamp TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 9) {
+      await db.execute('ALTER TABLE company_info ADD COLUMN tax_display_mode TEXT DEFAULT "normal"');
     }
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // 顧客マスター
     await db.execute('''
       CREATE TABLE customers (
         id TEXT PRIMARY KEY,
@@ -68,7 +102,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // GPS履歴 (直近10件想定だがDB上は保持)
     await db.execute('''
       CREATE TABLE customer_gps_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,9 +120,13 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         default_unit_price INTEGER,
         barcode TEXT,
+        category TEXT,
+        stock_quantity INTEGER DEFAULT 0,
         odoo_id TEXT
       )
     ''');
+    await db.execute('CREATE INDEX idx_products_name ON products(name)');
+    await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
 
     // 伝票マスター
     await db.execute('''
@@ -101,11 +138,23 @@ class DatabaseHelper {
         file_path TEXT,
         total_amount INTEGER,
         tax_rate REAL DEFAULT 0.10,
+        document_type TEXT DEFAULT "invoice",
         customer_formal_name TEXT,
         odoo_id TEXT,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT NOT NULL,
+        latitude REAL,
+        longitude REAL,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE app_gps_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        timestamp TEXT NOT NULL
       )
     ''');
 
@@ -114,6 +163,7 @@ class DatabaseHelper {
       CREATE TABLE invoice_items (
         id TEXT PRIMARY KEY,
         invoice_id TEXT NOT NULL,
+        product_id TEXT,
         description TEXT NOT NULL,
         quantity INTEGER NOT NULL,
         unit_price INTEGER NOT NULL,
@@ -121,7 +171,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // 自社情報
     await db.execute('''
       CREATE TABLE company_info (
         id INTEGER PRIMARY KEY,
@@ -130,7 +179,19 @@ class DatabaseHelper {
         address TEXT,
         tel TEXT,
         default_tax_rate REAL DEFAULT 0.10,
-        seal_path TEXT
+        seal_path TEXT,
+        tax_display_mode TEXT DEFAULT "normal"
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE activity_logs (
+        id TEXT PRIMARY KEY,
+        action TEXT NOT NULL,
+        target_type TEXT NOT NULL,
+        target_id TEXT,
+        details TEXT,
+        timestamp TEXT NOT NULL
       )
     ''');
   }

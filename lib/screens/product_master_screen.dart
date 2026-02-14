@@ -13,8 +13,12 @@ class ProductMasterScreen extends StatefulWidget {
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductRepository _productRepo = ProductRepository();
+  final TextEditingController _searchController = TextEditingController();
+
   List<Product> _products = [];
+  List<Product> _filteredProducts = [];
   bool _isLoading = true;
+  String _searchQuery = "";
 
   @override
   void initState() {
@@ -28,72 +32,81 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     setState(() {
       _products = products;
       _isLoading = false;
+      _applyFilter();
     });
   }
 
-  Future<void> _addItem({Product? product}) async {
-    final isEdit = product != null;
+  void _applyFilter() {
+    setState(() {
+      _filteredProducts = _products.where((p) {
+        final query = _searchQuery.toLowerCase();
+        return p.name.toLowerCase().contains(query) ||
+               (p.barcode?.toLowerCase().contains(query) ?? false) ||
+               (p.category?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    });
+  }
+
+  Future<void> _showEditDialog({Product? product}) async {
     final nameController = TextEditingController(text: product?.name ?? "");
-    final priceController = TextEditingController(text: product?.defaultUnitPrice.toString() ?? "0");
+    final priceController = TextEditingController(text: (product?.defaultUnitPrice ?? 0).toString());
     final barcodeController = TextEditingController(text: product?.barcode ?? "");
+    final categoryController = TextEditingController(text: product?.category ?? "");
+    final stockController = TextEditingController(text: (product?.stockQuantity ?? 0).toString());
 
     final result = await showDialog<Product>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? "商品を編集" : "商品を新規登録"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "商品名"),
-              ),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(labelText: "初期単価"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: barcodeController,
-                      decoration: const InputDecoration(labelText: "バーコード"),
+          title: Text(product == null ? "商品追加" : "商品編集"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameController, decoration: const InputDecoration(labelText: "商品名")),
+                TextField(controller: categoryController, decoration: const InputDecoration(labelText: "カテゴリ")),
+                TextField(controller: priceController, decoration: const InputDecoration(labelText: "初期単価"), keyboardType: TextInputType.number),
+                TextField(controller: stockController, decoration: const InputDecoration(labelText: "在庫数"), keyboardType: TextInputType.number),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(controller: barcodeController, decoration: const InputDecoration(labelText: "バーコード")),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    onPressed: () async {
-                      final code = await Navigator.push<String>(
-                        context,
-                        MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-                      );
-                      if (code != null) {
-                        setDialogState(() {
-                          barcodeController.text = code;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      onPressed: () async {
+                        final code = await Navigator.push<String>(
+                          context,
+                          MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                        );
+                        if (code != null) {
+                          setDialogState(() => barcodeController.text = code);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
                 if (nameController.text.isEmpty) return;
-                final newProduct = Product(
-                  id: product?.id ?? const Uuid().v4(),
-                  name: nameController.text,
-                  defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
-                  barcode: barcodeController.text.isEmpty ? null : barcodeController.text,
-                  odooId: product?.odooId,
+                Navigator.pop(
+                  context,
+                  Product(
+                    id: product?.id ?? const Uuid().v4(),
+                    name: nameController.text.trim(),
+                    defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
+                    barcode: barcodeController.text.isEmpty ? null : barcodeController.text.trim(),
+                    category: categoryController.text.isEmpty ? null : categoryController.text.trim(),
+                    stockQuantity: int.tryParse(stockController.text) ?? 0,
+                    odooId: product?.odooId,
+                  ),
                 );
-                Navigator.pop(context, newProduct);
               },
               child: const Text("保存"),
             ),
@@ -112,42 +125,67 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("商品マスター管理"),
+        title: const Text("商品マスター"),
         backgroundColor: Colors.blueGrey,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: "商品名・バーコード・カテゴリで検索",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: (val) {
+                _searchQuery = val;
+                _applyFilter();
+              },
+            ),
+          ),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _products.isEmpty
-              ? const Center(child: Text("商品が登録されていません"))
+          : _filteredProducts.isEmpty
+              ? const Center(child: Text("商品が見つかりません"))
               : ListView.builder(
-                  itemCount: _products.length,
+                  itemCount: _filteredProducts.length,
                   itemBuilder: (context, index) {
-                    final p = _products[index];
+                    final p = _filteredProducts[index];
                     return ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.inventory_2)),
                       title: Text(p.name),
-                      subtitle: Text("初期単価: ￥${p.defaultUnitPrice}"),
+                      subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(icon: const Icon(Icons.edit), onPressed: () => _addItem(product: p)),
+                          IconButton(icon: const Icon(Icons.edit), onPressed: () => _showEditDialog(product: p)),
                           IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () async {
-                              final confirm = await showDialog<bool>(
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            onPressed: () {
+                              showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text("削除確認"),
-                                  content: Text("「${p.name}」を削除しますか？"),
+                                  title: const Text("削除の確認"),
+                                  content: Text("${p.name}を削除してよろしいですか？"),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                                    TextButton(
+                                      onPressed: () async {
+                                        await _productRepo.deleteProduct(p.id);
+                                        Navigator.pop(context);
+                                        _loadProducts();
+                                      },
+                                      child: const Text("削除", style: TextStyle(color: Colors.red)),
+                                    ),
                                   ],
                                 ),
                               );
-                              if (confirm == true) {
-                                await _productRepo.deleteProduct(p.id);
-                                _loadProducts();
-                              }
                             },
                           ),
                         ],
@@ -156,9 +194,10 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addItem,
+        onPressed: () => _showEditDialog(),
         child: const Icon(Icons.add),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.blueGrey.shade800,
+        foregroundColor: Colors.white,
       ),
     );
   }

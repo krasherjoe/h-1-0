@@ -6,7 +6,11 @@ import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
+import '../services/company_repository.dart';
 import 'product_picker_modal.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import '../services/print_service.dart';
+import '../models/company_model.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
@@ -27,6 +31,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   String? _currentFilePath;
   final _invoiceRepo = InvoiceRepository();
   final _customerRepo = CustomerRepository();
+  final _companyRepo = CompanyRepository();
+  CompanyInfo? _companyInfo;
 
   @override
   void initState() {
@@ -37,6 +43,12 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     _notesController = TextEditingController(text: _currentInvoice.notes ?? "");
     _items = List.from(_currentInvoice.items);
     _isEditing = false;
+    _loadCompanyInfo();
+  }
+
+  Future<void> _loadCompanyInfo() async {
+    final info = await _companyRepo.getCompanyInfo();
+    setState(() => _companyInfo = info);
   }
 
   @override
@@ -127,6 +139,59 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     Share.share(csvData, subject: '請求書データ_CSV');
   }
 
+  Future<void> _printReceipt() async {
+    final printService = PrintService();
+    final isConnected = await printService.isConnected;
+    
+    if (!isConnected) {
+      final devices = await printService.getPairedDevices();
+      if (devices.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ペアリング済みのデバイスが見つかりません。OSの設定を確認してください。")));
+        return;
+      }
+      
+      final selected = await showDialog<BluetoothInfo>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("プリンターを選択"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: devices.length,
+              itemBuilder: (context, idx) => ListTile(
+                leading: const Icon(Icons.print),
+                title: Text(devices[idx].name ?? "Unknown Device"),
+                subtitle: Text(devices[idx].macAdress ?? ""),
+                onTap: () => Navigator.pop(context, devices[idx]),
+              ),
+            ),
+          ),
+        ),
+      );
+      
+      if (selected != null) {
+        final ok = await printService.connect(selected.macAdress!);
+        if (!ok) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("接続に失敗しました。")));
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+    
+    final success = await printService.printReceipt(_currentInvoice);
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("レシートを印刷しました。")));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("印刷エラーが発生しました。")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final amountFormatter = NumberFormat("#,###");
@@ -213,8 +278,20 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             Text(_currentInvoice.customer.department!, style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 4),
           Text("請求番号: ${_currentInvoice.invoiceNumber}"),
-          Text("発行日: ${dateFormatter.format(_currentInvoice.date)}"),
-          if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
+            Text("発行日: ${dateFormatter.format(_currentInvoice.date)}"),
+            if (_currentInvoice.latitude != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.blueGrey),
+                    const SizedBox(width: 4),
+                    Text("座標: ${_currentInvoice.latitude!.toStringAsFixed(4)}, ${_currentInvoice.longitude!.toStringAsFixed(4)}",
+                        style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                  ],
+                ),
+              ),
+            if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             Text("備考: ${_currentInvoice.notes}", style: const TextStyle(color: Colors.black87)),
           ]
@@ -290,9 +367,12 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         child: Column(
           children: [
             _SummaryRow("小計 (税抜)", formatter.format(subtotal)),
-            _SummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", formatter.format(tax)),
+            if (_companyInfo?.taxDisplayMode == 'normal')
+              _SummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", formatter.format(tax)),
+            if (_companyInfo?.taxDisplayMode == 'text_only')
+              _SummaryRow("消費税", "（税別）"),
             const Divider(),
-            _SummaryRow("合計 (税込)", "￥${formatter.format(total)}", isBold: true),
+            _SummaryRow("合計", "￥${formatter.format(total)}", isBold: true),
           ],
         ),
       ),
@@ -322,6 +402,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             icon: const Icon(Icons.share),
             label: const Text("共有"),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _printReceipt,
+            icon: const Icon(Icons.print),
+            label: const Text("レシート"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey.shade800, foregroundColor: Colors.white),
           ),
         ),
       ],

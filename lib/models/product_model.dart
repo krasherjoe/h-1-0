@@ -3,6 +3,8 @@ class Product {
   final String name;
   final int defaultUnitPrice;
   final String? barcode;
+  final String? category;
+  final int stockQuantity; // 追加
   final String? odooId;
 
   Product({
@@ -10,6 +12,8 @@ class Product {
     required this.name,
     this.defaultUnitPrice = 0,
     this.barcode,
+    this.category,
+    this.stockQuantity = 0, // 追加
     this.odooId,
   });
 
@@ -19,6 +23,8 @@ class Product {
       'name': name,
       'default_unit_price': defaultUnitPrice,
       'barcode': barcode,
+      'category': category,
+      'stock_quantity': stockQuantity, // 追加
       'odoo_id': odooId,
     };
   }
@@ -29,6 +35,8 @@ class Product {
       name: map['name'],
       defaultUnitPrice: map['default_unit_price'] ?? 0,
       barcode: map['barcode'],
+      category: map['category'],
+      stockQuantity: map['stock_quantity'] ?? 0, // 追加
       odooId: map['odoo_id'],
     );
   }

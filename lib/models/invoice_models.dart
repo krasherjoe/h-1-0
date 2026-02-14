@@ -3,12 +3,14 @@ import 'package:intl/intl.dart';
 
 class InvoiceItem {
   final String? id;
+  final String? productId; // 追加
   String description;
   int quantity;
   int unitPrice;
 
   InvoiceItem({
     this.id,
+    this.productId, // 追加
     required this.description,
     required this.quantity,
     required this.unitPrice,
@@ -20,6 +22,7 @@ class InvoiceItem {
     return {
       'id': id ?? DateTime.now().microsecondsSinceEpoch.toString(),
       'invoice_id': invoiceId,
+      'product_id': productId, // 追加
       'description': description,
       'quantity': quantity,
       'unit_price': unitPrice,
@@ -29,11 +32,19 @@ class InvoiceItem {
   factory InvoiceItem.fromMap(Map<String, dynamic> map) {
     return InvoiceItem(
       id: map['id'],
+      productId: map['product_id'], // 追加
       description: map['description'],
       quantity: map['quantity'],
       unitPrice: map['unit_price'],
     );
   }
+}
+
+enum DocumentType {
+  estimation, // 見積
+  delivery,   // 納品
+  invoice,    // 請求
+  receipt,    // 領収
 }
 
 class Invoice {
@@ -44,10 +55,13 @@ class Invoice {
   final String? notes;
   final String? filePath;
   final double taxRate;
-  final String? customerFormalNameSnapshot; // 追加
+  final DocumentType documentType; // 追加
+  final String? customerFormalNameSnapshot;
   final String? odooId;
   final bool isSynced;
   final DateTime updatedAt;
+  final double? latitude; // 追加
+  final double? longitude; // 追加
 
   Invoice({
     String? id,
@@ -56,21 +70,42 @@ class Invoice {
     required this.items,
     this.notes,
     this.filePath,
-    this.taxRate = 0.10, // デフォルト10%
-    this.customerFormalNameSnapshot, // 追加
+    this.taxRate = 0.10,
+    this.documentType = DocumentType.invoice, // デフォルト請求書
+    this.customerFormalNameSnapshot,
     this.odooId,
     this.isSynced = false,
     DateTime? updatedAt,
+    this.latitude, // 追加
+    this.longitude, // 追加
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         updatedAt = updatedAt ?? DateTime.now();
 
-  String get invoiceNumber => "INV-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
+  String get documentTypeName {
+    switch (documentType) {
+      case DocumentType.estimation: return "見積書";
+      case DocumentType.delivery: return "納品書";
+      case DocumentType.invoice: return "請求書";
+      case DocumentType.receipt: return "領収書";
+    }
+  }
+
+  String get invoiceNumberPrefix {
+    switch (documentType) {
+      case DocumentType.estimation: return "EST";
+      case DocumentType.delivery: return "DEL";
+      case DocumentType.invoice: return "INV";
+      case DocumentType.receipt: return "REC";
+    }
+  }
+
+  String get invoiceNumber => "$invoiceNumberPrefix-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
 
   // 表示用の宛名（スナップショットがあれば優先）
   String get customerNameForDisplay => customerFormalNameSnapshot ?? customer.formalName;
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
-  int get tax => (subtotal * taxRate).floor(); // taxRateを使用
+  int get tax => (subtotal * taxRate).floor();
   int get totalAmount => subtotal + tax;
 
   Map<String, dynamic> toMap() {
@@ -81,31 +116,15 @@ class Invoice {
       'notes': notes,
       'file_path': filePath,
       'total_amount': totalAmount,
-      'tax_rate': taxRate, // 追加
-      'customer_formal_name': customerFormalNameSnapshot ?? customer.formalName, // 追加
+      'tax_rate': taxRate,
+      'document_type': documentType.name, // 追加
+      'customer_formal_name': customerFormalNameSnapshot ?? customer.formalName,
       'odoo_id': odooId,
       'is_synced': isSynced ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
+      'latitude': latitude, // 追加
+      'longitude': longitude, // 追加
     };
-  }
-
-  // 注: fromMap には Customer オブジェクトが必要なため、
-  // リポジトリ層で構築することを想定し、ここでは factory は定義しません。
-
-  String toCsv() {
-    final dateFormatter = DateFormat('yyyy/MM/dd');
-    
-    StringBuffer buffer = StringBuffer();
-    buffer.writeln("日付,請求番号,取引先,合計金額,備考");
-    buffer.writeln("${dateFormatter.format(date)},$invoiceNumber,$customerNameForDisplay,$totalAmount,${notes ?? ""}");
-    buffer.writeln("");
-    buffer.writeln("品名,数量,単価,小計");
-    
-    for (var item in items) {
-      buffer.writeln("${item.description},${item.quantity},${item.unitPrice},${item.subtotal}");
-    }
-    
-    return buffer.toString();
   }
 
   Invoice copyWith({
@@ -116,10 +135,13 @@ class Invoice {
     String? notes,
     String? filePath,
     double? taxRate,
+    DocumentType? documentType,
     String? customerFormalNameSnapshot,
     String? odooId,
     bool? isSynced,
     DateTime? updatedAt,
+    double? latitude,
+    double? longitude,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -129,10 +151,25 @@ class Invoice {
       notes: notes ?? this.notes,
       filePath: filePath ?? this.filePath,
       taxRate: taxRate ?? this.taxRate,
+      documentType: documentType ?? this.documentType,
       customerFormalNameSnapshot: customerFormalNameSnapshot ?? this.customerFormalNameSnapshot,
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
+  }
+
+  String toCsv() {
+    final buffer = StringBuffer();
+    buffer.writeln('伝票種別,伝票番号,日付,取引先,合計金額,緯度,経度');
+    buffer.writeln('$documentTypeName,$invoiceNumber,${DateFormat('yyyy/MM/dd').format(date)},$customerNameForDisplay,$totalAmount,${latitude ?? ""},${longitude ?? ""}');
+    buffer.writeln('');
+    buffer.writeln('品名,数量,単価,小計');
+    for (var item in items) {
+      buffer.writeln('${item.description},${item.quantity},${item.unitPrice},${item.subtotal}');
+    }
+    return buffer.toString();
   }
 }

@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'product_master_screen.dart';
 import 'customer_master_screen.dart';
+import 'activity_log_screen.dart';
+import 'sales_report_screen.dart';
+import 'gps_history_screen.dart';
 
 class ManagementScreen extends StatelessWidget {
   const ManagementScreen({Key? key}) : super(key: key);
@@ -60,10 +64,31 @@ class ManagementScreen extends StatelessWidget {
           ),
           _buildMenuTile(
             context,
+            Icons.list_alt,
+            "アクティビティ履歴 (Git風)",
+            "データの作成・変更・削除の履歴を確認します",
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivityLogScreen())),
+          ),
+          _buildMenuTile(
+            context,
+            Icons.analytics_outlined,
+            "売上・資金管理レポート",
+            "売上や資金の流れを分析します", // Added subtitle
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SalesReportScreen())),
+          ),
+          _buildMenuTile(
+            context,
             Icons.settings_backup_restore,
             "データベース・リストア",
             "バックアップから全てのデータを復元します",
             () => _showComingSoon(context),
+          ),
+          _buildMenuTile(
+            context,
+            Icons.location_history,
+            "GPS座標履歴の管理",
+            "過去に取得した位置情報の履歴を確認します",
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const GpsHistoryScreen())),
           ),
           const Divider(),
           _buildSectionHeader("外部同期 (将来のOdoo連携)"),

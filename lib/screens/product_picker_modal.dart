@@ -16,18 +16,19 @@ class ProductPickerModal extends StatefulWidget {
 
 class _ProductPickerModalState extends State<ProductPickerModal> {
   final ProductRepository _productRepo = ProductRepository();
+  final TextEditingController _searchController = TextEditingController();
   List<Product> _products = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _onSearch(""); // 初期表示
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _onSearch(String val) async {
     setState(() => _isLoading = true);
-    final products = await _productRepo.getAllProducts();
+    final products = await _productRepo.searchProducts(val);
     setState(() {
       _products = products;
       _isLoading = false;
@@ -53,6 +54,25 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: "商品名・カテゴリ・バーコードで検索",
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () { _searchController.clear(); _onSearch(""); },
+                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+              onChanged: _onSearch,
+            ),
+          ),
+          const SizedBox(height: 8),
           const Divider(),
           Expanded(
             child: _isLoading
@@ -62,13 +82,13 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("商品マスターが空です"),
+                            const Text("商品が見つかりません"),
                             TextButton(
                               onPressed: () async {
                                 await Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen()));
-                                _loadProducts();
+                                _onSearch(_searchController.text);
                               },
-                              child: const Text("商品マスターを編集する"),
+                              child: const Text("マスターに追加する"),
                             ),
                           ],
                         ),
@@ -80,9 +100,10 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                           return ListTile(
                             leading: const Icon(Icons.inventory_2_outlined),
                             title: Text(product.name),
-                            subtitle: Text("初期単価: ￥${product.defaultUnitPrice}"),
+                            subtitle: Text("￥${product.defaultUnitPrice} (在庫: ${product.stockQuantity})"),
                             onTap: () => widget.onItemSelected(
                               InvoiceItem(
+                                productId: product.id,
                                 description: product.name,
                                 quantity: 1,
                                 unitPrice: product.defaultUnitPrice,
@@ -92,18 +113,6 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                         },
                       ),
           ),
-          if (_products.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextButton.icon(
-                icon: const Icon(Icons.edit),
-                label: const Text("商品マスターの管理"),
-                onPressed: () async {
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen()));
-                  _loadProducts();
-                },
-              ),
-            ),
         ],
       ),
     );

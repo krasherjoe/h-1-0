@@ -5,6 +5,7 @@ class CompanyInfo {
   final String? tel;
   final double defaultTaxRate;
   final String? sealPath; // 角印（印鑑）の画像パス
+  final String taxDisplayMode; // 'normal', 'hidden', 'text_only'
 
   CompanyInfo({
     required this.name,
@@ -13,6 +14,7 @@ class CompanyInfo {
     this.tel,
     this.defaultTaxRate = 0.10,
     this.sealPath,
+    this.taxDisplayMode = 'normal',
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +26,7 @@ class CompanyInfo {
       'tel': tel,
       'default_tax_rate': defaultTaxRate,
       'seal_path': sealPath,
+      'tax_display_mode': taxDisplayMode,
     };
   }
 
@@ -35,6 +38,7 @@ class CompanyInfo {
       tel: map['tel'],
       defaultTaxRate: map['default_tax_rate'] ?? 0.10,
       sealPath: map['seal_path'],
+      taxDisplayMode: map['tax_display_mode'] ?? 'normal',
     );
   }
 
@@ -45,6 +49,7 @@ class CompanyInfo {
     String? tel,
     double? defaultTaxRate,
     String? sealPath,
+    String? taxDisplayMode,
   }) {
     return CompanyInfo(
       name: name ?? this.name,
@@ -53,6 +58,7 @@ class CompanyInfo {
       tel: tel ?? this.tel,
       defaultTaxRate: defaultTaxRate ?? this.defaultTaxRate,
       sealPath: sealPath ?? this.sealPath,
+      taxDisplayMode: taxDisplayMode ?? this.taxDisplayMode,
     );
   }
 }

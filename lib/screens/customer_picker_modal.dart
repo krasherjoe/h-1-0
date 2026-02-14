@@ -28,26 +28,15 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
   @override
   void initState() {
     super.initState();
-    _loadCustomers();
+    _onSearch(""); // 初期表示
   }
 
-  Future<void> _loadCustomers() async {
+  Future<void> _onSearch(String query) async {
     setState(() => _isLoading = true);
-    final customers = await _repository.getAllCustomers();
+    final customers = await _repository.searchCustomers(query);
     setState(() {
-      _allCustomers = customers;
       _filteredCustomers = customers;
       _isLoading = false;
-    });
-  }
-
-  void _filterCustomers(String query) {
-    setState(() {
-      _searchQuery = query.toLowerCase();
-      _filteredCustomers = _allCustomers.where((customer) {
-        return customer.formalName.toLowerCase().contains(_searchQuery) ||
-            customer.displayName.toLowerCase().contains(_searchQuery);
-      }).toList();
     });
   }
 
@@ -149,7 +138,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
               
               await _repository.saveCustomer(updatedCustomer);
               Navigator.pop(context); // エディットダイアログを閉じる
-              _loadCustomers(); // リストを再読込
+              _onSearch(""); // リストを再読込
               
               // 保存のついでに選択状態にするなら以下を有効化（今回は明示的にリストから選ばせる）
               // widget.onCustomerSelected(updatedCustomer);
@@ -174,7 +163,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
             onPressed: () async {
               await _repository.deleteCustomer(customer.id);
               Navigator.pop(context);
-              _loadCustomers();
+              _onSearch("");
             },
             child: const Text("削除する", style: TextStyle(color: Colors.red)),
           ),
@@ -207,7 +196,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  onChanged: _filterCustomers,
+                  onChanged: _onSearch,
                 ),
                 const SizedBox(height: 12),
                 SizedBox(

@@ -2,9 +2,11 @@ import 'package:sqflite/sqflite.dart';
 import '../models/customer_model.dart';
 import 'database_helper.dart';
 import 'package:uuid/uuid.dart';
+import 'activity_log_repository.dart';
 
 class CustomerRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final ActivityLogRepository _logRepo = ActivityLogRepository();
 
   Future<List<Customer>> getAllCustomers() async {
     final db = await _dbHelper.database;
@@ -43,11 +45,29 @@ class CustomerRepository {
       customer.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    await _logRepo.logAction(
+      action: "SAVE_CUSTOMER",
+      targetType: "CUSTOMER",
+      targetId: customer.id,
+      details: "名称: ${customer.formalName}, 敬称: ${customer.title}",
+    );
   }
 
   Future<void> deleteCustomer(String id) async {
     final db = await _dbHelper.database;
-    await db.delete('customers', where: 'id = ?', whereArgs: [id]);
+    await db.delete(
+      'customers',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    await _logRepo.logAction(
+      action: "DELETE_CUSTOMER",
+      targetType: "CUSTOMER",
+      targetId: id,
+      details: "顧客を削除しました",
+    );
   }
 
   // GPS履歴の保存 (直近10件を自動管理)
@@ -85,5 +105,17 @@ class CustomerRepository {
       whereArgs: [customerId],
       orderBy: 'timestamp DESC',
     );
+  }
+
+  Future<List<Customer>> searchCustomers(String query) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'customers',
+      where: 'display_name LIKE ? OR formal_name LIKE ?',
+      whereArgs: ['%$query%', '%$query%'],
+      orderBy: 'display_name ASC',
+      limit: 50,
+    );
+    return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 }
