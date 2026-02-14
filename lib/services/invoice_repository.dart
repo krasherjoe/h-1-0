@@ -113,6 +113,7 @@ class InvoiceRepository {
         longitude: iMap['longitude'],
         terminalId: iMap['terminal_id'] ?? "T1",
         isDraft: (iMap['is_draft'] ?? 0) == 1,
+        subject: iMap['subject'],
       ));
     }
     return invoices;

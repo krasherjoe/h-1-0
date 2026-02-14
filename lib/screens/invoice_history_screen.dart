@@ -259,14 +259,26 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               backgroundColor: _isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200,
                               child: Icon(Icons.description_outlined, color: _isUnlocked ? Colors.indigo : Colors.grey),
                             ),
-                            title: Text(invoice.customerNameForDisplay),
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(invoice.customerNameForDisplay, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                if (invoice.subject?.isNotEmpty ?? false)
+                                  Text(
+                                    invoice.subject!,
+                                    style: TextStyle(fontSize: 13, color: Colors.indigo.shade700, fontWeight: FontWeight.normal),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
                             subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text("￥${amountFormatter.format(invoice.totalAmount)}", 
-                                     style: const TextStyle(fontWeight: FontWeight.bold)),
+                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                 if (invoice.isSynced)
                                   const Icon(Icons.sync, size: 16, color: Colors.green)
                                 else

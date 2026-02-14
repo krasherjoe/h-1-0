@@ -66,6 +66,7 @@ class Invoice {
   final double? longitude; // 追加
   final String terminalId; // 追加: 端末識別子
   final bool isDraft; // 追加: 下書きフラグ
+  final String? subject; // 追加: 案件名
 
   Invoice({
     String? id,
@@ -84,13 +85,14 @@ class Invoice {
     this.longitude, // 追加
     String? terminalId, // 追加
     this.isDraft = false, // 追加: デフォルトは通常
+    this.subject, // 追加: 案件
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         terminalId = terminalId ?? "T1", // デフォルト端末ID
         updatedAt = updatedAt ?? DateTime.now();
 
   /// 伝票内容から決定論的なハッシュを生成する (SHA256の一部)
   String get contentHash {
-    final input = "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
+    final input = "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${subject ?? ""}|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
     final bytes = utf8.encode(input);
     return sha256.convert(bytes).toString().substring(0, 8).toUpperCase();
   }
@@ -141,6 +143,7 @@ class Invoice {
       'terminal_id': terminalId, // 追加
       'content_hash': contentHash, // 追加
       'is_draft': isDraft ? 1 : 0, // 追加
+      'subject': subject, // 追加
     };
   }
 
@@ -161,6 +164,7 @@ class Invoice {
     double? longitude,
     String? terminalId,
     bool? isDraft,
+    String? subject,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -179,6 +183,7 @@ class Invoice {
       longitude: longitude ?? this.longitude,
       terminalId: terminalId ?? this.terminalId,
       isDraft: isDraft ?? this.isDraft,
+      subject: subject ?? this.subject,
     );
   }
 

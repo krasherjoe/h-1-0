@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 11;
+  static const _databaseVersion = 12;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -90,6 +90,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 11) {
       await db.execute('ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 12) {
+      await db.execute('ALTER TABLE invoices ADD COLUMN subject TEXT');
     }
   }
 

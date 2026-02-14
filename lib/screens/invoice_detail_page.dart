@@ -328,6 +328,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           Text("取引先:", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
           Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+          if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 8),
+            Text("件名: ${_currentInvoice.subject}", 
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigoAccent)),
+          ],
           if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
             Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 16, color: textColor)),
           if (_currentInvoice.latitude != null) ...[

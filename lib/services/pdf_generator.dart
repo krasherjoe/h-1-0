@@ -134,29 +134,41 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
         pw.SizedBox(height: 20),
 
         // 明細テーブル
-        pw.TableHelper.fromTextArray(
-          headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-          cellHeight: 30,
-          cellAlignments: {
-            0: pw.Alignment.centerLeft,
-            1: pw.Alignment.centerRight,
-            2: pw.Alignment.centerRight,
-            3: pw.Alignment.centerRight,
+        // 明細テーブル
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300),
+          columnWidths: {
+            0: const pw.FlexColumnWidth(4),
+            1: const pw.FixedColumnWidth(50),
+            2: const pw.FixedColumnWidth(80),
+            3: const pw.FixedColumnWidth(80),
           },
-          headers: ["品名 / 項目", "数量", "単価", "金額"],
-          data: List<List<String>>.generate(
-            invoice.items.length,
-            (index) {
-              final item = invoice.items[index];
-              return [
-                item.description,
-                item.quantity.toString(),
-                amountFormatter.format(item.unitPrice),
-                amountFormatter.format(item.subtotal),
-              ];
-            },
-          ),
+          children: [
+            // ヘッダー
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+              children: [
+                pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text("品名 / 項目", style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text("数量", style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text("単価", style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text("金額", style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+              ],
+            ),
+            // データ行
+            ...invoice.items.map((item) {
+              return pw.TableRow(
+                children: [
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(4),
+                    child: _parseMarkdown(item.description),
+                  ),
+                  pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(item.quantity.toString(), textAlign: pw.TextAlign.right)),
+                  pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(amountFormatter.format(item.unitPrice), textAlign: pw.TextAlign.right)),
+                  pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(amountFormatter.format(item.subtotal), textAlign: pw.TextAlign.right)),
+                ],
+              );
+            }),
+          ],
         ),
 
         // 計算内訳
@@ -239,8 +251,12 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
     final pdf = await buildInvoiceDocument(invoice);
 
     final String hash = invoice.contentHash;
-    final String timeStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    String fileName = "${invoice.invoiceNumberPrefix}_${invoice.terminalId}_${invoice.id.substring(invoice.id.length - 4)}_${timeStr}_$hash.pdf";
+    final String dateStr = DateFormat('yyyyMMdd').format(invoice.date);
+    final String amountStr = NumberFormat("#,###").format(invoice.totalAmount);
+    final String subjectStr = invoice.subject?.isNotEmpty == true ? "_${invoice.subject}" : "";
+    
+    // {日付}({タイプ}){顧客名}_{案件}_{金額}_{HASH下8桁}.pdf
+    String fileName = "${dateStr}(${invoice.documentTypeName})${invoice.customerNameForDisplay}${subjectStr}_${amountStr}円_$hash.pdf";
 
     final directory = await getExternalStorageDirectory();
     if (directory == null) return null;
@@ -277,4 +293,50 @@ pw.Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
       ],
     ),
   );
+}
+
+pw.Widget _parseMarkdown(String text) {
+  final lines = text.split('\n');
+  final List<pw.Widget> widgets = [];
+
+  for (final line in lines) {
+    String content = line;
+    pw.EdgeInsets padding = const pw.EdgeInsets.only(bottom: 2);
+    pw.Widget? prefix;
+
+    // 箇条書き / インデント
+    if (content.startsWith('* ') || content.startsWith('- ')) {
+      content = content.substring(2);
+      prefix = pw.Padding(padding: const pw.EdgeInsets.only(right: 4), child: pw.Text('•'));
+    } else if (content.startsWith('  ')) {
+      padding = padding.copyWith(left: 10);
+    }
+
+    // 太字 (**text**) - 簡易実装
+    final List<pw.TextSpan> spans = [];
+    final parts = content.split('**');
+    for (int i = 0; i < parts.length; i++) {
+      spans.add(pw.TextSpan(
+        text: parts[i],
+        style: i % 2 == 1 ? pw.TextStyle(fontWeight: pw.FontWeight.bold) : null,
+      ));
+    }
+
+    widgets.add(
+      pw.Padding(
+        padding: padding,
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (prefix != null) prefix,
+            pw.Expanded(
+              child: pw.RichText(text: pw.TextSpan(children: spans, style: const pw.TextStyle(fontSize: 10))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: widgets);
 }
