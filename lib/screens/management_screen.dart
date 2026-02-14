@@ -19,6 +19,7 @@ class ManagementScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text("マスター管理・同期"),
         backgroundColor: Colors.blueGrey,
       ),

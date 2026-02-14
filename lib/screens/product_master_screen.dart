@@ -125,6 +125,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text("商品マスター"),
         backgroundColor: Colors.blueGrey,
         bottom: PreferredSize(

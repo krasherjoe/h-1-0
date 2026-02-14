@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 10;
+  static const _databaseVersion = 11;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -88,6 +88,9 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE invoices ADD COLUMN terminal_id TEXT DEFAULT "T1"');
       await db.execute('ALTER TABLE invoices ADD COLUMN content_hash TEXT');
     }
+    if (oldVersion < 11) {
+      await db.execute('ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -151,6 +154,7 @@ class DatabaseHelper {
         longitude REAL,
         terminal_id TEXT DEFAULT "T1",
         content_hash TEXT,
+        is_draft INTEGER DEFAULT 0,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');

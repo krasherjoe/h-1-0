@@ -1,5 +1,5 @@
 // lib/main.dart
-// version: 1.5.01 (Update: SHA256 & Management Features)
+// version: 1.5.02 (Update: Date selection & Tax fix)
 import 'package:flutter/material.dart';
 
 // --- 独自モジュールのインポート ---
@@ -56,7 +56,8 @@ class _InvoiceFlowScreenState extends State<InvoiceFlowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("販売アシスト1号 V1.5.01"),
+        leading: const BackButton(),
+        title: const Text("販売アシスト1号 V1.5.02"),
         backgroundColor: Colors.blueGrey,
       ),
       drawer: Drawer(

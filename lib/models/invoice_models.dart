@@ -65,6 +65,7 @@ class Invoice {
   final double? latitude; // 追加
   final double? longitude; // 追加
   final String terminalId; // 追加: 端末識別子
+  final bool isDraft; // 追加: 下書きフラグ
 
   Invoice({
     String? id,
@@ -82,6 +83,7 @@ class Invoice {
     this.latitude, // 追加
     this.longitude, // 追加
     String? terminalId, // 追加
+    this.isDraft = false, // 追加: デフォルトは通常
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         terminalId = terminalId ?? "T1", // デフォルト端末ID
         updatedAt = updatedAt ?? DateTime.now();
@@ -138,6 +140,7 @@ class Invoice {
       'longitude': longitude, // 追加
       'terminal_id': terminalId, // 追加
       'content_hash': contentHash, // 追加
+      'is_draft': isDraft ? 1 : 0, // 追加
     };
   }
 
@@ -156,6 +159,8 @@ class Invoice {
     DateTime? updatedAt,
     double? latitude,
     double? longitude,
+    String? terminalId,
+    bool? isDraft,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -172,6 +177,8 @@ class Invoice {
       updatedAt: updatedAt ?? this.updatedAt,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      terminalId: terminalId ?? this.terminalId,
+      isDraft: isDraft ?? this.isDraft,
     );
   }
 

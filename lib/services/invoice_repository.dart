@@ -65,6 +65,10 @@ class InvoiceRepository {
     );
   }
 
+  Future<void> updateInvoice(Invoice invoice) async {
+    await saveInvoice(invoice);
+  }
+
   Future<List<Invoice>> getAllInvoices(List<Customer> customers) async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> invoiceMaps = await db.query('invoices', orderBy: 'date DESC');
@@ -108,6 +112,7 @@ class InvoiceRepository {
         latitude: iMap['latitude'],
         longitude: iMap['longitude'],
         terminalId: iMap['terminal_id'] ?? "T1",
+        isDraft: (iMap['is_draft'] ?? 0) == 1,
       ));
     }
     return invoices;

@@ -33,6 +33,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _includeTax = true;
   CompanyInfo? _companyInfo;
   DocumentType _documentType = DocumentType.invoice; // 追加
+  DateTime _selectedDate = DateTime.now(); // 追加: 伝票日付
+  bool _isDraft = false; // 追加: 下書きモード
   String _status = "取引先と商品を入力してください";
   
   // 署名用の実験的パス
@@ -96,7 +98,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     final invoice = Invoice(
       customer: _selectedCustomer!,
-      date: DateTime.now(),
+      date: _selectedDate, // 修正
       items: _items,
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
@@ -126,7 +128,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (_selectedCustomer == null) return;
     final invoice = Invoice(
       customer: _selectedCustomer!,
-      date: DateTime.now(),
+      date: _selectedDate, // 修正
       items: _items,
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
@@ -168,32 +170,46 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
+    final themeColor = _isDraft ? Colors.blueGrey.shade800 : Colors.white;
+    final textColor = _isDraft ? Colors.white : Colors.black87;
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDocumentTypeSection(), // 追加
-                const SizedBox(height: 16),
-                _buildCustomerSection(),
-                const SizedBox(height: 20),
-                _buildItemsSection(fmt),
-                const SizedBox(height: 20),
-                _buildExperimentalSection(),
-                const SizedBox(height: 20),
-                _buildSummarySection(fmt),
-                const SizedBox(height: 20),
-                _buildSignatureSection(),
-              ],
+    return Scaffold(
+      backgroundColor: themeColor,
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text(_isDraft ? "伝票作成 (下書きモード)" : "販売アシスト1号 V1.5.02"),
+        backgroundColor: _isDraft ? Colors.black87 : Colors.blueGrey,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDraftToggle(), // 追加
+                  const SizedBox(height: 16),
+                  _buildDocumentTypeSection(),
+                  const SizedBox(height: 16),
+                  _buildDateSection(),
+                  const SizedBox(height: 16),
+                  _buildCustomerSection(),
+                  const SizedBox(height: 20),
+                  _buildItemsSection(fmt),
+                  const SizedBox(height: 20),
+                  _buildExperimentalSection(),
+                  const SizedBox(height: 20),
+                  _buildSummarySection(fmt),
+                  const SizedBox(height: 20),
+                  _buildSignatureSection(),
+                ],
+              ),
             ),
           ),
-        ),
-        _buildBottomActionBar(),
-      ],
+          _buildBottomActionBar(),
+        ],
+      ),
     );
   }
 
@@ -238,6 +254,32 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildDateSection() {
+    final fmt = DateFormat('yyyy年MM月dd日');
+    return Card(
+      elevation: 0,
+      color: Colors.blueGrey.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: const Icon(Icons.calendar_today, color: Colors.blueGrey),
+        title: Text("伝票日付: ${fmt.format(_selectedDate)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: const Text("タップして日付を変更"),
+        trailing: const Icon(Icons.edit, size: 20),
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: _selectedDate,
+            firstDate: DateTime(2020),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+          );
+          if (picked != null) {
+            setState(() => _selectedDate = picked);
+          }
+        },
       ),
     );
   }
@@ -469,6 +511,34 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDraftToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _isDraft ? Colors.black26 : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _isDraft ? Colors.orangeAccent : Colors.orange, width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(_isDraft ? Icons.drafts : Icons.check_circle, color: Colors.orange),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _isDraft ? "下書きモード設定中" : "正式発行モード",
+              style: TextStyle(fontWeight: FontWeight.bold, color: _isDraft ? Colors.white : Colors.orange.shade900),
+            ),
+          ),
+          Switch(
+            value: _isDraft,
+            activeColor: Colors.orangeAccent,
+            onChanged: (val) => setState(() => _isDraft = val),
+          ),
+        ],
       ),
     );
   }

@@ -234,7 +234,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           SlideToUnlock(
             isLocked: !_isUnlocked,
             onUnlocked: _toggleUnlock,
-            text: "スライドして編集モード解除",
+            text: "スライドでロック解除",
           ),
           Expanded(
             child: _isLoading
