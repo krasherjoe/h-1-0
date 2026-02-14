@@ -19,9 +19,16 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'gemi_invoice.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT 0.10');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -72,6 +79,7 @@ class DatabaseHelper {
         notes TEXT,
         file_path TEXT,
         total_amount INTEGER,
+        tax_rate REAL DEFAULT 0.10,
         odoo_id TEXT,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT NOT NULL,

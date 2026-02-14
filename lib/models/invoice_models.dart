@@ -43,6 +43,7 @@ class Invoice {
   final List<InvoiceItem> items;
   final String? notes;
   final String? filePath;
+  final double taxRate; // 追加
   final String? odooId;
   final bool isSynced;
   final DateTime updatedAt;
@@ -54,6 +55,7 @@ class Invoice {
     required this.items,
     this.notes,
     this.filePath,
+    this.taxRate = 0.10, // デフォルト10%
     this.odooId,
     this.isSynced = false,
     DateTime? updatedAt,
@@ -63,7 +65,7 @@ class Invoice {
   String get invoiceNumber => "INV-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
-  int get tax => (subtotal * 0.1).floor();
+  int get tax => (subtotal * taxRate).floor(); // taxRateを使用
   int get totalAmount => subtotal + tax;
 
   Map<String, dynamic> toMap() {
@@ -74,6 +76,7 @@ class Invoice {
       'notes': notes,
       'file_path': filePath,
       'total_amount': totalAmount,
+      'tax_rate': taxRate, // 追加
       'odoo_id': odooId,
       'is_synced': isSynced ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
@@ -106,6 +109,7 @@ class Invoice {
     List<InvoiceItem>? items,
     String? notes,
     String? filePath,
+    double? taxRate,
     String? odooId,
     bool? isSynced,
     DateTime? updatedAt,
@@ -117,6 +121,7 @@ class Invoice {
       items: items ?? List.from(this.items),
       notes: notes ?? this.notes,
       filePath: filePath ?? this.filePath,
+      taxRate: taxRate ?? this.taxRate,
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -6,6 +6,7 @@ import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'invoice_detail_page.dart';
 import 'management_screen.dart';
+import '../widgets/slide_to_unlock.dart';
 import '../main.dart'; // InvoiceFlowScreen 用
 
 class InvoiceHistoryScreen extends StatefulWidget {
@@ -73,9 +74,11 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     setState(() {
       _isUnlocked = !_isUnlocked;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_isUnlocked ? "編集プロテクトを解除しました" : "編集プロテクトを有効にしました")),
-    );
+    if (!_isUnlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("編集プロテクトを有効にしました")),
+      );
+    }
   }
 
   @override
@@ -88,11 +91,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         title: const Text("伝票マスター一覧"),
         backgroundColor: _isUnlocked ? Colors.blueGrey : Colors.blueGrey.shade800,
         actions: [
-          IconButton(
-            icon: Icon(_isUnlocked ? Icons.lock_open : Icons.lock, color: _isUnlocked ? Colors.orangeAccent : Colors.white70),
-            onPressed: _toggleUnlock,
-            tooltip: _isUnlocked ? "プロテクトする" : "アンロックする",
-          ),
+          if (_isUnlocked)
+            IconButton(
+              icon: const Icon(Icons.lock_open, color: Colors.orangeAccent),
+              onPressed: _toggleUnlock,
+              tooltip: "再度プロテクトする",
+            ),
           IconButton(
             icon: const Icon(Icons.sort),
             onPressed: () {
@@ -206,86 +210,97 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _filteredInvoices.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      Text(_searchQuery.isEmpty ? "保存された伝票がありません" : "該当する伝票が見つかりません"),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: _filteredInvoices.length,
-                  itemBuilder: (context, index) {
-                    final invoice = _filteredInvoices[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: _isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200,
-                        child: Icon(Icons.description_outlined, color: _isUnlocked ? Colors.indigo : Colors.grey),
-                      ),
-                      title: Text(invoice.customer.formalName),
-                      subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text("￥${amountFormatter.format(invoice.totalAmount)}", 
-                               style: const TextStyle(fontWeight: FontWeight.bold)),
-                          if (invoice.isSynced)
-                            const Icon(Icons.sync, size: 16, color: Colors.green)
-                          else
-                            const Icon(Icons.sync_disabled, size: 16, color: Colors.orange),
-                        ],
-                      ),
-                      onTap: () async {
-                        if (!_isUnlocked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("詳細の閲覧・編集にはアンロックが必要です"), duration: Duration(seconds: 1)),
+      body: Column(
+        children: [
+          SlideToUnlock(
+            isLocked: !_isUnlocked,
+            onUnlocked: _toggleUnlock,
+            text: "スライドして編集モード解除",
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredInvoices.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            Text(_searchQuery.isEmpty ? "保存された伝票がありません" : "該当する伝票が見つかりません"),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _filteredInvoices.length,
+                        itemBuilder: (context, index) {
+                          final invoice = _filteredInvoices[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: _isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200,
+                              child: Icon(Icons.description_outlined, color: _isUnlocked ? Colors.indigo : Colors.grey),
+                            ),
+                            title: Text(invoice.customer.formalName),
+                            subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text("￥${amountFormatter.format(invoice.totalAmount)}", 
+                                     style: const TextStyle(fontWeight: FontWeight.bold)),
+                                if (invoice.isSynced)
+                                  const Icon(Icons.sync, size: 16, color: Colors.green)
+                                else
+                                  const Icon(Icons.sync_disabled, size: 16, color: Colors.orange),
+                              ],
+                            ),
+                            onTap: () async {
+                              if (!_isUnlocked) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("詳細の閲覧・編集にはアンロックが必要です"), duration: Duration(seconds: 1)),
+                                );
+                                return;
+                              }
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => InvoiceDetailPage(invoice: invoice),
+                                ),
+                              );
+                              _loadData(); // 戻ってきたら再読込
+                            },
+                            onLongPress: () async {
+                              if (!_isUnlocked) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("削除するにはアンロックが必要です")),
+                                );
+                                return;
+                              }
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text("伝票の削除"),
+                                  content: Text("「${invoice.customer.formalName}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text("削除", style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await _invoiceRepo.deleteInvoice(invoice.id);
+                                _loadData();
+                              }
+                            },
                           );
-                          return;
-                        }
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => InvoiceDetailPage(invoice: invoice),
-                          ),
-                        );
-                        _loadData(); // 戻ってきたら再読込
-                      },
-                      onLongPress: () async {
-                        if (!_isUnlocked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("削除するにはアンロックが必要です")),
-                          );
-                          return;
-                        }
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("伝票の削除"),
-                            content: Text("「${invoice.customer.formalName}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text("削除", style: TextStyle(color: Colors.red)),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          await _invoiceRepo.deleteInvoice(invoice.id);
-                          _loadData();
-                        }
-                      },
-                    );
-                  },
-                ),
+                        },
+                      ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.push(

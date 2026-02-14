@@ -133,7 +133,7 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
                   children: [
                     pw.SizedBox(height: 10),
                     _buildSummaryRow("小計 (税抜)", amountFormatter.format(invoice.subtotal)),
-                    _buildSummaryRow("消費税 (10%)", amountFormatter.format(invoice.tax)),
+                    _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
                     pw.Divider(),
                     _buildSummaryRow("合計", "￥${amountFormatter.format(invoice.totalAmount)}", isBold: true),
                   ],

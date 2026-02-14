@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/invoice_models.dart';
+import '../models/product_model.dart';
+import '../services/product_repository.dart';
+import 'product_master_screen.dart';
 
 /// 商品マスターから項目を選択するためのモーダル（スタブ実装）
 class ProductPickerModal extends StatefulWidget {
@@ -12,14 +15,24 @@ class ProductPickerModal extends StatefulWidget {
 }
 
 class _ProductPickerModalState extends State<ProductPickerModal> {
-  // 本来はデータベースから取得しますが、現時点ではスタブデータを表示します
-  final List<InvoiceItem> _masterProducts = [
-    InvoiceItem(description: "技術料", quantity: 1, unitPrice: 50000),
-    InvoiceItem(description: "部品代 A", quantity: 1, unitPrice: 15000),
-    InvoiceItem(description: "部品代 B", quantity: 1, unitPrice: 3000),
-    InvoiceItem(description: "出張費", quantity: 1, unitPrice: 10000),
-    InvoiceItem(description: "諸経費", quantity: 1, unitPrice: 5000),
-  ];
+  final ProductRepository _productRepo = ProductRepository();
+  List<Product> _products = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() => _isLoading = true);
+    final products = await _productRepo.getAllProducts();
+    setState(() {
+      _products = products;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,19 +55,55 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
           ),
           const Divider(),
           Expanded(
-            child: ListView.builder(
-              itemCount: _masterProducts.length,
-              itemBuilder: (context, index) {
-                final product = _masterProducts[index];
-                return ListTile(
-                  leading: const Icon(Icons.inventory_2_outlined),
-                  title: Text(product.description),
-                  subtitle: Text("単価: ￥${product.unitPrice}"),
-                  onTap: () => widget.onItemSelected(product),
-                );
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _products.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("商品マスターが空です"),
+                            TextButton(
+                              onPressed: () async {
+                                await Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen()));
+                                _loadProducts();
+                              },
+                              child: const Text("商品マスターを編集する"),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _products.length,
+                        itemBuilder: (context, index) {
+                          final product = _products[index];
+                          return ListTile(
+                            leading: const Icon(Icons.inventory_2_outlined),
+                            title: Text(product.name),
+                            subtitle: Text("初期単価: ￥${product.defaultUnitPrice}"),
+                            onTap: () => widget.onItemSelected(
+                              InvoiceItem(
+                                description: product.name,
+                                quantity: 1,
+                                unitPrice: product.defaultUnitPrice,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
           ),
+          if (_products.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextButton.icon(
+                icon: const Icon(Icons.edit),
+                label: const Text("商品マスターの管理"),
+                onPressed: () async {
+                  await Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen()));
+                  _loadProducts();
+                },
+              ),
+            ),
         ],
       ),
     );

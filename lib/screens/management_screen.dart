@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../models/invoice_models.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
+import 'product_master_screen.dart';
 
 class ManagementScreen extends StatelessWidget {
   const ManagementScreen({Key? key}) : super(key: key);
@@ -20,6 +21,13 @@ class ManagementScreen extends StatelessWidget {
       body: ListView(
         children: [
           _buildSectionHeader("データ入出力"),
+          _buildMenuTile(
+            context,
+            Icons.inventory_2,
+            "商品マスター管理",
+            "販売商品の名称や単価を管理します",
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen())),
+          ),
           _buildMenuTile(
             context,
             Icons.upload_file,

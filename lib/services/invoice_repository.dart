@@ -59,6 +59,7 @@ class InvoiceRepository {
         items: items,
         notes: iMap['notes'],
         filePath: iMap['file_path'],
+        taxRate: iMap['tax_rate'] ?? 0.10, // 追加
         odooId: iMap['odoo_id'],
         isSynced: iMap['is_synced'] == 1,
         updatedAt: DateTime.parse(iMap['updated_at']),

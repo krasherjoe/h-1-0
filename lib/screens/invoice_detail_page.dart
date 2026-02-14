@@ -276,16 +276,21 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   Widget _buildSummarySection(NumberFormat formatter) {
+    final double currentTaxRate = _isEditing ? _currentInvoice.taxRate : _currentInvoice.taxRate; // 編集時も元の税率を維持
+    final int subtotal = _isEditing ? _calculateCurrentSubtotal() : _currentInvoice.subtotal;
+    final int tax = (subtotal * currentTaxRate).floor();
+    final int total = subtotal + tax;
+
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
         width: 200,
         child: Column(
           children: [
-            _SummaryRow("小計 (税抜)", formatter.format(_isEditing ? _calculateCurrentSubtotal() : _currentInvoice.subtotal)),
-            _SummaryRow("消費税 (10%)", formatter.format(_isEditing ? (_calculateCurrentSubtotal() * 0.1).floor() : _currentInvoice.tax)),
+            _SummaryRow("小計 (税抜)", formatter.format(subtotal)),
+            _SummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", formatter.format(tax)),
             const Divider(),
-            _SummaryRow("合計 (税込)", "￥${formatter.format(_isEditing ? (_calculateCurrentSubtotal() * 1.1).floor() : _currentInvoice.totalAmount)}", isBold: true),
+            _SummaryRow("合計 (税込)", "￥${formatter.format(total)}", isBold: true),
           ],
         ),
       ),
