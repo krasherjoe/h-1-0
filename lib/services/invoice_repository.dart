@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/invoice_models.dart';
 import '../models/customer_model.dart';
+import '../models/customer_contact.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 
@@ -17,6 +18,19 @@ class InvoiceRepository {
     final Invoice toSave = invoice.isDraft ? invoice : invoice.copyWith(isLocked: true);
 
     await db.transaction((txn) async {
+      // 最新の連絡先をスナップショットする（なければ空）
+      CustomerContact? activeContact;
+      final contactRows = await txn.query('customer_contacts', where: 'customer_id = ? AND is_active = 1', whereArgs: [invoice.customer.id]);
+      if (contactRows.isNotEmpty) {
+        activeContact = CustomerContact.fromMap(contactRows.first);
+      }
+      final Invoice savingWithContact = toSave.copyWith(
+        contactVersionId: activeContact?.version,
+        contactEmailSnapshot: activeContact?.email,
+        contactTelSnapshot: activeContact?.tel,
+        contactAddressSnapshot: activeContact?.address,
+      );
+
       // 在庫の調整（更新の場合、以前の数量を戻してから新しい数量を引く）
       final List<Map<String, dynamic>> oldItems = await txn.query(
         'invoice_items',
@@ -37,7 +51,7 @@ class InvoiceRepository {
       // 伝票ヘッダーの保存
       await txn.insert(
         'invoices',
-        toSave.toMap(),
+        savingWithContact.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
@@ -126,6 +140,10 @@ class InvoiceRepository {
         isDraft: (iMap['is_draft'] ?? 0) == 1,
         subject: iMap['subject'],
         isLocked: (iMap['is_locked'] ?? 0) == 1,
+        contactVersionId: iMap['contact_version_id'],
+        contactEmailSnapshot: iMap['contact_email_snapshot'],
+        contactTelSnapshot: iMap['contact_tel_snapshot'],
+        contactAddressSnapshot: iMap['contact_address_snapshot'],
       ));
     }
     return invoices;

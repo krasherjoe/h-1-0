@@ -3,6 +3,9 @@ import 'invoice_input_screen.dart'; // Add this line
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:printing/printing.dart';
+import 'dart:typed_data';
+import '../widgets/invoice_pdf_preview_page.dart';
 import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
@@ -34,6 +37,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final _customerRepo = CustomerRepository();
   final _companyRepo = CompanyRepository();
   CompanyInfo? _companyInfo;
+  bool _showFormalWarning = true;
 
   @override
   void initState() {
@@ -147,8 +151,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
     final isDraft = _currentInvoice.isDraft;
-    final themeColor = isDraft ? Colors.blueGrey.shade800 : Colors.white;
-    final textColor = isDraft ? Colors.white : Colors.black87;
+    final themeColor = Colors.white; // 常に明色
+    final textColor = Colors.black87;
 
     final locked = _currentInvoice.isLocked;
 
@@ -156,23 +160,36 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       backgroundColor: themeColor,
       appBar: AppBar(
         leading: const BackButton(), // 常に表示
-        title: Text(isDraft ? "伝票詳細 (下書き)" : "販売アシスト1号 伝票詳細"),
-        backgroundColor: isDraft ? Colors.black87 : Colors.blueGrey,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                isDraft ? "伝票詳細" : "販売アシスト1号 伝票詳細",
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isDraft)
+              Chip(
+                label: const Text("下書き", style: TextStyle(color: Colors.white)),
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.zero,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+          ],
+        ),
+        backgroundColor: Colors.indigo.shade700,
         actions: [
           if (locked)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               child: Chip(
-                label: const Text("ロック中", style: TextStyle(color: Colors.white)),
+                label: const Text("確定済み", style: TextStyle(color: Colors.white)),
                 avatar: const Icon(Icons.lock, size: 16, color: Colors.white),
                 backgroundColor: Colors.redAccent,
               ),
-            ),
-          if (isDraft && !_isEditing)
-            TextButton.icon(
-              icon: const Icon(Icons.check_circle_outline, color: Colors.orangeAccent),
-              label: const Text("正式発行", style: TextStyle(color: Colors.orangeAccent)),
-              onPressed: _showPromoteDialog,
             ),
           if (!_isEditing) ...[
             IconButton(icon: const Icon(Icons.grid_on), onPressed: _exportCsv, tooltip: "CSV出力"),
@@ -198,34 +215,31 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   );
                 },
               ),
-            if (widget.isUnlocked && !locked)
-              IconButton(
-                icon: const Icon(Icons.edit_note),
-                tooltip: "詳細編集",
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => InvoiceInputForm(
-                        onInvoiceGenerated: (inv, path) {},
-                        existingInvoice: _currentInvoice,
-                      ),
-                    ),
-                  );
-                  final repo = InvoiceRepository();
-                  final customerRepo = CustomerRepository();
-                  final customers = await customerRepo.getAllCustomers();
-                  final updated = (await repo.getAllInvoices(customers)).firstWhere((i) => i.id == _currentInvoice.id, orElse: () => _currentInvoice);
-                  setState(() => _currentInvoice = updated);
-                },
-              ),
+            IconButton(
+              icon: const Icon(Icons.edit_note, color: Colors.white),
+              tooltip: locked
+                  ? "ロック中"
+                  : (widget.isUnlocked ? "詳細編集" : "アンロックして編集"),
+              onPressed: (locked || !widget.isUnlocked)
+                  ? null
+                  : () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => InvoiceInputForm(
+                            onInvoiceGenerated: (inv, path) {},
+                            existingInvoice: _currentInvoice,
+                          ),
+                        ),
+                      );
+                      final repo = InvoiceRepository();
+                      final customerRepo = CustomerRepository();
+                      final customers = await customerRepo.getAllCustomers();
+                      final updated = (await repo.getAllInvoices(customers)).firstWhere((i) => i.id == _currentInvoice.id, orElse: () => _currentInvoice);
+                      setState(() => _currentInvoice = updated);
+                    },
+            ),
           ] else ...[
-            if (isDraft)
-              TextButton.icon(
-                icon: const Icon(Icons.check_circle_outline, color: Colors.orangeAccent),
-                label: const Text("正式発行", style: TextStyle(color: Colors.orangeAccent)),
-                onPressed: _showPromoteDialog,
-              ),
             IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
             IconButton(icon: const Icon(Icons.cancel), onPressed: () => setState(() => _isEditing = false)),
           ]
@@ -236,6 +250,29 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (isDraft)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.edit_note, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "下書き: 未確定・PDFは正式発行で確定",
+                        style: TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             _buildHeaderSection(textColor),
             if (_isEditing) ...[
               const SizedBox(height: 16),
@@ -243,7 +280,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               const SizedBox(height: 16),
               _buildExperimentalSection(isDraft),
             ],
-            Divider(height: 32, color: isDraft ? Colors.white70 : Colors.grey),
+            Divider(height: 32, color: Colors.grey.shade400),
             Text("明細一覧", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
             const SizedBox(height: 8),
             _buildItemTable(fmt, textColor, isDraft),
@@ -333,22 +370,12 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           ],
           if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
             Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 16, color: textColor)),
-          if (_currentInvoice.latitude != null) ...[
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_on, size: 14, color: Colors.blueGrey),
-                  const SizedBox(width: 4),
-                  Text(
-                    "座標: ${_currentInvoice.latitude!.toStringAsFixed(4)}, ${_currentInvoice.longitude!.toStringAsFixed(4)}",
-                    style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          if ((_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address) != null)
+            Text("住所: ${_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address}", style: TextStyle(color: textColor)),
+          if ((_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel) != null)
+            Text("TEL: ${_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel}", style: TextStyle(color: textColor)),
+          if ((_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email) != null)
+            Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
           if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
             Text("備考: ${_currentInvoice.notes}", style: TextStyle(color: textColor.withOpacity(0.9))),
@@ -498,12 +525,20 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   Widget _buildFooterActions() {
-    if (_isEditing || _currentFilePath == null) return const SizedBox();
+    if (_isEditing) return const SizedBox();
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _openPdf,
+            onPressed: _previewPdf,
+            icon: const Icon(Icons.picture_as_pdf),
+            label: const Text("PDFプレビュー"),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _currentFilePath != null ? _openPdf : null,
             icon: const Icon(Icons.launch),
             label: const Text("PDFを開く"),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
@@ -512,7 +547,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _sharePdf,
+            onPressed: _currentFilePath != null ? _sharePdf : null,
             icon: const Icon(Icons.share),
             label: const Text("共有"),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
@@ -523,19 +558,54 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   Future<void> _showPromoteDialog() async {
+    bool showWarning = _showFormalWarning;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("正式発行"),
-        content: const Text("この下書き伝票を「確定」として正式に発行しますか？\n(下書きモードが解除され、通常の背景に戻ります)"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text("正式発行する"),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text("正式発行"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("この下書き伝票を「確定」として正式に発行しますか？"),
+                const SizedBox(height: 8),
+                if (showWarning)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.redAccent, width: 1),
+                    ),
+                    child: const Text(
+                      "確定すると暗号チェーンシステムに組み込まれ、二度と編集できません。内容を最終確認のうえ実行してください。",
+                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text("警告文を表示"),
+                  value: showWarning,
+                  onChanged: (val) {
+                    setStateDialog(() => showWarning = val);
+                    setState(() => _showFormalWarning = val);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text("正式発行する"),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -582,6 +652,32 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     if (_currentFilePath != null) {
       await Share.shareXFiles([XFile(_currentFilePath!)], text: '請求書送付');
     }
+  }
+
+  Future<Uint8List> _buildPdfBytes() async {
+    final doc = await buildInvoiceDocument(_currentInvoice);
+    return Uint8List.fromList(await doc.save());
+  }
+
+  Future<void> _previewPdf() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InvoicePdfPreviewPage(
+          invoice: _currentInvoice,
+          isUnlocked: widget.isUnlocked,
+          isLocked: _currentInvoice.isLocked,
+          allowFormalIssue: true,
+          onFormalIssue: () async {
+            await _showPromoteDialog();
+            return !_currentInvoice.isDraft;
+          },
+          showShare: true,
+          showEmail: true,
+          showPrint: true,
+        ),
+      ),
+    );
   }
 }
 

@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 15;
+  static const _databaseVersion = 17;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -105,6 +105,45 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'customers', 'is_locked INTEGER DEFAULT 0');
       await _safeAddColumn(db, 'products', 'is_locked INTEGER DEFAULT 0');
     }
+    if (oldVersion < 16) {
+      await db.execute('''
+        CREATE TABLE customer_contacts (
+          id TEXT PRIMARY KEY,
+          customer_id TEXT NOT NULL,
+          email TEXT,
+          tel TEXT,
+          address TEXT,
+          version INTEGER NOT NULL,
+          is_active INTEGER DEFAULT 1,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)');
+
+      // 既存顧客の連絡先を初期バージョンとしてコピー
+      final existing = await db.query('customers');
+      final now = DateTime.now().toIso8601String();
+      for (final row in existing) {
+        final contactId = "${row['id']}_v1";
+        await db.insert('customer_contacts', {
+          'id': contactId,
+          'customer_id': row['id'],
+          'email': null,
+          'tel': row['tel'],
+          'address': row['address'],
+          'version': 1,
+          'is_active': 1,
+          'created_at': now,
+        });
+      }
+    }
+    if (oldVersion < 17) {
+      await _safeAddColumn(db, 'invoices', 'contact_version_id INTEGER');
+      await _safeAddColumn(db, 'invoices', 'contact_email_snapshot TEXT');
+      await _safeAddColumn(db, 'invoices', 'contact_tel_snapshot TEXT');
+      await _safeAddColumn(db, 'invoices', 'contact_address_snapshot TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -134,6 +173,21 @@ class DatabaseHelper {
         FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE customer_contacts (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL,
+        email TEXT,
+        tel TEXT,
+        address TEXT,
+        version INTEGER NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)');
 
     // 商品マスター
     await db.execute('''
@@ -173,6 +227,10 @@ class DatabaseHelper {
         content_hash TEXT,
         is_draft INTEGER DEFAULT 0,
         is_locked INTEGER DEFAULT 0,
+        contact_version_id INTEGER,
+        contact_email_snapshot TEXT,
+        contact_tel_snapshot TEXT,
+        contact_address_snapshot TEXT,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');

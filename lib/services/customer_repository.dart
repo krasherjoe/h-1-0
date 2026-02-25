@@ -3,6 +3,7 @@ import '../models/customer_model.dart';
 import 'database_helper.dart';
 import 'package:uuid/uuid.dart';
 import 'activity_log_repository.dart';
+import '../models/customer_contact.dart';
 
 class CustomerRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -10,13 +11,18 @@ class CustomerRepository {
 
   Future<List<Customer>> getAllCustomers() async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('customers', orderBy: 'display_name ASC');
-    
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
+      FROM customers c
+      LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
+      ORDER BY c.display_name ASC
+    ''');
+
     if (maps.isEmpty) {
       await _generateSampleCustomers();
       return getAllCustomers(); // 再帰的に読み込み
     }
-    
+
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 
@@ -40,11 +46,14 @@ class CustomerRepository {
 
   Future<void> saveCustomer(Customer customer) async {
     final db = await _dbHelper.database;
-    await db.insert(
-      'customers',
-      customer.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      await txn.insert(
+        'customers',
+        customer.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _upsertActiveContact(txn, customer);
+    });
 
     await _logRepo.logAction(
       action: "SAVE_CUSTOMER",
@@ -109,13 +118,67 @@ class CustomerRepository {
 
   Future<List<Customer>> searchCustomers(String query) async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'customers',
-      where: 'display_name LIKE ? OR formal_name LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
-      orderBy: 'display_name ASC',
-      limit: 50,
-    );
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
+      FROM customers c
+      LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
+      WHERE c.display_name LIKE ? OR c.formal_name LIKE ?
+      ORDER BY c.display_name ASC
+      LIMIT 50
+    ''', ['%$query%', '%$query%']);
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
+  }
+
+  Future<void> updateContact({required String customerId, String? email, String? tel, String? address}) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final nextVersion = await _nextContactVersion(txn, customerId);
+      await txn.update('customer_contacts', {'is_active': 0}, where: 'customer_id = ?', whereArgs: [customerId]);
+      await txn.insert('customer_contacts', {
+        'id': const Uuid().v4(),
+        'customer_id': customerId,
+        'email': email,
+        'tel': tel,
+        'address': address,
+        'version': nextVersion,
+        'is_active': 1,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    });
+
+    await _logRepo.logAction(
+      action: "UPDATE_CUSTOMER_CONTACT",
+      targetType: "CUSTOMER",
+      targetId: customerId,
+      details: "連絡先を更新 (version up)",
+    );
+  }
+
+  Future<CustomerContact?> getActiveContact(String customerId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('customer_contacts', where: 'customer_id = ? AND is_active = 1', whereArgs: [customerId], limit: 1);
+    if (rows.isEmpty) return null;
+    return CustomerContact.fromMap(rows.first);
+  }
+
+  Future<int> _nextContactVersion(DatabaseExecutor txn, String customerId) async {
+    final res = await txn.rawQuery('SELECT MAX(version) as v FROM customer_contacts WHERE customer_id = ?', [customerId]);
+    final current = res.first['v'] as int?;
+    return (current ?? 0) + 1;
+  }
+
+  Future<void> _upsertActiveContact(DatabaseExecutor txn, Customer customer) async {
+    final nextVersion = await _nextContactVersion(txn, customer.id);
+    await txn.update('customer_contacts', {'is_active': 0}, where: 'customer_id = ?', whereArgs: [customer.id]);
+    await txn.insert('customer_contacts', {
+      'id': const Uuid().v4(),
+      'customer_id': customer.id,
+      'email': customer.email,
+      'tel': customer.tel,
+      'address': customer.address,
+      'version': nextVersion,
+      'is_active': 1,
+      'created_at': DateTime.now().toIso8601String(),
+    });
   }
 }

@@ -6,7 +6,8 @@ import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
-import 'package:printing/printing.dart';
+import '../widgets/invoice_pdf_preview_page.dart';
+import 'invoice_detail_page.dart';
 import '../services/gps_service.dart';
 import 'customer_picker_modal.dart';
 import 'product_picker_modal.dart';
@@ -170,32 +171,39 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
     );
 
-    showDialog(
-      context: context,
-      builder: (context) => Dialog.fullscreen(
-        child: Column(
-          children: [
-            AppBar(
-              title: Text("${invoice.documentTypeName}プレビュー"),
-              leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-            ),
-            Expanded(
-              child: PdfPreview(
-                build: (format) async {
-                  // PdfGeneratorを少しリファクタして pw.Document を返す関数に分離することも可能だが
-                  // ここでは generateInvoicePdf の中身を模したバイト生成を行う
-                  // (もしくは generateInvoicePdf のシグネチャを変えてバイトを返すようにする)
-                  // 簡易化のため、一時ファイルを作ってそれを読み込むか、Generatorを修正する
-                  // 今回は Generator に pw.Document を生成する内部関数を作る
-                  final pdfDoc = await buildInvoiceDocument(invoice);
-                  return pdfDoc.save();
-                },
-                allowPrinting: false,
-                allowSharing: false,
-                canChangePageFormat: false,
-              ),
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InvoicePdfPreviewPage(
+          invoice: invoice,
+          isUnlocked: true,
+          isLocked: false,
+          allowFormalIssue: widget.existingInvoice != null && !(widget.existingInvoice?.isLocked ?? false),
+          onFormalIssue: (widget.existingInvoice != null)
+              ? () async {
+                  final promoted = invoice.copyWith(isDraft: false);
+                  await _invoiceRepo.saveInvoice(promoted);
+                  final newPath = await generateInvoicePdf(promoted);
+                  final saved = newPath != null ? promoted.copyWith(filePath: newPath) : promoted;
+                  await _invoiceRepo.saveInvoice(saved);
+                  if (!mounted) return false;
+                  Navigator.pop(context); // close preview
+                  Navigator.pop(context); // exit edit screen
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => InvoiceDetailPage(
+                        invoice: saved,
+                        isUnlocked: true,
+                      ),
+                    ),
+                  );
+                  return true;
+                }
+              : null,
+          showShare: false,
+          showEmail: false,
+          showPrint: false,
         ),
       ),
     );
@@ -223,8 +231,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildDocumentTypeSection(),
-                      const SizedBox(height: 16),
                       _buildDateSection(),
                       const SizedBox(height: 16),
                       _buildCustomerSection(),

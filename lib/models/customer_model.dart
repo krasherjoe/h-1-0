@@ -5,8 +5,10 @@ class Customer {
   final String formalName;  // 請求書用正式名称
   final String title;       // 敬称（様、殿など）
   final String? department; // 部署名
-  final String? address;    // 住所
-  final String? tel;         // 電話番号
+  final String? address;    // 住所（最新連絡先）
+  final String? tel;        // 電話番号（最新連絡先）
+  final String? email;      // メール（最新連絡先）
+  final int? contactVersionId; // 連絡先バージョン
   final String? odooId;     // Odoo側のID
   final bool isSynced;      // 同期フラグ
   final DateTime updatedAt; // 最終更新日時
@@ -20,6 +22,8 @@ class Customer {
     this.department,
     this.address,
     this.tel,
+    this.email,
+    this.contactVersionId,
     this.odooId,
     this.isSynced = false,
     DateTime? updatedAt,
@@ -43,6 +47,7 @@ class Customer {
       'department': department,
       'address': address,
       'tel': tel,
+      'contact_version_id': contactVersionId,
       'odoo_id': odooId,
       'is_locked': isLocked ? 1 : 0,
       'is_synced': isSynced ? 1 : 0,
@@ -57,8 +62,10 @@ class Customer {
       formalName: map['formal_name'],
       title: map['title'] ?? "様",
       department: map['department'],
-      address: map['address'],
-      tel: map['tel'],
+      address: map['contact_address'] ?? map['address'],
+      tel: map['contact_tel'] ?? map['tel'],
+      email: map['contact_email'],
+      contactVersionId: map['contact_version_id'],
       odooId: map['odoo_id'],
       isLocked: (map['is_locked'] ?? 0) == 1,
       isSynced: map['is_synced'] == 1,
@@ -78,6 +85,8 @@ class Customer {
     bool? isSynced,
     DateTime? updatedAt,
     bool? isLocked,
+    String? email,
+    int? contactVersionId,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -87,6 +96,8 @@ class Customer {
       department: department ?? this.department,
       address: address ?? this.address,
       tel: tel ?? this.tel,
+      email: email ?? this.email,
+      contactVersionId: contactVersionId ?? this.contactVersionId,
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,

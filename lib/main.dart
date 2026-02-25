@@ -60,6 +60,15 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'IPAexGothic',
       ),
+      builder: (context, child) {
+        return InteractiveViewer(
+          panEnabled: false,
+          scaleEnabled: true,
+          minScale: 0.8,
+          maxScale: 2.0,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const InvoiceHistoryScreen(),
     );
   }

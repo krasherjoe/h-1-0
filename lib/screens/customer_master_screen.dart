@@ -24,6 +24,47 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     _loadCustomers();
   }
 
+  Future<void> _showContactUpdateDialog(Customer customer) async {
+    final emailController = TextEditingController(text: customer.email ?? "");
+    final telController = TextEditingController(text: customer.tel ?? "");
+    final addressController = TextEditingController(text: customer.address ?? "");
+
+    final updated = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('連絡先を更新'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'メール')),
+            TextField(controller: telController, decoration: const InputDecoration(labelText: '電話番号'), keyboardType: TextInputType.phone),
+            TextField(controller: addressController, decoration: const InputDecoration(labelText: '住所')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
+          ElevatedButton(
+            onPressed: () async {
+              await _customerRepo.updateContact(
+                customerId: customer.id,
+                email: emailController.text.isEmpty ? null : emailController.text,
+                tel: telController.text.isEmpty ? null : telController.text,
+                address: addressController.text.isEmpty ? null : addressController.text,
+              );
+              if (!mounted) return;
+              Navigator.pop(context, true);
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (updated == true) {
+      _loadCustomers();
+    }
+  }
+
   Future<void> _loadCustomers() async {
     setState(() => _isLoading = true);
     final customers = await _customerRepo.getAllCustomers();
@@ -130,6 +171,165 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     }
   }
 
+  Future<void> _showPhonebookImport() async {
+    // 疑似電話帳データ（会社名/氏名/複数住所）
+    final phonebook = [
+      {
+        'company': '佐々木製作所',
+        'person': '佐々木 太郎',
+        'addresses': ['大阪府大阪市北区1-1-1', '東京都千代田区丸の内2-2-2'],
+        'tel': '06-1234-5678',
+        'emails': ['info@sasaki.co.jp', 'taro@sasaki.co.jp'],
+      },
+      {
+        'company': 'Gemini Solutions',
+        'person': 'John Smith',
+        'addresses': ['1 Infinite Loop, CA', '1600 Amphitheatre Pkwy, CA'],
+        'tel': '03-9876-5432',
+        'emails': ['contact@gemini.com', 'john.smith@gemini.com'],
+      },
+    ];
+
+    String selectedEntryId = '0';
+    String selectedNameSource = 'company';
+    int selectedAddressIndex = 0;
+    int selectedEmailIndex = 0;
+
+    final imported = await showDialog<Customer>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final entry = phonebook[int.parse(selectedEntryId)];
+          final addresses = (entry['addresses'] as List<String>);
+          final emails = (entry['emails'] as List<String>);
+          final displayName = selectedNameSource == 'company' ? entry['company'] as String : entry['person'] as String;
+          final formalName = selectedNameSource == 'company'
+              ? '株式会社 ${entry['company']}'
+              : '${entry['person']} 様';
+          final addressText = addresses[selectedAddressIndex];
+          final emailText = emails.isNotEmpty ? emails[selectedEmailIndex] : '';
+
+          final displayController = TextEditingController(text: displayName);
+          final formalController = TextEditingController(text: formalName);
+          final addressController = TextEditingController(text: addressText);
+          final emailController = TextEditingController(text: emailText);
+
+          return AlertDialog(
+            title: const Text('電話帳から取り込む'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedEntryId,
+                  decoration: const InputDecoration(labelText: '電話帳エントリ'),
+                  items: phonebook
+                      .asMap()
+                      .entries
+                      .map((e) => DropdownMenuItem(value: e.key.toString(), child: Text(e.value['company'] as String)))
+                      .toList(),
+                  onChanged: (v) {
+                    setDialogState(() {
+                      selectedEntryId = v ?? '0';
+                      selectedAddressIndex = 0;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text('顧客名の取り込み元'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        dense: true,
+                        title: const Text('会社名'),
+                        value: 'company',
+                        groupValue: selectedNameSource,
+                        onChanged: (v) => setDialogState(() => selectedNameSource = v ?? 'company'),
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        dense: true,
+                        title: const Text('氏名'),
+                        value: 'person',
+                        groupValue: selectedNameSource,
+                        onChanged: (v) => setDialogState(() => selectedNameSource = v ?? 'person'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: selectedAddressIndex,
+                  decoration: const InputDecoration(labelText: '住所を選択'),
+                  items: addresses
+                      .asMap()
+                      .entries
+                      .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => selectedAddressIndex = v ?? 0),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: selectedEmailIndex,
+                  decoration: const InputDecoration(labelText: 'メールを選択'),
+                  items: emails
+                      .asMap()
+                      .entries
+                      .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => selectedEmailIndex = v ?? 0),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: displayController,
+                  decoration: const InputDecoration(labelText: '表示名（編集可）'),
+                ),
+                TextField(
+                  controller: formalController,
+                  decoration: const InputDecoration(labelText: '正式名称（編集可）'),
+                ),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: '住所（編集可）'),
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'メール（編集可）'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('キャンセル')),
+              ElevatedButton(
+                onPressed: () {
+                  final newCustomer = Customer(
+                    id: const Uuid().v4(),
+                    displayName: displayController.text,
+                    formalName: formalController.text,
+                    title: selectedNameSource == 'company' ? '御中' : '様',
+                    address: addressController.text,
+                    tel: entry['tel'] as String?,
+                    email: emailController.text.isEmpty ? null : emailController.text,
+                    isSynced: false,
+                  );
+                  Navigator.pop(context, newCustomer);
+                },
+                child: const Text('取り込む'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (imported != null) {
+      await _customerRepo.saveCustomer(imported);
+      _loadCustomers();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -210,10 +410,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addOrEditCustomer(),
-        child: const Icon(Icons.person_add),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showPhonebookImport,
+        icon: const Icon(Icons.add),
+        label: const Text('電話帳から取り込む'),
         backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -250,17 +452,29 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               const SizedBox(height: 8),
               if (c.address != null) Text("住所: ${c.address}") else const SizedBox.shrink(),
               if (c.tel != null) Text("TEL: ${c.tel}") else const SizedBox.shrink(),
+              if (c.email != null) Text("メール: ${c.email}") else const SizedBox.shrink(),
               Text("敬称: ${c.title}"),
               const SizedBox(height: 12),
               Row(
                 children: [
                   OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _addOrEditCustomer(customer: c);
-                    },
+                    onPressed: c.isLocked
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                            _addOrEditCustomer(customer: c);
+                          },
                     icon: const Icon(Icons.edit),
                     label: const Text("編集"),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showContactUpdateDialog(c);
+                    },
+                    icon: const Icon(Icons.contact_mail),
+                    label: const Text("連絡先を更新"),
                   ),
                   const SizedBox(width: 8),
                   if (!c.isLocked)

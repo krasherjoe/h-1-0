@@ -84,6 +84,10 @@ class Invoice {
   final bool isDraft; // 追加: 下書きフラグ
   final String? subject; // 追加: 案件名
   final bool isLocked; // 追加: ロック
+  final int? contactVersionId; // 追加: 連絡先バージョン
+  final String? contactEmailSnapshot;
+  final String? contactTelSnapshot;
+  final String? contactAddressSnapshot;
 
   Invoice({
     String? id,
@@ -104,6 +108,10 @@ class Invoice {
     this.isDraft = false, // 追加: デフォルトは通常
     this.subject, // 追加: 案件
     this.isLocked = false,
+    this.contactVersionId,
+    this.contactEmailSnapshot,
+    this.contactTelSnapshot,
+    this.contactAddressSnapshot,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         terminalId = terminalId ?? "T1", // デフォルト端末ID
         updatedAt = updatedAt ?? DateTime.now();
@@ -163,6 +171,10 @@ class Invoice {
       'is_draft': isDraft ? 1 : 0, // 追加
       'subject': subject, // 追加
       'is_locked': isLocked ? 1 : 0,
+      'contact_version_id': contactVersionId,
+      'contact_email_snapshot': contactEmailSnapshot,
+      'contact_tel_snapshot': contactTelSnapshot,
+      'contact_address_snapshot': contactAddressSnapshot,
     };
   }
 
@@ -185,6 +197,10 @@ class Invoice {
     bool? isDraft,
     String? subject,
     bool? isLocked,
+    int? contactVersionId,
+    String? contactEmailSnapshot,
+    String? contactTelSnapshot,
+    String? contactAddressSnapshot,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -205,6 +221,10 @@ class Invoice {
       isDraft: isDraft ?? this.isDraft,
       subject: subject ?? this.subject,
       isLocked: isLocked ?? this.isLocked,
+      contactVersionId: contactVersionId ?? this.contactVersionId,
+      contactEmailSnapshot: contactEmailSnapshot ?? this.contactEmailSnapshot,
+      contactTelSnapshot: contactTelSnapshot ?? this.contactTelSnapshot,
+      contactAddressSnapshot: contactAddressSnapshot ?? this.contactAddressSnapshot,
     );
   }
 

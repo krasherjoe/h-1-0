@@ -4,15 +4,19 @@ import '../models/invoice_models.dart';
 import '../models/customer_model.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
+import '../services/pdf_generator.dart';
 import 'invoice_detail_page.dart';
 import 'management_screen.dart';
 import 'product_master_screen.dart';
 import 'customer_master_screen.dart';
+import 'invoice_input_screen.dart';
 import 'settings_screen.dart';
 import 'company_info_screen.dart';
 import '../widgets/slide_to_unlock.dart';
 import '../main.dart'; // InvoiceFlowScreen 用
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:printing/printing.dart';
+import '../widgets/invoice_pdf_preview_page.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
   const InvoiceHistoryScreen({Key? key}) : super(key: key);
@@ -39,6 +43,96 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     super.initState();
     _loadData();
     _loadVersion();
+  }
+
+  Future<void> _showInvoiceActions(Invoice invoice) async {
+    if (invoice.isLocked) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ロック中の伝票は操作できません")));
+      return;
+    }
+    if (!_isUnlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("操作するにはアンロックが必要です")));
+      return;
+    }
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf),
+              title: const Text("PDFプレビュー"),
+              onTap: () async {
+                Navigator.pop(context);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InvoicePdfPreviewPage(
+                      invoice: invoice,
+                      isUnlocked: _isUnlocked,
+                      isLocked: invoice.isLocked,
+                      allowFormalIssue: !invoice.isLocked,
+                      onFormalIssue: () async {
+                        final repo = InvoiceRepository();
+                        final promoted = invoice.copyWith(isDraft: false);
+                        await repo.updateInvoice(promoted);
+                        _loadData();
+                        return true;
+                      },
+                      showShare: true,
+                      showEmail: true,
+                      showPrint: true,
+                    ),
+                  ),
+                );
+                _loadData();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text("編集"),
+              onTap: () async {
+                Navigator.pop(context);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InvoiceInputForm(
+                      existingInvoice: invoice,
+                      onInvoiceGenerated: (inv, path) {},
+                    ),
+                  ),
+                );
+                _loadData();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+              onTap: () async {
+                Navigator.pop(context);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("伝票の削除"),
+                    content: Text("「${invoice.customerNameForDisplay}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await _invoiceRepo.deleteInvoice(invoice.id);
+                  _loadData();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _loadVersion() async {
@@ -223,45 +317,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           ),
         ),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blueGrey),
-              child: Text("販売アシスト1号", style: TextStyle(color: Colors.white, fontSize: 24)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text("伝票マスター一覧"),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_task),
-              title: const Text("新規伝票作成"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => InvoiceFlowScreen(onComplete: _loadData)),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings),
-              title: const Text("マスター管理・同期"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ManagementScreen()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
       body: Column(
         children: [
           Padding(
@@ -327,17 +382,43 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               ],
                             ),
                             subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text("￥${amountFormatter.format(invoice.totalAmount)}", 
-                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                if (invoice.isSynced)
-                                  const Icon(Icons.sync, size: 16, color: Colors.green)
-                                else
-                                  const Icon(Icons.sync_disabled, size: 16, color: Colors.orange),
-                              ],
+                            trailing: SizedBox(
+                              height: 56,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text("￥${amountFormatter.format(invoice.totalAmount)}", 
+                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  const SizedBox(height: 2),
+                                  if (invoice.isSynced)
+                                    const Icon(Icons.sync, size: 14, color: Colors.green)
+                                  else
+                                    const Icon(Icons.sync_disabled, size: 14, color: Colors.orange),
+                                  const SizedBox(height: 4),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints.tightFor(width: 32, height: 28),
+                                    icon: const Icon(Icons.edit, size: 18),
+                                    tooltip: invoice.isLocked ? "ロック中" : (_isUnlocked ? "編集" : "アンロックして編集"),
+                                    onPressed: (invoice.isLocked || !_isUnlocked)
+                                        ? null
+                                        : () async {
+                                            await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => InvoiceInputForm(
+                                                  existingInvoice: invoice,
+                                                  onInvoiceGenerated: (inv, path) {},
+                                                ),
+                                              ),
+                                            );
+                                            _loadData();
+                                          },
+                                  ),
+                                ],
+                              ),
                             ),
                             onTap: () async {
                               await Navigator.push(
@@ -351,36 +432,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               );
                               _loadData();
                             },
-                            onLongPress: () async {
-                              if (invoice.isLocked) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ロック中の伝票は削除できません")));
-                                return;
-                              }
-                              if (!_isUnlocked) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("削除するにはアンロックが必要です")),
-                                );
-                                return;
-                              }
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text("伝票の削除"),
-                                  content: Text("「${invoice.customerNameForDisplay}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: const Text("削除", style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirm == true) {
-                                await _invoiceRepo.deleteInvoice(invoice.id);
-                                _loadData();
-                              }
-                            },
+                            onLongPress: () => _showInvoiceActions(invoice),
                           );
                         },
                       ),
