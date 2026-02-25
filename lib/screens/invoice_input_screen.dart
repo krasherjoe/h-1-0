@@ -32,11 +32,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Customer? _selectedCustomer;
   final List<InvoiceItem> _items = [];
   double _taxRate = 0.10;
-  bool _includeTax = true;
+  bool _includeTax = false;
   CompanyInfo? _companyInfo;
   DocumentType _documentType = DocumentType.invoice; // 追加
   DateTime _selectedDate = DateTime.now(); // 追加: 伝票日付
-  bool _isDraft = false; // 追加: 下書きモード
+  bool _isDraft = true; // デフォルトは下書き
   final TextEditingController _subjectController = TextEditingController(); // 追加
   bool _isSaving = false; // 保存中フラグ
   String _status = "取引先と商品を入力してください";
@@ -74,7 +74,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _isDraft = inv.isDraft;
         if (inv.subject != null) _subjectController.text = inv.subject!;
       } else {
-        _taxRate = companyInfo.defaultTaxRate;
+        _taxRate = 0;
+        _includeTax = false;
+        _isDraft = true;
       }
     });
   }
@@ -202,15 +204,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
-    final themeColor = _isDraft ? Colors.blueGrey.shade800 : Colors.white;
-    final textColor = _isDraft ? Colors.white : Colors.black87;
+    final themeColor = Colors.white;
+    final textColor = Colors.black87;
 
     return Scaffold(
       backgroundColor: themeColor,
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text(_isDraft ? "伝票作成 (下書き)" : "販売アシスト1号 V1.5.06"),
-        backgroundColor: _isDraft ? Colors.black87 : Colors.blueGrey,
+        title: const Text("販売アシスト1号 V1.5.06"),
       ),
       body: Stack(
         children: [
@@ -222,8 +223,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildDraftToggle(),
-                      const SizedBox(height: 16),
                       _buildDocumentTypeSection(),
                       const SizedBox(height: 16),
                       _buildDateSection(),
@@ -233,8 +232,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       _buildSubjectSection(textColor),
                       const SizedBox(height: 20),
                       _buildItemsSection(fmt),
-                      const SizedBox(height: 20),
-                      _buildTaxSettings(),
                       const SizedBox(height: 20),
                       _buildSummarySection(fmt),
                       const SizedBox(height: 20),
@@ -265,73 +262,36 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildDocumentTypeSection() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: DocumentType.values.map((type) {
-          final isSelected = _documentType == type;
-          String label = "";
-          IconData icon = Icons.description;
-          switch (type) {
-            case DocumentType.estimation: label = "見積"; icon = Icons.article_outlined; break;
-            case DocumentType.delivery: label = "納品"; icon = Icons.local_shipping_outlined; break;
-            case DocumentType.invoice: label = "請求"; icon = Icons.receipt_long_outlined; break;
-            case DocumentType.receipt: label = "領収"; icon = Icons.payments_outlined; break;
-          }
-          return Expanded(
-            child: InkWell(
-              onTap: () => setState(() => _documentType = type),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.indigo : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    Icon(icon, color: isSelected ? Colors.white : Colors.grey.shade600, size: 20),
-                    Text(label, style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey.shade600,
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    )),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   Widget _buildDateSection() {
-    final fmt = DateFormat('yyyy年MM月dd日');
-    return Card(
-      elevation: 0,
-      color: Colors.blueGrey.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: const Icon(Icons.calendar_today, color: Colors.blueGrey),
-        title: Text("伝票日付: ${fmt.format(_selectedDate)}", style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: const Text("タップして日付を変更"),
-        trailing: const Icon(Icons.edit, size: 20),
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: _selectedDate,
-            firstDate: DateTime(2020),
-            lastDate: DateTime.now().add(const Duration(days: 365)),
-          );
-          if (picked != null) {
-            setState(() => _selectedDate = picked);
-          }
-        },
+    final fmt = DateFormat('yyyy/MM/dd');
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _selectedDate,
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) {
+          setState(() => _selectedDate = picked);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
+            const SizedBox(width: 8),
+            Text("伝票日付: ${fmt.format(_selectedDate)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            const Icon(Icons.chevron_right, size: 18, color: Colors.indigo),
+          ],
+        ),
       ),
     );
   }
@@ -477,55 +437,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildTaxSettings() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (_includeTax) ...[
-              const Text("消費税率: ", style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text("10%"),
-                selected: _taxRate == 0.10,
-                onSelected: (val) => setState(() => _taxRate = 0.10),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text("8%"),
-                selected: _taxRate == 0.08,
-                onSelected: (val) => setState(() => _taxRate = 0.08),
-              ),
-            ] else
-              const Text("消費税設定: 非課税", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            const Spacer(),
-            Switch(
-              value: _includeTax,
-              onChanged: (val) => setState(() => _includeTax = val),
-            ),
-            Text(_includeTax ? "税込計算" : "非課税"),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildSummarySection(NumberFormat fmt) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.indigo.shade900, borderRadius: BorderRadius.circular(12)),
       child: Column(
           children: [
-            _buildSummaryRow(_includeTax ? "小計 (税抜)" : "小計", "￥${fmt.format(_subTotal)}", Colors.white70),
-            if (_includeTax) ...[
-              if (_companyInfo?.taxDisplayMode == 'normal')
-                _buildSummaryRow("消費税 (${(_taxRate * 100).toInt()}%)", "￥${fmt.format(_tax)}", Colors.white70),
-              if (_companyInfo?.taxDisplayMode == 'text_only')
-                _buildSummaryRow("消費税", "(税別)", Colors.white70),
-            ],
+            _buildSummaryRow("小計", "￥${fmt.format(_subTotal)}", Colors.white70),
             const Divider(color: Colors.white24),
-            _buildSummaryRow(_includeTax ? "合計金額 (税込)" : "合計金額", "￥${fmt.format(_total)}", Colors.white, fontSize: 24),
+            _buildSummaryRow("合計金額", "￥${fmt.format(_subTotal)}", Colors.white, fontSize: 24),
           ],
       ),
     );
@@ -596,7 +516,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _showPreview,
+                    onPressed: _items.isEmpty ? null : _showPreview,
                     icon: const Icon(Icons.picture_as_pdf), // アイコン変更
                     label: const Text("PDFプレビュー"), // 名称変更
                     style: OutlinedButton.styleFrom(
@@ -610,9 +530,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   child: ElevatedButton.icon(
                     onPressed: () => _saveInvoice(generatePdf: false),
                     icon: const Icon(Icons.save),
-                    label: const Text("保存のみ"),
+                    label: const Text("保存"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueGrey,
+                      backgroundColor: Colors.indigo,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -620,48 +540,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: () => _saveInvoice(generatePdf: true),
-              icon: const Icon(Icons.picture_as_pdf),
-              label: const Text("確定してPDF生成"),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 56),
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDraftToggle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: _isDraft ? Colors.black26 : Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _isDraft ? Colors.orangeAccent : Colors.orange, width: 2),
-      ),
-      child: Row(
-        children: [
-          Icon(_isDraft ? Icons.drafts : Icons.check_circle, color: Colors.orange),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _isDraft ? "下書き (保存のみ・PDF未生成)" : "正式発行 (PDF生成)",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _isDraft ? Colors.white70 : Colors.orange.shade900),
-            ),
-          ),
-          Switch(
-            value: _isDraft,
-            activeColor: Colors.orangeAccent,
-            onChanged: (val) => setState(() => _isDraft = val),
-          ),
-        ],
       ),
     );
   }

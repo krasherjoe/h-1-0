@@ -16,8 +16,7 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
 
   // フォントのロード
   final fontData = await rootBundle.load("assets/fonts/ipaexg.ttf");
-  final ttf = pw.Font.ttf(fontData);
-  final boldTtf = pw.Font.ttf(fontData);
+  final ipaex = pw.Font.ttf(fontData);
 
   final dateFormatter = DateFormat('yyyy年MM月dd日');
   final amountFormatter = NumberFormat("#,###");
@@ -40,7 +39,14 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(32),
-      theme: pw.ThemeData.withFont(base: ttf, bold: boldTtf),
+      theme: pw.ThemeData.withFont(
+        base: ipaex,
+        bold: ipaex,
+        italic: ipaex,
+        boldItalic: ipaex,
+      ).copyWith(
+        defaultTextStyle: pw.TextStyle(fontFallback: [ipaex]),
+      ),
       build: (context) => [
         // タイトル
         pw.Header(

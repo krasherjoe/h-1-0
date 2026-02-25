@@ -159,37 +159,23 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   itemBuilder: (context, index) {
                     final p = _filteredProducts[index];
                     return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.inventory_2)),
-                      title: Text(p.name),
+                      leading: CircleAvatar(
+                        backgroundColor: p.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
+                        child: Stack(
+                          children: [
+                            const Align(alignment: Alignment.center, child: Icon(Icons.inventory_2, color: Colors.indigo)),
+                            if (p.isLocked)
+                              const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                      title: Text(p.name, style: TextStyle(fontWeight: FontWeight.bold, color: p.isLocked ? Colors.grey : Colors.black87)),
                       subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(icon: const Icon(Icons.edit), onPressed: () => _showEditDialog(product: p)),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text("削除の確認"),
-                                  content: Text("${p.name}を削除してよろしいですか？"),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-                                    TextButton(
-                                      onPressed: () async {
-                                        await _productRepo.deleteProduct(p.id);
-                                        Navigator.pop(context);
-                                        _loadProducts();
-                                      },
-                                      child: const Text("削除", style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                      onTap: () => _showDetailPane(p),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: p.isLocked ? null : () => _showEditDialog(product: p),
+                        tooltip: p.isLocked ? "ロック中" : "編集",
                       ),
                     );
                   },
@@ -199,6 +185,85 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         child: const Icon(Icons.add),
         backgroundColor: Colors.blueGrey.shade800,
         foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  void _showDetailPane(Product p) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.45,
+        maxChildSize: 0.8,
+        minChildSize: 0.35,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Row(
+                children: [
+                  Icon(p.isLocked ? Icons.lock : Icons.inventory_2, color: p.isLocked ? Colors.redAccent : Colors.indigo),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                  Chip(label: Text(p.category ?? '未分類')),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text("単価: ￥${p.defaultUnitPrice}"),
+              Text("在庫: ${p.stockQuantity}"),
+              if (p.barcode != null && p.barcode!.isNotEmpty) Text("バーコード: ${p.barcode}"),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showEditDialog(product: p);
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text("編集"),
+                  ),
+                  const SizedBox(width: 8),
+                  if (!p.isLocked)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("削除の確認"),
+                            content: Text("${p.name}を削除してよろしいですか？"),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                              TextButton(
+                                onPressed: () async {
+                                  await _productRepo.deleteProduct(p.id);
+                                  if (!mounted) return;
+                                  Navigator.pop(context); // dialog
+                                  Navigator.pop(context); // sheet
+                                  _loadProducts();
+                                },
+                                child: const Text("削除", style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      label: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                    ),
+                  if (p.isLocked)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Chip(label: const Text("ロック中"), avatar: const Icon(Icons.lock, size: 16)),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -6,6 +6,9 @@ import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'invoice_detail_page.dart';
 import 'management_screen.dart';
+import 'product_master_screen.dart';
+import 'customer_master_screen.dart';
+import 'settings_screen.dart';
 import 'company_info_screen.dart';
 import '../widgets/slide_to_unlock.dart';
 import '../main.dart'; // InvoiceFlowScreen 用
@@ -98,6 +101,63 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     final dateFormatter = DateFormat('yyyy/MM/dd');
 
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.indigo.shade700),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Text("メニュー", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text("v$_appVersion", style: const TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: const Text("伝票マスター"),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text("顧客マスター"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMasterScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.inventory_2),
+              title: const Text("商品マスター"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductMasterScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text("設定"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings),
+              title: const Text("管理メニュー"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementScreen()));
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         // leading removed
         title: GestureDetector(
