@@ -13,6 +13,9 @@ class InvoiceRepository {
   Future<void> saveInvoice(Invoice invoice) async {
     final db = await _dbHelper.database;
 
+    // 正式発行（下書きでない）場合はロックを掛ける
+    final Invoice toSave = invoice.isDraft ? invoice : invoice.copyWith(isLocked: true);
+
     await db.transaction((txn) async {
       // 在庫の調整（更新の場合、以前の数量を戻してから新しい数量を引く）
       final List<Map<String, dynamic>> oldItems = await txn.query(
@@ -34,7 +37,7 @@ class InvoiceRepository {
       // 伝票ヘッダーの保存
       await txn.insert(
         'invoices',
-        invoice.toMap(),
+        toSave.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
@@ -53,7 +56,15 @@ class InvoiceRepository {
             'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
             [item.quantity, item.productId],
           );
+          if (!invoice.isDraft) {
+            await txn.execute('UPDATE products SET is_locked = 1 WHERE id = ?', [item.productId]);
+          }
         }
+      }
+
+      // 顧客をロック
+      if (!invoice.isDraft) {
+        await txn.execute('UPDATE customers SET is_locked = 1 WHERE id = ?', [invoice.customer.id]);
       }
     });
 
@@ -114,6 +125,7 @@ class InvoiceRepository {
         terminalId: iMap['terminal_id'] ?? "T1",
         isDraft: (iMap['is_draft'] ?? 0) == 1,
         subject: iMap['subject'],
+        isLocked: (iMap['is_locked'] ?? 0) == 1,
       ));
     }
     return invoices;

@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 13;
+  static const _databaseVersion = 15;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -97,6 +97,14 @@ class DatabaseHelper {
     if (oldVersion < 13) {
       await db.execute('ALTER TABLE company_info ADD COLUMN registration_number TEXT');
     }
+    if (oldVersion < 14) {
+      await _safeAddColumn(db, 'invoices', 'subject TEXT');
+    }
+    if (oldVersion < 15) {
+      await _safeAddColumn(db, 'invoices', 'is_locked INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'customers', 'is_locked INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'products', 'is_locked INTEGER DEFAULT 0');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -110,6 +118,7 @@ class DatabaseHelper {
         address TEXT,
         tel TEXT,
         odoo_id TEXT,
+        is_locked INTEGER DEFAULT 0,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT NOT NULL
       )
@@ -135,6 +144,7 @@ class DatabaseHelper {
         barcode TEXT,
         category TEXT,
         stock_quantity INTEGER DEFAULT 0,
+        is_locked INTEGER DEFAULT 0,
         odoo_id TEXT
       )
     ''');
@@ -148,6 +158,7 @@ class DatabaseHelper {
         customer_id TEXT NOT NULL,
         date TEXT NOT NULL,
         notes TEXT,
+        subject TEXT,
         file_path TEXT,
         total_amount INTEGER,
         tax_rate REAL DEFAULT 0.10,
@@ -161,6 +172,7 @@ class DatabaseHelper {
         terminal_id TEXT DEFAULT "T1",
         content_hash TEXT,
         is_draft INTEGER DEFAULT 0,
+        is_locked INTEGER DEFAULT 0,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
@@ -211,5 +223,13 @@ class DatabaseHelper {
         timestamp TEXT NOT NULL
       )
     ''');
+  }
+
+  Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
+    try {
+      await db.execute('ALTER TABLE ' + table + ' ADD COLUMN ' + columnDef);
+    } catch (_) {
+      // Ignore if the column already exists.
+    }
   }
 }

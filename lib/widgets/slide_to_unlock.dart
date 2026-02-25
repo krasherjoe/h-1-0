@@ -18,7 +18,7 @@ class SlideToUnlock extends StatefulWidget {
 
 class _SlideToUnlockState extends State<SlideToUnlock> {
   double _position = 0.0;
-  final double _thumbSize = 50.0;
+  final double _thumbSize = 56.0;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double maxWidth = constraints.maxWidth;
-        final double trackWidth = maxWidth - _thumbSize - 8; // 余白を考慮
+        final double trackWidth = (maxWidth - _thumbSize - 12).clamp(0, maxWidth);
 
         return Container(
           height: 64,
@@ -81,7 +81,7 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
                     }
                   },
                   child: Container(
-                    width: maxWidth * 0.25, // 少し横長に
+                    width: _thumbSize,
                     height: 56,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(

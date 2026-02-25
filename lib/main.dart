@@ -22,9 +22,43 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '販売アシスト1号',
       theme: ThemeData(
-        primarySwatch: Colors.blueGrey,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700).copyWith(
+          primary: Colors.indigo.shade700,
+          secondary: Colors.deepOrange.shade400,
+          surface: Colors.grey.shade50,
+          onSurface: Colors.blueGrey.shade900,
+        ),
+        scaffoldBackgroundColor: Colors.grey.shade50,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.indigo.shade700,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            side: BorderSide(color: Colors.indigo.shade700),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.indigo.shade700, width: 1.4),
+          ),
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
         useMaterial3: true,
+        fontFamily: 'IPAexGothic',
       ),
       home: const InvoiceHistoryScreen(),
     );
@@ -54,54 +88,20 @@ class _InvoiceFlowScreenState extends State<InvoiceFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text("販売アシスト1号 V1.5.02"),
-        backgroundColor: Colors.blueGrey,
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blueGrey),
-              child: Text("メニュー", style: TextStyle(color: Colors.white, fontSize: 24)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_task),
-              title: const Text("新規伝票作成"),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text("伝票履歴"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const InvoiceHistoryScreen()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      // 入力フォームを表示
-      body: InvoiceInputForm(
-        onInvoiceGenerated: (invoice, path) async {
-          // GPSの記録を試みる
-          final locationService = LocationService();
-          final position = await locationService.getCurrentLocation();
-          if (position != null) {
-            final customerRepo = CustomerRepository();
-            await customerRepo.addGpsHistory(invoice.customer.id, position.latitude, position.longitude);
-            debugPrint("GPS recorded for customer ${invoice.customer.id}");
-          }
-          _handleInvoiceGenerated(invoice, path);
-          if (widget.onComplete != null) widget.onComplete!();
-        },
-      ),
+    // 入力フォーム自身が Scaffold を持つため、ここではそのまま返す
+    return InvoiceInputForm(
+      onInvoiceGenerated: (invoice, path) async {
+        // GPSの記録を試みる
+        final locationService = LocationService();
+        final position = await locationService.getCurrentLocation();
+        if (position != null) {
+          final customerRepo = CustomerRepository();
+          await customerRepo.addGpsHistory(invoice.customer.id, position.latitude, position.longitude);
+          debugPrint("GPS recorded for customer ${invoice.customer.id}");
+        }
+        _handleInvoiceGenerated(invoice, path);
+        if (widget.onComplete != null) widget.onComplete!();
+      },
     );
   }
 }

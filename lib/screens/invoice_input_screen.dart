@@ -129,24 +129,31 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
 
     setState(() => _isSaving = true);
-    
-    // PDF生成有無に関わらず、まずは保存
-    if (generatePdf) {
-      setState(() => _status = "PDFを生成中...");
-      final path = await generateInvoicePdf(invoice);
-      if (path != null) {
-        final updatedInvoice = invoice.copyWith(filePath: path);
-        await _repository.saveInvoice(updatedInvoice);
-        if (mounted) widget.onInvoiceGenerated(updatedInvoice, path);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
+    try {
+      // PDF生成有無に関わらず、まずは保存
+      if (generatePdf) {
+        setState(() => _status = "PDFを生成中...");
+        final path = await generateInvoicePdf(invoice);
+        if (path != null) {
+          final updatedInvoice = invoice.copyWith(filePath: path);
+          await _repository.saveInvoice(updatedInvoice);
+          if (mounted) widget.onInvoiceGenerated(updatedInvoice, path);
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
+        } else {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("PDF生成に失敗しました")));
+        }
+      } else {
+        await _repository.saveInvoice(invoice);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
+        if (mounted) Navigator.pop(context);
       }
-    } else {
-      await _repository.saveInvoice(invoice);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
-      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    
-    if (mounted) setState(() => _isSaving = false);
   }
 
   void _showPreview() {
@@ -202,7 +209,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       backgroundColor: themeColor,
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text(_isDraft ? "伝票作成 (下書き)" : "販売アシスト1号 V1.5.05"),
+        title: Text(_isDraft ? "伝票作成 (下書き)" : "販売アシスト1号 V1.5.06"),
         backgroundColor: _isDraft ? Colors.black87 : Colors.blueGrey,
       ),
       body: Stack(
@@ -374,102 +381,98 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             child: Center(child: Text("商品が追加されていません", style: TextStyle(color: Colors.grey))),
           )
         else
-          ..._items.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final item = entry.value;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(item.description),
-                subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text("￥${fmt.format(item.unitPrice * item.quantity)}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    if (idx > 0)
-                      IconButton(
-                        icon: const Icon(Icons.arrow_upward, size: 20),
-                        onPressed: () => setState(() {
-                          final temp = _items[idx];
-                          _items[idx] = _items[idx - 1];
-                          _items[idx - 1] = temp;
-                        }),
-                        tooltip: "上へ",
-                      ),
-                    if (idx < _items.length - 1)
-                      IconButton(
-                        icon: const Icon(Icons.arrow_downward, size: 20),
-                        onPressed: () => setState(() {
-                          final temp = _items[idx];
-                          _items[idx] = _items[idx + 1];
-                          _items[idx + 1] = temp;
-                        }),
-                        tooltip: "下へ",
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                      onPressed: () => setState(() => _items.removeAt(idx)),
-                      tooltip: "削除",
-                    ),
-                  ],
-                ),
-                onTap: () {
-                  // 簡易編集ダイアログ
-                  final descCtrl = TextEditingController(text: item.description);
-                  final qtyCtrl = TextEditingController(text: item.quantity.toString());
-                  final priceCtrl = TextEditingController(text: item.unitPrice.toString());
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("明細の編集"),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "品名 / 項目")),
-                          TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "数量"), keyboardType: TextInputType.number),
-                          TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: "単価"), keyboardType: TextInputType.number),
-                        ],
-                      ),
-                      actions: [
-                        TextButton.icon(
-                          icon: const Icon(Icons.search, size: 18),
-                          label: const Text("マスター参照"),
-                          onPressed: () {
-                             showModalBottomSheet(
-                               context: context,
-                               isScrollControlled: true,
-                               builder: (context) => ProductPickerModal(
-                                 onItemSelected: (selected) {
-                                   descCtrl.text = selected.description;
-                                   priceCtrl.text = selected.unitPrice.toString();
-                                   Navigator.pop(context); // close picker
-                                 },
-                               ),
-                             );
-                          },
-                        ),
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _items[idx] = item.copyWith(
-                                description: descCtrl.text,
-                                quantity: int.tryParse(qtyCtrl.text) ?? item.quantity,
-                                unitPrice: int.tryParse(priceCtrl.text) ?? item.unitPrice,
-                              );
-                            });
-                            Navigator.pop(context);
-                          },
-                          child: const Text("更新"),
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _items.length,
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (newIndex > oldIndex) newIndex -= 1;
+                final item = _items.removeAt(oldIndex);
+                _items.insert(newIndex, item);
+              });
+            },
+            buildDefaultDragHandles: false,
+            itemBuilder: (context, idx) {
+              final item = _items[idx];
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey('item_${idx}_${item.description}'),
+                index: idx,
+                child: Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    title: Text(item.description),
+                    subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}"),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("￥${fmt.format(item.unitPrice * item.quantity)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                          onPressed: () => setState(() => _items.removeAt(idx)),
+                          tooltip: "削除",
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
-            );
-          }),
+                    onTap: () {
+                      // 簡易編集ダイアログ
+                      final descCtrl = TextEditingController(text: item.description);
+                      final qtyCtrl = TextEditingController(text: item.quantity.toString());
+                      final priceCtrl = TextEditingController(text: item.unitPrice.toString());
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("明細の編集"),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "品名 / 項目")),
+                              TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "数量"), keyboardType: TextInputType.number),
+                              TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: "単価"), keyboardType: TextInputType.number),
+                            ],
+                          ),
+                          actions: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.search, size: 18),
+                              label: const Text("マスター参照"),
+                              onPressed: () {
+                                 showModalBottomSheet(
+                                   context: context,
+                                   isScrollControlled: true,
+                                   builder: (context) => ProductPickerModal(
+                                     onItemSelected: (selected) {
+                                       descCtrl.text = selected.description;
+                                       priceCtrl.text = selected.unitPrice.toString();
+                                       Navigator.pop(context); // close picker
+                                     },
+                                   ),
+                                 );
+                              },
+                            ),
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _items[idx] = item.copyWith(
+                                    description: descCtrl.text,
+                                    quantity: int.tryParse(qtyCtrl.text) ?? item.quantity,
+                                    unitPrice: int.tryParse(priceCtrl.text) ?? item.unitPrice,
+                                  );
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: const Text("更新"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
       ],
     );
   }

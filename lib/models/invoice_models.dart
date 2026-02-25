@@ -83,6 +83,7 @@ class Invoice {
   final String terminalId; // 追加: 端末識別子
   final bool isDraft; // 追加: 下書きフラグ
   final String? subject; // 追加: 案件名
+  final bool isLocked; // 追加: ロック
 
   Invoice({
     String? id,
@@ -102,6 +103,7 @@ class Invoice {
     String? terminalId, // 追加
     this.isDraft = false, // 追加: デフォルトは通常
     this.subject, // 追加: 案件
+    this.isLocked = false,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         terminalId = terminalId ?? "T1", // デフォルト端末ID
         updatedAt = updatedAt ?? DateTime.now();
@@ -160,6 +162,7 @@ class Invoice {
       'content_hash': contentHash, // 追加
       'is_draft': isDraft ? 1 : 0, // 追加
       'subject': subject, // 追加
+      'is_locked': isLocked ? 1 : 0,
     };
   }
 
@@ -181,6 +184,7 @@ class Invoice {
     String? terminalId,
     bool? isDraft,
     String? subject,
+    bool? isLocked,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -200,6 +204,7 @@ class Invoice {
       terminalId: terminalId ?? this.terminalId,
       isDraft: isDraft ?? this.isDraft,
       subject: subject ?? this.subject,
+      isLocked: isLocked ?? this.isLocked,
     );
   }
 

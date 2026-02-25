@@ -10,6 +10,7 @@ class Customer {
   final String? odooId;     // Odoo側のID
   final bool isSynced;      // 同期フラグ
   final DateTime updatedAt; // 最終更新日時
+  final bool isLocked;      // ロック
 
   Customer({
     required this.id,
@@ -22,6 +23,7 @@ class Customer {
     this.odooId,
     this.isSynced = false,
     DateTime? updatedAt,
+    this.isLocked = false,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   String get invoiceName {
@@ -42,6 +44,7 @@ class Customer {
       'address': address,
       'tel': tel,
       'odoo_id': odooId,
+      'is_locked': isLocked ? 1 : 0,
       'is_synced': isSynced ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -57,6 +60,7 @@ class Customer {
       address: map['address'],
       tel: map['tel'],
       odooId: map['odoo_id'],
+      isLocked: (map['is_locked'] ?? 0) == 1,
       isSynced: map['is_synced'] == 1,
       updatedAt: DateTime.parse(map['updated_at']),
     );
@@ -73,6 +77,7 @@ class Customer {
     String? odooId,
     bool? isSynced,
     DateTime? updatedAt,
+    bool? isLocked,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -85,6 +90,7 @@ class Customer {
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,
+      isLocked: isLocked ?? this.isLocked,
     );
   }
 }

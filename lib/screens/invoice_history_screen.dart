@@ -327,6 +327,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         label: const Text("新規伝票作成"),
         icon: const Icon(Icons.add),
         backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
       ),
     );
   }
