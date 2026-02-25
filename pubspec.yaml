@@ -45,14 +45,12 @@ dependencies:
   open_filex: ^4.7.0
   sqflite: ^2.3.0
   path: ^1.8.3
-  geolocator: ^13.0.1
+  geolocator: ^14.0.2
   uuid: ^4.5.1
   image_picker: ^1.2.1
-  mobile_scanner: ^7.1.4
+  mobile_scanner: ^7.2.0
   package_info_plus: ^9.0.0
   printing: ^5.14.2
-  print_bluetooth_thermal: ^1.1.9
-  esc_pos_utils_plus: ^2.0.3
 
 dev_dependencies:
   flutter_test:

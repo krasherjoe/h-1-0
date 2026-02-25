@@ -9,8 +9,6 @@ import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../services/company_repository.dart';
 import 'product_picker_modal.dart';
-import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
-import '../services/print_service.dart';
 import '../models/company_model.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
@@ -143,59 +141,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   void _exportCsv() {
     final csvData = _currentInvoice.toCsv();
     Share.share(csvData, subject: '請求書データ_CSV');
-  }
-
-  Future<void> _printReceipt() async {
-    final printService = PrintService();
-    final isConnected = await printService.isConnected;
-    
-    if (!isConnected) {
-      final devices = await printService.getPairedDevices();
-      if (devices.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ペアリング済みのデバイスが見つかりません。OSの設定を確認してください。")));
-        return;
-      }
-      
-      final selected = await showDialog<BluetoothInfo>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("プリンターを選択"),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: devices.length,
-              itemBuilder: (context, idx) => ListTile(
-                leading: const Icon(Icons.print),
-                title: Text(devices[idx].name ?? "Unknown Device"),
-                subtitle: Text(devices[idx].macAdress ?? ""),
-                onTap: () => Navigator.pop(context, devices[idx]),
-              ),
-            ),
-          ),
-        ),
-      );
-      
-      if (selected != null) {
-        final ok = await printService.connect(selected.macAdress!);
-        if (!ok) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("接続に失敗しました。")));
-          return;
-        }
-      } else {
-        return;
-      }
-    }
-    
-    final success = await printService.printReceipt(_currentInvoice);
-    if (!mounted) return;
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("レシートを印刷しました。")));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("印刷エラーが発生しました。")));
-    }
   }
 
   @override
@@ -568,15 +513,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             icon: const Icon(Icons.share),
             label: const Text("共有"),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _printReceipt,
-            icon: const Icon(Icons.print),
-            label: const Text("レシート"),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey.shade800, foregroundColor: Colors.white),
           ),
         ),
       ],
