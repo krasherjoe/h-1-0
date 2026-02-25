@@ -150,6 +150,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final themeColor = isDraft ? Colors.blueGrey.shade800 : Colors.white;
     final textColor = isDraft ? Colors.white : Colors.black87;
 
+    final locked = _currentInvoice.isLocked;
+
     return Scaffold(
       backgroundColor: themeColor,
       appBar: AppBar(
@@ -157,6 +159,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         title: Text(isDraft ? "伝票詳細 (下書き)" : "販売アシスト1号 伝票詳細"),
         backgroundColor: isDraft ? Colors.black87 : Colors.blueGrey,
         actions: [
+          if (locked)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              child: Chip(
+                label: const Text("ロック中", style: TextStyle(color: Colors.white)),
+                avatar: const Icon(Icons.lock, size: 16, color: Colors.white),
+                backgroundColor: Colors.redAccent,
+              ),
+            ),
           if (isDraft && !_isEditing)
             TextButton.icon(
               icon: const Icon(Icons.check_circle_outline, color: Colors.orangeAccent),
@@ -165,50 +176,42 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             ),
           if (!_isEditing) ...[
             IconButton(icon: const Icon(Icons.grid_on), onPressed: _exportCsv, tooltip: "CSV出力"),
-            if (widget.isUnlocked)
+            if (widget.isUnlocked && !locked)
               IconButton(
                 icon: const Icon(Icons.copy),
                 tooltip: "コピーして新規作成",
                 onPressed: () async {
-                  // 新しいIDを生成して複製
                   final newId = DateTime.now().millisecondsSinceEpoch.toString();
                   final duplicateInvoice = _currentInvoice.copyWith(
                     id: newId,
                     date: DateTime.now(),
-                    isDraft: true, // 下書きとして開始
+                    isDraft: true,
                   );
-                  
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => InvoiceInputForm(
-                        onInvoiceGenerated: (inv, path) {
-                           // ここでは特に何もしない（詳細画面は元の伝票を表示し続けるため）
-                           // ただし、履歴画面に戻った時にリロードされる必要がある（HistoryScreen側で対応済み）
-                        },
+                        onInvoiceGenerated: (inv, path) {},
                         existingInvoice: duplicateInvoice,
                       ),
                     ),
                   );
                 },
               ),
-            if (widget.isUnlocked)
+            if (widget.isUnlocked && !locked)
               IconButton(
-                icon: const Icon(Icons.edit_note), // アイコン変更
+                icon: const Icon(Icons.edit_note),
                 tooltip: "詳細編集",
                 onPressed: () async {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => InvoiceInputForm(
-                        onInvoiceGenerated: (inv, path) {
-                          // 保存完了時のコールバック（必要なら）
-                        },
+                        onInvoiceGenerated: (inv, path) {},
                         existingInvoice: _currentInvoice,
                       ),
                     ),
                   );
-                  // 戻ってきたらデータを再読み込み（リポジトリから取得）
                   final repo = InvoiceRepository();
                   final customerRepo = CustomerRepository();
                   final customers = await customerRepo.getAllCustomers();

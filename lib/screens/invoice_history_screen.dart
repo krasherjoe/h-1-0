@@ -297,17 +297,26 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               backgroundColor: invoice.isDraft 
                                   ? Colors.orange.shade100 
                                   : (_isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200),
-                              child: Icon(
-                                invoice.isDraft ? Icons.edit_note : Icons.description_outlined,
-                                color: invoice.isDraft 
-                                    ? Colors.orange 
-                                    : (_isUnlocked ? Colors.indigo : Colors.grey),
+                              child: Stack(
+                                children: [
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      invoice.isDraft ? Icons.edit_note : Icons.description_outlined,
+                                      color: invoice.isDraft 
+                                          ? Colors.orange 
+                                          : (_isUnlocked ? Colors.indigo : Colors.grey),
+                                    ),
+                                  ),
+                                  if (invoice.isLocked)
+                                    const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                                ],
                               ),
                             ),
                             title: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(invoice.customerNameForDisplay, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text(invoice.customerNameForDisplay, style: TextStyle(fontWeight: FontWeight.bold, color: invoice.isLocked ? Colors.grey : Colors.black87)),
                                 if (invoice.subject?.isNotEmpty ?? false)
                                   Text(
                                     invoice.subject!,
@@ -343,6 +352,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                               _loadData();
                             },
                             onLongPress: () async {
+                              if (invoice.isLocked) {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ロック中の伝票は削除できません")));
+                                return;
+                              }
                               if (!_isUnlocked) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text("削除するにはアンロックが必要です")),
