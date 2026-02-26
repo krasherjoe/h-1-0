@@ -46,12 +46,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   }
 
   Future<void> _showInvoiceActions(Invoice invoice) async {
+    if (!_requireUnlock()) return;
     if (invoice.isLocked) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ロック中の伝票は操作できません")));
-      return;
-    }
-    if (!_isUnlocked) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("操作するにはアンロックが必要です")));
       return;
     }
     await showModalBottomSheet(
@@ -93,46 +90,55 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text("編集"),
-              onTap: () async {
-                Navigator.pop(context);
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => InvoiceInputForm(
-                      existingInvoice: invoice,
-                      onInvoiceGenerated: (inv, path) {},
-                    ),
-                  ),
-                );
-                _loadData();
-              },
+              onTap: _isUnlocked
+                  ? () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => InvoiceDetailPage(
+                            invoice: invoice,
+                            isUnlocked: _isUnlocked, // 状態を渡す
+                          ),
+                        ),
+                      );
+                      _loadData();
+                    }
+                  : null,
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.redAccent),
               title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
-              onTap: () async {
-                Navigator.pop(context);
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("伝票の削除"),
-                    content: Text("「${invoice.customerNameForDisplay}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
-                    ],
-                  ),
-                );
-                if (confirm == true) {
-                  await _invoiceRepo.deleteInvoice(invoice.id);
-                  _loadData();
-                }
-              },
+              onTap: _isUnlocked
+                ? () async {
+                    Navigator.pop(context);
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("伝票の削除"),
+                        content: Text("「${invoice.customerNameForDisplay}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await _invoiceRepo.deleteInvoice(invoice.id);
+                      _loadData();
+                    }
+                  }
+                : null,
             ),
           ],
         ),
       ),
     );
+  }
+
+  bool _requireUnlock() {
+    if (_isUnlocked) return true;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("スライドでロック解除してください")));
+    return false;
   }
 
   Future<void> _loadVersion() async {
@@ -193,65 +199,69 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   Widget build(BuildContext context) {
     final amountFormatter = NumberFormat("#,###");
     final dateFormatter = DateFormat('yyyy/MM/dd');
-
     return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Colors.indigo.shade700),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+      resizeToAvoidBottomInset: false,
+      drawer: _isUnlocked
+          ? Drawer(
+              child: ListView(
+                padding: EdgeInsets.zero,
                 children: [
-                  const Text("メニュー", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text("v$_appVersion", style: const TextStyle(color: Colors.white70)),
+                  DrawerHeader(
+                    decoration: BoxDecoration(color: Colors.indigo.shade700),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text("メニュー", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text("v$_appVersion", style: const TextStyle(color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.receipt_long),
+                    title: const Text("伝票マスター"),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.people),
+                    title: const Text("顧客マスター"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMasterScreen()));
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.inventory_2),
+                    title: const Text("商品マスター"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductMasterScreen()));
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings),
+                    title: const Text("設定"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.admin_panel_settings),
+                    title: const Text("管理メニュー"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementScreen()));
+                    },
+                  ),
                 ],
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text("伝票マスター"),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.people),
-              title: const Text("顧客マスター"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMasterScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory_2),
-              title: const Text("商品マスター"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductMasterScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text("設定"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings),
-              title: const Text("管理メニュー"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementScreen()));
-              },
-            ),
-          ],
-        ),
-      ),
+            )
+          : null,
       appBar: AppBar(
         // leading removed
         title: GestureDetector(
@@ -317,20 +327,21 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SlideToUnlock(
-              isLocked: !_isUnlocked,
-              onUnlocked: _toggleUnlock,
-              text: "スライドでロック解除",
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SlideToUnlock(
+                isLocked: !_isUnlocked,
+                onUnlocked: _toggleUnlock,
+                text: "スライドでロック解除",
+              ),
             ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredInvoices.isEmpty
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredInvoices.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -342,7 +353,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 100), // キーボードやFAB考慮
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.only(bottom: 120), // 固定: FAB+安全余白
                         itemCount: _filteredInvoices.length,
                         itemBuilder: (context, index) {
                           final invoice = _filteredInvoices[index];
@@ -383,23 +395,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                             ),
                             subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
                             trailing: SizedBox(
-                              height: 56,
+                              height: 60,
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text("￥${amountFormatter.format(invoice.totalAmount)}", 
                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  const SizedBox(height: 2),
                                   if (invoice.isSynced)
                                     const Icon(Icons.sync, size: 14, color: Colors.green)
                                   else
                                     const Icon(Icons.sync_disabled, size: 14, color: Colors.orange),
-                                  const SizedBox(height: 4),
                                   IconButton(
                                     padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints.tightFor(width: 32, height: 28),
+                                    constraints: const BoxConstraints.tightFor(width: 32, height: 26),
                                     icon: const Icon(Icons.edit, size: 18),
                                     tooltip: invoice.isLocked ? "ロック中" : (_isUnlocked ? "編集" : "アンロックして編集"),
                                     onPressed: (invoice.isLocked || !_isUnlocked)
@@ -420,35 +429,40 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                                 ],
                               ),
                             ),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => InvoiceDetailPage(
-                                    invoice: invoice,
-                                    isUnlocked: _isUnlocked, // 状態を渡す
-                                  ),
-                                ),
-                              );
-                              _loadData();
-                            },
-                            onLongPress: () => _showInvoiceActions(invoice),
+                            onTap: _isUnlocked
+                                ? () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => InvoiceDetailPage(
+                                          invoice: invoice,
+                                          isUnlocked: _isUnlocked, // 状態を渡す
+                                        ),
+                                      ),
+                                    );
+                                    _loadData();
+                                  }
+                                : () => _requireUnlock(),
+                            onLongPress: _isUnlocked ? () => _showInvoiceActions(invoice) : () => _requireUnlock(),
                           );
                         },
                       ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => InvoiceFlowScreen(onComplete: _loadData),
-            ),
-          );
-          _loadData();
-        },
+        onPressed: _isUnlocked
+            ? () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InvoiceFlowScreen(onComplete: _loadData),
+                  ),
+                );
+                _loadData();
+              }
+            : _requireUnlock,
         label: const Text("新規伝票作成"),
         icon: const Icon(Icons.add),
         backgroundColor: Colors.indigo,
