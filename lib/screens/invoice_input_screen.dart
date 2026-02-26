@@ -10,6 +10,7 @@ import '../widgets/invoice_pdf_preview_page.dart';
 import 'invoice_detail_page.dart';
 import '../services/gps_service.dart';
 import 'customer_picker_modal.dart';
+import 'customer_master_screen.dart';
 import 'product_picker_modal.dart';
 import '../models/company_model.dart';
 import '../services/company_repository.dart';
@@ -30,6 +31,7 @@ class InvoiceInputForm extends StatefulWidget {
 
 class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final _repository = InvoiceRepository();
+  final InvoiceRepository _invoiceRepo = InvoiceRepository();
   Customer? _selectedCustomer;
   final List<InvoiceItem> _items = [];
   double _taxRate = 0.10;
@@ -214,40 +216,52 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final fmt = NumberFormat("#,###");
     final themeColor = Colors.white;
     final textColor = Colors.black87;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: themeColor,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text("販売アシスト1号 V1.5.06"),
+        title: const Text("販売アシスト1号 V1.5.08"),
       ),
       body: Stack(
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDateSection(),
-                      const SizedBox(height: 16),
-                      _buildCustomerSection(),
-                      const SizedBox(height: 16),
-                      _buildSubjectSection(textColor),
-                      const SizedBox(height: 20),
-                      _buildItemsSection(fmt),
-                      const SizedBox(height: 20),
-                      _buildSummarySection(fmt),
-                      const SizedBox(height: 20),
-                      _buildSignatureSection(),
-                    ],
+          AnimatedPadding(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: InteractiveViewer(
+              panEnabled: false,
+              minScale: 0.8,
+              maxScale: 2.5,
+              clipBehavior: Clip.none,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 140 + bottomInset),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDateSection(),
+                          const SizedBox(height: 16),
+                          _buildCustomerSection(),
+                          const SizedBox(height: 16),
+                          _buildSubjectSection(textColor),
+                          const SizedBox(height: 20),
+                          _buildItemsSection(fmt),
+                          const SizedBox(height: 20),
+                          _buildSummarySection(fmt),
+                          const SizedBox(height: 20),
+                          _buildSignatureSection(),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  _buildBottomActionBar(),
+                ],
               ),
-              _buildBottomActionBar(),
-            ],
+            ),
           ),
           if (_isSaving)
             Container(
@@ -314,17 +328,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         subtitle: const Text("顧客マスターから選択"), // 修正
         trailing: const Icon(Icons.chevron_right),
         onTap: () async {
-          await showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (context) => FractionallySizedBox(
-              heightFactor: 0.9,
-              child: CustomerPickerModal(onCustomerSelected: (c) {
-                setState(() => _selectedCustomer = c);
-                Navigator.pop(context);
-              }),
+          final Customer? picked = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CustomerMasterScreen(selectionMode: true),
+              fullscreenDialog: true,
             ),
           );
+          if (picked != null) {
+            setState(() => _selectedCustomer = picked);
+          }
         },
       ),
     );
