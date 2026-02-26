@@ -13,6 +13,7 @@ import '../services/customer_repository.dart';
 import '../services/company_repository.dart';
 import 'product_picker_modal.dart';
 import '../models/company_model.dart';
+import '../widgets/keyboard_inset_wrapper.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
@@ -158,6 +159,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
     return Scaffold(
       backgroundColor: themeColor,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(), // 常に表示
         title: Row(
@@ -245,81 +247,84 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           ]
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (isDraft)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.edit_note, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "下書き: 未確定・PDFは正式発行で確定",
-                        style: TextStyle(color: Colors.orange),
+      body: KeyboardInsetWrapper(
+        basePadding: const EdgeInsets.all(16.0),
+        extraBottom: 48,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isDraft)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.edit_note, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "下書き: 未確定・PDFは正式発行で確定",
+                          style: TextStyle(color: Colors.orange),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            _buildHeaderSection(textColor),
-            if (_isEditing) ...[
-              const SizedBox(height: 16),
-              _buildDraftToggleEdit(), // 編集用トグル
-              const SizedBox(height: 16),
-              _buildExperimentalSection(isDraft),
+              _buildHeaderSection(textColor),
+              if (_isEditing) ...[
+                const SizedBox(height: 16),
+                _buildDraftToggleEdit(), // 編集用トグル
+                const SizedBox(height: 16),
+                _buildExperimentalSection(isDraft),
+              ],
+              Divider(height: 32, color: Colors.grey.shade400),
+              Text("明細一覧", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+              const SizedBox(height: 8),
+              _buildItemTable(fmt, textColor, isDraft),
+              if (_isEditing)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _addItem,
+                        icon: const Icon(Icons.add),
+                        label: const Text("空の行を追加"),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _pickFromMaster,
+                        icon: const Icon(Icons.list_alt),
+                        label: const Text("マスターから選択"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueGrey.shade700,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 24),
+              _buildSummarySection(fmt, textColor, isDraft),
+              const SizedBox(height: 24),
+              _buildFooterActions(),
             ],
-            Divider(height: 32, color: Colors.grey.shade400),
-            Text("明細一覧", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-            const SizedBox(height: 8),
-            _buildItemTable(fmt, textColor, isDraft),
-            if (_isEditing)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _addItem,
-                      icon: const Icon(Icons.add),
-                      label: const Text("空の行を追加"),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _pickFromMaster,
-                      icon: const Icon(Icons.list_alt),
-                      label: const Text("マスターから選択"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueGrey.shade700,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 24),
-            _buildSummarySection(fmt, textColor, isDraft),
-            const SizedBox(height: 24),
-            _buildFooterActions(),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildHeaderSection(Color textColor) {
-    final dateFormatter = DateFormat('yyyy年MM月dd日');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -365,7 +370,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
           if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
-            Text("件名: ${_currentInvoice.subject}", 
+            Text("件名: ${_currentInvoice.subject}",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigoAccent)),
           ],
           if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)

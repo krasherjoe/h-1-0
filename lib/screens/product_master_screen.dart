@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../services/product_repository.dart';
 import 'barcode_scanner_screen.dart';
+import '../widgets/keyboard_inset_wrapper.dart';
 
 class ProductMasterScreen extends StatefulWidget {
   const ProductMasterScreen({Key? key}) : super(key: key);
@@ -59,35 +60,39 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(product == null ? "商品追加" : "商品編集"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: nameController, decoration: const InputDecoration(labelText: "商品名")),
-                TextField(controller: categoryController, decoration: const InputDecoration(labelText: "カテゴリ")),
-                TextField(controller: priceController, decoration: const InputDecoration(labelText: "初期単価"), keyboardType: TextInputType.number),
-                TextField(controller: stockController, decoration: const InputDecoration(labelText: "在庫数"), keyboardType: TextInputType.number),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(controller: barcodeController, decoration: const InputDecoration(labelText: "バーコード")),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.qr_code_scanner),
-                      onPressed: () async {
-                        final code = await Navigator.push<String>(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-                        );
-                        if (code != null) {
-                          setDialogState(() => barcodeController.text = code);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
+          content: KeyboardInsetWrapper(
+            basePadding: EdgeInsets.zero,
+            extraBottom: 16,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameController, decoration: const InputDecoration(labelText: "商品名")),
+                  TextField(controller: categoryController, decoration: const InputDecoration(labelText: "カテゴリ")),
+                  TextField(controller: priceController, decoration: const InputDecoration(labelText: "初期単価"), keyboardType: TextInputType.number),
+                  TextField(controller: stockController, decoration: const InputDecoration(labelText: "在庫数"), keyboardType: TextInputType.number),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(controller: barcodeController, decoration: const InputDecoration(labelText: "バーコード")),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        onPressed: () async {
+                          final code = await Navigator.push<String>(
+                            context,
+                            MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                          );
+                          if (code != null) {
+                            setDialogState(() => barcodeController.text = code);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -150,36 +155,41 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _filteredProducts.isEmpty
-              ? const Center(child: Text("商品が見つかりません"))
-              : ListView.builder(
-                  itemCount: _filteredProducts.length,
-                  itemBuilder: (context, index) {
-                    final p = _filteredProducts[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: p.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
-                        child: Stack(
-                          children: [
-                            const Align(alignment: Alignment.center, child: Icon(Icons.inventory_2, color: Colors.indigo)),
-                            if (p.isLocked)
-                              const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
-                          ],
+      body: KeyboardInsetWrapper(
+        basePadding: EdgeInsets.zero,
+        extraBottom: 72,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _filteredProducts.isEmpty
+                ? const Center(child: Text("商品が見つかりません"))
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 120, top: 8),
+                    itemCount: _filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final p = _filteredProducts[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: p.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
+                          child: Stack(
+                            children: [
+                              const Align(alignment: Alignment.center, child: Icon(Icons.inventory_2, color: Colors.indigo)),
+                              if (p.isLocked)
+                                const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                            ],
+                          ),
                         ),
-                      ),
-                      title: Text(p.name, style: TextStyle(fontWeight: FontWeight.bold, color: p.isLocked ? Colors.grey : Colors.black87)),
-                      subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
-                      onTap: () => _showDetailPane(p),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: p.isLocked ? null : () => _showEditDialog(product: p),
-                        tooltip: p.isLocked ? "ロック中" : "編集",
-                      ),
-                    );
-                  },
-                ),
+                        title: Text(p.name, style: TextStyle(fontWeight: FontWeight.bold, color: p.isLocked ? Colors.grey : Colors.black87)),
+                        subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
+                        onTap: () => _showDetailPane(p),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: p.isLocked ? null : () => _showEditDialog(product: p),
+                          tooltip: p.isLocked ? "ロック中" : "編集",
+                        ),
+                      );
+                    },
+                  ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
         child: const Icon(Icons.add),

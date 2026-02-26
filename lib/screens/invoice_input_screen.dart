@@ -14,6 +14,7 @@ import 'customer_master_screen.dart';
 import 'product_picker_modal.dart';
 import '../models/company_model.dart';
 import '../services/company_repository.dart';
+import '../widgets/keyboard_inset_wrapper.dart';
 
 class InvoiceInputForm extends StatefulWidget {
   final Function(Invoice invoice, String filePath) onInvoiceGenerated;
@@ -226,7 +227,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       ),
       body: Stack(
         children: [
-          SafeArea(
+          KeyboardInsetWrapper(
+            basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+            extraBottom: 24,
             child: InteractiveViewer(
               panEnabled: false,
               minScale: 0.8,
@@ -236,7 +239,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 160),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

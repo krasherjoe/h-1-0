@@ -17,6 +17,7 @@ import '../main.dart'; // InvoiceFlowScreen 用
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:printing/printing.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
+import 'invoice_history/invoice_history_list.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
   const InvoiceHistoryScreen({Key? key}) : super(key: key);
@@ -341,112 +342,38 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _filteredInvoices.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                            const SizedBox(height: 16),
-                            Text(_searchQuery.isEmpty ? "保存された伝票がありません" : "該当する伝票が見つかりません"),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: const EdgeInsets.only(bottom: 120), // 固定: FAB+安全余白
-                        itemCount: _filteredInvoices.length,
-                        itemBuilder: (context, index) {
-                          final invoice = _filteredInvoices[index];
-                          return ListTile(
-                            tileColor: invoice.isDraft ? Colors.orange.shade50 : null, // 下書きは背景色を変更
-                            leading: CircleAvatar(
-                              backgroundColor: invoice.isDraft 
-                                  ? Colors.orange.shade100 
-                                  : (_isUnlocked ? Colors.indigo.shade100 : Colors.grey.shade200),
-                              child: Stack(
-                                children: [
-                                  Align(
-                                    alignment: Alignment.center,
-                                    child: Icon(
-                                      invoice.isDraft ? Icons.edit_note : Icons.description_outlined,
-                                      color: invoice.isDraft 
-                                          ? Colors.orange 
-                                          : (_isUnlocked ? Colors.indigo : Colors.grey),
-                                    ),
-                                  ),
-                                  if (invoice.isLocked)
-                                    const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
-                                ],
-                              ),
+                  : InvoiceHistoryList(
+                      invoices: _filteredInvoices,
+                      isUnlocked: _isUnlocked,
+                      amountFormatter: amountFormatter,
+                      dateFormatter: dateFormatter,
+                      onTap: (invoice) async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => InvoiceDetailPage(
+                              invoice: invoice,
+                              isUnlocked: _isUnlocked,
                             ),
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(invoice.customerNameForDisplay, style: TextStyle(fontWeight: FontWeight.bold, color: invoice.isLocked ? Colors.grey : Colors.black87)),
-                                if (invoice.subject?.isNotEmpty ?? false)
-                                  Text(
-                                    invoice.subject!,
-                                    style: TextStyle(fontSize: 13, color: Colors.indigo.shade700, fontWeight: FontWeight.normal),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                              ],
+                          ),
+                        );
+                        _loadData();
+                      },
+                      onLongPress: (invoice) => _isUnlocked ? _showInvoiceActions(invoice) : _requireUnlock(),
+                      onEdit: (invoice) async {
+                        if (invoice.isLocked || !_isUnlocked) return;
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => InvoiceInputForm(
+                              existingInvoice: invoice,
+                              onInvoiceGenerated: (inv, path) {},
                             ),
-                            subtitle: Text("${dateFormatter.format(invoice.date)} - ${invoice.invoiceNumber}"),
-                            trailing: SizedBox(
-                              height: 60,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text("￥${amountFormatter.format(invoice.totalAmount)}", 
-                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                  if (invoice.isSynced)
-                                    const Icon(Icons.sync, size: 14, color: Colors.green)
-                                  else
-                                    const Icon(Icons.sync_disabled, size: 14, color: Colors.orange),
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints.tightFor(width: 32, height: 26),
-                                    icon: const Icon(Icons.edit, size: 18),
-                                    tooltip: invoice.isLocked ? "ロック中" : (_isUnlocked ? "編集" : "アンロックして編集"),
-                                    onPressed: (invoice.isLocked || !_isUnlocked)
-                                        ? null
-                                        : () async {
-                                            await Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => InvoiceInputForm(
-                                                  existingInvoice: invoice,
-                                                  onInvoiceGenerated: (inv, path) {},
-                                                ),
-                                              ),
-                                            );
-                                            _loadData();
-                                          },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            onTap: _isUnlocked
-                                ? () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => InvoiceDetailPage(
-                                          invoice: invoice,
-                                          isUnlocked: _isUnlocked, // 状態を渡す
-                                        ),
-                                      ),
-                                    );
-                                    _loadData();
-                                  }
-                                : () => _requireUnlock(),
-                            onLongPress: _isUnlocked ? () => _showInvoiceActions(invoice) : () => _requireUnlock(),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                        _loadData();
+                      },
+                    ),
             ),
           ],
         ),

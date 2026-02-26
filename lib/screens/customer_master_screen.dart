@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import '../widgets/keyboard_inset_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/customer_model.dart';
@@ -315,141 +316,148 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     final result = await showDialog<Customer>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEdit ? "顧客を編集" : "顧客を新規登録"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: displayNameController,
-                  decoration: const InputDecoration(labelText: "表示名（略称）", hintText: "例: 佐々木製作所"),
-                  onChanged: (v) {
-                    if (head1Controller.text.isEmpty) {
-                      head1Controller.text = _headKana(v);
-                    }
-                  },
-                ),
-                TextField(
-                  controller: formalNameController,
-                  decoration: const InputDecoration(labelText: "正式名称", hintText: "例: 株式会社 佐々木製作所"),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.contact_phone),
-                    label: const Text('電話帳から引用'),
-                    onPressed: prefillFromPhonebook,
-                  ),
-                ),
-                Row(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(isEdit ? "顧客を編集" : "顧客を新規登録"),
+            content: KeyboardInsetWrapper(
+              basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+              extraBottom: 20,
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: RadioListTile<bool>(
-                        dense: true,
-                        title: const Text('会社'),
-                        value: true,
-                        groupValue: isCompany,
-                        onChanged: (v) {
-                          setDialogState(() {
-                            isCompany = v ?? true;
-                            selectedTitle = '御中';
-                          });
-                        },
+                    TextField(
+                      controller: displayNameController,
+                      decoration: const InputDecoration(labelText: "表示名（略称）", hintText: "例: 佐々木製作所"),
+                      onChanged: (v) {
+                        if (head1Controller.text.isEmpty) {
+                          head1Controller.text = _headKana(v);
+                        }
+                      },
+                    ),
+                    TextField(
+                      controller: formalNameController,
+                      decoration: const InputDecoration(labelText: "正式名称", hintText: "例: 株式会社 佐々木製作所"),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.contact_phone),
+                        label: const Text('電話帳から引用'),
+                        onPressed: prefillFromPhonebook,
                       ),
                     ),
-                    Expanded(
-                      child: RadioListTile<bool>(
-                        dense: true,
-                        title: const Text('個人'),
-                        value: false,
-                        groupValue: isCompany,
-                        onChanged: (v) {
-                          setDialogState(() {
-                            isCompany = v ?? false;
-                            selectedTitle = '様';
-                          });
-                        },
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            dense: true,
+                            title: const Text('会社'),
+                            value: true,
+                            groupValue: isCompany,
+                            onChanged: (v) {
+                              setDialogState(() {
+                                isCompany = v ?? true;
+                                selectedTitle = '御中';
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            dense: true,
+                            title: const Text('個人'),
+                            value: false,
+                            groupValue: isCompany,
+                            onChanged: (v) {
+                              setDialogState(() {
+                                isCompany = v ?? false;
+                                selectedTitle = '様';
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: selectedTitle,
+                      decoration: const InputDecoration(labelText: "敬称"),
+                      items: ["様", "御中", "殿", "貴社"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                      onChanged: (val) => setDialogState(() {
+                        selectedTitle = val ?? "様";
+                        isCompany = selectedTitle == '御中' || selectedTitle == '貴社';
+                      }),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: head1Controller,
+                            maxLength: 1,
+                            decoration: const InputDecoration(labelText: "インデックス1 (1文字)", counterText: ""),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: head2Controller,
+                            maxLength: 1,
+                            decoration: const InputDecoration(labelText: "インデックス2 (任意)", counterText: ""),
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextField(
+                      controller: departmentController,
+                      decoration: const InputDecoration(labelText: "部署名", hintText: "例: 営業部"),
+                    ),
+                    TextField(
+                      controller: addressController,
+                      decoration: const InputDecoration(labelText: "住所"),
+                    ),
+                    TextField(
+                      controller: telController,
+                      decoration: const InputDecoration(labelText: "電話番号"),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(labelText: "メールアドレス"),
+                      keyboardType: TextInputType.emailAddress,
                     ),
                   ],
                 ),
-                DropdownButtonFormField<String>(
-                  value: selectedTitle,
-                  decoration: const InputDecoration(labelText: "敬称"),
-                  items: ["様", "御中", "殿", "貴社"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                  onChanged: (val) => setDialogState(() {
-                    selectedTitle = val ?? "様";
-                    isCompany = selectedTitle == '御中' || selectedTitle == '貴社';
-                  }),
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: head1Controller,
-                        maxLength: 1,
-                        decoration: const InputDecoration(labelText: "インデックス1 (1文字)", counterText: ""),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: head2Controller,
-                        maxLength: 1,
-                        decoration: const InputDecoration(labelText: "インデックス2 (任意)", counterText: ""),
-                      ),
-                    ),
-                  ],
-                ),
-                TextField(
-                  controller: departmentController,
-                  decoration: const InputDecoration(labelText: "部署名", hintText: "例: 営業部"),
-                ),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(labelText: "住所"),
-                ),
-                TextField(
-                  controller: telController,
-                  decoration: const InputDecoration(labelText: "電話番号"),
-                  keyboardType: TextInputType.phone,
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: "メールアドレス"),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-            TextButton(
-              onPressed: () {
-                if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
-                  return;
-                }
-                final head1 = _normalizeIndexChar(head1Controller.text);
-                final head2 = _normalizeIndexChar(head2Controller.text);
-                final newCustomer = Customer(
-                  id: customer?.id ?? const Uuid().v4(),
-                  displayName: displayNameController.text,
-                  formalName: formalNameController.text,
-                  title: selectedTitle,
-                  department: departmentController.text.isEmpty ? null : departmentController.text,
-                  address: addressController.text.isEmpty ? null : addressController.text,
-                  tel: telController.text.isEmpty ? null : telController.text,
-                  headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
-                  headChar2: head2.isEmpty ? null : head2,
-                  isLocked: customer?.isLocked ?? false,
-                );
-                Navigator.pop(context, newCustomer);
-              },
-              child: const Text("保存"),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+              TextButton(
+                onPressed: () {
+                  if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
+                    return;
+                  }
+                  final head1 = _normalizeIndexChar(head1Controller.text);
+                  final head2 = _normalizeIndexChar(head2Controller.text);
+                  final newCustomer = Customer(
+                    id: customer?.id ?? const Uuid().v4(),
+                    displayName: displayNameController.text,
+                    formalName: formalNameController.text,
+                    title: selectedTitle,
+                    department: departmentController.text.isEmpty ? null : departmentController.text,
+                    address: addressController.text.isEmpty ? null : addressController.text,
+                    tel: telController.text.isEmpty ? null : telController.text,
+                    headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
+                    headChar2: head2.isEmpty ? null : head2,
+                    isLocked: customer?.isLocked ?? false,
+                  );
+                  Navigator.pop(context, newCustomer);
+                },
+                child: const Text("保存"),
+              ),
+            ],
+          );
+        },
       ),
     );
 
@@ -741,76 +749,80 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: widget.selectionMode ? "名前で検索して選択" : "名前で検索 (電話帳参照ボタンは詳細で)",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              ),
-              onChanged: (_) => setState(_applyFilter),
-            ),
-          ),
-          // Kana index temporarily disabled
-          if (!widget.selectionMode)
+      body: KeyboardInsetWrapper(
+        basePadding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+        extraBottom: 40,
+        child: Column(
+          children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: SwitchListTile(
-                title: const Text('株式会社/有限会社などの接頭辞を無視してソート'),
-                value: _ignoreCorpPrefix,
-                onChanged: (v) => setState(() {
-                  _ignoreCorpPrefix = v;
-                  _applyFilter();
-                }),
+              padding: const EdgeInsets.all(12),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: widget.selectionMode ? "名前で検索して選択" : "名前で検索 (電話帳参照ボタンは詳細で)",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                onChanged: (_) => setState(_applyFilter),
               ),
             ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filtered.isEmpty
-                    ? const Center(child: Text("顧客が登録されていません"))
-                    : ListView.builder(
-                        itemCount: _filtered.length,
-                        itemBuilder: (context, index) {
-                          final c = _filtered[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: c.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
-                              child: Stack(
-                                children: [
-                                  const Align(alignment: Alignment.center, child: Icon(Icons.person, color: Colors.indigo)),
-                                  if (c.isLocked)
-                                    const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
-                                ],
+            if (!widget.selectionMode)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: SwitchListTile(
+                  title: const Text('株式会社/有限会社などの接頭辞を無視してソート'),
+                  value: _ignoreCorpPrefix,
+                  onChanged: (v) => setState(() {
+                    _ignoreCorpPrefix = v;
+                    _applyFilter();
+                  }),
+                ),
+              ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filtered.isEmpty
+                      ? const Center(child: Text("顧客が登録されていません"))
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 120, top: 4),
+                          itemCount: _filtered.length,
+                          itemBuilder: (context, index) {
+                            final c = _filtered[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: c.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
+                                child: Stack(
+                                  children: [
+                                    const Align(alignment: Alignment.center, child: Icon(Icons.person, color: Colors.indigo)),
+                                    if (c.isLocked)
+                                      const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                                  ],
+                                ),
                               ),
-                            ),
-                            title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
-                            subtitle: Text("${c.formalName} ${c.title}"),
-                            onTap: widget.selectionMode ? () => Navigator.pop(context, c) : () => _showDetailPane(c),
-                            trailing: widget.selectionMode
-                                ? null
-                                : IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
-                                    tooltip: c.isLocked ? "ロック中" : "編集",
-                                  ),
-                            onLongPress: () => _showContextActions(c),
-                          );
-                        },
-                      ),
-          ),
-        ],
+                              title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
+                              subtitle: Text("${c.formalName} ${c.title}"),
+                              onTap: widget.selectionMode ? () => Navigator.pop(context, c) : () => _showDetailPane(c),
+                              trailing: widget.selectionMode
+                                  ? null
+                                  : IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
+                                      tooltip: c.isLocked ? "ロック中" : "編集",
+                                    ),
+                              onLongPress: () => _showContextActions(c),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddMenu,
         icon: const Icon(Icons.add),
-        label: const Text('顧客を追加'),
+        label: Text(widget.selectionMode ? "選択" : "追加"),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -963,7 +975,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      _showContactUpdateDialog(c);
+                      _showContactUpdateSheet(c);
                     },
                     icon: const Icon(Icons.contact_mail),
                     label: const Text("連絡先を更新"),
@@ -999,6 +1011,40 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       child: Chip(label: const Text("ロック中"), avatar: const Icon(Icons.lock, size: 16)),
                     ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showContactUpdateSheet(Customer c) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => KeyboardInsetWrapper(
+        basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+        extraBottom: 16,
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.contact_mail),
+                title: const Text('連絡先を更新'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showContactUpdateSheet(c);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.contact_phone),
+                title: const Text('電話帳から取り込む'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showPhonebookImport();
+                },
               ),
             ],
           ),

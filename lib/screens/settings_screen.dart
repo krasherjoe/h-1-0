@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/keyboard_inset_wrapper.dart';
 import 'company_info_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -226,7 +227,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -235,222 +235,218 @@ class _SettingsScreenState extends State<SettingsScreen> {
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () => _showSnackbar('設定はテンプレ実装です。実際の保存は未実装'),
-          )
+          ),
         ],
       ),
-      body: SafeArea(
-        child: AnimatedPadding(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            children: [
-              _section(
-                title: '自社情報',
-                subtitle: '会社名・住所・登録番号など',
-                child: Column(
-                  children: [
-                    TextField(controller: _companyNameCtrl, decoration: const InputDecoration(labelText: '会社名')),
-                    TextField(controller: _companyZipCtrl, decoration: const InputDecoration(labelText: '郵便番号')),
-                    TextField(controller: _companyAddrCtrl, decoration: const InputDecoration(labelText: '住所')),
-                    TextField(controller: _companyTelCtrl, decoration: const InputDecoration(labelText: '電話番号')),
-                    TextField(controller: _companyFaxCtrl, decoration: const InputDecoration(labelText: 'FAX番号')),
-                    TextField(controller: _companyEmailCtrl, decoration: const InputDecoration(labelText: 'メールアドレス')),
-                    TextField(controller: _companyUrlCtrl, decoration: const InputDecoration(labelText: 'URL')),
-                    TextField(controller: _companyRegCtrl, decoration: const InputDecoration(labelText: '登録番号 (インボイス)')),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.upload_file),
-                          label: const Text('画面で編集'),
-                          onPressed: () async {
-                            await Navigator.push(context, MaterialPageRoute(builder: (context) => const CompanyInfoScreen()));
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.save),
-                          label: const Text('保存'),
-                          onPressed: _saveCompany,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+      body: KeyboardInsetWrapper(
+        basePadding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        extraBottom: 40,
+        child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          children: [
+            _section(
+              title: '自社情報',
+              subtitle: '会社名・住所・登録番号など',
+              child: Column(
+                children: [
+                  TextField(controller: _companyNameCtrl, decoration: const InputDecoration(labelText: '会社名')),
+                  TextField(controller: _companyZipCtrl, decoration: const InputDecoration(labelText: '郵便番号')),
+                  TextField(controller: _companyAddrCtrl, decoration: const InputDecoration(labelText: '住所')),
+                  TextField(controller: _companyTelCtrl, decoration: const InputDecoration(labelText: '電話番号')),
+                  TextField(controller: _companyFaxCtrl, decoration: const InputDecoration(labelText: 'FAX番号')),
+                  TextField(controller: _companyEmailCtrl, decoration: const InputDecoration(labelText: 'メールアドレス')),
+                  TextField(controller: _companyUrlCtrl, decoration: const InputDecoration(labelText: 'URL')),
+                  TextField(controller: _companyRegCtrl, decoration: const InputDecoration(labelText: '登録番号 (インボイス)')),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('画面で編集'),
+                        onPressed: () async {
+                          await Navigator.push(context, MaterialPageRoute(builder: (context) => const CompanyInfoScreen()));
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text('保存'),
+                        onPressed: _saveCompany,
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              _section(
-                title: '担当者情報',
-                subtitle: '署名や連絡先（送信者情報）',
-                child: Column(
-                  children: [
-                    TextField(controller: _staffNameCtrl, decoration: const InputDecoration(labelText: '担当者名')),
-                    TextField(controller: _staffMailCtrl, decoration: const InputDecoration(labelText: 'メールアドレス')),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: _saveStaff,
-                    ),
-                  ],
-                ),
+            ),
+            _section(
+              title: '担当者情報',
+              subtitle: '署名や連絡先（送信者情報）',
+              child: Column(
+                children: [
+                  TextField(controller: _staffNameCtrl, decoration: const InputDecoration(labelText: '担当者名')),
+                  TextField(controller: _staffMailCtrl, decoration: const InputDecoration(labelText: 'メールアドレス')),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('保存'),
+                    onPressed: _saveStaff,
+                  ),
+                ],
               ),
-              _section(
-                title: 'SMTP情報',
-                subtitle: 'メール送信サーバ設定（テンプレ）',
-                child: Column(
-                  children: [
-                    TextField(controller: _smtpHostCtrl, decoration: const InputDecoration(labelText: 'ホスト名')), 
-                    TextField(controller: _smtpPortCtrl, decoration: const InputDecoration(labelText: 'ポート番号'), keyboardType: TextInputType.number),
-                    TextField(controller: _smtpUserCtrl, decoration: const InputDecoration(labelText: 'ユーザー名')),
-                    TextField(controller: _smtpPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
-                    TextField(controller: _smtpBccCtrl, decoration: const InputDecoration(labelText: 'BCC (カンマ区切り可)')),
-                    SwitchListTile(
-                      title: const Text('STARTTLS を使用'),
-                      value: _smtpTls,
-                      onChanged: (v) => setState(() => _smtpTls = v),
-                    ),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: _saveSmtp,
-                    ),
-                  ],
-                ),
+            ),
+            _section(
+              title: 'SMTP情報',
+              subtitle: 'メール送信サーバ設定（テンプレ）',
+              child: Column(
+                children: [
+                  TextField(controller: _smtpHostCtrl, decoration: const InputDecoration(labelText: 'ホスト名')),
+                  TextField(controller: _smtpPortCtrl, decoration: const InputDecoration(labelText: 'ポート番号'), keyboardType: TextInputType.number),
+                  TextField(controller: _smtpUserCtrl, decoration: const InputDecoration(labelText: 'ユーザー名')),
+                  TextField(controller: _smtpPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
+                  TextField(controller: _smtpBccCtrl, decoration: const InputDecoration(labelText: 'BCC (カンマ区切り可)')),
+                  SwitchListTile(
+                    title: const Text('STARTTLS を使用'),
+                    value: _smtpTls,
+                    onChanged: (v) => setState(() => _smtpTls = v),
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('保存'),
+                    onPressed: _saveSmtp,
+                  ),
+                ],
               ),
-              _section(
-                title: '外部同期（母艦システム「お局様」連携）',
-                subtitle: '実行ボタンなし。ホストドメインとパスワードを入力してください。',
-                child: Column(
-                  children: [
-                    TextField(controller: _externalHostCtrl, decoration: const InputDecoration(labelText: 'ホストドメイン')),
-                    TextField(controller: _externalPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: _saveExternalSync,
-                    ),
-                  ],
-                ),
+            ),
+            _section(
+              title: '外部同期（母艦システム「お局様」連携）',
+              subtitle: '実行ボタンなし。ホストドメインとパスワードを入力してください。',
+              child: Column(
+                children: [
+                  TextField(controller: _externalHostCtrl, decoration: const InputDecoration(labelText: 'ホストドメイン')),
+                  TextField(controller: _externalPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('保存'),
+                    onPressed: _saveExternalSync,
+                  ),
+                ],
               ),
-              _section(
-                title: 'バックアップドライブ',
-                subtitle: 'バックアップ先のクラウド/ローカル',
-                child: Column(
-                  children: [
-                    TextField(controller: _backupPathCtrl, decoration: const InputDecoration(labelText: '保存先パス/URL')), 
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.folder_open),
-                          label: const Text('参照'),
-                          onPressed: _pickBackupPath,
+            ),
+            _section(
+              title: 'バックアップドライブ',
+              subtitle: 'バックアップ先のクラウド/ローカル',
+              child: Column(
+                children: [
+                  TextField(controller: _backupPathCtrl, decoration: const InputDecoration(labelText: '保存先パス/URL')),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('参照'),
+                        onPressed: _pickBackupPath,
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text('保存'),
+                        onPressed: _saveBackup,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            _section(
+              title: 'テーマ選択',
+              subtitle: '配色や見た目を切り替え（テンプレ）',
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    value: 'light',
+                    groupValue: _theme,
+                    title: const Text('ライト'),
+                    onChanged: (v) => setState(() => _theme = v ?? 'light'),
+                  ),
+                  RadioListTile<String>(
+                    value: 'dark',
+                    groupValue: _theme,
+                    title: const Text('ダーク'),
+                    onChanged: (v) => setState(() => _theme = v ?? 'dark'),
+                  ),
+                  RadioListTile<String>(
+                    value: 'system',
+                    groupValue: _theme,
+                    title: const Text('システムに従う'),
+                    onChanged: (v) => setState(() => _theme = v ?? 'system'),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('保存'),
+                    onPressed: () => _showSnackbar('テーマ設定を保存（テンプレ）: $_theme'),
+                  ),
+                ],
+              ),
+            ),
+            _section(
+              title: 'かなインデックス追加',
+              subtitle: '漢字→行（1文字ずつ）を追加して索引を補強',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _kanaKeyCtrl,
+                          maxLength: 1,
+                          decoration: const InputDecoration(labelText: '漢字1文字', counterText: ''),
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.save),
-                          label: const Text('保存'),
-                          onPressed: _saveBackup,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _kanaValCtrl,
+                          maxLength: 1,
+                          decoration: const InputDecoration(labelText: '行(例: さ)', counterText: ''),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          final k = _kanaKeyCtrl.text.trim();
+                          final v = _kanaValCtrl.text.trim();
+                          if (k.isEmpty || v.isEmpty) return;
+                          setState(() {
+                            _customKanaMap[k] = v;
+                          });
+                        },
+                        child: const Text('追加'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: _customKanaMap.entries
+                        .map((e) => Chip(
+                              label: Text('${e.key}: ${e.value}'),
+                              onDeleted: () => setState(() => _customKanaMap.remove(e.key)),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('保存'),
+                    onPressed: _saveKanaMap,
+                  ),
+                ],
               ),
-              _section(
-                title: 'テーマ選択',
-                subtitle: '配色や見た目を切り替え（テンプレ）',
-                child: Column(
-                  children: [
-                    RadioListTile<String>(
-                      value: 'light',
-                      groupValue: _theme,
-                      title: const Text('ライト'),
-                      onChanged: (v) => setState(() => _theme = v ?? 'light'),
-                    ),
-                    RadioListTile<String>(
-                      value: 'dark',
-                      groupValue: _theme,
-                      title: const Text('ダーク'),
-                      onChanged: (v) => setState(() => _theme = v ?? 'dark'),
-                    ),
-                    RadioListTile<String>(
-                      value: 'system',
-                      groupValue: _theme,
-                      title: const Text('システムに従う'),
-                      onChanged: (v) => setState(() => _theme = v ?? 'system'),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: () => _showSnackbar('テーマ設定を保存（テンプレ）: $_theme'),
-                    ),
-                  ],
-                ),
-              ),
-              _section(
-                title: 'かなインデックス追加',
-                subtitle: '漢字→行（1文字ずつ）を追加して索引を補強',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _kanaKeyCtrl,
-                            maxLength: 1,
-                            decoration: const InputDecoration(labelText: '漢字1文字', counterText: ''),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _kanaValCtrl,
-                            maxLength: 1,
-                            decoration: const InputDecoration(labelText: '行(例: さ)', counterText: ''),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            final k = _kanaKeyCtrl.text.trim();
-                            final v = _kanaValCtrl.text.trim();
-                            if (k.isEmpty || v.isEmpty) return;
-                            setState(() {
-                              _customKanaMap[k] = v;
-                            });
-                          },
-                          child: const Text('追加'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      children: _customKanaMap.entries
-                          .map((e) => Chip(
-                                label: Text('${e.key}: ${e.value}'),
-                                onDeleted: () => setState(() => _customKanaMap.remove(e.key)),
-                              ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: _saveKanaMap,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

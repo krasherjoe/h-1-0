@@ -3,6 +3,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:uuid/uuid.dart';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
+import '../widgets/keyboard_inset_wrapper.dart';
 
 /// 顧客マスターからの選択、登録、編集、削除を行うモーダル
 class CustomerPickerModal extends StatefulWidget {
@@ -203,81 +204,87 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("顧客マスター管理", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "登録済み顧客を検索...",
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      child: KeyboardInsetWrapper(
+        basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
+        extraBottom: 24,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("顧客マスター管理", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                    ],
                   ),
-                  onChanged: _onSearch,
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isImportingFromContacts ? null : _importFromPhoneContacts,
-                    icon: _isImportingFromContacts
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.contact_phone),
-                    label: const Text("電話帳から新規取り込み"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey.shade700, foregroundColor: Colors.white),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "登録済み顧客を検索...",
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onChanged: _onSearch,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isImportingFromContacts ? null : _importFromPhoneContacts,
+                      icon: _isImportingFromContacts
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.contact_phone),
+                      label: const Text("電話帳から新規取り込み"),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey.shade700, foregroundColor: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Divider(),
-          Expanded(
-            child: _isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredCustomers.isEmpty
-                    ? const Center(child: Text("該当する顧客がいません"))
-                    : ListView.builder(
-                        itemCount: _filteredCustomers.length,
-                        itemBuilder: (context, index) {
-                          final customer = _filteredCustomers[index];
-                          return ListTile(
-                            leading: const CircleAvatar(child: Icon(Icons.business)),
-                            title: Text(customer.formalName),
-                            subtitle: Text(customer.department?.isNotEmpty == true ? customer.department! : "部署未設定"),
-                            onTap: () => widget.onCustomerSelected(customer),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blueGrey, size: 20),
-                                  onPressed: () => _showCustomerEditDialog(
-                                    displayName: customer.displayName,
-                                    initialFormalName: customer.formalName,
-                                    existingCustomer: customer,
+            const Divider(height: 1),
+            Expanded(
+              child: _isLoading 
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredCustomers.isEmpty
+                      ? const Center(child: Text("該当する顧客がいません"))
+                      : ListView.builder(
+                          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: const EdgeInsets.only(bottom: 80),
+                          itemCount: _filteredCustomers.length,
+                          itemBuilder: (context, index) {
+                            final customer = _filteredCustomers[index];
+                            return ListTile(
+                              leading: const CircleAvatar(child: Icon(Icons.business)),
+                              title: Text(customer.formalName),
+                              subtitle: Text(customer.department?.isNotEmpty == true ? customer.department! : "部署未設定"),
+                              onTap: () => widget.onCustomerSelected(customer),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blueGrey, size: 20),
+                                    onPressed: () => _showCustomerEditDialog(
+                                      displayName: customer.displayName,
+                                      initialFormalName: customer.formalName,
+                                      existingCustomer: customer,
+                                    ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                  onPressed: () => _confirmDelete(customer),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                    onPressed: () => _confirmDelete(customer),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
