@@ -61,12 +61,22 @@ class MyApp extends StatelessWidget {
         fontFamily: 'IPAexGothic',
       ),
       builder: (context, child) {
-        return InteractiveViewer(
-          panEnabled: false,
-          scaleEnabled: true,
-          minScale: 0.8,
-          maxScale: 2.0,
-          child: child ?? const SizedBox.shrink(),
+        final mq = MediaQuery.of(context);
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
+            child: InteractiveViewer(
+              panEnabled: false,
+              scaleEnabled: true,
+              minScale: 0.8,
+              maxScale: 2.0,
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
         );
       },
       home: const InvoiceHistoryScreen(),

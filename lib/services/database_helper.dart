@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 17;
+  static const _databaseVersion = 20;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -38,6 +38,9 @@ class DatabaseHelper {
           zip_code TEXT,
           address TEXT,
           tel TEXT,
+          fax TEXT,
+          email TEXT,
+          url TEXT,
           default_tax_rate REAL DEFAULT 0.10,
           seal_path TEXT
         )
@@ -144,6 +147,23 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'invoices', 'contact_tel_snapshot TEXT');
       await _safeAddColumn(db, 'invoices', 'contact_address_snapshot TEXT');
     }
+    if (oldVersion < 20) {
+      await _safeAddColumn(db, 'company_info', 'fax TEXT');
+      await _safeAddColumn(db, 'company_info', 'email TEXT');
+      await _safeAddColumn(db, 'company_info', 'url TEXT');
+    }
+    if (oldVersion < 18) {
+      await _safeAddColumn(db, 'customers', 'contact_version_id INTEGER');
+    }
+    if (oldVersion < 19) {
+      await _safeAddColumn(db, 'customers', 'head_char1 TEXT');
+      await _safeAddColumn(db, 'customers', 'head_char2 TEXT');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_head1 ON customers(head_char1)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_head2 ON customers(head_char2)');
+    }
+    if (oldVersion < 20) {
+      await _safeAddColumn(db, 'customers', 'email TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -156,7 +176,11 @@ class DatabaseHelper {
         department TEXT,
         address TEXT,
         tel TEXT,
+        email TEXT,
+        contact_version_id INTEGER,
         odoo_id TEXT,
+        head_char1 TEXT,
+        head_char2 TEXT,
         is_locked INTEGER DEFAULT 0,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT NOT NULL

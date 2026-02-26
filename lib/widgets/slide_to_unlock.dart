@@ -71,7 +71,7 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
                     });
                   },
                   onHorizontalDragEnd: (details) {
-                    if (_position >= trackWidth * 0.95) {
+                    if (_position >= trackWidth * 0.65) {
                       widget.onUnlocked();
                       // 成功時はアニメーションで戻すのではなく、状態が変わるのでリセット
                       setState(() => _position = 0);

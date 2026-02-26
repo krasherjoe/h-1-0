@@ -120,6 +120,9 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                         if (companyInfo.zipCode != null) pw.Text("〒${companyInfo.zipCode}"),
                         if (companyInfo.address != null) pw.Text(companyInfo.address!),
                         if (companyInfo.tel != null) pw.Text("TEL: ${companyInfo.tel}"),
+                        if (companyInfo.fax != null && companyInfo.fax!.isNotEmpty) pw.Text("FAX: ${companyInfo.fax}"),
+                        if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text("MAIL: ${companyInfo.email}"),
+                        if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text("URL: ${companyInfo.url}"),
                         if (companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty)
                           pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
                       ],
@@ -167,6 +170,12 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
             cellAlignment: pw.Alignment.centerLeft,
             columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FlexColumnWidth(1), 2: pw.FlexColumnWidth(2), 3: pw.FlexColumnWidth(2)},
+            cellAlignments: const {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerRight,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+            },
           ),
           pw.SizedBox(height: 20),
           pw.Row(

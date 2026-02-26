@@ -216,20 +216,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final fmt = NumberFormat("#,###");
     final themeColor = Colors.white;
     final textColor = Colors.black87;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: themeColor,
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("販売アシスト1号 V1.5.08"),
       ),
       body: Stack(
         children: [
-          AnimatedPadding(
-            duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.only(bottom: bottomInset),
+          SafeArea(
             child: InteractiveViewer(
               panEnabled: false,
               minScale: 0.8,
@@ -239,7 +236,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, 140 + bottomInset),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -254,6 +251,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           _buildSummarySection(fmt),
                           const SizedBox(height: 20),
                           _buildSignatureSection(),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),

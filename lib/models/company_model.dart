@@ -3,6 +3,9 @@ class CompanyInfo {
   final String? zipCode;
   final String? address;
   final String? tel;
+  final String? fax;
+  final String? email;
+  final String? url;
   final double defaultTaxRate;
   final String? sealPath; // 角印（印鑑）の画像パス
   final String taxDisplayMode; // 'normal', 'hidden', 'text_only'
@@ -13,6 +16,9 @@ class CompanyInfo {
     this.zipCode,
     this.address,
     this.tel,
+    this.fax,
+    this.email,
+    this.url,
     this.defaultTaxRate = 0.10,
     this.sealPath,
     this.taxDisplayMode = 'normal',
@@ -26,6 +32,9 @@ class CompanyInfo {
       'zip_code': zipCode,
       'address': address,
       'tel': tel,
+      'fax': fax,
+      'email': email,
+      'url': url,
       'default_tax_rate': defaultTaxRate,
       'seal_path': sealPath,
       'tax_display_mode': taxDisplayMode,
@@ -35,11 +44,14 @@ class CompanyInfo {
 
   factory CompanyInfo.fromMap(Map<String, dynamic> map) {
     return CompanyInfo(
-      name: map['name'] ?? "自社名未設定",
+      name: map['name'] ?? "",
       zipCode: map['zip_code'],
       address: map['address'],
       tel: map['tel'],
-      defaultTaxRate: map['default_tax_rate'] ?? 0.10,
+      fax: map['fax'],
+      email: map['email'],
+      url: map['url'],
+      defaultTaxRate: (map['default_tax_rate'] ?? 0.10).toDouble(),
       sealPath: map['seal_path'],
       taxDisplayMode: map['tax_display_mode'] ?? 'normal',
       registrationNumber: map['registration_number'], // 追加
@@ -51,6 +63,9 @@ class CompanyInfo {
     String? zipCode,
     String? address,
     String? tel,
+    String? fax,
+    String? email,
+    String? url,
     double? defaultTaxRate,
     String? sealPath,
     String? taxDisplayMode,
@@ -61,6 +76,9 @@ class CompanyInfo {
       zipCode: zipCode ?? this.zipCode,
       address: address ?? this.address,
       tel: tel ?? this.tel,
+      fax: fax ?? this.fax,
+      email: email ?? this.email,
+      url: url ?? this.url,
       defaultTaxRate: defaultTaxRate ?? this.defaultTaxRate,
       sealPath: sealPath ?? this.sealPath,
       taxDisplayMode: taxDisplayMode ?? this.taxDisplayMode,

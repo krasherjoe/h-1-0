@@ -11,35 +11,47 @@ class CustomerRepository {
 
   Future<List<Customer>> getAllCustomers() async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
       FROM customers c
       LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
       ORDER BY c.display_name ASC
     ''');
-
     if (maps.isEmpty) {
-      await _generateSampleCustomers();
-      return getAllCustomers(); // 再帰的に読み込み
+      await _generateSampleCustomers(limit: 3);
+      maps = await db.rawQuery('''
+        SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
+        FROM customers c
+        LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
+        ORDER BY c.display_name ASC
+      ''');
     }
-
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 
-  Future<void> _generateSampleCustomers() async {
+  Future<void> ensureCustomerColumns() async {
+    final db = await _dbHelper.database;
+    // best-effort, ignore errors if columns already exist
+    try {
+      await db.execute('ALTER TABLE customers ADD COLUMN contact_version_id INTEGER');
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE customers ADD COLUMN head_char1 TEXT');
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE customers ADD COLUMN head_char2 TEXT');
+    } catch (_) {}
+  }
+
+  Future<void> _generateSampleCustomers({int limit = 3}) async {
     final samples = [
-      Customer(id: const Uuid().v4(), displayName: "佐々木製作所", formalName: "株式会社 佐々木製作所", title: "御中"),
-      Customer(id: const Uuid().v4(), displayName: "田中商事", formalName: "田中商事 株式会社", title: "様"),
-      Customer(id: const Uuid().v4(), displayName: "山田建材", formalName: "有限会社 山田建材", title: "御中"),
-      Customer(id: const Uuid().v4(), displayName: "鈴木運送", formalName: "鈴木運送 合同会社", title: "様"),
-      Customer(id: const Uuid().v4(), displayName: "伊藤工務店", formalName: "伊藤工務店", title: "様"),
-      Customer(id: const Uuid().v4(), displayName: "渡辺興業", formalName: "株式会社 渡辺興業", title: "御中"),
-      Customer(id: const Uuid().v4(), displayName: "高橋電気", formalName: "高橋電気工業所", title: "様"),
-      Customer(id: const Uuid().v4(), displayName: "佐藤商店", formalName: "佐藤商店", title: "様"),
-      Customer(id: const Uuid().v4(), displayName: "中村機械", formalName: "中村機械製作所", title: "殿"),
-      Customer(id: const Uuid().v4(), displayName: "小林産業", formalName: "小林産業 株式会社", title: "御中"),
+      Customer(id: const Uuid().v4(), displayName: "佐々木製作所", formalName: "株式会社 佐々木製作所", title: "御中", tel: "03-1111-2222", address: "東京都港区1-1-1"),
+      Customer(id: const Uuid().v4(), displayName: "田中商事", formalName: "田中商事 株式会社", title: "様", tel: "03-3333-4444", address: "東京都中央区2-2-2"),
+      Customer(id: const Uuid().v4(), displayName: "山田建材", formalName: "有限会社 山田建材", title: "御中", tel: "045-555-6666", address: "神奈川県横浜市3-3-3"),
+      Customer(id: const Uuid().v4(), displayName: "鈴木運送", formalName: "鈴木運送 合同会社", title: "様", tel: "052-777-8888", address: "愛知県名古屋市4-4-4"),
+      Customer(id: const Uuid().v4(), displayName: "伊藤工務店", formalName: "伊藤工務店", title: "様", tel: "06-9999-0000", address: "大阪府大阪市5-5-5"),
     ];
-    for (var s in samples) {
+    for (var s in samples.take(limit)) {
       await saveCustomer(s);
     }
   }

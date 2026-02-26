@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
 
 class CustomerMasterScreen extends StatefulWidget {
-  const CustomerMasterScreen({Key? key}) : super(key: key);
+  final bool selectionMode;
+
+  const CustomerMasterScreen({Key? key, this.selectionMode = false}) : super(key: key);
 
   @override
   State<CustomerMasterScreen> createState() => _CustomerMasterScreenState();
@@ -17,11 +22,67 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   List<Customer> _filtered = [];
   bool _isLoading = true;
   String _sortKey = 'name_asc';
+  bool _ignoreCorpPrefix = true;
+  String _activeKana = '全'; // temporarily unused (kana filter disabled)
+  Map<String, String> _userKanaMap = {};
 
   @override
   void initState() {
     super.initState();
-    _loadCustomers();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _customerRepo.ensureCustomerColumns();
+    await _loadUserKanaMap();
+    if (!mounted) return;
+    await _loadCustomers();
+  }
+
+  Map<String, String> _buildDefaultKanaMap() {
+    return {
+      // あ行
+      '安': 'あ', '阿': 'あ', '浅': 'あ', '麻': 'あ', '新': 'あ', '青': 'あ', '赤': 'あ', '秋': 'あ', '明': 'あ', '有': 'あ', '伊': 'あ',
+      // か行
+      '加': 'か', '鎌': 'か', '上': 'か', '川': 'か', '河': 'か', '北': 'か', '木': 'か', '菊': 'か', '岸': 'か',
+      '工': 'か', '古': 'か', '後': 'か', '郡': 'か', '久': 'か', '熊': 'か', '桑': 'か', '黒': 'か', '香': 'か', '金': 'か', '兼': 'か', '小': 'か',
+      // さ行
+      '佐': 'さ', '齋': 'さ', '齊': 'さ', '斎': 'さ', '斉': 'さ', '崎': 'さ', '柴': 'さ', '沢': 'さ', '澤': 'さ', '桜': 'さ', '櫻': 'さ',
+      '酒': 'さ', '坂': 'さ', '榊': 'さ', '札': 'さ', '庄': 'し', '城': 'し', '島': 'さ', '嶋': 'さ', '鈴': 'さ',
+      // た行
+      '田': 'た', '高': 'た', '竹': 'た', '滝': 'た', '瀧': 'た', '立': 'た', '達': 'た', '谷': 'た', '多': 'た', '千': 'た', '太': 'た',
+      // な行
+      '中': 'な', '永': 'な', '長': 'な', '南': 'な', '難': 'な',
+      // は行
+      '橋': 'は', '林': 'は', '原': 'は', '浜': 'は', '服': 'は', '福': 'は', '藤': 'は', '富': 'は', '保': 'は', '畠': 'は', '畑': 'は',
+      // ま行
+      '松': 'ま', '前': 'ま', '真': 'ま', '町': 'ま', '間': 'ま', '馬': 'ま',
+      // や行
+      '山': 'や', '矢': 'や', '柳': 'や',
+      // ら行
+      '良': 'ら', '涼': 'ら', '竜': 'ら',
+      // わ行
+      '渡': 'わ', '和': 'わ',
+      // その他
+      '石': 'い', '井': 'い', '飯': 'い', '五': 'い', '吉': 'よ', '与': 'よ', '森': 'も', '守': 'も',
+      '岡': 'お', '奥': 'お', '尾': 'お', '黒': 'く', '久': 'く', '白': 'し', '志': 'し', '広': 'ひ', '弘': 'ひ', '平': 'ひ', '日': 'ひ',
+      '福': 'ふ', '藤': 'ふ', '布': 'ぬ', '内': 'う', '宇': 'う', '浦': 'う', '野': 'の', '能': 'の',
+      '宮': 'み', '三': 'み', '水': 'み', '溝': 'み',
+    };
+  }
+
+  Future<void> _loadUserKanaMap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString('customKanaMap');
+    if (json != null && json.isNotEmpty) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(json);
+        _userKanaMap = decoded.map((k, v) => MapEntry(k, v.toString()));
+        if (mounted) setState(_applyFilter);
+      } catch (_) {
+        // ignore decode errors
+      }
+    }
   }
 
   Future<void> _showContactUpdateDialog(Customer customer) async {
@@ -67,12 +128,18 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   Future<void> _loadCustomers() async {
     setState(() => _isLoading = true);
-    final customers = await _customerRepo.getAllCustomers();
-    setState(() {
-      _customers = customers;
-      _applyFilter();
-      _isLoading = false;
-    });
+    try {
+      final customers = await _customerRepo.getAllCustomers();
+      setState(() {
+        _customers = customers;
+        _applyFilter();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('顧客の読み込みに失敗しました: $e')));
+    }
   }
 
   void _applyFilter() {
@@ -80,14 +147,89 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     List<Customer> list = _customers.where((c) {
       return c.displayName.toLowerCase().contains(query) || c.formalName.toLowerCase().contains(query);
     }).toList();
+    // Kana filtering disabled temporarily for stability
     switch (_sortKey) {
       case 'name_desc':
-        list.sort((a, b) => b.displayName.compareTo(a.displayName));
+        list.sort((a, b) => _normalizedName(b.displayName).compareTo(_normalizedName(a.displayName)));
         break;
       default:
-        list.sort((a, b) => a.displayName.compareTo(b.displayName));
+        list.sort((a, b) => _normalizedName(a.displayName).compareTo(_normalizedName(b.displayName)));
     }
     _filtered = list;
+  }
+
+  String _normalizedName(String name) {
+    var n = name.replaceAll(RegExp(r"\s+"), "");
+    if (_ignoreCorpPrefix) {
+      for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
+        n = n.replaceAll(token, "");
+      }
+    }
+    return n.toLowerCase();
+  }
+
+  final Map<String, List<String>> _kanaBuckets = const {
+    'あ': ['あ', 'い', 'う', 'え', 'お'],
+    'か': ['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご'],
+    'さ': ['さ', 'し', 'す', 'せ', 'そ', 'ざ', 'じ', 'ず', 'ぜ', 'ぞ'],
+    'た': ['た', 'ち', 'つ', 'て', 'と', 'だ', 'ぢ', 'づ', 'で', 'ど'],
+    'な': ['な', 'に', 'ぬ', 'ね', 'の'],
+    'は': ['は', 'ひ', 'ふ', 'へ', 'ほ', 'ば', 'び', 'ぶ', 'べ', 'ぼ', 'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'],
+    'ま': ['ま', 'み', 'む', 'め', 'も'],
+    'や': ['や', 'ゆ', 'よ'],
+    'ら': ['ら', 'り', 'る', 'れ', 'ろ'],
+    'わ': ['わ', 'を', 'ん'],
+  };
+
+  late final Map<String, String> _defaultKanaMap = _buildDefaultKanaMap();
+
+  String _normalizeIndexChar(String input) {
+    var s = input.replaceAll(RegExp(r"\s+|\u3000"), "");
+    if (s.isEmpty) return '';
+    String ch = s.characters.first;
+    final code = ch.codeUnitAt(0);
+    if (code >= 0x30A1 && code <= 0x30F6) {
+      ch = String.fromCharCode(code - 0x60); // katakana -> hiragana
+    }
+    return ch;
+  }
+
+  String _headForCustomer(Customer c) {
+    final head = c.headChar1 ?? '';
+    if (head.isNotEmpty) {
+      return _bucketForChar(head);
+    }
+    return _headKana(c.displayName);
+  }
+
+  String _bucketForChar(String ch) {
+    var c = _normalizeIndexChar(ch);
+    if (c.isEmpty) return '他';
+    if (_userKanaMap.containsKey(c)) return _userKanaMap[c]!;
+    if (_defaultKanaMap.containsKey(c)) return _defaultKanaMap[c]!;
+    for (final entry in _kanaBuckets.entries) {
+      if (entry.value.contains(c)) return entry.key;
+    }
+    return '他';
+  }
+
+  String _headKana(String name) {
+    var n = name.replaceAll(RegExp(r"\s+"), "");
+    for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
+      if (n.startsWith(token)) n = n.substring(token.length);
+    }
+    if (n.isEmpty) return '他';
+    String ch = n.characters.first;
+    if (_defaultKanaMap.containsKey(ch)) return _defaultKanaMap[ch]!;
+    // katakana to hiragana
+    final code = ch.codeUnitAt(0);
+    if (code >= 0x30A1 && code <= 0x30F6) {
+      ch = String.fromCharCode(code - 0x60);
+    }
+    for (final entry in _kanaBuckets.entries) {
+      if (entry.value.contains(ch)) return entry.key;
+    }
+    return '他';
   }
 
   Future<void> _addOrEditCustomer({Customer? customer}) async {
@@ -97,7 +239,78 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     final departmentController = TextEditingController(text: customer?.department ?? "");
     final addressController = TextEditingController(text: customer?.address ?? "");
     final telController = TextEditingController(text: customer?.tel ?? "");
+    final emailController = TextEditingController(text: customer?.email ?? "");
     String selectedTitle = customer?.title ?? "様";
+    bool isCompany = selectedTitle == '御中';
+    final head1Controller = TextEditingController(text: customer?.headChar1 ?? _headKana(displayNameController.text));
+    final head2Controller = TextEditingController(text: customer?.headChar2 ?? "");
+
+    Future<void> prefillFromPhonebook() async {
+      if (!await FlutterContacts.requestPermission(readonly: true)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
+        return;
+      }
+      final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
+      if (contacts.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
+        return;
+      }
+      final Contact? picked = await showModalBottomSheet<Contact>(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.6,
+            child: ListView.builder(
+              itemCount: contacts.length,
+              itemBuilder: (_, i) {
+                final c = contacts[i];
+                final orgCompany = (c.organizations.isNotEmpty ? c.organizations.first.company : '') ?? '';
+                final personParts = [c.name.last, c.name.first].where((v) => v.isNotEmpty).toList();
+                final person = personParts.isNotEmpty ? personParts.join(' ').trim() : c.displayName;
+                final label = orgCompany.isNotEmpty ? orgCompany : person;
+                return ListTile(
+                  title: Text(label),
+                  subtitle: person.isNotEmpty ? Text(person) : null,
+                  onTap: () => Navigator.pop(ctx, c),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      if (picked != null) {
+        final orgCompany = (picked.organizations.isNotEmpty ? picked.organizations.first.company : '') ?? '';
+        final personParts = [picked.name.last, picked.name.first].where((v) => v.isNotEmpty).toList();
+        final person = personParts.isNotEmpty ? personParts.join(' ').trim() : picked.displayName;
+        final chosen = orgCompany.isNotEmpty ? orgCompany : person;
+        displayNameController.text = chosen;
+        formalNameController.text = orgCompany.isNotEmpty ? orgCompany : person;
+        final addr = picked.addresses.isNotEmpty
+            ? picked.addresses.first
+            : null;
+        if (addr != null) {
+          final joined = [addr.postalCode, addr.state, addr.city, addr.street, addr.country]
+              .where((v) => v.isNotEmpty)
+              .join(' ');
+          addressController.text = joined;
+        }
+        if (picked.phones.isNotEmpty) {
+          telController.text = picked.phones.first.number;
+        }
+        if (picked.emails.isNotEmpty) {
+          emailController.text = picked.emails.first.address;
+        }
+        isCompany = orgCompany.isNotEmpty;
+        selectedTitle = isCompany ? '御中' : '様';
+        if (head1Controller.text.isEmpty) {
+          head1Controller.text = _headKana(chosen);
+        }
+        if (mounted) setState(() {});
+      }
+    }
 
     final result = await showDialog<Customer>(
       context: context,
@@ -111,16 +324,83 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 TextField(
                   controller: displayNameController,
                   decoration: const InputDecoration(labelText: "表示名（略称）", hintText: "例: 佐々木製作所"),
+                  onChanged: (v) {
+                    if (head1Controller.text.isEmpty) {
+                      head1Controller.text = _headKana(v);
+                    }
+                  },
                 ),
                 TextField(
                   controller: formalNameController,
                   decoration: const InputDecoration(labelText: "正式名称", hintText: "例: 株式会社 佐々木製作所"),
                 ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.contact_phone),
+                    label: const Text('電話帳から引用'),
+                    onPressed: prefillFromPhonebook,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<bool>(
+                        dense: true,
+                        title: const Text('会社'),
+                        value: true,
+                        groupValue: isCompany,
+                        onChanged: (v) {
+                          setDialogState(() {
+                            isCompany = v ?? true;
+                            selectedTitle = '御中';
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<bool>(
+                        dense: true,
+                        title: const Text('個人'),
+                        value: false,
+                        groupValue: isCompany,
+                        onChanged: (v) {
+                          setDialogState(() {
+                            isCompany = v ?? false;
+                            selectedTitle = '様';
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
                 DropdownButtonFormField<String>(
                   value: selectedTitle,
                   decoration: const InputDecoration(labelText: "敬称"),
                   items: ["様", "御中", "殿", "貴社"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                  onChanged: (val) => selectedTitle = val ?? "様",
+                  onChanged: (val) => setDialogState(() {
+                    selectedTitle = val ?? "様";
+                    isCompany = selectedTitle == '御中' || selectedTitle == '貴社';
+                  }),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: head1Controller,
+                        maxLength: 1,
+                        decoration: const InputDecoration(labelText: "インデックス1 (1文字)", counterText: ""),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: head2Controller,
+                        maxLength: 1,
+                        decoration: const InputDecoration(labelText: "インデックス2 (任意)", counterText: ""),
+                      ),
+                    ),
+                  ],
                 ),
                 TextField(
                   controller: departmentController,
@@ -135,6 +415,11 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   decoration: const InputDecoration(labelText: "電話番号"),
                   keyboardType: TextInputType.phone,
                 ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: "メールアドレス"),
+                  keyboardType: TextInputType.emailAddress,
+                ),
               ],
             ),
           ),
@@ -145,6 +430,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
                   return;
                 }
+                final head1 = _normalizeIndexChar(head1Controller.text);
+                final head2 = _normalizeIndexChar(head2Controller.text);
                 final newCustomer = Customer(
                   id: customer?.id ?? const Uuid().v4(),
                   displayName: displayNameController.text,
@@ -153,8 +440,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   department: departmentController.text.isEmpty ? null : departmentController.text,
                   address: addressController.text.isEmpty ? null : addressController.text,
                   tel: telController.text.isEmpty ? null : telController.text,
-                  odooId: customer?.odooId,
-                  isSynced: false,
+                  headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
+                  headChar2: head2.isEmpty ? null : head2,
+                  isLocked: customer?.isLocked ?? false,
                 );
                 Navigator.pop(context, newCustomer);
               },
@@ -167,33 +455,92 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
     if (result != null) {
       await _customerRepo.saveCustomer(result);
-      _loadCustomers();
+      if (widget.selectionMode) {
+        if (!mounted) return;
+        Navigator.pop(context, result);
+      } else {
+        _loadCustomers();
+      }
     }
   }
 
   Future<void> _showPhonebookImport() async {
-    // 疑似電話帳データ（会社名/氏名/複数住所）
-    final phonebook = [
-      {
-        'company': '佐々木製作所',
-        'person': '佐々木 太郎',
-        'addresses': ['大阪府大阪市北区1-1-1', '東京都千代田区丸の内2-2-2'],
-        'tel': '06-1234-5678',
-        'emails': ['info@sasaki.co.jp', 'taro@sasaki.co.jp'],
-      },
-      {
-        'company': 'Gemini Solutions',
-        'person': 'John Smith',
-        'addresses': ['1 Infinite Loop, CA', '1600 Amphitheatre Pkwy, CA'],
-        'tel': '03-9876-5432',
-        'emails': ['contact@gemini.com', 'john.smith@gemini.com'],
-      },
-    ];
+    // 端末連絡先を取得
+    if (!await FlutterContacts.requestPermission(readonly: true)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
+      return;
+    }
+
+    final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
+    // 一部端末では一覧取得で organization が空になることがあるため、詳細を再取得
+    final detailedContacts = <Contact>[];
+    for (final c in contacts) {
+      final full = await FlutterContacts.getContact(c.id, withProperties: true, withAccounts: true, withPhoto: false);
+      if (full != null) detailedContacts.add(full);
+    }
+    final sourceContacts = detailedContacts.isNotEmpty ? detailedContacts : contacts;
+    if (sourceContacts.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
+      return;
+    }
+
+    final phonebook = sourceContacts.map((c) {
+      final orgCompany = (c.organizations.isNotEmpty ? c.organizations.first.company : '') ?? '';
+      final personParts = [c.name.last, c.name.first].where((v) => v.isNotEmpty).toList();
+      final person = personParts.isNotEmpty ? personParts.join(' ').trim() : c.displayName;
+      final addresses = c.addresses
+          .map((a) => [a.postalCode, a.state, a.city, a.street, a.country]
+              .where((v) => v.isNotEmpty)
+              .join(' '))
+          .where((s) => s.trim().isNotEmpty)
+          .toList();
+      final emails = c.emails.map((e) => e.address).where((e) => e.trim().isNotEmpty).toList();
+      final tel = c.phones.isNotEmpty ? c.phones.first.number : null;
+      final chosenCompany = orgCompany; // 空なら空のまま
+      final chosenPerson = person.isNotEmpty ? person : c.displayName;
+      return {
+        'company': chosenCompany,
+        'person': chosenPerson,
+        'addresses': addresses.isNotEmpty ? addresses : [''],
+        'tel': tel,
+        'emails': emails.isNotEmpty ? emails : [''],
+      };
+    }).toList();
 
     String selectedEntryId = '0';
-    String selectedNameSource = 'company';
+    String selectedNameSource = (phonebook.isNotEmpty && (phonebook.first['company'] as String).isNotEmpty)
+        ? 'company'
+        : ((phonebook.isNotEmpty && (phonebook.first['person'] as String).isNotEmpty) ? 'person' : 'person');
     int selectedAddressIndex = 0;
     int selectedEmailIndex = 0;
+
+    final displayController = TextEditingController();
+    final formalController = TextEditingController();
+    final addressController = TextEditingController();
+    final emailController = TextEditingController();
+
+    void applySelectionState() {
+      final entry = phonebook[int.parse(selectedEntryId)];
+      if ((entry['company'] as String).isNotEmpty) {
+        selectedNameSource = 'company';
+      } else if ((entry['person'] as String).isNotEmpty) {
+        selectedNameSource = 'person';
+      }
+      final addresses = (entry['addresses'] as List<String>);
+      final emails = (entry['emails'] as List<String>);
+      final displayName = selectedNameSource == 'company' ? entry['company'] as String : entry['person'] as String;
+      final formalName = selectedNameSource == 'company'
+          ? '株式会社 ${entry['company']}'
+          : '${entry['person']} 様';
+      displayController.text = displayName;
+      formalController.text = formalName;
+      addressController.text = addresses[selectedAddressIndex];
+      emailController.text = emails.isNotEmpty ? emails[selectedEmailIndex] : '';
+    }
+
+    applySelectionState();
 
     final imported = await showDialog<Customer>(
       context: context,
@@ -202,17 +549,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           final entry = phonebook[int.parse(selectedEntryId)];
           final addresses = (entry['addresses'] as List<String>);
           final emails = (entry['emails'] as List<String>);
-          final displayName = selectedNameSource == 'company' ? entry['company'] as String : entry['person'] as String;
-          final formalName = selectedNameSource == 'company'
-              ? '株式会社 ${entry['company']}'
-              : '${entry['person']} 様';
-          final addressText = addresses[selectedAddressIndex];
-          final emailText = emails.isNotEmpty ? emails[selectedEmailIndex] : '';
-
-          final displayController = TextEditingController(text: displayName);
-          final formalController = TextEditingController(text: formalName);
-          final addressController = TextEditingController(text: addressText);
-          final emailController = TextEditingController(text: emailText);
 
           return AlertDialog(
             title: const Text('電話帳から取り込む'),
@@ -226,12 +562,23 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   items: phonebook
                       .asMap()
                       .entries
-                      .map((e) => DropdownMenuItem(value: e.key.toString(), child: Text(e.value['company'] as String)))
+                      .map((e) {
+                        final comp = e.value['company'] as String;
+                        final person = e.value['person'] as String;
+                        final title = comp.isNotEmpty ? comp : (person.isNotEmpty ? person : '不明');
+                        return DropdownMenuItem(value: e.key.toString(), child: Text(title));
+                      })
                       .toList(),
                   onChanged: (v) {
                     setDialogState(() {
                       selectedEntryId = v ?? '0';
                       selectedAddressIndex = 0;
+                      selectedEmailIndex = 0;
+                      final entry = phonebook[int.parse(selectedEntryId)];
+                      selectedNameSource = (entry['company'] as String).isNotEmpty
+                          ? 'company'
+                          : ((entry['person'] as String).isNotEmpty ? 'person' : 'person');
+                      applySelectionState();
                     });
                   },
                 ),
@@ -245,7 +592,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                         title: const Text('会社名'),
                         value: 'company',
                         groupValue: selectedNameSource,
-                        onChanged: (v) => setDialogState(() => selectedNameSource = v ?? 'company'),
+                        onChanged: (v) => setDialogState(() {
+                          selectedNameSource = v ?? 'company';
+                          applySelectionState();
+                        }),
                       ),
                     ),
                     Expanded(
@@ -254,7 +604,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                         title: const Text('氏名'),
                         value: 'person',
                         groupValue: selectedNameSource,
-                        onChanged: (v) => setDialogState(() => selectedNameSource = v ?? 'person'),
+                        onChanged: (v) => setDialogState(() {
+                          selectedNameSource = v ?? 'person';
+                          applySelectionState();
+                        }),
                       ),
                     ),
                   ],
@@ -268,7 +621,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       .entries
                       .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                       .toList(),
-                  onChanged: (v) => setDialogState(() => selectedAddressIndex = v ?? 0),
+                  onChanged: (v) => setDialogState(() {
+                    selectedAddressIndex = v ?? 0;
+                    applySelectionState();
+                  }),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
@@ -279,7 +635,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       .entries
                       .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                       .toList(),
-                  onChanged: (v) => setDialogState(() => selectedEmailIndex = v ?? 0),
+                  onChanged: (v) => setDialogState(() {
+                    selectedEmailIndex = v ?? 0;
+                    applySelectionState();
+                  }),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -335,8 +694,29 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text("顧客マスター"),
+        title: Text(widget.selectionMode ? "顧客を選択" : "顧客マスター"),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            tooltip: "ソート",
+            onPressed: () {
+              showMenu<String>(
+                context: context,
+                position: const RelativeRect.fromLTRB(100, 80, 0, 0),
+                items: const [
+                  PopupMenuItem(value: 'name_asc', child: Text('名前昇順')),
+                  PopupMenuItem(value: 'name_desc', child: Text('名前降順')),
+                ],
+              ).then((val) {
+                if (val != null) {
+                  setState(() {
+                    _sortKey = val;
+                    _applyFilter();
+                  });
+                }
+              });
+            },
+          ),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _sortKey,
@@ -354,10 +734,11 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               },
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadCustomers,
-          ),
+          if (!widget.selectionMode)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadCustomers,
+            ),
         ],
       ),
       body: Column(
@@ -367,7 +748,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: "名前で検索 (電話帳参照ボタンは詳細で)",
+                hintText: widget.selectionMode ? "名前で検索して選択" : "名前で検索 (電話帳参照ボタンは詳細で)",
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -376,6 +757,19 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               onChanged: (_) => setState(_applyFilter),
             ),
           ),
+          // Kana index temporarily disabled
+          if (!widget.selectionMode)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: SwitchListTile(
+                title: const Text('株式会社/有限会社などの接頭辞を無視してソート'),
+                value: _ignoreCorpPrefix,
+                onChanged: (v) => setState(() {
+                  _ignoreCorpPrefix = v;
+                  _applyFilter();
+                }),
+              ),
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -398,12 +792,15 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                             ),
                             title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
                             subtitle: Text("${c.formalName} ${c.title}"),
-                            onTap: () => _showDetailPane(c),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
-                              tooltip: c.isLocked ? "ロック中" : "編集",
-                            ),
+                            onTap: widget.selectionMode ? () => Navigator.pop(context, c) : () => _showDetailPane(c),
+                            trailing: widget.selectionMode
+                                ? null
+                                : IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
+                                    tooltip: c.isLocked ? "ロック中" : "編集",
+                                  ),
+                            onLongPress: () => _showContextActions(c),
                           );
                         },
                       ),
@@ -411,11 +808,106 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showPhonebookImport,
+        onPressed: _showAddMenu,
         icon: const Icon(Icons.add),
-        label: const Text('電話帳から取り込む'),
+        label: const Text('顧客を追加'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  void _showAddMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_note),
+              title: const Text('手入力で新規作成'),
+              onTap: () {
+                Navigator.pop(context);
+                _addOrEditCustomer();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.contact_phone),
+              title: const Text('電話帳から取り込む'),
+              onTap: () {
+                Navigator.pop(context);
+                _showPhonebookImport();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showContextActions(Customer c) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('詳細を表示'),
+              onTap: () {
+                Navigator.pop(context);
+                _showDetailPane(c);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('編集'),
+              enabled: !c.isLocked,
+              onTap: c.isLocked
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      _addOrEditCustomer(customer: c);
+                    },
+            ),
+            ListTile(
+              leading: const Icon(Icons.contact_mail),
+              title: const Text('連絡先を更新'),
+              onTap: () {
+                Navigator.pop(context);
+                _showContactUpdateDialog(c);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text('削除', style: TextStyle(color: Colors.redAccent)),
+              enabled: !c.isLocked,
+              onTap: c.isLocked
+                  ? null
+                  : () async {
+                      Navigator.pop(context);
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('削除確認'),
+                          content: Text('「${c.displayName}」を削除しますか？'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
+                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('削除', style: TextStyle(color: Colors.red))),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        await _customerRepo.deleteCustomer(c.id);
+                        if (!mounted) return;
+                        _loadCustomers();
+                      }
+                    },
+            ),
+          ],
+        ),
       ),
     );
   }

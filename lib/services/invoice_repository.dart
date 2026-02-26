@@ -96,7 +96,13 @@ class InvoiceRepository {
 
   Future<List<Invoice>> getAllInvoices(List<Customer> customers) async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> invoiceMaps = await db.query('invoices', orderBy: 'date DESC');
+    List<Map<String, dynamic>> invoiceMaps = await db.query('invoices', orderBy: 'date DESC');
+
+    // サンプル自動投入（伝票が0件なら）
+    if (invoiceMaps.isEmpty && customers.isNotEmpty) {
+      await _generateSampleInvoices(customers.take(3).toList());
+      invoiceMaps = await db.query('invoices', orderBy: 'date DESC');
+    }
 
     List<Invoice> invoices = [];
     for (var iMap in invoiceMaps) {
@@ -147,6 +153,29 @@ class InvoiceRepository {
       ));
     }
     return invoices;
+  }
+
+  Future<void> _generateSampleInvoices(List<Customer> customers) async {
+    if (customers.isEmpty) return;
+    final now = DateTime.now();
+    final items = [
+      InvoiceItem(description: "商品A", quantity: 2, unitPrice: 1200),
+      InvoiceItem(description: "商品B", quantity: 1, unitPrice: 3000),
+    ];
+    final List<Invoice> samples = List.generate(
+      3,
+      (i) => Invoice(
+        customer: customers[i % customers.length],
+        date: now.subtract(Duration(days: i * 3)),
+        items: items,
+        isDraft: i == 0, // 1件だけ下書き
+        subject: "サンプル案件${i + 1}",
+      ),
+    );
+
+    for (final inv in samples) {
+      await saveInvoice(inv);
+    }
   }
 
   Future<void> deleteInvoice(String id) async {

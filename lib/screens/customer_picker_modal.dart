@@ -45,7 +45,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
     setState(() => _isImportingFromContacts = true);
     try {
       if (await FlutterContacts.requestPermission(readonly: true)) {
-        final contacts = await FlutterContacts.getContacts();
+        final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
         if (!mounted) return;
         setState(() => _isImportingFromContacts = false);
 
@@ -56,9 +56,13 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
         );
 
         if (selectedContact != null) {
+          final orgCompany = (selectedContact.organizations.isNotEmpty ? selectedContact.organizations.first.company : '') ?? '';
+          final personName = selectedContact.displayName;
+          final display = orgCompany.isNotEmpty ? orgCompany : personName;
+          final formal = orgCompany.isNotEmpty ? orgCompany : personName;
           _showCustomerEditDialog(
-            displayName: selectedContact.displayName,
-            initialFormalName: selectedContact.displayName,
+            displayName: display,
+            initialFormalName: formal,
           );
         }
       }
@@ -121,8 +125,32 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
           ElevatedButton(
             onPressed: () async {
+              final formal = formalNameController.text.trim();
+              if (formal.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正式名称を入力してください')));
+                return;
+              }
+              String normalize(String s) {
+                var n = s.replaceAll(RegExp(r"\s+|\u3000"), "");
+                for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
+                  n = n.replaceAll(token, "");
+                }
+                return n.toLowerCase();
+              }
+
+              final normalizedFormal = normalize(formal);
+              final duplicates = await _repository.getAllCustomers();
+              final hasDuplicate = duplicates.any((c) {
+                final target = normalize(c.formalName);
+                return target == normalizedFormal && (existingCustomer == null || c.id != existingCustomer.id);
+              });
+              if (hasDuplicate) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('同一顧客名が存在します')));
+                return;
+              }
+
               final updatedCustomer = existingCustomer?.copyWith(
-                    formalName: formalNameController.text.trim(),
+                    formalName: formal,
                     department: departmentController.text.trim(),
                     address: addressController.text.trim(),
                     updatedAt: DateTime.now(),
@@ -131,17 +159,17 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                   Customer(
                     id: const Uuid().v4(),
                     displayName: displayName,
-                    formalName: formalNameController.text.trim(),
+                    formalName: formal,
                     department: departmentController.text.trim(),
                     address: addressController.text.trim(),
                   );
-              
+
               await _repository.saveCustomer(updatedCustomer);
               Navigator.pop(context); // エディットダイアログを閉じる
-              _onSearch(""); // リストを再読込
-              
-              // 保存のついでに選択状態にするなら以下を有効化（今回は明示的にリストから選ばせる）
-              // widget.onCustomerSelected(updatedCustomer);
+              _onSearch(_searchQuery); // リスト再読込
+              if (existingCustomer == null) {
+                widget.onCustomerSelected(updatedCustomer);
+              }
             },
             child: const Text("保存してマスターに登録"),
           ),
@@ -277,7 +305,11 @@ class _PhoneContactListSelectorState extends State<_PhoneContactListSelector> {
   void _onSearch(String q) {
     setState(() {
       _filtered = widget.contacts
-          .where((c) => c.displayName.toLowerCase().contains(q.toLowerCase()))
+          .where((c) {
+            final org = c.organizations.isNotEmpty ? c.organizations.first.company : '';
+            final label = org.isNotEmpty ? org : c.displayName;
+            return label.toLowerCase().contains(q.toLowerCase());
+          })
           .toList();
     });
   }
@@ -300,7 +332,9 @@ class _PhoneContactListSelectorState extends State<_PhoneContactListSelector> {
             child: ListView.builder(
               itemCount: _filtered.length,
               itemBuilder: (context, index) => ListTile(
-                title: Text(_filtered[index].displayName),
+                title: Text(((_filtered[index].organizations.isNotEmpty ? _filtered[index].organizations.first.company : '') ?? '').isNotEmpty
+                  ? _filtered[index].organizations.first.company
+                  : _filtered[index].displayName),
                 onTap: () => Navigator.pop(context, _filtered[index]),
               ),
             ),
