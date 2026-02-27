@@ -300,12 +300,14 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
+            contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             title: Text(isEdit ? "顧客を編集" : "顧客を新規登録"),
             content: KeyboardInsetWrapper(
               basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-              extraBottom: 20,
+              extraBottom: 32,
               child: SingleChildScrollView(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.only(bottom: 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
