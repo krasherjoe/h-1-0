@@ -6,11 +6,11 @@ class SlideToUnlock extends StatefulWidget {
   final bool isLocked;
 
   const SlideToUnlock({
-    Key? key,
+    super.key,
     required this.onUnlocked,
     this.text = "スライドして解除",
     this.isLocked = true,
-  }) : super(key: key);
+  });
 
   @override
   State<SlideToUnlock> createState() => _SlideToUnlockState();

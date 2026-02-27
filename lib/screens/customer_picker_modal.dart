@@ -9,10 +9,7 @@ import '../widgets/keyboard_inset_wrapper.dart';
 class CustomerPickerModal extends StatefulWidget {
   final Function(Customer) onCustomerSelected;
 
-  const CustomerPickerModal({
-    Key? key,
-    required this.onCustomerSelected,
-  }) : super(key: key);
+  const CustomerPickerModal({super.key, required this.onCustomerSelected});
 
   @override
   State<CustomerPickerModal> createState() => _CustomerPickerModalState();
@@ -21,7 +18,6 @@ class CustomerPickerModal extends StatefulWidget {
 class _CustomerPickerModalState extends State<CustomerPickerModal> {
   final CustomerRepository _repository = CustomerRepository();
   String _searchQuery = "";
-  List<Customer> _allCustomers = [];
   List<Customer> _filteredCustomers = [];
   bool _isImportingFromContacts = false;
   bool _isLoading = true;
@@ -33,8 +29,12 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
   }
 
   Future<void> _onSearch(String query) async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _searchQuery = query;
+      _isLoading = true;
+    });
     final customers = await _repository.searchCustomers(query);
+    if (!context.mounted) return;
     setState(() {
       _filteredCustomers = customers;
       _isLoading = false;
@@ -43,9 +43,11 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
 
   /// 電話帳から取り込んで新規顧客として登録・編集するダイアログ
   Future<void> _importFromPhoneContacts() async {
+    if (!mounted) return;
     setState(() => _isImportingFromContacts = true);
     try {
       if (await FlutterContacts.requestPermission(readonly: true)) {
+        if (!mounted) return;
         final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
         if (!mounted) return;
         setState(() => _isImportingFromContacts = false);
@@ -56,8 +58,10 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
           builder: (context) => _PhoneContactListSelector(contacts: contacts),
         );
 
+        if (!context.mounted) return;
+
         if (selectedContact != null) {
-          final orgCompany = (selectedContact.organizations.isNotEmpty ? selectedContact.organizations.first.company : '') ?? '';
+          final orgCompany = selectedContact.organizations.isNotEmpty ? selectedContact.organizations.first.company : '';
           final personName = selectedContact.displayName;
           final display = orgCompany.isNotEmpty ? orgCompany : personName;
           final formal = orgCompany.isNotEmpty ? orgCompany : personName;
@@ -68,7 +72,9 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isImportingFromContacts = false);
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("電話帳の取得に失敗しました: $e")),
       );
@@ -89,37 +95,43 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(existingCustomer == null ? "顧客の新規登録" : "顧客情報の編集"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("電話帳名: $displayName", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: formalNameController,
-                decoration: const InputDecoration(
-                  labelText: "請求書用 正式名称",
-                  hintText: "株式会社 〇〇 など",
-                  border: OutlineInputBorder(),
+        content: KeyboardInsetWrapper(
+          basePadding: const EdgeInsets.only(bottom: 12),
+          extraBottom: 16,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 4),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("電話帳名: $displayName", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: formalNameController,
+                  decoration: const InputDecoration(
+                    labelText: "請求書用 正式名称",
+                    hintText: "株式会社 〇〇 など",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: departmentController,
-                decoration: const InputDecoration(
-                  labelText: "部署名",
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: departmentController,
+                  decoration: const InputDecoration(
+                    labelText: "部署名",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(
-                  labelText: "住所",
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(
+                    labelText: "住所",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -128,6 +140,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
             onPressed: () async {
               final formal = formalNameController.text.trim();
               if (formal.isEmpty) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正式名称を入力してください')));
                 return;
               }
@@ -141,11 +154,13 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
 
               final normalizedFormal = normalize(formal);
               final duplicates = await _repository.getAllCustomers();
+              if (!context.mounted) return;
               final hasDuplicate = duplicates.any((c) {
                 final target = normalize(c.formalName);
                 return target == normalizedFormal && (existingCustomer == null || c.id != existingCustomer.id);
               });
               if (hasDuplicate) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('同一顧客名が存在します')));
                 return;
               }
@@ -166,6 +181,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                   );
 
               await _repository.saveCustomer(updatedCustomer);
+              if (!context.mounted) return;
               Navigator.pop(context); // エディットダイアログを閉じる
               _onSearch(_searchQuery); // リスト再読込
               if (existingCustomer == null) {
@@ -191,6 +207,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
           TextButton(
             onPressed: () async {
               await _repository.deleteCustomer(customer.id);
+              if (!context.mounted) return;
               Navigator.pop(context);
               _onSearch("");
             },
@@ -339,9 +356,11 @@ class _PhoneContactListSelectorState extends State<_PhoneContactListSelector> {
             child: ListView.builder(
               itemCount: _filtered.length,
               itemBuilder: (context, index) => ListTile(
-                title: Text(((_filtered[index].organizations.isNotEmpty ? _filtered[index].organizations.first.company : '') ?? '').isNotEmpty
-                  ? _filtered[index].organizations.first.company
-                  : _filtered[index].displayName),
+                title: Text(
+                  _filtered[index].organizations.isNotEmpty && _filtered[index].organizations.first.company.isNotEmpty
+                      ? _filtered[index].organizations.first.company
+                      : _filtered[index].displayName,
+                ),
                 onTap: () => Navigator.pop(context, _filtered[index]),
               ),
             ),

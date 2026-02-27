@@ -6,7 +6,7 @@ import 'barcode_scanner_screen.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
 class ProductMasterScreen extends StatefulWidget {
-  const ProductMasterScreen({Key? key}) : super(key: key);
+  const ProductMasterScreen({super.key});
 
   @override
   State<ProductMasterScreen> createState() => _ProductMasterScreenState();
@@ -30,6 +30,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
     final products = await _productRepo.getAllProducts();
+    if (!mounted) return;
     setState(() {
       _products = products;
       _isLoading = false;
@@ -121,6 +122,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     );
 
     if (result != null) {
+      if (!mounted) return;
       await _productRepo.saveProduct(result);
       _loadProducts();
     }
@@ -131,7 +133,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text("商品マスター"),
+        title: const Text("P1:商品マスター"),
         backgroundColor: Colors.blueGrey,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
@@ -192,9 +194,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
-        child: const Icon(Icons.add),
         backgroundColor: Colors.blueGrey.shade800,
         foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -229,40 +231,41 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               Row(
                 children: [
                   OutlinedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: const Text("編集"),
                     onPressed: () {
                       Navigator.pop(context);
                       _showEditDialog(product: p);
                     },
-                    icon: const Icon(Icons.edit),
-                    label: const Text("編集"),
                   ),
                   const SizedBox(width: 8),
                   if (!p.isLocked)
                     OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      label: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text("削除の確認"),
                             content: Text("${p.name}を削除してよろしいですか？"),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
                               TextButton(
-                                onPressed: () async {
-                                  await _productRepo.deleteProduct(p.id);
-                                  if (!mounted) return;
-                                  Navigator.pop(context); // dialog
-                                  Navigator.pop(context); // sheet
-                                  _loadProducts();
-                                },
+                                onPressed: () => Navigator.pop(context, true),
                                 child: const Text("削除", style: TextStyle(color: Colors.red)),
                               ),
                             ],
                           ),
                         );
+                        if (!context.mounted) return;
+                        if (confirmed == true) {
+                          await _productRepo.deleteProduct(p.id);
+                          if (!context.mounted) return;
+                          Navigator.pop(context); // sheet
+                          _loadProducts();
+                        }
                       },
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                      label: const Text("削除", style: TextStyle(color: Colors.redAccent)),
                     ),
                   if (p.isLocked)
                     Padding(

@@ -20,7 +20,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
   final bool showPrint;
 
   const InvoicePdfPreviewPage({
-    Key? key,
+    super.key,
     required this.invoice,
     this.allowFormalIssue = true,
     this.isUnlocked = false,
@@ -29,7 +29,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
     this.showShare = true,
     this.showEmail = true,
     this.showPrint = true,
-  }) : super(key: key);
+  });
 
   Future<Uint8List> _buildPdfBytes() async {
     final doc = await buildInvoiceDocument(invoice);

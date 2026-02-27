@@ -14,7 +14,7 @@ class InvoiceHistoryList extends StatelessWidget {
   final void Function(Invoice) onEdit;
 
   const InvoiceHistoryList({
-    Key? key,
+    super.key,
     required this.invoices,
     required this.isUnlocked,
     required this.amountFormatter,
@@ -22,7 +22,7 @@ class InvoiceHistoryList extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     required this.onEdit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

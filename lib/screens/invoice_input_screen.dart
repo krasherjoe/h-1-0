@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
@@ -9,11 +8,8 @@ import '../services/customer_repository.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import 'invoice_detail_page.dart';
 import '../services/gps_service.dart';
-import 'customer_picker_modal.dart';
 import 'customer_master_screen.dart';
 import 'product_picker_modal.dart';
-import '../models/company_model.dart';
-import '../services/company_repository.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
 class InvoiceInputForm extends StatefulWidget {
@@ -21,10 +17,10 @@ class InvoiceInputForm extends StatefulWidget {
   final Invoice? existingInvoice; // 追加: 編集時の既存伝票
 
   const InvoiceInputForm({
-    Key? key,
+    super.key,
     required this.onInvoiceGenerated,
     this.existingInvoice, // 追加
-  }) : super(key: key);
+  });
 
   @override
   State<InvoiceInputForm> createState() => _InvoiceInputFormState();
@@ -37,16 +33,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final List<InvoiceItem> _items = [];
   double _taxRate = 0.10;
   bool _includeTax = false;
-  CompanyInfo? _companyInfo;
   DocumentType _documentType = DocumentType.invoice; // 追加
   DateTime _selectedDate = DateTime.now(); // 追加: 伝票日付
   bool _isDraft = true; // デフォルトは下書き
   final TextEditingController _subjectController = TextEditingController(); // 追加
   bool _isSaving = false; // 保存中フラグ
-  String _status = "取引先と商品を入力してください";
   
   // 署名用の実験的パス
-  List<Offset?> _signaturePath = [];
+  final List<Offset?> _signaturePath = [];
 
   @override
   void initState() {
@@ -62,10 +56,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       setState(() => _selectedCustomer = customers.first);
     }
     
-    final companyRepo = CompanyRepository();
-    final companyInfo = await companyRepo.getCompanyInfo();
     setState(() {
-      _companyInfo = companyInfo;
       // 既存伝票がある場合は初期値を上書き
       if (widget.existingInvoice != null) {
         final inv = widget.existingInvoice!;
@@ -99,9 +90,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   int get _subTotal => _items.fold(0, (sum, item) => sum + (item.unitPrice * item.quantity));
-  int get _tax => _includeTax ? (_subTotal * _taxRate).floor() : 0;
-  int get _total => _subTotal + _tax;
-
   Future<void> _saveInvoice({bool generatePdf = true}) async {
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("取引先を選択してください")));
@@ -138,7 +126,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     try {
       // PDF生成有無に関わらず、まずは保存
       if (generatePdf) {
-        setState(() => _status = "PDFを生成中...");
         final path = await generateInvoicePdf(invoice);
         if (path != null) {
           final updatedInvoice = invoice.copyWith(filePath: path);
@@ -189,9 +176,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   final newPath = await generateInvoicePdf(promoted);
                   final saved = newPath != null ? promoted.copyWith(filePath: newPath) : promoted;
                   await _invoiceRepo.saveInvoice(saved);
-                  if (!mounted) return false;
+                  if (!context.mounted) return false;
                   Navigator.pop(context); // close preview
                   Navigator.pop(context); // exit edit screen
+                  if (!context.mounted) return false;
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -223,7 +211,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text("販売アシスト1号 V1.5.08"),
+        title: const Text("A1:伝票入力"),
       ),
       body: Stack(
         children: [
@@ -577,7 +565,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           style: TextStyle(color: textColor),
           decoration: InputDecoration(
             hintText: "例：事務所改修工事 / 〇〇月分リース料",
-            hintStyle: TextStyle(color: textColor.withOpacity(0.5)),
+            hintStyle: TextStyle(color: textColor.withAlpha((0.5 * 255).round())),
             filled: true,
             fillColor: _isDraft ? Colors.white12 : Colors.grey.shade100,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),

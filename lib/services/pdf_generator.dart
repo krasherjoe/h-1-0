@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:crypto/crypto.dart';
 import 'package:intl/intl.dart';
 import '../models/invoice_models.dart';
 import 'company_repository.dart';
@@ -156,7 +155,7 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
             ),
           ),
           pw.SizedBox(height: 20),
-          pw.Table.fromTextArray(
+          pw.TableHelper.fromTextArray(
             headers: const ["品名", "数量", "単価", "金額"],
             data: invoice.items
                 .map((item) => [
@@ -249,8 +248,6 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
     final String hash = invoice.contentHash;
     final String dateStr = DateFormat('yyyyMMdd').format(invoice.date);
     final String amountStr = NumberFormat("#,###").format(invoice.totalAmount);
-    final String subjectStr = invoice.subject?.isNotEmpty == true ? "_${invoice.subject}" : "";
-    
     // {日付}({タイプ}){顧客名}_{案件}_{金額}_{HASH下8桁}.pdf
     // 顧客名から敬称を除去
     String safeCustomerName = invoice.customerNameForDisplay
@@ -265,7 +262,8 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
       .replaceAll('(同)', '')
       .trim();
 
-    String fileName = "${dateStr}(${invoice.documentTypeName})${safeCustomerName}${subjectStr}_${amountStr}円_$hash.pdf";
+    final suffix = (invoice.subject?.isNotEmpty ?? false) ? "_${invoice.subject}" : "";
+    final String fileName = "$dateStr(${invoice.documentTypeName})$safeCustomerName${suffix}_$amountStr円_$hash.pdf";
 
     final directory = await getExternalStorageDirectory();
     if (directory == null) return null;
@@ -302,50 +300,4 @@ pw.Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
       ],
     ),
   );
-}
-
-pw.Widget _parseMarkdown(String text) {
-  final lines = text.split('\n');
-  final List<pw.Widget> widgets = [];
-
-  for (final line in lines) {
-    String content = line;
-    pw.EdgeInsets padding = const pw.EdgeInsets.only(bottom: 2);
-    pw.Widget? prefix;
-
-    // 箇条書き / インデント
-    if (content.startsWith('* ') || content.startsWith('- ')) {
-      content = content.substring(2);
-      prefix = pw.Padding(padding: const pw.EdgeInsets.only(right: 4), child: pw.Text('•'));
-    } else if (content.startsWith('  ')) {
-      padding = padding.copyWith(left: 10);
-    }
-
-    // 太字 (**text**) - 簡易実装
-    final List<pw.TextSpan> spans = [];
-    final parts = content.split('**');
-    for (int i = 0; i < parts.length; i++) {
-      spans.add(pw.TextSpan(
-        text: parts[i],
-        style: i % 2 == 1 ? pw.TextStyle(fontWeight: pw.FontWeight.bold) : null,
-      ));
-    }
-
-    widgets.add(
-      pw.Padding(
-        padding: padding,
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            if (prefix != null) prefix,
-            pw.Expanded(
-              child: pw.RichText(text: pw.TextSpan(children: spans, style: const pw.TextStyle(fontSize: 10))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: widgets);
 }

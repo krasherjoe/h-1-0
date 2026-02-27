@@ -10,13 +10,13 @@ class KeyboardInsetWrapper extends StatelessWidget {
   final Curve curve;
 
   const KeyboardInsetWrapper({
-    Key? key,
+    super.key,
     required this.child,
     this.basePadding = EdgeInsets.zero,
     this.extraBottom = 0,
     this.duration = const Duration(milliseconds: 180),
     this.curve = Curves.easeOut,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

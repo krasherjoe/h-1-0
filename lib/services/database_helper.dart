@@ -309,7 +309,7 @@ class DatabaseHelper {
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
     try {
-      await db.execute('ALTER TABLE ' + table + ' ADD COLUMN ' + columnDef);
+      await db.execute('ALTER TABLE $table ADD COLUMN $columnDef');
     } catch (_) {
       // Ignore if the column already exists.
     }

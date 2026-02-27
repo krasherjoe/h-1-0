@@ -4,7 +4,7 @@ import '../models/activity_log_model.dart';
 import '../services/activity_log_repository.dart';
 
 class ActivityLogScreen extends StatefulWidget {
-  const ActivityLogScreen({Key? key}) : super(key: key);
+  const ActivityLogScreen({super.key});
 
   @override
   State<ActivityLogScreen> createState() => _ActivityLogScreenState();
@@ -91,7 +91,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(

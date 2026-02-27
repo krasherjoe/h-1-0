@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/invoice_models.dart';
-import '../models/customer_model.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
-import '../services/pdf_generator.dart';
 import 'invoice_detail_page.dart';
 import 'management_screen.dart';
 import 'product_master_screen.dart';
@@ -15,12 +13,11 @@ import 'company_info_screen.dart';
 import '../widgets/slide_to_unlock.dart';
 import '../main.dart'; // InvoiceFlowScreen 用
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:printing/printing.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import 'invoice_history/invoice_history_list.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
-  const InvoiceHistoryScreen({Key? key}) : super(key: key);
+  const InvoiceHistoryScreen({super.key});
 
   @override
   State<InvoiceHistoryScreen> createState() => _InvoiceHistoryScreenState();
@@ -98,7 +95,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         MaterialPageRoute(
                           builder: (context) => InvoiceDetailPage(
                             invoice: invoice,
-                            isUnlocked: _isUnlocked, // 状態を渡す
                           ),
                         ),
                       );
@@ -272,7 +268,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               MaterialPageRoute(builder: (context) => const CompanyInfoScreen()),
             ).then((_) => _loadData());
           },
-          child: Text("伝票マスター v$_appVersion"),
+          child: Text("A2:履歴リスト v$_appVersion"),
         ),
         backgroundColor: _isUnlocked ? Colors.blueGrey : Colors.blueGrey.shade800,
         actions: [
@@ -353,7 +349,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                           MaterialPageRoute(
                             builder: (context) => InvoiceDetailPage(
                               invoice: invoice,
-                              isUnlocked: _isUnlocked,
                             ),
                           ),
                         );

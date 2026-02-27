@@ -6,7 +6,7 @@ import '../services/company_repository.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
 class CompanyInfoScreen extends StatefulWidget {
-  const CompanyInfoScreen({Key? key}) : super(key: key);
+  const CompanyInfoScreen({super.key});
 
   @override
   State<CompanyInfoScreen> createState() => _CompanyInfoScreenState();
@@ -61,6 +61,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       taxDisplayMode: _taxDisplayMode,
     );
     await _companyRepo.saveCompanyInfo(updated);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("自社情報を保存しました")));
     Navigator.pop(context);
   }
@@ -71,7 +72,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("自社設定"),
+        title: const Text("F1:自社情報"),
         backgroundColor: Colors.indigo,
         actions: [
           IconButton(icon: const Icon(Icons.check), onPressed: _save),

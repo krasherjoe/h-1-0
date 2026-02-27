@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../services/gps_service.dart';
 
 class GpsHistoryScreen extends StatefulWidget {
-  const GpsHistoryScreen({Key? key}) : super(key: key);
+  const GpsHistoryScreen({super.key});
 
   @override
   State<GpsHistoryScreen> createState() => _GpsHistoryScreenState();

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'product_master_screen.dart';
@@ -12,9 +11,14 @@ import 'activity_log_screen.dart';
 import 'sales_report_screen.dart';
 import 'gps_history_screen.dart';
 
-class ManagementScreen extends StatelessWidget {
-  const ManagementScreen({Key? key}) : super(key: key);
+class ManagementScreen extends StatefulWidget {
+  const ManagementScreen({super.key});
 
+  @override
+  State<ManagementScreen> createState() => _ManagementScreenState();
+}
+
+class _ManagementScreenState extends State<ManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,14 +148,24 @@ class ManagementScreen extends StatelessWidget {
       buffer.writeln("${inv.date},$inv.invoiceNumber,${inv.customer.formalName},${inv.totalAmount},${inv.notes ?? ""}");
     }
 
-    await Share.share(buffer.toString(), subject: '販売アシスト1号_全伝票マスター');
+    await SharePlus.instance.share(
+      ShareParams(
+        text: buffer.toString(),
+        subject: '販売アシスト1号_全伝票マスター',
+      ),
+    );
   }
 
   Future<void> _backupDatabase(BuildContext context) async {
     final dbPath = p.join(await getDatabasesPath(), 'gemi_invoice.db');
     final file = File(dbPath);
     if (await file.exists()) {
-      await Share.shareXFiles([XFile(dbPath)], text: '販売アシスト1号_DBバックアップ');
+      await SharePlus.instance.share(
+        ShareParams(
+          text: '販売アシスト1号_DBバックアップ',
+          files: [XFile(dbPath)],
+        ),
+      );
     } else {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("データベースファイルが見つかりません")));

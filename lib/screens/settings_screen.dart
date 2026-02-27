@@ -230,7 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('設定'),
+        title: const Text('S1:設定'),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -362,23 +362,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'テーマ選択',
               subtitle: '配色や見た目を切り替え（テンプレ）',
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  RadioListTile<String>(
-                    value: 'light',
-                    groupValue: _theme,
-                    title: const Text('ライト'),
-                    onChanged: (v) => setState(() => _theme = v ?? 'light'),
-                  ),
-                  RadioListTile<String>(
-                    value: 'dark',
-                    groupValue: _theme,
-                    title: const Text('ダーク'),
-                    onChanged: (v) => setState(() => _theme = v ?? 'dark'),
-                  ),
-                  RadioListTile<String>(
-                    value: 'system',
-                    groupValue: _theme,
-                    title: const Text('システムに従う'),
+                  DropdownButtonFormField<String>(
+                    initialValue: _theme,
+                    decoration: const InputDecoration(labelText: 'テーマを選択'),
+                    items: const [
+                      DropdownMenuItem(value: 'light', child: Text('ライト')),
+                      DropdownMenuItem(value: 'dark', child: Text('ダーク')),
+                      DropdownMenuItem(value: 'system', child: Text('システムに従う')),
+                    ],
                     onChanged: (v) => setState(() => _theme = v ?? 'system'),
                   ),
                   const SizedBox(height: 8),

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'invoice_input_screen.dart'; // Add this line
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:printing/printing.dart';
-import 'dart:typed_data';
+import 'package:intl/intl.dart';
+import 'invoice_input_screen.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
@@ -17,9 +15,10 @@ import '../widgets/keyboard_inset_wrapper.dart';
 
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
+  final bool editable;
   final bool isUnlocked;
 
-  const InvoiceDetailPage({Key? key, required this.invoice, this.isUnlocked = false}) : super(key: key);
+  const InvoiceDetailPage({super.key, required this.invoice, this.editable = true, this.isUnlocked = true});
 
   @override
   State<InvoiceDetailPage> createState() => _InvoiceDetailPageState();
@@ -132,11 +131,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     if (newPath != null) {
       final finalInvoice = updatedInvoice.copyWith(filePath: newPath);
       await _invoiceRepo.saveInvoice(finalInvoice); // パスを更新して再保存
-      
+      if (!mounted) return;
+
       setState(() {
         _currentInvoice = finalInvoice;
         _currentFilePath = newPath;
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('データベースとPDFを更新しました')),
       );
@@ -145,7 +146,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
   void _exportCsv() {
     final csvData = _currentInvoice.toCsv();
-    Share.share(csvData, subject: '請求書データ_CSV');
+    SharePlus.instance.share(ShareParams(text: csvData, subject: '請求書データ_CSV'));
   }
 
   @override
@@ -167,7 +168,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           children: [
             Flexible(
               child: Text(
-                isDraft ? "伝票詳細" : "販売アシスト1号 伝票詳細",
+                isDraft ? "A3:伝票詳細" : "A3:伝票詳細",
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -363,7 +364,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             ],
           ),
           const SizedBox(height: 8),
-          Text("日付: ${DateFormat('yyyy/MM/dd').format(_currentInvoice.date)}", style: TextStyle(color: textColor.withOpacity(0.8))),
+          Text(
+            "日付: ${DateFormat('yyyy/MM/dd').format(_currentInvoice.date)}",
+            style: TextStyle(color: textColor.withAlpha((0.8 * 255).round())),
+          ),
           const SizedBox(height: 8),
           Text("取引先:", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
           Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
@@ -383,7 +387,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
           if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
             const SizedBox(height: 8),
-            Text("備考: ${_currentInvoice.notes}", style: TextStyle(color: textColor.withOpacity(0.9))),
+            Text(
+              "備考: ${_currentInvoice.notes}",
+              style: TextStyle(color: textColor.withAlpha((0.9 * 255).round())),
+            ),
           ],
         ],
       ],
@@ -655,13 +662,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Future<void> _openPdf() async => await OpenFilex.open(_currentFilePath!);
   Future<void> _sharePdf() async {
     if (_currentFilePath != null) {
-      await Share.shareXFiles([XFile(_currentFilePath!)], text: '請求書送付');
+      await SharePlus.instance.share(ShareParams(files: [XFile(_currentFilePath!)], text: '請求書送付'));
     }
-  }
-
-  Future<Uint8List> _buildPdfBytes() async {
-    final doc = await buildInvoiceDocument(_currentInvoice);
-    return Uint8List.fromList(await doc.save());
   }
 
   Future<void> _previewPdf() async {
@@ -728,19 +730,3 @@ class _EditableCell extends StatelessWidget {
   }
 }
 
-class _SummaryRow extends StatelessWidget {
-  final String label, value;
-  final bool isBold;
-  const _SummaryRow(this.label, this.value, {this.isBold = false});
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2.0),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: isBold ? FontWeight.bold : null)),
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: isBold ? FontWeight.bold : null)),
-      ],
-    ),
-  );
-}

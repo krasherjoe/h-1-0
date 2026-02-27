@@ -8,7 +8,7 @@ import 'product_master_screen.dart';
 class ProductPickerModal extends StatefulWidget {
   final Function(InvoiceItem) onItemSelected;
 
-  const ProductPickerModal({Key? key, required this.onItemSelected}) : super(key: key);
+  const ProductPickerModal({super.key, required this.onItemSelected});
 
   @override
   State<ProductPickerModal> createState() => _ProductPickerModalState();

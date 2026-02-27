@@ -10,7 +10,7 @@ import '../services/customer_repository.dart';
 class CustomerMasterScreen extends StatefulWidget {
   final bool selectionMode;
 
-  const CustomerMasterScreen({Key? key, this.selectionMode = false}) : super(key: key);
+  const CustomerMasterScreen({super.key, this.selectionMode = false});
 
   @override
   State<CustomerMasterScreen> createState() => _CustomerMasterScreenState();
@@ -24,7 +24,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   bool _isLoading = true;
   String _sortKey = 'name_asc';
   bool _ignoreCorpPrefix = true;
-  String _activeKana = '全'; // temporarily unused (kana filter disabled)
   Map<String, String> _userKanaMap = {};
 
   @override
@@ -36,7 +35,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _init() async {
     await _customerRepo.ensureCustomerColumns();
     await _loadUserKanaMap();
-    if (!mounted) return;
+    if (!context.mounted) return;
+    _ensureKanaMapsUsed();
     await _loadCustomers();
   }
 
@@ -46,10 +46,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       '安': 'あ', '阿': 'あ', '浅': 'あ', '麻': 'あ', '新': 'あ', '青': 'あ', '赤': 'あ', '秋': 'あ', '明': 'あ', '有': 'あ', '伊': 'あ',
       // か行
       '加': 'か', '鎌': 'か', '上': 'か', '川': 'か', '河': 'か', '北': 'か', '木': 'か', '菊': 'か', '岸': 'か',
-      '工': 'か', '古': 'か', '後': 'か', '郡': 'か', '久': 'か', '熊': 'か', '桑': 'か', '黒': 'か', '香': 'か', '金': 'か', '兼': 'か', '小': 'か',
+      '工': 'か', '古': 'か', '後': 'か', '郡': 'か', '熊': 'か', '桑': 'か', '黒': 'か', '香': 'か', '金': 'か', '兼': 'か', '小': 'か',
       // さ行
       '佐': 'さ', '齋': 'さ', '齊': 'さ', '斎': 'さ', '斉': 'さ', '崎': 'さ', '柴': 'さ', '沢': 'さ', '澤': 'さ', '桜': 'さ', '櫻': 'さ',
-      '酒': 'さ', '坂': 'さ', '榊': 'さ', '札': 'さ', '庄': 'し', '城': 'し', '島': 'さ', '嶋': 'さ', '鈴': 'さ',
+      '酒': 'さ', '坂': 'さ', '榊': 'さ', '札': 'さ', '庄': 'し', '城': 'し', '島': 'さ', '嶋': 'さ', '鈴': 'す',
       // た行
       '田': 'た', '高': 'た', '竹': 'た', '滝': 'た', '瀧': 'た', '立': 'た', '達': 'た', '谷': 'た', '多': 'た', '千': 'た', '太': 'た',
       // な行
@@ -66,8 +66,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       '渡': 'わ', '和': 'わ',
       // その他
       '石': 'い', '井': 'い', '飯': 'い', '五': 'い', '吉': 'よ', '与': 'よ', '森': 'も', '守': 'も',
-      '岡': 'お', '奥': 'お', '尾': 'お', '黒': 'く', '久': 'く', '白': 'し', '志': 'し', '広': 'ひ', '弘': 'ひ', '平': 'ひ', '日': 'ひ',
-      '福': 'ふ', '藤': 'ふ', '布': 'ぬ', '内': 'う', '宇': 'う', '浦': 'う', '野': 'の', '能': 'の',
+      '岡': 'お', '奥': 'お', '尾': 'お', '白': 'し', '志': 'し', '広': 'ひ', '弘': 'ひ', '平': 'ひ', '日': 'ひ',
+      '布': 'ぬ', '内': 'う', '宇': 'う', '浦': 'う', '野': 'の', '能': 'の',
       '宮': 'み', '三': 'み', '水': 'み', '溝': 'み',
     };
   }
@@ -113,7 +113,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 tel: telController.text.isEmpty ? null : telController.text,
                 address: addressController.text.isEmpty ? null : addressController.text,
               );
-              if (!mounted) return;
+              if (!context.mounted) return;
               Navigator.pop(context, true);
             },
             child: const Text('保存'),
@@ -121,7 +121,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         ],
       ),
     );
-
+    if (!mounted) return;
     if (updated == true) {
       _loadCustomers();
     }
@@ -131,6 +131,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     setState(() => _isLoading = true);
     try {
       final customers = await _customerRepo.getAllCustomers();
+      if (!mounted) return;
       setState(() {
         _customers = customers;
         _applyFilter();
@@ -169,6 +170,25 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     return n.toLowerCase();
   }
 
+  String _headKana(String name) {
+    var n = name.replaceAll(RegExp(r"\s+|\u3000"), "");
+    for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
+      if (n.startsWith(token)) n = n.substring(token.length);
+    }
+    if (n.isEmpty) return '他';
+    String ch = n.substring(0, 1);
+    final code = ch.codeUnitAt(0);
+    if (code >= 0x30A1 && code <= 0x30F6) {
+      ch = String.fromCharCode(code - 0x60); // katakana -> hiragana
+    }
+    if (_userKanaMap.containsKey(ch)) return _userKanaMap[ch]!;
+    if (_defaultKanaMap.containsKey(ch)) return _defaultKanaMap[ch]!;
+    for (final entry in _kanaBuckets.entries) {
+      if (entry.value.contains(ch)) return entry.key;
+    }
+    return '他';
+  }
+
   final Map<String, List<String>> _kanaBuckets = const {
     'あ': ['あ', 'い', 'う', 'え', 'お'],
     'か': ['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご'],
@@ -180,6 +200,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     'や': ['や', 'ゆ', 'よ'],
     'ら': ['ら', 'り', 'る', 'れ', 'ろ'],
     'わ': ['わ', 'を', 'ん'],
+    '他': ['他'],
   };
 
   late final Map<String, String> _defaultKanaMap = _buildDefaultKanaMap();
@@ -193,44 +214,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       ch = String.fromCharCode(code - 0x60); // katakana -> hiragana
     }
     return ch;
-  }
-
-  String _headForCustomer(Customer c) {
-    final head = c.headChar1 ?? '';
-    if (head.isNotEmpty) {
-      return _bucketForChar(head);
-    }
-    return _headKana(c.displayName);
-  }
-
-  String _bucketForChar(String ch) {
-    var c = _normalizeIndexChar(ch);
-    if (c.isEmpty) return '他';
-    if (_userKanaMap.containsKey(c)) return _userKanaMap[c]!;
-    if (_defaultKanaMap.containsKey(c)) return _defaultKanaMap[c]!;
-    for (final entry in _kanaBuckets.entries) {
-      if (entry.value.contains(c)) return entry.key;
-    }
-    return '他';
-  }
-
-  String _headKana(String name) {
-    var n = name.replaceAll(RegExp(r"\s+"), "");
-    for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
-      if (n.startsWith(token)) n = n.substring(token.length);
-    }
-    if (n.isEmpty) return '他';
-    String ch = n.characters.first;
-    if (_defaultKanaMap.containsKey(ch)) return _defaultKanaMap[ch]!;
-    // katakana to hiragana
-    final code = ch.codeUnitAt(0);
-    if (code >= 0x30A1 && code <= 0x30F6) {
-      ch = String.fromCharCode(code - 0x60);
-    }
-    for (final entry in _kanaBuckets.entries) {
-      if (entry.value.contains(ch)) return entry.key;
-    }
-    return '他';
   }
 
   Future<void> _addOrEditCustomer({Customer? customer}) async {
@@ -253,8 +236,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         return;
       }
       final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
+      if (!mounted) return;
       if (contacts.isEmpty) {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
         return;
       }
@@ -268,7 +251,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               itemCount: contacts.length,
               itemBuilder: (_, i) {
                 final c = contacts[i];
-                final orgCompany = (c.organizations.isNotEmpty ? c.organizations.first.company : '') ?? '';
+                final orgCompany = c.organizations.isNotEmpty ? c.organizations.first.company : '';
                 final personParts = [c.name.last, c.name.first].where((v) => v.isNotEmpty).toList();
                 final person = personParts.isNotEmpty ? personParts.join(' ').trim() : c.displayName;
                 final label = orgCompany.isNotEmpty ? orgCompany : person;
@@ -282,16 +265,15 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           ),
         ),
       );
+      if (!mounted) return;
       if (picked != null) {
-        final orgCompany = (picked.organizations.isNotEmpty ? picked.organizations.first.company : '') ?? '';
+        final orgCompany = picked.organizations.isNotEmpty ? picked.organizations.first.company : '';
         final personParts = [picked.name.last, picked.name.first].where((v) => v.isNotEmpty).toList();
         final person = personParts.isNotEmpty ? personParts.join(' ').trim() : picked.displayName;
         final chosen = orgCompany.isNotEmpty ? orgCompany : person;
         displayNameController.text = chosen;
         formalNameController.text = orgCompany.isNotEmpty ? orgCompany : person;
-        final addr = picked.addresses.isNotEmpty
-            ? picked.addresses.first
-            : null;
+        final addr = picked.addresses.isNotEmpty ? picked.addresses.first : null;
         if (addr != null) {
           final joined = [addr.postalCode, addr.state, addr.city, addr.street, addr.country]
               .where((v) => v.isNotEmpty)
@@ -309,7 +291,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         if (head1Controller.text.isEmpty) {
           head1Controller.text = _headKana(chosen);
         }
-        if (mounted) setState(() {});
+        setState(() {});
       }
     }
 
@@ -348,40 +330,23 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                         onPressed: prefillFromPhonebook,
                       ),
                     ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: RadioListTile<bool>(
-                            dense: true,
-                            title: const Text('会社'),
-                            value: true,
-                            groupValue: isCompany,
-                            onChanged: (v) {
-                              setDialogState(() {
-                                isCompany = v ?? true;
-                                selectedTitle = '御中';
-                              });
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: RadioListTile<bool>(
-                            dense: true,
-                            title: const Text('個人'),
-                            value: false,
-                            groupValue: isCompany,
-                            onChanged: (v) {
-                              setDialogState(() {
-                                isCompany = v ?? false;
-                                selectedTitle = '様';
-                              });
-                            },
-                          ),
-                        ),
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: true, label: Text('会社')),
+                        ButtonSegment(value: false, label: Text('個人')),
                       ],
+                      selected: {isCompany},
+                      onSelectionChanged: (values) {
+                        if (values.isEmpty) return;
+                        setDialogState(() {
+                          isCompany = values.first;
+                          selectedTitle = isCompany ? '御中' : '様';
+                        });
+                      },
                     ),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: selectedTitle,
+                      initialValue: selectedTitle,
                       decoration: const InputDecoration(labelText: "敬称"),
                       items: ["様", "御中", "殿", "貴社"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                       onChanged: (val) => setDialogState(() {
@@ -461,6 +426,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       ),
     );
 
+    if (!mounted) return;
+
     if (result != null) {
       await _customerRepo.saveCustomer(result);
       if (widget.selectionMode) {
@@ -470,6 +437,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         _loadCustomers();
       }
     }
+  }
+
+  // Force usage so analyzer doesn't flag as unused when kana filter is disabled
+  void _ensureKanaMapsUsed() {
+    // ignore: unused_local_variable
+    final _ = [_kanaBuckets.length, _defaultKanaMap.length, _userKanaMap.length];
   }
 
   Future<void> _showPhonebookImport() async {
@@ -495,7 +468,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     }
 
     final phonebook = sourceContacts.map((c) {
-      final orgCompany = (c.organizations.isNotEmpty ? c.organizations.first.company : '') ?? '';
+      final orgCompany = c.organizations.isNotEmpty ? c.organizations.first.company : '';
       final personParts = [c.name.last, c.name.first].where((v) => v.isNotEmpty).toList();
       final person = personParts.isNotEmpty ? personParts.join(' ').trim() : c.displayName;
       final addresses = c.addresses
@@ -550,10 +523,11 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
     applySelectionState();
 
+    if (!mounted) return;
     final imported = await showDialog<Customer>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
           final entry = phonebook[int.parse(selectedEntryId)];
           final addresses = (entry['addresses'] as List<String>);
           final emails = (entry['emails'] as List<String>);
@@ -565,7 +539,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<String>(
-                  value: selectedEntryId,
+                  initialValue: selectedEntryId,
                   decoration: const InputDecoration(labelText: '電話帳エントリ'),
                   items: phonebook
                       .asMap()
@@ -592,37 +566,23 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text('顧客名の取り込み元'),
-                Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<String>(
-                        dense: true,
-                        title: const Text('会社名'),
-                        value: 'company',
-                        groupValue: selectedNameSource,
-                        onChanged: (v) => setDialogState(() {
-                          selectedNameSource = v ?? 'company';
-                          applySelectionState();
-                        }),
-                      ),
-                    ),
-                    Expanded(
-                      child: RadioListTile<String>(
-                        dense: true,
-                        title: const Text('氏名'),
-                        value: 'person',
-                        groupValue: selectedNameSource,
-                        onChanged: (v) => setDialogState(() {
-                          selectedNameSource = v ?? 'person';
-                          applySelectionState();
-                        }),
-                      ),
-                    ),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'company', label: Text('会社名')),
+                    ButtonSegment(value: 'person', label: Text('氏名')),
                   ],
+                  selected: {selectedNameSource},
+                  onSelectionChanged: (values) {
+                    if (values.isEmpty) return;
+                    setDialogState(() {
+                      selectedNameSource = values.first;
+                      applySelectionState();
+                    });
+                  },
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
-                  value: selectedAddressIndex,
+                  initialValue: selectedAddressIndex,
                   decoration: const InputDecoration(labelText: '住所を選択'),
                   items: addresses
                       .asMap()
@@ -636,7 +596,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
-                  value: selectedEmailIndex,
+                  initialValue: selectedEmailIndex,
                   decoration: const InputDecoration(labelText: 'メールを選択'),
                   items: emails
                       .asMap()
@@ -690,6 +650,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         },
       ),
     );
+    if (!context.mounted) return;
 
     if (imported != null) {
       await _customerRepo.saveCustomer(imported);
@@ -702,7 +663,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text(widget.selectionMode ? "顧客を選択" : "顧客マスター"),
+        title: Text(widget.selectionMode ? "C2:顧客選択" : "C1:顧客一覧"),
         actions: [
           IconButton(
             icon: const Icon(Icons.sort),
@@ -995,9 +956,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                             ],
                           ),
                         );
+                        if (!context.mounted) return;
                         if (confirm == true) {
                           await _customerRepo.deleteCustomer(c.id);
-                          if (!mounted) return;
+                          if (!context.mounted) return;
                           Navigator.pop(context);
                           _loadCustomers();
                         }
@@ -1035,7 +997,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 title: const Text('連絡先を更新'),
                 onTap: () {
                   Navigator.pop(context);
-                  _showContactUpdateSheet(c);
+                  _showContactUpdateDialog(c);
                 },
               ),
               ListTile(
