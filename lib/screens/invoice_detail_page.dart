@@ -13,6 +13,36 @@ import 'product_picker_modal.dart';
 import '../models/company_model.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
+class _DetailSnapshot {
+  final String formalName;
+  final String notes;
+  final List<InvoiceItem> items;
+  final double taxRate;
+  final bool includeTax;
+  final bool isDraft;
+
+  const _DetailSnapshot({
+    required this.formalName,
+    required this.notes,
+    required this.items,
+    required this.taxRate,
+    required this.includeTax,
+    required this.isDraft,
+  });
+}
+
+List<InvoiceItem> _cloneItemsDetail(List<InvoiceItem> source) {
+  return source
+      .map((e) => InvoiceItem(
+            id: e.id,
+            productId: e.productId,
+            description: e.description,
+            quantity: e.quantity,
+            unitPrice: e.unitPrice,
+          ))
+      .toList(growable: true);
+}
+
 class InvoiceDetailPage extends StatefulWidget {
   final Invoice invoice;
   final bool editable;
@@ -38,6 +68,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final _companyRepo = CompanyRepository();
   CompanyInfo? _companyInfo;
   bool _showFormalWarning = true;
+  final List<_DetailSnapshot> _undoStack = [];
+  final List<_DetailSnapshot> _redoStack = [];
+  bool _isApplyingSnapshot = false;
 
   @override
   void initState() {
@@ -69,12 +102,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     setState(() {
       _items.add(InvoiceItem(description: "新項目", quantity: 1, unitPrice: 0));
     });
+    _pushHistory();
   }
 
   void _removeItem(int index) {
     setState(() {
       _items.removeAt(index);
     });
+    _pushHistory();
   }
 
   void _pickFromMaster() {
@@ -126,6 +161,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     }
 
     setState(() => _isEditing = false);
+    _undoStack.clear();
+    _redoStack.clear();
 
     final newPath = await generateInvoicePdf(updatedInvoice);
     if (newPath != null) {
@@ -153,6 +190,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
     final isDraft = _currentInvoice.isDraft;
+    final docTypeName = _currentInvoice.documentTypeName;
     final themeColor = Colors.white; // 常に明色
     final textColor = Colors.black87;
 
@@ -163,26 +201,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(), // 常に表示
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                isDraft ? "A3:伝票詳細" : "A3:伝票詳細",
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isDraft)
-              Chip(
-                label: const Text("下書き", style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.orange,
-                padding: EdgeInsets.zero,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-          ],
-        ),
+        title: const Text("A3:伝票詳細"),
         backgroundColor: Colors.indigo.shade700,
         actions: [
           if (locked)
@@ -226,6 +245,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               onPressed: (locked || !widget.isUnlocked)
                   ? null
                   : () async {
+                      _pushHistory(clearRedo: true);
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -243,6 +263,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     },
             ),
           ] else ...[
+            IconButton(
+              icon: const Icon(Icons.undo),
+              onPressed: _undoStack.isNotEmpty ? _undo : null,
+              tooltip: "元に戻す",
+            ),
+            IconButton(
+              icon: const Icon(Icons.redo),
+              onPressed: _redoStack.isNotEmpty ? _redo : null,
+              tooltip: "やり直す",
+            ),
             IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
             IconButton(icon: const Icon(Icons.cancel), onPressed: () => setState(() => _isEditing = false)),
           ]
@@ -259,21 +289,33 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               if (isDraft)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: Colors.indigo.shade800,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.shade200),
+                    border: Border.all(color: Colors.indigo.shade900),
                   ),
                   child: Row(
-                    children: const [
-                      Icon(Icons.edit_note, color: Colors.orange),
-                      SizedBox(width: 8),
+                    children: [
+                      const Icon(Icons.edit_note, color: Colors.white70),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           "下書き: 未確定・PDFは正式発行で確定",
-                          style: TextStyle(color: Colors.orange),
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade600,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          "下書${docTypeName}",
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ],
@@ -332,12 +374,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         if (_isEditing) ...[
           TextField(
             controller: _formalNameController,
+            onChanged: (_) => _pushHistory(),
             decoration: const InputDecoration(labelText: "取引先 正式名称", border: OutlineInputBorder()),
             style: TextStyle(color: textColor),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _notesController,
+            onChanged: (_) => _pushHistory(),
             maxLines: 2,
             decoration: const InputDecoration(labelText: "備考", border: OutlineInputBorder()),
             style: TextStyle(color: textColor),
@@ -350,17 +394,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 "伝票番号: ${_currentInvoice.invoiceNumber}",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _currentInvoice.isDraft ? Colors.orange : Colors.green.shade700,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _currentInvoice.isDraft ? "下書き" : "確定済",
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -369,29 +402,43 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             style: TextStyle(color: textColor.withAlpha((0.8 * 255).round())),
           ),
           const SizedBox(height: 8),
-          Text("取引先:", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-          Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
-          if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
-            const SizedBox(height: 8),
-            Text("件名: ${_currentInvoice.subject}",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigoAccent)),
-          ],
-          if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
-            Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 16, color: textColor)),
-          if ((_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address) != null)
-            Text("住所: ${_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address}", style: TextStyle(color: textColor)),
-          if ((_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel) != null)
-            Text("TEL: ${_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel}", style: TextStyle(color: textColor)),
-          if ((_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email) != null)
-            Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
-          if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
-            const SizedBox(height: 8),
-            Text(
-              "備考: ${_currentInvoice.notes}",
-              style: TextStyle(color: textColor.withAlpha((0.9 * 255).round())),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("取引先", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                const SizedBox(height: 4),
+                Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+                if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 6),
+                  Text("件名: ${_currentInvoice.subject}",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                ],
+                if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
+                  Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 14, color: textColor)),
+                if ((_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address) != null)
+                  Text("住所: ${_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address}", style: TextStyle(color: textColor)),
+                if ((_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel) != null)
+                  Text("TEL: ${_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel}", style: TextStyle(color: textColor)),
+                if ((_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email) != null)
+                  Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
+                if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    "備考: ${_currentInvoice.notes}",
+                    style: TextStyle(color: textColor.withAlpha((0.9 * 255).round())),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ],
     );
@@ -427,19 +474,28 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               _EditableCell(
                 initialValue: item.description,
                 textColor: textColor,
-                onChanged: (val) => item.description = val,
+                onChanged: (val) {
+                  setState(() => item.description = val);
+                  _pushHistory();
+                },
               ),
               _EditableCell(
                 initialValue: item.quantity.toString(),
                 textColor: textColor,
                 keyboardType: TextInputType.number,
-                onChanged: (val) => setState(() => item.quantity = int.tryParse(val) ?? 0),
+                onChanged: (val) {
+                  setState(() => item.quantity = int.tryParse(val) ?? 0);
+                  _pushHistory();
+                },
               ),
               _EditableCell(
                 initialValue: item.unitPrice.toString(),
                 textColor: textColor,
                 keyboardType: TextInputType.number,
-                onChanged: (val) => setState(() => item.unitPrice = int.tryParse(val) ?? 0),
+                onChanged: (val) {
+                  setState(() => item.unitPrice = int.tryParse(val) ?? 0);
+                  _pushHistory();
+                },
               ),
               _TableCell(formatter.format(item.subtotal), textColor: textColor),
               IconButton(icon: const Icon(Icons.delete, size: 20, color: Colors.red), onPressed: () => _removeItem(idx)),
@@ -468,7 +524,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade900,
+        color: Colors.indigo,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -523,6 +579,61 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
   int _calculateCurrentSubtotal() {
     return _items.fold(0, (sum, item) => sum + (item.quantity * item.unitPrice));
+  }
+
+  void _pushHistory({bool clearRedo = false}) {
+    if (!_isEditing || _isApplyingSnapshot) return;
+    if (_undoStack.length >= 30) _undoStack.removeAt(0);
+    _undoStack.add(_DetailSnapshot(
+      formalName: _formalNameController.text,
+      notes: _notesController.text,
+      items: _cloneItemsDetail(_items),
+      taxRate: _taxRate,
+      includeTax: _includeTax,
+      isDraft: _currentInvoice.isDraft,
+    ));
+    if (clearRedo) _redoStack.clear();
+    setState(() {});
+  }
+
+  void _undo() {
+    if (_undoStack.isEmpty) return;
+    final snapshot = _undoStack.removeLast();
+    _redoStack.add(_DetailSnapshot(
+      formalName: _formalNameController.text,
+      notes: _notesController.text,
+      items: _cloneItemsDetail(_items),
+      taxRate: _taxRate,
+      includeTax: _includeTax,
+      isDraft: _currentInvoice.isDraft,
+    ));
+    _applySnapshot(snapshot);
+  }
+
+  void _redo() {
+    if (_redoStack.isEmpty) return;
+    final snapshot = _redoStack.removeLast();
+    _undoStack.add(_DetailSnapshot(
+      formalName: _formalNameController.text,
+      notes: _notesController.text,
+      items: _cloneItemsDetail(_items),
+      taxRate: _taxRate,
+      includeTax: _includeTax,
+      isDraft: _currentInvoice.isDraft,
+    ));
+    _applySnapshot(snapshot);
+  }
+
+  void _applySnapshot(_DetailSnapshot snapshot) {
+    _isApplyingSnapshot = true;
+    setState(() {
+      _formalNameController.text = snapshot.formalName;
+      _notesController.text = snapshot.notes;
+      _items = _cloneItemsDetail(snapshot.items);
+      _taxRate = snapshot.taxRate;
+      _includeTax = snapshot.includeTax;
+    });
+    _isApplyingSnapshot = false;
   }
 
   Widget _buildExperimentalSection(bool isDraft) {

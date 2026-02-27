@@ -73,7 +73,7 @@ class MyApp extends StatelessWidget {
               panEnabled: false,
               scaleEnabled: true,
               minScale: 0.8,
-              maxScale: 2.0,
+              maxScale: 4.0,
               child: child ?? const SizedBox.shrink(),
             ),
           ),

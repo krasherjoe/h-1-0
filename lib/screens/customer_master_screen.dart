@@ -416,6 +416,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       department: departmentController.text.isEmpty ? null : departmentController.text,
                       address: addressController.text.isEmpty ? null : addressController.text,
                       tel: telController.text.isEmpty ? null : telController.text,
+                      email: emailController.text.isEmpty ? null : emailController.text,
                       headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
                       headChar2: head2.isEmpty ? null : head2,
                       isLocked: customer?.isLocked ?? false,

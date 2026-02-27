@@ -28,6 +28,18 @@ class InvoiceInputForm extends StatefulWidget {
   State<InvoiceInputForm> createState() => _InvoiceInputFormState();
 }
 
+List<InvoiceItem> _cloneItems(List<InvoiceItem> source) {
+  return source
+      .map((e) => InvoiceItem(
+            id: e.id,
+            productId: e.productId,
+            description: e.description,
+            quantity: e.quantity,
+            unitPrice: e.unitPrice,
+          ))
+      .toList(growable: true);
+}
+
 class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final _repository = InvoiceRepository();
   final InvoiceRepository _invoiceRepo = InvoiceRepository();
@@ -40,24 +52,34 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _isDraft = true; // デフォルトは下書き
   final TextEditingController _subjectController = TextEditingController(); // 追加
   bool _isSaving = false; // 保存中フラグ
-  
+  final List<_InvoiceSnapshot> _undoStack = [];
+  final List<_InvoiceSnapshot> _redoStack = [];
+  bool _isApplyingSnapshot = false;
+  bool get _canUndo => _undoStack.length > 1;
+  bool get _canRedo => _redoStack.isNotEmpty;
+
   // 署名用の実験的パス
   final List<Offset?> _signaturePath = [];
 
   @override
   void initState() {
     super.initState();
+    _subjectController.addListener(_onSubjectChanged);
     _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _subjectController.removeListener(_onSubjectChanged);
+    _subjectController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadInitialData() async {
     _repository.cleanupOrphanedPdfs();
     final customerRepo = CustomerRepository();
-    final customers = await customerRepo.getAllCustomers();
-    if (customers.isNotEmpty) {
-      setState(() => _selectedCustomer = customers.first);
-    }
-    
+    await customerRepo.getAllCustomers();
+
     setState(() {
       // 既存伝票がある場合は初期値を上書き
       if (widget.existingInvoice != null) {
@@ -77,6 +99,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _documentType = widget.initialDocumentType;
       }
     });
+    _pushHistory(clearRedo: true);
+  }
+
+  void _onSubjectChanged() {
+    if (_isApplyingSnapshot) return;
+    _pushHistory();
   }
 
   void _addItem() {
@@ -93,6 +121,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           unitPrice: product.defaultUnitPrice,
         ));
       });
+      _pushHistory();
     });
   }
 
@@ -207,6 +236,84 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
+  void _pushHistory({bool clearRedo = false}) {
+    setState(() {
+      if (_undoStack.length >= 30) _undoStack.removeAt(0);
+      _undoStack.add(_InvoiceSnapshot(
+        customer: _selectedCustomer,
+        items: _cloneItems(_items),
+        taxRate: _taxRate,
+        includeTax: _includeTax,
+        documentType: _documentType,
+        date: _selectedDate,
+        isDraft: _isDraft,
+        subject: _subjectController.text,
+      ));
+      if (clearRedo) _redoStack.clear();
+    });
+  }
+
+  void _undo() {
+    if (_undoStack.length <= 1) return; // 直前状態がない
+    setState(() {
+      // 現在の状態をredoへ積む
+      _redoStack.add(_InvoiceSnapshot(
+        customer: _selectedCustomer,
+        items: _cloneItems(_items),
+        taxRate: _taxRate,
+        includeTax: _includeTax,
+        documentType: _documentType,
+        date: _selectedDate,
+        isDraft: _isDraft,
+        subject: _subjectController.text,
+      ));
+      // 一番新しい履歴を捨て、直前のスナップショットを適用
+      _undoStack.removeLast();
+      final snapshot = _undoStack.last;
+      _isApplyingSnapshot = true;
+      _selectedCustomer = snapshot.customer;
+      _items
+        ..clear()
+        ..addAll(_cloneItems(snapshot.items));
+      _taxRate = snapshot.taxRate;
+      _includeTax = snapshot.includeTax;
+      _documentType = snapshot.documentType;
+      _selectedDate = snapshot.date;
+      _isDraft = snapshot.isDraft;
+      _subjectController.text = snapshot.subject;
+      _isApplyingSnapshot = false;
+    });
+  }
+
+  void _redo() {
+    if (_redoStack.isEmpty) return;
+    setState(() {
+      _undoStack.add(_InvoiceSnapshot(
+        customer: _selectedCustomer,
+        items: _cloneItems(_items),
+        taxRate: _taxRate,
+        includeTax: _includeTax,
+        documentType: _documentType,
+        date: _selectedDate,
+        isDraft: _isDraft,
+        subject: _subjectController.text,
+      ));
+      final snapshot = _redoStack.removeLast();
+      _isApplyingSnapshot = true;
+      _selectedCustomer = snapshot.customer;
+      _items
+        ..clear()
+        ..addAll(_cloneItems(snapshot.items));
+      _taxRate = snapshot.taxRate;
+      _includeTax = snapshot.includeTax;
+      _documentType = snapshot.documentType;
+      _selectedDate = snapshot.date;
+      _isDraft = snapshot.isDraft;
+      _subjectController.text = snapshot.subject;
+      _isApplyingSnapshot = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
@@ -219,6 +326,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("A1:伝票入力"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.undo),
+            onPressed: _canUndo ? _undo : null,
+            tooltip: "元に戻す",
+          ),
+          IconButton(
+            icon: const Icon(Icons.redo),
+            onPressed: _canRedo ? _redo : null,
+            tooltip: "やり直す",
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -281,6 +400,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         );
         if (picked != null) {
           setState(() => _selectedDate = picked);
+          _pushHistory();
         }
       },
       child: Container(
@@ -324,6 +444,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           );
           if (picked != null) {
             setState(() => _selectedCustomer = picked);
+            _pushHistory();
           }
         },
       ),
@@ -357,6 +478,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 final item = _items.removeAt(oldIndex);
                 _items.insert(newIndex, item);
               });
+              _pushHistory();
             },
             buildDefaultDragHandles: false,
             itemBuilder: (context, idx) {
@@ -376,56 +498,72 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         const SizedBox(width: 8),
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                          onPressed: () => setState(() => _items.removeAt(idx)),
+                          onPressed: () {
+                            setState(() => _items.removeAt(idx));
+                            _pushHistory();
+                          },
                           tooltip: "削除",
                         ),
                       ],
                     ),
                     onTap: () {
-                      // 簡易編集ダイアログ
+                      // 簡易編集ダイアログ（キーボードでせり上げない）
                       final descCtrl = TextEditingController(text: item.description);
                       final qtyCtrl = TextEditingController(text: item.quantity.toString());
                       final priceCtrl = TextEditingController(text: item.unitPrice.toString());
                       showDialog(
                         context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("明細の編集"),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "品名 / 項目")),
-                              TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "数量"), keyboardType: TextInputType.number),
-                              TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: "単価"), keyboardType: TextInputType.number),
-                            ],
-                          ),
-                          actions: [
-                            TextButton.icon(
-                              icon: const Icon(Icons.search, size: 18),
-                              label: const Text("マスター参照"),
-                              onPressed: () async {
-                                Navigator.pop(context); // close edit dialog before jumping
-                                await Navigator.push(
-                                  this.context,
-                                  MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
-                                );
-                              },
+                        builder: (context) {
+                          final inset = MediaQuery.of(context).viewInsets.bottom;
+                          return MediaQuery.removeViewInsets(
+                            removeBottom: true,
+                            context: context,
+                            child: AlertDialog(
+                              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                              title: const Text("明細の編集"),
+                              content: SingleChildScrollView(
+                                padding: EdgeInsets.only(bottom: inset + 12),
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "品名 / 項目")),
+                                    TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "数量"), keyboardType: TextInputType.number),
+                                    TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: "単価"), keyboardType: TextInputType.number),
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton.icon(
+                                  icon: const Icon(Icons.search, size: 18),
+                                  label: const Text("マスター参照"),
+                                  onPressed: () async {
+                                    Navigator.pop(context); // close edit dialog before jumping
+                                    await Navigator.push(
+                                      this.context,
+                                      MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
+                                    );
+                                  },
+                                ),
+                                TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _items[idx] = item.copyWith(
+                                        description: descCtrl.text,
+                                        quantity: int.tryParse(qtyCtrl.text) ?? item.quantity,
+                                        unitPrice: int.tryParse(priceCtrl.text) ?? item.unitPrice,
+                                      );
+                                    });
+                                    _pushHistory();
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("更新"),
+                                ),
+                              ],
                             ),
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _items[idx] = item.copyWith(
-                                    description: descCtrl.text,
-                                    quantity: int.tryParse(qtyCtrl.text) ?? item.quantity,
-                                    unitPrice: int.tryParse(priceCtrl.text) ?? item.unitPrice,
-                                  );
-                                });
-                                Navigator.pop(context);
-                              },
-                              child: const Text("更新"),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -446,7 +584,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade900,
+        color: Colors.indigo,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -584,21 +722,50 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       children: [
         Text("案件名 / 件名", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
         const SizedBox(height: 8),
-        TextField(
-          controller: _subjectController,
-          style: TextStyle(color: textColor),
-          decoration: InputDecoration(
-            hintText: "例：事務所改修工事 / 〇〇月分リース料",
-            hintStyle: TextStyle(color: textColor.withAlpha((0.5 * 255).round())),
-            filled: true,
-            fillColor: _isDraft ? Colors.white12 : Colors.grey.shade100,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _subjectController,
+            style: TextStyle(color: textColor),
+            decoration: InputDecoration(
+              hintText: "例：事務所改修工事 / 〇〇月分リース料",
+              hintStyle: TextStyle(color: textColor.withAlpha((0.5 * 255).round())),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            ),
           ),
         ),
       ],
     );
   }
+}
+
+class _InvoiceSnapshot {
+  final Customer? customer;
+  final List<InvoiceItem> items;
+  final double taxRate;
+  final bool includeTax;
+  final DocumentType documentType;
+  final DateTime date;
+  final bool isDraft;
+  final String subject;
+
+  _InvoiceSnapshot({
+    required this.customer,
+    required this.items,
+    required this.taxRate,
+    required this.includeTax,
+    required this.documentType,
+    required this.date,
+    required this.isDraft,
+    required this.subject,
+  });
 }
 
 class SignaturePainter extends CustomPainter {

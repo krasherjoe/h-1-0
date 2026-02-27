@@ -232,6 +232,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('S1:設定'),
+        backgroundColor: Colors.indigo,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -246,6 +247,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.only(bottom: listBottomPadding),
           children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.indigo.shade100),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.business, color: Colors.indigo, size: 28),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      "自社情報を開く",
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CompanyInfoScreen())),
+                    icon: const Icon(Icons.chevron_right),
+                    label: const Text("詳細"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             _section(
               title: '自社情報',
               subtitle: '会社名・住所・登録番号など',
