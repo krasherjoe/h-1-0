@@ -464,18 +464,33 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final int tax = (subtotal * currentTaxRate).floor();
     final int total = subtotal + tax;
 
-    return Column(
-      children: [
-        _buildSummaryRow("小計", formatter.format(subtotal), textColor),
-        if (currentTaxRate > 0) ...[
-          if (_companyInfo?.taxDisplayMode == 'normal')
-            _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", formatter.format(tax), textColor),
-          if (_companyInfo?.taxDisplayMode == 'text_only')
-            _buildSummaryRow("消費税", "（税別）", textColor),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.indigo.shade900,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", Colors.white70),
+          if (currentTaxRate > 0) ...[
+            const Divider(color: Colors.white24),
+            if (_companyInfo?.taxDisplayMode == 'normal')
+              _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", "￥${formatter.format(tax)}", Colors.white70),
+            if (_companyInfo?.taxDisplayMode == 'text_only')
+              _buildSummaryRow("消費税", "（税別）", Colors.white70),
+          ],
+          const Divider(color: Colors.white24),
+          _buildSummaryRow(
+            currentTaxRate > 0 ? "合計金額 (税込)" : "合計金額",
+            "￥${formatter.format(total)}",
+            Colors.white,
+            isTotal: true,
+          ),
         ],
-        const Divider(color: Colors.grey),
-        _buildSummaryRow(currentTaxRate > 0 ? "合計金額 (税込)" : "合計金額", "￥${formatter.format(total)}", textColor, isTotal: true),
-      ],
+      ),
     );
   }
 
@@ -485,8 +500,22 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: isTotal ? 18 : 16, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: textColor)),
-          Text(value, style: TextStyle(fontSize: isTotal ? 20 : 16, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? Colors.orangeAccent : textColor)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 16,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              color: textColor,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 22 : 16,
+              fontWeight: FontWeight.bold,
+              color: isTotal ? Colors.white : textColor,
+            ),
+          ),
         ],
       ),
     );

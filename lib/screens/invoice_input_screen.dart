@@ -437,28 +437,60 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildSummarySection(NumberFormat fmt) {
+  Widget _buildSummarySection(NumberFormat formatter) {
+    final int subtotal = _subTotal;
+    final int tax = _includeTax ? (subtotal * _taxRate).floor() : 0;
+    final int total = subtotal + tax;
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.indigo.shade900, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.indigo.shade900,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
-          children: [
-            _buildSummaryRow("小計", "￥${fmt.format(_subTotal)}", Colors.white70),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", Colors.white70),
+          if (tax > 0) ...[
             const Divider(color: Colors.white24),
-            _buildSummaryRow("合計金額", "￥${fmt.format(_subTotal)}", Colors.white, fontSize: 24),
+            _buildSummaryRow("消費税", "￥${formatter.format(tax)}", Colors.white70),
           ],
+          const Divider(color: Colors.white24),
+          _buildSummaryRow(
+            tax > 0 ? "合計金額 (税込)" : "合計金額",
+            "￥${formatter.format(total)}",
+            Colors.white,
+            isTotal: true,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, Color color, {double fontSize = 16}) {
+  Widget _buildSummaryRow(String label, String value, Color textColor, {bool isTotal = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: color, fontSize: fontSize)),
-          Text(value, style: TextStyle(color: color, fontSize: fontSize, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+              color: textColor,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 14,
+              fontWeight: FontWeight.w600,
+              color: isTotal ? Colors.white : textColor,
+            ),
+          ),
         ],
       ),
     );
