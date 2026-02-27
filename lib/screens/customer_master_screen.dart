@@ -299,15 +299,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            title: Text(isEdit ? "顧客を編集" : "顧客を新規登録"),
-            content: KeyboardInsetWrapper(
-              basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-              extraBottom: 32,
-              child: SingleChildScrollView(
+          final inset = MediaQuery.of(context).viewInsets.bottom;
+          return MediaQuery.removeViewInsets(
+            removeBottom: true,
+            context: context,
+            child: AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              title: Text(isEdit ? "顧客を編集" : "顧客を新規登録"),
+              content: SingleChildScrollView(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: EdgeInsets.only(bottom: inset + 12),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -396,33 +398,34 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   ],
                 ),
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                TextButton(
+                  onPressed: () {
+                    if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
+                      return;
+                    }
+                    final head1 = _normalizeIndexChar(head1Controller.text);
+                    final head2 = _normalizeIndexChar(head2Controller.text);
+                    final newCustomer = Customer(
+                      id: customer?.id ?? const Uuid().v4(),
+                      displayName: displayNameController.text,
+                      formalName: formalNameController.text,
+                      title: selectedTitle,
+                      department: departmentController.text.isEmpty ? null : departmentController.text,
+                      address: addressController.text.isEmpty ? null : addressController.text,
+                      tel: telController.text.isEmpty ? null : telController.text,
+                      headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
+                      headChar2: head2.isEmpty ? null : head2,
+                      isLocked: customer?.isLocked ?? false,
+                    );
+                    Navigator.pop(context, newCustomer);
+                  },
+                  child: const Text("保存"),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-              TextButton(
-                onPressed: () {
-                  if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
-                    return;
-                  }
-                  final head1 = _normalizeIndexChar(head1Controller.text);
-                  final head2 = _normalizeIndexChar(head2Controller.text);
-                  final newCustomer = Customer(
-                    id: customer?.id ?? const Uuid().v4(),
-                    displayName: displayNameController.text,
-                    formalName: formalNameController.text,
-                    title: selectedTitle,
-                    department: departmentController.text.isEmpty ? null : departmentController.text,
-                    address: addressController.text.isEmpty ? null : addressController.text,
-                    tel: telController.text.isEmpty ? null : telController.text,
-                    headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
-                    headChar2: head2.isEmpty ? null : head2,
-                    isLocked: customer?.isLocked ?? false,
-                  );
-                  Navigator.pop(context, newCustomer);
-                },
-                child: const Text("保存"),
-              ),
-            ],
           );
         },
       ),
@@ -663,6 +666,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(),
         title: Text(widget.selectionMode ? "C2:顧客選択" : "C1:顧客一覧"),
@@ -712,82 +716,98 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ),
         ],
       ),
-      body: KeyboardInsetWrapper(
-        basePadding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
-        extraBottom: 40,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: widget.selectionMode ? "名前で検索して選択" : "名前で検索 (電話帳参照ボタンは詳細で)",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 8),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: widget.selectionMode ? "名前で検索して選択" : "名前で検索 (電話帳参照ボタンは詳細で)",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                  onChanged: (_) => setState(_applyFilter),
                 ),
-                onChanged: (_) => setState(_applyFilter),
               ),
             ),
             if (!widget.selectionMode)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: SwitchListTile(
-                  title: const Text('株式会社/有限会社などの接頭辞を無視してソート'),
-                  value: _ignoreCorpPrefix,
-                  onChanged: (v) => setState(() {
-                    _ignoreCorpPrefix = v;
-                    _applyFilter();
-                  }),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: SwitchListTile(
+                    title: const Text('株式会社/有限会社などの接頭辞を無視してソート'),
+                    value: _ignoreCorpPrefix,
+                    onChanged: (v) => setState(() {
+                      _ignoreCorpPrefix = v;
+                      _applyFilter();
+                    }),
+                  ),
                 ),
               ),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filtered.isEmpty
-                      ? const Center(child: Text("顧客が登録されていません"))
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 120, top: 4),
-                          itemCount: _filtered.length,
-                          itemBuilder: (context, index) {
-                            final c = _filtered[index];
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: c.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
-                                child: Stack(
-                                  children: [
-                                    const Align(alignment: Alignment.center, child: Icon(Icons.person, color: Colors.indigo)),
-                                    if (c.isLocked)
-                                      const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
-                                  ],
-                                ),
-                              ),
-                              title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
-                              subtitle: Text("${c.formalName} ${c.title}"),
-                              onTap: widget.selectionMode ? () => Navigator.pop(context, c) : () => _showDetailPane(c),
-                              trailing: widget.selectionMode
-                                  ? null
-                                  : IconButton(
-                                      icon: const Icon(Icons.edit),
-                                      onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
-                                      tooltip: c.isLocked ? "ロック中" : "編集",
-                                    ),
-                              onLongPress: () => _showContextActions(c),
-                            );
-                          },
+            if (_isLoading)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_filtered.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text("顧客が登録されていません")),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: 80, top: 4),
+                sliver: SliverList.builder(
+                  itemCount: _filtered.length,
+                  itemBuilder: (context, index) {
+                    final c = _filtered[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: c.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
+                        child: Stack(
+                          children: [
+                            const Align(alignment: Alignment.center, child: Icon(Icons.person, color: Colors.indigo)),
+                            if (c.isLocked)
+                              const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                          ],
                         ),
-            ),
+                      ),
+                      title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
+                      subtitle: Text("${c.formalName} ${c.title}"),
+                      onTap: widget.selectionMode ? () => Navigator.pop(context, c) : () => _showDetailPane(c),
+                      trailing: widget.selectionMode
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
+                              tooltip: c.isLocked ? "ロック中" : "編集",
+                            ),
+                      onLongPress: () => _showContextActions(c),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddMenu,
-        icon: const Icon(Icons.add),
-        label: Text(widget.selectionMode ? "選択" : "追加"),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+      floatingActionButton: Builder(
+        builder: (context) {
+          return FloatingActionButton.extended(
+            onPressed: _showAddMenu,
+            icon: const Icon(Icons.add),
+            label: Text(widget.selectionMode ? "選択" : "追加"),
+            backgroundColor: Colors.indigo,
+            foregroundColor: Colors.white,
+          );
+        },
       ),
     );
   }

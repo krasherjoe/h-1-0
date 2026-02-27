@@ -11,7 +11,7 @@ import 'invoice_input_screen.dart';
 import 'settings_screen.dart';
 import 'company_info_screen.dart';
 import '../widgets/slide_to_unlock.dart';
-import '../main.dart'; // InvoiceFlowScreen 用
+// InvoiceFlowScreen import removed; using inline type picker
 import 'package:package_info_plus/package_info_plus.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import 'invoice_history/invoice_history_list.dart';
@@ -375,15 +375,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isUnlocked
-            ? () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => InvoiceFlowScreen(onComplete: _loadData),
-                  ),
-                );
-                _loadData();
-              }
+            ? () => _showCreateTypeMenu()
             : _requireUnlock,
         label: const Text("新規伝票作成"),
         icon: const Icon(Icons.add),
@@ -391,5 +383,52 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         foregroundColor: Colors.white,
       ),
     );
+  }
+
+  void _showCreateTypeMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: const Text('下書き: 見積書', style: TextStyle(fontSize: 24)),
+              onTap: () => _startNew(DocumentType.estimation),
+            ),
+            ListTile(
+              leading: const Icon(Icons.local_shipping_outlined),
+              title: const Text('下書き: 納品書', style: TextStyle(fontSize: 24)),
+              onTap: () => _startNew(DocumentType.delivery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.request_quote_outlined),
+              title: const Text('下書き: 請求書', style: TextStyle(fontSize: 24)),
+              onTap: () => _startNew(DocumentType.invoice),
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: const Text('下書き: 領収書', style: TextStyle(fontSize: 24)),
+              onTap: () => _startNew(DocumentType.receipt),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startNew(DocumentType type) async {
+    Navigator.pop(context);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoiceInputForm(
+          onInvoiceGenerated: (inv, path) {},
+          initialDocumentType: type,
+        ),
+      ),
+    );
+    _loadData();
   }
 }

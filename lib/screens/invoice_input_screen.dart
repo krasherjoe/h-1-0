@@ -9,17 +9,19 @@ import '../widgets/invoice_pdf_preview_page.dart';
 import 'invoice_detail_page.dart';
 import '../services/gps_service.dart';
 import 'customer_master_screen.dart';
-import 'product_picker_modal.dart';
-import '../widgets/keyboard_inset_wrapper.dart';
+import 'product_master_screen.dart';
+import '../models/product_model.dart';
 
 class InvoiceInputForm extends StatefulWidget {
   final Function(Invoice invoice, String filePath) onInvoiceGenerated;
   final Invoice? existingInvoice; // 追加: 編集時の既存伝票
+  final DocumentType initialDocumentType;
 
   const InvoiceInputForm({
     super.key,
     required this.onInvoiceGenerated,
     this.existingInvoice, // 追加
+    this.initialDocumentType = DocumentType.invoice,
   });
 
   @override
@@ -72,21 +74,26 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _taxRate = 0;
         _includeTax = false;
         _isDraft = true;
+        _documentType = widget.initialDocumentType;
       }
     });
   }
 
   void _addItem() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => ProductPickerModal(
-        onItemSelected: (item) {
-          setState(() => _items.add(item));
-          Navigator.pop(context);
-        },
-      ),
-    );
+    Navigator.push<Product>(
+      context,
+      MaterialPageRoute(builder: (_) => const ProductMasterScreen(selectionMode: true)),
+    ).then((product) {
+      if (product == null) return;
+      setState(() {
+        _items.add(InvoiceItem(
+          productId: product.id,
+          description: product.name,
+          quantity: 1,
+          unitPrice: product.defaultUnitPrice,
+        ));
+      });
+    });
   }
 
   int get _subTotal => _items.fold(0, (sum, item) => sum + (item.unitPrice * item.quantity));
@@ -215,42 +222,33 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       ),
       body: Stack(
         children: [
-          KeyboardInsetWrapper(
-            basePadding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-            extraBottom: 24,
-            child: InteractiveViewer(
-              panEnabled: false,
-              minScale: 0.8,
-              maxScale: 2.5,
-              clipBehavior: Clip.none,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 160),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDateSection(),
-                          const SizedBox(height: 16),
-                          _buildCustomerSection(),
-                          const SizedBox(height: 16),
-                          _buildSubjectSection(textColor),
-                          const SizedBox(height: 20),
-                          _buildItemsSection(fmt),
-                          const SizedBox(height: 20),
-                          _buildSummarySection(fmt),
-                          const SizedBox(height: 20),
-                          _buildSignatureSection(),
-                          const SizedBox(height: 12),
-                        ],
-                      ),
-                    ),
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 140),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDateSection(),
+                      const SizedBox(height: 16),
+                      _buildCustomerSection(),
+                      const SizedBox(height: 16),
+                      _buildSubjectSection(textColor),
+                      const SizedBox(height: 20),
+                      _buildItemsSection(fmt),
+                      const SizedBox(height: 20),
+                      _buildSummarySection(fmt),
+                      const SizedBox(height: 20),
+                      _buildSignatureSection(),
+                      const SizedBox(height: 12),
+                    ],
                   ),
-                  _buildBottomActionBar(),
-                ],
+                ),
               ),
-            ),
+              _buildBottomActionBar(),
+            ],
           ),
           if (_isSaving)
             Container(
@@ -404,18 +402,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             TextButton.icon(
                               icon: const Icon(Icons.search, size: 18),
                               label: const Text("マスター参照"),
-                              onPressed: () {
-                                 showModalBottomSheet(
-                                   context: context,
-                                   isScrollControlled: true,
-                                   builder: (context) => ProductPickerModal(
-                                     onItemSelected: (selected) {
-                                       descCtrl.text = selected.description;
-                                       priceCtrl.text = selected.unitPrice.toString();
-                                       Navigator.pop(context); // close picker
-                                     },
-                                   ),
-                                 );
+                              onPressed: () async {
+                                Navigator.pop(context); // close edit dialog before jumping
+                                await Navigator.push(
+                                  this.context,
+                                  MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
+                                );
                               },
                             ),
                             TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),

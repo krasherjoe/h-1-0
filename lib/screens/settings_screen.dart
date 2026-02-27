@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/keyboard_inset_wrapper.dart';
 import 'company_info_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -227,6 +226,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final listBottomPadding = 24 + bottomInset;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -238,11 +239,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-      body: KeyboardInsetWrapper(
-        basePadding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-        extraBottom: 40,
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.only(bottom: listBottomPadding),
           children: [
             _section(
               title: '自社情報',

@@ -3,10 +3,11 @@ import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../services/product_repository.dart';
 import 'barcode_scanner_screen.dart';
-import '../widgets/keyboard_inset_wrapper.dart';
 
 class ProductMasterScreen extends StatefulWidget {
-  const ProductMasterScreen({super.key});
+  final bool selectionMode;
+
+  const ProductMasterScreen({super.key, this.selectionMode = false});
 
   @override
   State<ProductMasterScreen> createState() => _ProductMasterScreenState();
@@ -59,65 +60,71 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     final result = await showDialog<Product>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(product == null ? "商品追加" : "商品編集"),
-          content: KeyboardInsetWrapper(
-            basePadding: EdgeInsets.zero,
-            extraBottom: 16,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameController, decoration: const InputDecoration(labelText: "商品名")),
-                  TextField(controller: categoryController, decoration: const InputDecoration(labelText: "カテゴリ")),
-                  TextField(controller: priceController, decoration: const InputDecoration(labelText: "初期単価"), keyboardType: TextInputType.number),
-                  TextField(controller: stockController, decoration: const InputDecoration(labelText: "在庫数"), keyboardType: TextInputType.number),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(controller: barcodeController, decoration: const InputDecoration(labelText: "バーコード")),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.qr_code_scanner),
-                        onPressed: () async {
-                          final code = await Navigator.push<String>(
-                            context,
-                            MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-                          );
-                          if (code != null) {
-                            setDialogState(() => barcodeController.text = code);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+        builder: (context, setDialogState) {
+          final inset = MediaQuery.of(context).viewInsets.bottom;
+          return MediaQuery.removeViewInsets(
+            removeBottom: true,
+            context: context,
+            child: AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              title: Text(product == null ? "商品追加" : "商品編集"),
+              content: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(bottom: inset + 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(controller: nameController, decoration: const InputDecoration(labelText: "商品名")),
+                    TextField(controller: categoryController, decoration: const InputDecoration(labelText: "カテゴリ")),
+                    TextField(controller: priceController, decoration: const InputDecoration(labelText: "初期単価"), keyboardType: TextInputType.number),
+                    TextField(controller: stockController, decoration: const InputDecoration(labelText: "在庫数"), keyboardType: TextInputType.number),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(controller: barcodeController, decoration: const InputDecoration(labelText: "バーコード")),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.qr_code_scanner),
+                          onPressed: () async {
+                            final code = await Navigator.push<String>(
+                              context,
+                              MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                            );
+                            if (code != null) {
+                              setDialogState(() => barcodeController.text = code);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
+                ElevatedButton(
+                  onPressed: () {
+                    if (nameController.text.isEmpty) return;
+                    Navigator.pop(
+                      context,
+                      Product(
+                        id: product?.id ?? const Uuid().v4(),
+                        name: nameController.text.trim(),
+                        defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
+                        barcode: barcodeController.text.isEmpty ? null : barcodeController.text.trim(),
+                        category: categoryController.text.isEmpty ? null : categoryController.text.trim(),
+                        stockQuantity: int.tryParse(stockController.text) ?? 0,
+                        odooId: product?.odooId,
+                      ),
+                    );
+                  },
+                  child: const Text("保存"),
+                ),
+              ],
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isEmpty) return;
-                Navigator.pop(
-                  context,
-                  Product(
-                    id: product?.id ?? const Uuid().v4(),
-                    name: nameController.text.trim(),
-                    defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
-                    barcode: barcodeController.text.isEmpty ? null : barcodeController.text.trim(),
-                    category: categoryController.text.isEmpty ? null : categoryController.text.trim(),
-                    stockQuantity: int.tryParse(stockController.text) ?? 0,
-                    odooId: product?.odooId,
-                  ),
-                );
-              },
-              child: const Text("保存"),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
 
@@ -131,6 +138,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("P1:商品マスター"),
@@ -157,15 +165,15 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           ),
         ),
       ),
-      body: KeyboardInsetWrapper(
-        basePadding: EdgeInsets.zero,
-        extraBottom: 72,
+      body: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 8),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _filteredProducts.isEmpty
                 ? const Center(child: Text("商品が見つかりません"))
                 : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 120, top: 8),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 80, top: 8),
                     itemCount: _filteredProducts.length,
                     itemBuilder: (context, index) {
                       final p = _filteredProducts[index];
@@ -182,12 +190,63 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                         ),
                         title: Text(p.name, style: TextStyle(fontWeight: FontWeight.bold, color: p.isLocked ? Colors.grey : Colors.black87)),
                         subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
-                        onTap: () => _showDetailPane(p),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: p.isLocked ? null : () => _showEditDialog(product: p),
-                          tooltip: p.isLocked ? "ロック中" : "編集",
-                        ),
+                        onTap: () {
+                          if (widget.selectionMode) {
+                            Navigator.pop(context, p);
+                          } else {
+                            _showDetailPane(p);
+                          }
+                        },
+                        onLongPress: () async {
+                          await showModalBottomSheet(
+                            context: context,
+                            builder: (ctx) => SafeArea(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(Icons.edit),
+                                    title: const Text("編集"),
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      _showEditDialog(product: p);
+                                    },
+                                  ),
+                                  if (!p.isLocked)
+                                    ListTile(
+                                      leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                      title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                                      onTap: () async {
+                                        Navigator.pop(ctx);
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            title: const Text("削除の確認"),
+                                            content: Text("${p.name} を削除しますか？"),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirmed == true) {
+                                          await _productRepo.deleteProduct(p.id);
+                                          if (mounted) _loadProducts();
+                                        }
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        trailing: widget.selectionMode
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: p.isLocked ? null : () => _showEditDialog(product: p),
+                                tooltip: p.isLocked ? "ロック中" : "編集",
+                              ),
                       );
                     },
                   ),

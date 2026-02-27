@@ -45,12 +45,15 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 4),
                 const Text("商品・サービス選択", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
               ],
             ),
           ),
@@ -101,14 +104,63 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                             leading: const Icon(Icons.inventory_2_outlined),
                             title: Text(product.name),
                             subtitle: Text("￥${product.defaultUnitPrice} (在庫: ${product.stockQuantity})"),
-                            onTap: () => widget.onItemSelected(
-                              InvoiceItem(
-                                productId: product.id,
-                                description: product.name,
-                                quantity: 1,
-                                unitPrice: product.defaultUnitPrice,
-                              ),
-                            ),
+                            onTap: () {
+                              widget.onItemSelected(
+                                InvoiceItem(
+                                  productId: product.id,
+                                  description: product.name,
+                                  quantity: 1,
+                                  unitPrice: product.defaultUnitPrice,
+                                ),
+                              );
+                              Navigator.pop(context);
+                            },
+                            onLongPress: () async {
+                              await showModalBottomSheet(
+                                context: context,
+                                builder: (ctx) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.edit),
+                                        title: const Text("編集"),
+                                        onTap: () async {
+                                          Navigator.pop(ctx);
+                                          await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
+                                          );
+                                          _onSearch(_searchController.text);
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                        title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                                        onTap: () async {
+                                          Navigator.pop(ctx);
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (_) => AlertDialog(
+                                              title: const Text("削除の確認"),
+                                              content: Text("${product.name} を削除しますか？"),
+                                              actions: [
+                                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                                                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirmed == true) {
+                                            await _productRepo.deleteProduct(product.id);
+                                            if (mounted) _onSearch(_searchController.text);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),
