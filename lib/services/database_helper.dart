@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 25;
+  static const _databaseVersion = 26;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -195,6 +195,21 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'invoices', 'meta_json TEXT');
       await _safeAddColumn(db, 'invoices', 'meta_hash TEXT');
     }
+    if (oldVersion < 26) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_id TEXT UNIQUE NOT NULL,
+          client_id TEXT NOT NULL,
+          direction TEXT NOT NULL,
+          body TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          synced INTEGER DEFAULT 0,
+          delivered_at INTEGER
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -359,6 +374,20 @@ class DatabaseHelper {
         value TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id TEXT UNIQUE NOT NULL,
+        client_id TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        body TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        synced INTEGER DEFAULT 0,
+        delivered_at INTEGER
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at)');
   }
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {

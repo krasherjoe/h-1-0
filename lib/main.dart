@@ -1,5 +1,7 @@
 // lib/main.dart
 // version: 1.5.02 (Update: Date selection & Tax fix)
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +14,8 @@ import 'screens/dashboard_screen.dart'; // ダッシュボード
 import 'services/location_service.dart'; // 位置情報サービス
 import 'services/customer_repository.dart'; // 顧客リポジトリ
 import 'services/app_settings_repository.dart';
+import 'services/chat_sync_scheduler.dart';
+import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
 import 'utils/build_expiry_info.dart';
 
@@ -23,11 +27,13 @@ void main() async {
     runApp(ExpiredApp(expiryInfo: expiryInfo));
     return;
   }
-  runApp(const MyApp());
+  runApp(MyApp(expiryInfo: expiryInfo));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.expiryInfo});
+
+  final BuildExpiryInfo expiryInfo;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -36,6 +42,25 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final TransformationController _zoomController = TransformationController();
   int _activePointers = 0;
+  final MothershipClient _mothershipClient = MothershipClient();
+  final ChatSyncScheduler _chatSyncScheduler = ChatSyncScheduler();
+
+  @override
+  void initState() {
+    super.initState();
+    _sendHeartbeat();
+    _chatSyncScheduler.start();
+  }
+
+  @override
+  void dispose() {
+    _chatSyncScheduler.dispose();
+    super.dispose();
+  }
+
+  void _sendHeartbeat() {
+    Future.microtask(() => _mothershipClient.sendHeartbeat(widget.expiryInfo));
+  }
 
   @override
   Widget build(BuildContext context) {

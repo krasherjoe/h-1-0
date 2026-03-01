@@ -5,19 +5,24 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'chat_store.dart';
 import 'config.dart';
 import 'data_store.dart';
 
 class MothershipServer {
-  MothershipServer({required this.config, required this.dataStore});
+  MothershipServer({required this.config, required this.dataStore, required this.chatStore});
 
   final MothershipConfig config;
   final MothershipDataStore dataStore;
+  final MothershipChatStore chatStore;
 
   Future<HttpServer> start() async {
     final router = Router()
       ..post('/sync/heartbeat', _handleHeartbeat)
       ..post('/sync/hash', _handleHash)
+      ..post('/chat/send', _handleChatSend)
+      ..get('/chat/pending', _handleChatPending)
+      ..post('/chat/ack', _handleChatAck)
       ..get('/status', _handleStatus)
       ..get('/', _handleDashboard);
 
@@ -69,6 +74,48 @@ class MothershipServer {
       return Response(400, body: 'clientId and hash are required');
     }
     await dataStore.recordHash(clientId: clientId, hash: hash);
+    return Response.ok('ok');
+  }
+
+  Future<Response> _handleChatSend(Request request) async {
+    final body = await request.readAsString();
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    final clientId = json['clientId'] as String?;
+    if (clientId == null || clientId.isEmpty) {
+      return Response(400, body: 'clientId is required');
+    }
+    final messages = (json['messages'] as List?) ?? [];
+    final envelopes = messages
+        .whereType<Map>()
+        .map((e) => ChatEnvelope(
+              messageId: e['messageId'] as String,
+              body: e['body'] as String,
+              createdAt: DateTime.fromMillisecondsSinceEpoch((e['createdAt'] as int?) ?? 0, isUtc: true),
+            ))
+        .toList();
+    await chatStore.appendInbound(clientId, envelopes);
+    return Response.ok(jsonEncode({'stored': envelopes.length}), headers: {'content-type': 'application/json'});
+  }
+
+  Future<Response> _handleChatPending(Request request) async {
+    final clientId = request.url.queryParameters['clientId'];
+    if (clientId == null || clientId.isEmpty) {
+      return Response(400, body: 'clientId is required');
+    }
+    final messages = await chatStore.pendingOutbound(clientId);
+    final payload = {'messages': messages.map((e) => e.toJson()).toList()};
+    return Response.ok(jsonEncode(payload), headers: {'content-type': 'application/json'});
+  }
+
+  Future<Response> _handleChatAck(Request request) async {
+    final body = await request.readAsString();
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    final clientId = json['clientId'] as String?;
+    if (clientId == null || clientId.isEmpty) {
+      return Response(400, body: 'clientId is required');
+    }
+    final delivered = (json['delivered'] as List?)?.cast<String>() ?? [];
+    await chatStore.acknowledge(clientId, delivered);
     return Response.ok('ok');
   }
 

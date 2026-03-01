@@ -85,6 +85,34 @@
 
 ---
 
+## 母艦「お局様」LAN サーバの起動
+
+1. Dart/Flutter SDK が入った Linux / Android（Termux 等）端末でリポジトリを取得
+2. 監視サーバを起動
+   ```bash
+   dart run bin/mothership_server.dart
+   ```
+   - 環境変数 `MOTHERSHIP_HOST`, `MOTHERSHIP_PORT`, `MOTHERSHIP_API_KEY`, `MOTHERSHIP_DATA_DIR` で上書き可能
+   - 既定値: `0.0.0.0:8787`, API キー `TEST_MOTHERSHIP_KEY`, 保存先 `data/mothership`
+   - `data/mothership/status.json` に各クライアントの心拍/ハッシュを保存
+3. ブラウザで `http://<host>:<port>/` を開くとステータス一覧を閲覧できます（CUI 常駐で OK）
+
+### クライアント（販売アシスト1号）からの接続設定
+
+1. アプリの `S1:設定` → 「外部同期（母艦システム『お局様』連携）」で以下を入力
+   - ホストドメイン: `http://192.168.0.10:8787` のようにプロトコル付きで指定
+   - パスワード: サーバ側 API キー（例: `TEST_MOTHERSHIP_KEY`）
+2. 保存するとアプリ起動時に `POST /sync/heartbeat` が自動送信され、寿命残時間が母艦に表示されます。
+3. 同じ設定でチャット送受信・ハッシュ送信が有効になります（下記参照）。
+
+### チャット同期（最小構成）
+
+- Flutter アプリ側では 10 秒間隔の軽量ポーリングをバックグラウンドで実行し、`/chat/send` / `/chat/pending` / `/chat/ack` とローカル SQLite を同期します。
+- 設定画面からチャット画面を開かなくても新着が取り込まれ、開いた瞬間に最新ログが表示されます。
+- 端末がスリープに入るとポーリングを停止し、アプリが前面に戻ったタイミングで即時同期→再開します。
+
+---
+
 ## 更新ポリシー
 
 - README は **機能追加・アーキテクチャ変更・モジュール構成の見直し時に必ず更新** します。

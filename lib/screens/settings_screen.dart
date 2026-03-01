@@ -1,12 +1,14 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/app_settings_repository.dart';
 import '../services/theme_controller.dart';
 import 'company_info_screen.dart';
 import 'email_settings_screen.dart';
 import 'business_profile_screen.dart';
+import 'chat_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -427,10 +429,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextField(controller: _externalHostCtrl, decoration: const InputDecoration(labelText: 'ホストドメイン')),
                   TextField(controller: _externalPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
                   const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('保存'),
-                    onPressed: _saveExternalSync,
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text('保存'),
+                        onPressed: _saveExternalSync,
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: const Text('チャットを開く'),
+                        onPressed: () async {
+                          await Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
