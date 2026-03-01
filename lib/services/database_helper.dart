@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 20;
+  static const _databaseVersion = 25;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -164,6 +164,37 @@ class DatabaseHelper {
     if (oldVersion < 20) {
       await _safeAddColumn(db, 'customers', 'email TEXT');
     }
+    if (oldVersion < 22) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 23) {
+      await _safeAddColumn(db, 'customers', 'is_hidden INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'products', 'is_hidden INTEGER DEFAULT 0');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_hidden ON customers(is_hidden)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_products_hidden ON products(is_hidden)');
+    }
+    if (oldVersion < 24) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS master_hidden (
+          master_type TEXT NOT NULL,
+          master_id TEXT NOT NULL,
+          is_hidden INTEGER DEFAULT 0,
+          PRIMARY KEY(master_type, master_id)
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_master_hidden_type ON master_hidden(master_type)');
+    }
+    if (oldVersion < 25) {
+      await _safeAddColumn(db, 'invoices', 'company_snapshot TEXT');
+      await _safeAddColumn(db, 'invoices', 'company_seal_hash TEXT');
+      await _safeAddColumn(db, 'invoices', 'meta_json TEXT');
+      await _safeAddColumn(db, 'invoices', 'meta_hash TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -182,6 +213,7 @@ class DatabaseHelper {
         head_char1 TEXT,
         head_char2 TEXT,
         is_locked INTEGER DEFAULT 0,
+        is_hidden INTEGER DEFAULT 0,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT NOT NULL
       )
@@ -223,11 +255,22 @@ class DatabaseHelper {
         category TEXT,
         stock_quantity INTEGER DEFAULT 0,
         is_locked INTEGER DEFAULT 0,
+        is_hidden INTEGER DEFAULT 0,
         odoo_id TEXT
       )
     ''');
     await db.execute('CREATE INDEX idx_products_name ON products(name)');
     await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
+
+    await db.execute('''
+      CREATE TABLE master_hidden (
+        master_type TEXT NOT NULL,
+        master_id TEXT NOT NULL,
+        is_hidden INTEGER DEFAULT 0,
+        PRIMARY KEY(master_type, master_id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_master_hidden_type ON master_hidden(master_type)');
 
     // 伝票マスター
     await db.execute('''
@@ -255,6 +298,10 @@ class DatabaseHelper {
         contact_email_snapshot TEXT,
         contact_tel_snapshot TEXT,
         contact_address_snapshot TEXT,
+        company_snapshot TEXT,
+        company_seal_hash TEXT,
+        meta_json TEXT,
+        meta_hash TEXT,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
@@ -303,6 +350,13 @@ class DatabaseHelper {
         target_id TEXT,
         details TEXT,
         timestamp TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
       )
     ''');
   }

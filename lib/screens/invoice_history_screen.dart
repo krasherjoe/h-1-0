@@ -10,6 +10,8 @@ import 'customer_master_screen.dart';
 import 'invoice_input_screen.dart';
 import 'settings_screen.dart';
 import 'company_info_screen.dart';
+import 'dashboard_screen.dart';
+import '../services/app_settings_repository.dart';
 import '../widgets/slide_to_unlock.dart';
 // InvoiceFlowScreen import removed; using inline type picker
 import 'package:package_info_plus/package_info_plus.dart';
@@ -17,7 +19,8 @@ import '../widgets/invoice_pdf_preview_page.dart';
 import 'invoice_history/invoice_history_list.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
-  const InvoiceHistoryScreen({super.key});
+  final bool initialUnlocked;
+  const InvoiceHistoryScreen({super.key, this.initialUnlocked = false});
 
   @override
   State<InvoiceHistoryScreen> createState() => _InvoiceHistoryScreenState();
@@ -26,6 +29,7 @@ class InvoiceHistoryScreen extends StatefulWidget {
 class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   final InvoiceRepository _invoiceRepo = InvoiceRepository();
   final CustomerRepository _customerRepo = CustomerRepository();
+  final AppSettingsRepository _settingsRepo = AppSettingsRepository();
   List<Invoice> _invoices = [];
   List<Invoice> _filteredInvoices = [];
   bool _isLoading = true;
@@ -35,12 +39,26 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   String _appVersion = "1.0.0";
+  bool _useDashboardHome = false;
 
   @override
   void initState() {
     super.initState();
+    _isUnlocked = widget.initialUnlocked;
     _loadData();
     _loadVersion();
+    _loadHomeMode();
+  }
+
+  Future<void> _loadHomeMode() async {
+    final mode = await _settingsRepo.getHomeMode();
+    if (!mounted) return;
+    setState(() {
+      _useDashboardHome = mode == 'dashboard';
+      if (_useDashboardHome && widget.initialUnlocked) {
+        _isUnlocked = true;
+      }
+    });
   }
 
   Future<void> _showInvoiceActions(Invoice invoice) async {
@@ -198,20 +216,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     final dateFormatter = DateFormat('yyyy/MM/dd');
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      drawer: _isUnlocked
-          ? Drawer(
+      drawer: (_useDashboardHome || !_isUnlocked)
+          ? null
+          : Drawer(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
                   DrawerHeader(
-                    decoration: BoxDecoration(color: Colors.indigo.shade700),
+                    decoration: const BoxDecoration(color: Colors.indigo),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text("メニュー", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text("v$_appVersion", style: const TextStyle(color: Colors.white70)),
+                      children: const [
+                        Text("販売アシスト1号", style: TextStyle(color: Colors.white, fontSize: 20)),
+                        SizedBox(height: 8),
+                        Text("メニュー", style: TextStyle(color: Colors.white70)),
                       ],
                     ),
                   ),
@@ -257,10 +275,27 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   ),
                 ],
               ),
-            )
-          : null,
+            ),
       appBar: AppBar(
-        // leading removed
+        automaticallyImplyLeading: false,
+        leading: _useDashboardHome
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                  );
+                },
+              )
+            : (_isUnlocked
+                ? Builder(
+                    builder: (ctx) => IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () => Scaffold.of(ctx).openDrawer(),
+                    ),
+                  )
+                : null),
         title: GestureDetector(
           onLongPress: () {
             Navigator.push(
@@ -307,19 +342,41 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "検索 (顧客名、伝票番号...)",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                isDense: true,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  // outer shadow
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                  // faux inset highlight
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    blurRadius: 4,
+                    spreadRadius: -4,
+                    offset: const Offset(-1, -1),
+                  ),
+                ],
               ),
-              onChanged: (val) {
-                _searchQuery = val;
-                _applyFilterAndSort();
-              },
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "検索 (顧客名、伝票番号...)",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                onChanged: (val) {
+                  _searchQuery = val;
+                  _applyFilterAndSort();
+                },
+              ),
             ),
           ),
         ),
@@ -327,14 +384,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SlideToUnlock(
-                isLocked: !_isUnlocked,
-                onUnlocked: _toggleUnlock,
-                text: "スライドでロック解除",
+            if (!_useDashboardHome)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SlideToUnlock(
+                  isLocked: !_isUnlocked,
+                  onUnlocked: _toggleUnlock,
+                  text: "スライドでロック解除",
+                ),
               ),
-            ),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -347,8 +405,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => InvoiceDetailPage(
-                              invoice: invoice,
+                            builder: (context) => InvoiceInputForm(
+                              existingInvoice: invoice,
+                              onInvoiceGenerated: (inv, path) {},
                             ),
                           ),
                         );
@@ -393,23 +452,23 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: const Text('下書き: 見積書', style: TextStyle(fontSize: 24)),
+              leading: CircleAvatar(backgroundColor: Colors.blue.withValues(alpha: 0.12), child: const Icon(Icons.request_quote, color: Colors.blue)),
+              title: const Text('見積書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               onTap: () => _startNew(DocumentType.estimation),
             ),
             ListTile(
-              leading: const Icon(Icons.local_shipping_outlined),
-              title: const Text('下書き: 納品書', style: TextStyle(fontSize: 24)),
+              leading: CircleAvatar(backgroundColor: Colors.teal.withValues(alpha: 0.12), child: const Icon(Icons.local_shipping, color: Colors.teal)),
+              title: const Text('納品書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               onTap: () => _startNew(DocumentType.delivery),
             ),
             ListTile(
-              leading: const Icon(Icons.request_quote_outlined),
-              title: const Text('下書き: 請求書', style: TextStyle(fontSize: 24)),
+              leading: CircleAvatar(backgroundColor: Colors.indigo.withValues(alpha: 0.12), child: const Icon(Icons.receipt_long, color: Colors.indigo)),
+              title: const Text('請求書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               onTap: () => _startNew(DocumentType.invoice),
             ),
             ListTile(
-              leading: const Icon(Icons.receipt_long_outlined),
-              title: const Text('下書き: 領収書', style: TextStyle(fontSize: 24)),
+              leading: CircleAvatar(backgroundColor: Colors.green.withValues(alpha: 0.12), child: const Icon(Icons.task_alt, color: Colors.green)),
+              title: const Text('領収書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               onTap: () => _startNew(DocumentType.receipt),
             ),
           ],
@@ -426,6 +485,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         builder: (_) => InvoiceInputForm(
           onInvoiceGenerated: (inv, path) {},
           initialDocumentType: type,
+          startViewMode: false,
+          showNewBadge: true,
         ),
       ),
     );

@@ -7,6 +7,7 @@ class Product {
   final int stockQuantity; // 追加
   final String? odooId;
   final bool isLocked; // ロック
+  final bool isHidden; // 非表示
 
   Product({
     required this.id,
@@ -17,6 +18,7 @@ class Product {
     this.stockQuantity = 0, // 追加
     this.odooId,
     this.isLocked = false,
+    this.isHidden = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +31,7 @@ class Product {
       'stock_quantity': stockQuantity, // 追加
       'is_locked': isLocked ? 1 : 0,
       'odoo_id': odooId,
+      'is_hidden': isHidden ? 1 : 0,
     };
   }
 
@@ -42,6 +45,7 @@ class Product {
       stockQuantity: map['stock_quantity'] ?? 0, // 追加
       isLocked: (map['is_locked'] ?? 0) == 1,
       odooId: map['odoo_id'],
+      isHidden: (map['is_hidden'] ?? 0) == 1,
     );
   }
 
@@ -50,15 +54,22 @@ class Product {
     String? name,
     int? defaultUnitPrice,
     String? barcode,
+    String? category,
+    int? stockQuantity,
     String? odooId,
     bool? isLocked,
+    bool? isHidden,
   }) {
     return Product(
       id: id ?? this.id,
       name: name ?? this.name,
       defaultUnitPrice: defaultUnitPrice ?? this.defaultUnitPrice,
+      barcode: barcode ?? this.barcode,
+      category: category ?? this.category,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
       odooId: odooId ?? this.odooId,
       isLocked: isLocked ?? this.isLocked,
+      isHidden: isHidden ?? this.isHidden,
     );
   }
 }

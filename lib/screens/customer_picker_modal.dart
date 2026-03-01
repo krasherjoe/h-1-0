@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
+import '../widgets/contact_picker_sheet.dart';
 
 /// 顧客マスターからの選択、登録、編集、削除を行うモーダル
 class CustomerPickerModal extends StatefulWidget {
@@ -55,7 +56,8 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
         final Contact? selectedContact = await showModalBottomSheet<Contact?>(
           context: context,
           isScrollControlled: true,
-          builder: (context) => _PhoneContactListSelector(contacts: contacts),
+          backgroundColor: Colors.transparent,
+          builder: (context) => ContactPickerSheet(contacts: contacts, title: '電話帳から顧客候補を選択'),
         );
 
         if (!context.mounted) return;
@@ -316,66 +318,3 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
   }
 }
 
-/// 電話帳から一人選ぶための内部ウィジェット
-class _PhoneContactListSelector extends StatefulWidget {
-  final List<Contact> contacts;
-  const _PhoneContactListSelector({required this.contacts});
-
-  @override
-  State<_PhoneContactListSelector> createState() => _PhoneContactListSelectorState();
-}
-
-class _PhoneContactListSelectorState extends State<_PhoneContactListSelector> {
-  List<Contact> _filtered = [];
-  final _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _filtered = widget.contacts;
-  }
-
-  void _onSearch(String q) {
-    setState(() {
-      _filtered = widget.contacts
-          .where((c) {
-            final org = c.organizations.isNotEmpty ? c.organizations.first.company : '';
-            final label = org.isNotEmpty ? org : c.displayName;
-            return label.toLowerCase().contains(q.toLowerCase());
-          })
-          .toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FractionallySizedBox(
-      heightFactor: 0.8,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(hintText: "電話帳から検索...", prefixIcon: Icon(Icons.search)),
-              onChanged: _onSearch,
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) => ListTile(
-                title: Text(
-                  _filtered[index].organizations.isNotEmpty && _filtered[index].organizations.first.company.isNotEmpty
-                      ? _filtered[index].organizations.first.company
-                      : _filtered[index].displayName,
-                ),
-                onTap: () => Navigator.pop(context, _filtered[index]),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

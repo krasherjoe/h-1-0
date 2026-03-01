@@ -66,6 +66,10 @@ enum DocumentType {
 }
 
 class Invoice {
+  static const String lockStatement =
+      '正式発行ボタン押下時にこの伝票はロックされ、以後の編集・削除はできません。ロック状態はハッシュチェーンで保護されます。';
+  static const String hashDescription =
+      'metaJson = JSON.stringify({id, invoiceNumber, customer, date, total, documentType, hash, lockStatement, companySnapshot, companySealHash}); metaHash = SHA-256(metaJson).';
   final String id;
   final Customer customer;
   final DateTime date;
@@ -88,6 +92,10 @@ class Invoice {
   final String? contactEmailSnapshot;
   final String? contactTelSnapshot;
   final String? contactAddressSnapshot;
+  final String? companySnapshot; // 追加: 発行時会社情報スナップショット
+  final String? companySealHash; // 追加: 角印画像ハッシュ
+  final String? metaJson;
+  final String? metaHash;
 
   Invoice({
     String? id,
@@ -112,6 +120,10 @@ class Invoice {
     this.contactEmailSnapshot,
     this.contactTelSnapshot,
     this.contactAddressSnapshot,
+    this.companySnapshot,
+    this.companySealHash,
+    this.metaJson,
+    this.metaHash,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         terminalId = terminalId ?? "T1", // デフォルト端末ID
         updatedAt = updatedAt ?? DateTime.now();
@@ -132,6 +144,13 @@ class Invoice {
     }
   }
 
+  static const Map<DocumentType, String> _docTypeShortLabel = {
+    DocumentType.estimation: '見積',
+    DocumentType.delivery: '納品',
+    DocumentType.invoice: '請求',
+    DocumentType.receipt: '領収',
+  };
+
   String get invoiceNumberPrefix {
     switch (documentType) {
       case DocumentType.estimation: return "EST";
@@ -143,12 +162,73 @@ class Invoice {
 
   String get invoiceNumber => "$invoiceNumberPrefix-$terminalId-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
 
-  // 表示用の宛名（スナップショットがあれば優先）
-  String get customerNameForDisplay => customerFormalNameSnapshot ?? customer.formalName;
+  // 表示用の宛名（スナップショットがあれば優先）。必ず敬称を付与。
+  String get customerNameForDisplay {
+    final base = customerFormalNameSnapshot ?? customer.formalName;
+    final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
+    return hasHonorific ? base : '$base ${customer.title}';
+  }
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
   int get tax => (subtotal * taxRate).floor();
   int get totalAmount => subtotal + tax;
+
+  String get _projectLabel {
+    if (subject != null && subject!.trim().isNotEmpty) {
+      return subject!.trim();
+    }
+    return '案件';
+  }
+
+  String get mailTitleCore {
+    final dateStr = DateFormat('yyyyMMdd').format(date);
+    final docLabel = _docTypeShortLabel[documentType] ?? documentTypeName.replaceAll('書', '');
+    final customerCompact = customerNameForDisplay.replaceAll(RegExp(r'\s+'), '');
+    final amountStr = NumberFormat('#,###').format(totalAmount);
+    final buffer = StringBuffer()
+      ..write(dateStr)
+      ..write('($docLabel)')
+      ..write(_projectLabel)
+      ..write('@')
+      ..write(customerCompact)
+      ..write('_')
+      ..write(amountStr)
+      ..write('円');
+    final raw = buffer.toString();
+    return _sanitizeForFile(raw);
+  }
+
+  String get mailAttachmentFileName => '$mailTitleCore.PDF';
+
+  String get mailBodyText => '請求書をお送りします。ご確認ください。';
+
+  static String _sanitizeForFile(String input) {
+    var sanitized = input.replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
+    sanitized = sanitized.replaceAll(RegExp(r'[\r\n]+'), '');
+    sanitized = sanitized.replaceAll('　', '');
+    sanitized = sanitized.replaceAll(' ', '');
+    return sanitized;
+  }
+
+  Map<String, dynamic> metaPayload() {
+    return {
+      'id': id,
+      'invoiceNumber': invoiceNumber,
+      'customer': customerNameForDisplay,
+      'date': date.toIso8601String(),
+      'total': totalAmount,
+      'documentType': documentType.name,
+      'hash': contentHash,
+      'lockStatement': lockStatement,
+      'hashDescription': hashDescription,
+      'companySnapshot': companySnapshot,
+      'companySealHash': companySealHash,
+    };
+  }
+
+  String get metaJsonValue => metaJson ?? jsonEncode(metaPayload());
+
+  String get metaHashValue => metaHash ?? sha256.convert(utf8.encode(metaJsonValue)).toString();
 
   Map<String, dynamic> toMap() {
     return {
@@ -175,6 +255,10 @@ class Invoice {
       'contact_email_snapshot': contactEmailSnapshot,
       'contact_tel_snapshot': contactTelSnapshot,
       'contact_address_snapshot': contactAddressSnapshot,
+      'company_snapshot': companySnapshot,
+      'company_seal_hash': companySealHash,
+      'meta_json': metaJsonValue,
+      'meta_hash': metaHashValue,
     };
   }
 
@@ -201,6 +285,10 @@ class Invoice {
     String? contactEmailSnapshot,
     String? contactTelSnapshot,
     String? contactAddressSnapshot,
+    String? companySnapshot,
+    String? companySealHash,
+    String? metaJson,
+    String? metaHash,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -225,6 +313,10 @@ class Invoice {
       contactEmailSnapshot: contactEmailSnapshot ?? this.contactEmailSnapshot,
       contactTelSnapshot: contactTelSnapshot ?? this.contactTelSnapshot,
       contactAddressSnapshot: contactAddressSnapshot ?? this.contactAddressSnapshot,
+      companySnapshot: companySnapshot ?? this.companySnapshot,
+      companySealHash: companySealHash ?? this.companySealHash,
+      metaJson: metaJson ?? this.metaJson,
+      metaHash: metaHash ?? this.metaHash,
     );
   }
 

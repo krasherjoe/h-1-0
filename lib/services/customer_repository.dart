@@ -9,21 +9,28 @@ class CustomerRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
 
-  Future<List<Customer>> getAllCustomers() async {
+  Future<List<Customer>> getAllCustomers({bool includeHidden = false}) async {
     final db = await _dbHelper.database;
+    final filter = includeHidden ? '' : 'WHERE COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
     List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
+      SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
+             COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
       FROM customers c
       LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
-      ORDER BY c.display_name ASC
+      LEFT JOIN master_hidden mh ON mh.master_type = 'customer' AND mh.master_id = c.id
+      $filter
+      ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
     ''');
     if (maps.isEmpty) {
       await _generateSampleCustomers(limit: 3);
       maps = await db.rawQuery('''
-        SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
+        SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
+               COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
         FROM customers c
         LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
-        ORDER BY c.display_name ASC
+        LEFT JOIN master_hidden mh ON mh.master_type = 'customer' AND mh.master_id = c.id
+        $filter
+        ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
       ''');
     }
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
@@ -128,14 +135,17 @@ class CustomerRepository {
     );
   }
 
-  Future<List<Customer>> searchCustomers(String query) async {
+  Future<List<Customer>> searchCustomers(String query, {bool includeHidden = false}) async {
     final db = await _dbHelper.database;
+    final where = includeHidden ? '' : 'AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email
+      SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
+             COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
       FROM customers c
       LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
-      WHERE c.display_name LIKE ? OR c.formal_name LIKE ?
-      ORDER BY c.display_name ASC
+      LEFT JOIN master_hidden mh ON mh.master_type = 'customer' AND mh.master_id = c.id
+      WHERE (c.display_name LIKE ? OR c.formal_name LIKE ?) $where
+      ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
       LIMIT 50
     ''', ['%$query%', '%$query%']);
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
@@ -171,6 +181,25 @@ class CustomerRepository {
     final rows = await db.query('customer_contacts', where: 'customer_id = ? AND is_active = 1', whereArgs: [customerId], limit: 1);
     if (rows.isEmpty) return null;
     return CustomerContact.fromMap(rows.first);
+  }
+
+  Future<void> setHidden(String id, bool hidden) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'master_hidden',
+      {
+        'master_type': 'customer',
+        'master_id': id,
+        'is_hidden': hidden ? 1 : 0,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await _logRepo.logAction(
+      action: hidden ? "HIDE_CUSTOMER" : "UNHIDE_CUSTOMER",
+      targetType: "CUSTOMER",
+      targetId: id,
+      details: hidden ? "顧客を非表示にしました" : "顧客を再表示しました",
+    );
   }
 
   Future<int> _nextContactVersion(DatabaseExecutor txn, String customerId) async {

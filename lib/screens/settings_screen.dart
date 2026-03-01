@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import '../services/app_settings_repository.dart';
+import '../services/theme_controller.dart';
 import 'company_info_screen.dart';
+import 'email_settings_screen.dart';
+import 'business_profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -10,28 +15,22 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+// シンプルなアイコンマップ（拡張可）
+const Map<String, IconData> kIconsMap = {
+  'list_alt': Icons.list_alt,
+  'edit_note': Icons.edit_note,
+  'history': Icons.history,
+  'settings': Icons.settings,
+  'invoice': Icons.receipt_long,
+  'dashboard': Icons.dashboard,
+  'home': Icons.home,
+  'info': Icons.info,
+  'mail': Icons.mail,
+  'shopping_cart': Icons.shopping_cart,
+};
+
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Company
-  final _companyNameCtrl = TextEditingController();
-  final _companyZipCtrl = TextEditingController();
-  final _companyAddrCtrl = TextEditingController();
-  final _companyTelCtrl = TextEditingController();
-  final _companyRegCtrl = TextEditingController();
-  final _companyFaxCtrl = TextEditingController();
-  final _companyEmailCtrl = TextEditingController();
-  final _companyUrlCtrl = TextEditingController();
-
-  // Staff
-  final _staffNameCtrl = TextEditingController();
-  final _staffMailCtrl = TextEditingController();
-
-  // SMTP
-  final _smtpHostCtrl = TextEditingController();
-  final _smtpPortCtrl = TextEditingController(text: '587');
-  final _smtpUserCtrl = TextEditingController();
-  final _smtpPassCtrl = TextEditingController();
-  final _smtpBccCtrl = TextEditingController();
-  bool _smtpTls = true;
+  final _appSettingsRepo = AppSettingsRepository();
 
   // External sync (母艦システム「お局様」連携)
   final _externalHostCtrl = TextEditingController();
@@ -47,85 +46,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _kanaKeyCtrl = TextEditingController();
   final _kanaValCtrl = TextEditingController();
 
-  // SharedPreferences keys
-  static const _kCompanyName = 'company_name';
-  static const _kCompanyZip = 'company_zip';
-  static const _kCompanyAddr = 'company_addr';
-  static const _kCompanyTel = 'company_tel';
-  static const _kCompanyReg = 'company_reg';
-  static const _kCompanyFax = 'company_fax';
-  static const _kCompanyEmail = 'company_email';
-  static const _kCompanyUrl = 'company_url';
-
-  static const _kStaffName = 'staff_name';
-  static const _kStaffMail = 'staff_mail';
-
-  static const _kSmtpHost = 'smtp_host';
-  static const _kSmtpPort = 'smtp_port';
-  static const _kSmtpUser = 'smtp_user';
-  static const _kSmtpPass = 'smtp_pass';
-  static const _kSmtpTls = 'smtp_tls';
-  static const _kSmtpBcc = 'smtp_bcc';
+  // Dashboard / Home
+  bool _homeDashboard = false;
+  bool _statusEnabled = true;
+  final _statusTextCtrl = TextEditingController(text: '工事中');
+  List<DashboardMenuItem> _menuItems = [];
+  bool _loadingAppSettings = true;
 
   static const _kExternalHost = 'external_host';
   static const _kExternalPass = 'external_pass';
-
-  static const _kCryptKey = 'test';
 
   static const _kBackupPath = 'backup_path';
 
   @override
   void dispose() {
-    _companyNameCtrl.dispose();
-    _companyZipCtrl.dispose();
-    _companyAddrCtrl.dispose();
-    _companyTelCtrl.dispose();
-    _companyRegCtrl.dispose();
-    _companyFaxCtrl.dispose();
-    _companyEmailCtrl.dispose();
-    _companyUrlCtrl.dispose();
-    _staffNameCtrl.dispose();
-    _staffMailCtrl.dispose();
-    _smtpHostCtrl.dispose();
-    _smtpPortCtrl.dispose();
-    _smtpUserCtrl.dispose();
-    _smtpPassCtrl.dispose();
-    _smtpBccCtrl.dispose();
     _externalHostCtrl.dispose();
     _externalPassCtrl.dispose();
     _backupPathCtrl.dispose();
     _kanaKeyCtrl.dispose();
     _kanaValCtrl.dispose();
+    _statusTextCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _loadAll() async {
     await _loadKanaMap();
-    final prefs = await SharedPreferences.getInstance();
+    final externalHost = await _appSettingsRepo.getString(_kExternalHost) ?? '';
+    final externalPass = await _appSettingsRepo.getString(_kExternalPass) ?? '';
+
+    final backupPath = await _appSettingsRepo.getString(_kBackupPath) ?? '';
+    final theme = await _appSettingsRepo.getTheme();
+
     setState(() {
-      _companyNameCtrl.text = prefs.getString(_kCompanyName) ?? '';
-      _companyZipCtrl.text = prefs.getString(_kCompanyZip) ?? '';
-      _companyAddrCtrl.text = prefs.getString(_kCompanyAddr) ?? '';
-      _companyTelCtrl.text = prefs.getString(_kCompanyTel) ?? '';
-      _companyRegCtrl.text = prefs.getString(_kCompanyReg) ?? '';
-      _companyFaxCtrl.text = prefs.getString(_kCompanyFax) ?? '';
-      _companyEmailCtrl.text = prefs.getString(_kCompanyEmail) ?? '';
-      _companyUrlCtrl.text = prefs.getString(_kCompanyUrl) ?? '';
+      _externalHostCtrl.text = externalHost;
+      _externalPassCtrl.text = externalPass;
 
-      _staffNameCtrl.text = prefs.getString(_kStaffName) ?? '';
-      _staffMailCtrl.text = prefs.getString(_kStaffMail) ?? '';
+      _backupPathCtrl.text = backupPath;
+      _theme = theme;
+    });
 
-      _smtpHostCtrl.text = prefs.getString(_kSmtpHost) ?? '';
-      _smtpPortCtrl.text = prefs.getString(_kSmtpPort) ?? '587';
-      _smtpUserCtrl.text = prefs.getString(_kSmtpUser) ?? '';
-      _smtpPassCtrl.text = _decryptWithFallback(prefs.getString(_kSmtpPass) ?? '');
-      _smtpTls = prefs.getBool(_kSmtpTls) ?? true;
-      _smtpBccCtrl.text = prefs.getString(_kSmtpBcc) ?? '';
-
-      _externalHostCtrl.text = prefs.getString(_kExternalHost) ?? '';
-      _externalPassCtrl.text = prefs.getString(_kExternalPass) ?? '';
-
-      _backupPathCtrl.text = prefs.getString(_kBackupPath) ?? '';
+    final homeMode = await _appSettingsRepo.getHomeMode();
+    final statusEnabled = await _appSettingsRepo.getDashboardStatusEnabled();
+    final statusText = await _appSettingsRepo.getDashboardStatusText();
+    final menu = await _appSettingsRepo.getDashboardMenu();
+    setState(() {
+      _homeDashboard = homeMode == 'dashboard';
+      _statusEnabled = statusEnabled;
+      _statusTextCtrl.text = statusText;
+      _menuItems = menu;
+      _loadingAppSettings = false;
     });
   }
 
@@ -139,55 +108,156 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<void> _saveCompany() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kCompanyName, _companyNameCtrl.text);
-    await prefs.setString(_kCompanyZip, _companyZipCtrl.text);
-    await prefs.setString(_kCompanyAddr, _companyAddrCtrl.text);
-    await prefs.setString(_kCompanyTel, _companyTelCtrl.text);
-    await prefs.setString(_kCompanyReg, _companyRegCtrl.text);
-    await prefs.setString(_kCompanyFax, _companyFaxCtrl.text);
-    await prefs.setString(_kCompanyEmail, _companyEmailCtrl.text);
-    await prefs.setString(_kCompanyUrl, _companyUrlCtrl.text);
-    _showSnackbar('自社情報を保存しました');
+  Future<void> _saveAppSettings() async {
+    await _appSettingsRepo.setHomeMode(_homeDashboard ? 'dashboard' : 'invoice_history');
+    await _appSettingsRepo.setDashboardStatusEnabled(_statusEnabled);
+    await _appSettingsRepo.setDashboardStatusText(_statusTextCtrl.text.trim().isEmpty ? '工事中' : _statusTextCtrl.text.trim());
+    await _appSettingsRepo.setDashboardMenu(_menuItems);
+    _showSnackbar('ホーム/ダッシュボード設定を保存しました');
   }
 
-  Future<void> _saveStaff() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kStaffName, _staffNameCtrl.text);
-    await prefs.setString(_kStaffMail, _staffMailCtrl.text);
-    _showSnackbar('担当者情報を保存しました');
+  Future<void> _persistMenu() async {
+    await _appSettingsRepo.setDashboardMenu(_menuItems);
   }
 
-  Future<void> _saveSmtp() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kSmtpHost, _smtpHostCtrl.text);
-    await prefs.setString(_kSmtpPort, _smtpPortCtrl.text);
-    await prefs.setString(_kSmtpUser, _smtpUserCtrl.text);
-    await prefs.setString(_kSmtpPass, _encrypt(_smtpPassCtrl.text));
-    await prefs.setBool(_kSmtpTls, _smtpTls);
-    await prefs.setString(_kSmtpBcc, _smtpBccCtrl.text);
-    _showSnackbar('SMTP設定を保存しました');
+  void _addMenuItem() async {
+    final titleCtrl = TextEditingController();
+    String route = 'invoice_history';
+    final iconCtrl = TextEditingController(text: 'list_alt');
+    String? customIconPath;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('メニューを追加'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'タイトル')),
+              DropdownButtonFormField<String>(
+                initialValue: route,
+                decoration: const InputDecoration(labelText: '遷移先'),
+                items: const [
+                  DropdownMenuItem(value: 'invoice_history', child: Text('A2:伝票一覧')),
+                  DropdownMenuItem(value: 'invoice_input', child: Text('A1:伝票入力')),
+                  DropdownMenuItem(value: 'customer_master', child: Text('C1:顧客マスター')),
+                  DropdownMenuItem(value: 'product_master', child: Text('P1:商品マスター')),
+                  DropdownMenuItem(value: 'master_hub', child: Text('M1:マスター管理')),
+                  DropdownMenuItem(value: 'settings', child: Text('S1:設定')),
+                ],
+                onChanged: (v) => route = v ?? 'invoice_history',
+              ),
+              TextField(controller: iconCtrl, decoration: const InputDecoration(labelText: 'Materialアイコン名 (例: list_alt)')),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: Text(customIconPath ?? 'カスタムアイコン: 未選択', style: const TextStyle(fontSize: 12))),
+                  IconButton(
+                    icon: const Icon(Icons.image_search),
+                    tooltip: 'ギャラリーから選択',
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(source: ImageSource.gallery);
+                      if (picked != null) {
+                        setState(() {
+                          customIconPath = picked.path;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+          ElevatedButton(
+            onPressed: () {
+              if (titleCtrl.text.trim().isEmpty) return;
+              setState(() {
+                _menuItems = [
+                  ..._menuItems,
+                  DashboardMenuItem(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    title: titleCtrl.text.trim(),
+                    route: route,
+                    iconName: iconCtrl.text.trim().isEmpty ? 'list_alt' : iconCtrl.text.trim(),
+                    customIconPath: customIconPath,
+                  ),
+                ];
+              });
+              _persistMenu();
+              Navigator.pop(ctx);
+            },
+            child: const Text('追加'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeMenuItem(String id) {
+    setState(() {
+      _menuItems = _menuItems.where((e) => e.id != id).toList();
+    });
+    _persistMenu();
+  }
+
+  void _reorderMenu(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final item = _menuItems.removeAt(oldIndex);
+      _menuItems.insert(newIndex, item);
+    });
+    _persistMenu();
+  }
+
+  String _routeLabel(String route) {
+    switch (route) {
+      case 'invoice_history':
+        return 'A2:伝票一覧';
+      case 'invoice_input':
+        return 'A1:伝票入力';
+      case 'customer_master':
+        return 'C1:顧客マスター';
+      case 'product_master':
+        return 'P1:商品マスター';
+      case 'master_hub':
+        return 'M1:マスター管理';
+      case 'settings':
+        return 'S1:設定';
+      default:
+        return route;
+    }
+  }
+
+  IconData _iconForName(String name) {
+    return kIconsMap[name] ?? Icons.apps;
+  }
+
+  Widget _menuLeading(DashboardMenuItem item) {
+    if (item.customIconPath != null && File(item.customIconPath!).existsSync()) {
+      return CircleAvatar(backgroundImage: FileImage(File(item.customIconPath!)));
+    }
+    return Icon(item.iconName != null ? _iconForName(item.iconName!) : Icons.apps);
   }
 
   Future<void> _saveExternalSync() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kExternalHost, _externalHostCtrl.text);
-    await prefs.setString(_kExternalPass, _externalPassCtrl.text);
+    await _appSettingsRepo.setString(_kExternalHost, _externalHostCtrl.text);
+    await _appSettingsRepo.setString(_kExternalPass, _externalPassCtrl.text);
     _showSnackbar('外部同期設定を保存しました');
   }
 
   Future<void> _saveBackup() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kBackupPath, _backupPathCtrl.text);
+    await _appSettingsRepo.setString(_kBackupPath, _backupPathCtrl.text);
     _showSnackbar('バックアップ設定を保存しました');
   }
 
   void _pickBackupPath() => _showSnackbar('バックアップ先の選択は後で実装');
 
   Future<void> _loadKanaMap() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString('customKanaMap');
+    final json = await _appSettingsRepo.getString('customKanaMap');
     if (json != null && json.isNotEmpty) {
       try {
         final Map<String, dynamic> decoded = jsonDecode(json);
@@ -199,29 +269,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveKanaMap() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('customKanaMap', jsonEncode(_customKanaMap));
+    await _appSettingsRepo.setString('customKanaMap', jsonEncode(_customKanaMap));
     _showSnackbar('かなインデックスを保存しました');
-  }
-
-  String _encrypt(String plain) {
-    if (plain.isEmpty) return '';
-    final pb = utf8.encode(plain);
-    final kb = utf8.encode(_kCryptKey);
-    final ob = List<int>.generate(pb.length, (i) => pb[i] ^ kb[i % kb.length]);
-    return base64Encode(ob);
-  }
-
-  String _decryptWithFallback(String cipher) {
-    if (cipher.isEmpty) return '';
-    try {
-      final ob = base64Decode(cipher);
-      final kb = utf8.encode(_kCryptKey);
-      final pb = List<int>.generate(ob.length, (i) => ob[i] ^ kb[i % kb.length]);
-      return utf8.decode(pb);
-    } catch (_) {
-      return cipher; // 旧プレーンテキストも許容
-    }
   }
 
   @override
@@ -247,33 +296,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.only(bottom: listBottomPadding),
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.indigo.shade100),
-              ),
-              child: Row(
+            _section(
+              title: 'ホームモード / ダッシュボード',
+              subtitle: 'ダッシュボードをホームにする・ステータス表示・メニュー管理 (設定はDB保存)',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.business, color: Colors.indigo, size: 28),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      "自社情報を開く",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
-                    ),
+                  SwitchListTile(
+                    title: const Text('ホームをダッシュボードにする'),
+                    value: _homeDashboard,
+                    onChanged: _loadingAppSettings ? null : (v) => setState(() => _homeDashboard = v),
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CompanyInfoScreen())),
-                    icon: const Icon(Icons.chevron_right),
-                    label: const Text("詳細"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  SwitchListTile(
+                    title: const Text('ステータスを表示する'),
+                    value: _statusEnabled,
+                    onChanged: _loadingAppSettings ? null : (v) => setState(() => _statusEnabled = v),
+                  ),
+                  TextField(
+                    controller: _statusTextCtrl,
+                    enabled: !_loadingAppSettings && _statusEnabled,
+                    decoration: const InputDecoration(labelText: 'ステータス文言', hintText: '例: 工事中'),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('メニューを追加'),
+                        onPressed: _loadingAppSettings ? null : _addMenuItem,
+                      ),
+                      const SizedBox(width: 12),
+                      Text('ドラッグで並べ替え / ゴミ箱で削除', style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _loadingAppSettings
+                      ? const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+                      : ReorderableListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _menuItems.length,
+                          onReorder: _reorderMenu,
+                          itemBuilder: (ctx, index) {
+                            final item = _menuItems[index];
+                            return ListTile(
+                              key: ValueKey(item.id),
+                              leading: _menuLeading(item),
+                              title: Text(item.title),
+                              subtitle: Text(_routeLabel(item.route)),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                                onPressed: () => _removeMenuItem(item.id),
+                              ),
+                            );
+                          },
+                        ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text('ホーム設定を保存'),
+                      onPressed: _loadingAppSettings ? null : _saveAppSettings,
                     ),
                   ),
                 ],
@@ -281,32 +365,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _section(
               title: '自社情報',
-              subtitle: '会社名・住所・登録番号など',
+              subtitle: '会社・担当者・振込口座・電話帳取り込み',
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(controller: _companyNameCtrl, decoration: const InputDecoration(labelText: '会社名')),
-                  TextField(controller: _companyZipCtrl, decoration: const InputDecoration(labelText: '郵便番号')),
-                  TextField(controller: _companyAddrCtrl, decoration: const InputDecoration(labelText: '住所')),
-                  TextField(controller: _companyTelCtrl, decoration: const InputDecoration(labelText: '電話番号')),
-                  TextField(controller: _companyFaxCtrl, decoration: const InputDecoration(labelText: 'FAX番号')),
-                  TextField(controller: _companyEmailCtrl, decoration: const InputDecoration(labelText: 'メールアドレス')),
-                  TextField(controller: _companyUrlCtrl, decoration: const InputDecoration(labelText: 'URL')),
-                  TextField(controller: _companyRegCtrl, decoration: const InputDecoration(labelText: '登録番号 (インボイス)')),
-                  const SizedBox(height: 8),
+                  const Text('自社/担当者情報、振込口座設定、メールフッタをまとめて編集できます。'),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       OutlinedButton.icon(
-                        icon: const Icon(Icons.upload_file),
-                        label: const Text('画面で編集'),
+                        icon: const Icon(Icons.info_outline),
+                        label: const Text('旧画面 (税率/印影)'),
                         onPressed: () async {
                           await Navigator.push(context, MaterialPageRoute(builder: (context) => const CompanyInfoScreen()));
                         },
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('保存'),
-                        onPressed: _saveCompany,
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.business),
+                          label: const Text('自社情報ページを開く'),
+                          onPressed: () async {
+                            await Navigator.push(context, MaterialPageRoute(builder: (context) => const BusinessProfileScreen()));
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -314,40 +396,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             _section(
-              title: '担当者情報',
-              subtitle: '署名や連絡先（送信者情報）',
+              title: 'メール設定（SM画面へ）',
+              subtitle: 'SMTP・端末メーラー・BCC必須・ログ閲覧など',
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(controller: _staffNameCtrl, decoration: const InputDecoration(labelText: '担当者名')),
-                  TextField(controller: _staffMailCtrl, decoration: const InputDecoration(labelText: 'メールアドレス')),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('保存'),
-                    onPressed: _saveStaff,
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: 'SMTP情報',
-              subtitle: 'メール送信サーバ設定（テンプレ）',
-              child: Column(
-                children: [
-                  TextField(controller: _smtpHostCtrl, decoration: const InputDecoration(labelText: 'ホスト名')),
-                  TextField(controller: _smtpPortCtrl, decoration: const InputDecoration(labelText: 'ポート番号'), keyboardType: TextInputType.number),
-                  TextField(controller: _smtpUserCtrl, decoration: const InputDecoration(labelText: 'ユーザー名')),
-                  TextField(controller: _smtpPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
-                  TextField(controller: _smtpBccCtrl, decoration: const InputDecoration(labelText: 'BCC (カンマ区切り可)')),
-                  SwitchListTile(
-                    title: const Text('STARTTLS を使用'),
-                    value: _smtpTls,
-                    onChanged: (v) => setState(() => _smtpTls = v),
-                  ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('保存'),
-                    onPressed: _saveSmtp,
+                  const Text('メール送信に関する設定は専用画面でまとめて編集できます。'),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.mail_outline),
+                      label: const Text('メール設定を開く'),
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const EmailSettingsScreen()),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -413,7 +480,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ElevatedButton.icon(
                     icon: const Icon(Icons.save),
                     label: const Text('保存'),
-                    onPressed: () => _showSnackbar('テーマ設定を保存（テンプレ）: $_theme'),
+                    onPressed: () async {
+                      await _appSettingsRepo.setTheme(_theme);
+                      await AppThemeController.instance.setTheme(_theme);
+                      if (!mounted) return;
+                      _showSnackbar('テーマ設定を保存しました');
+                    },
                   ),
                 ],
               ),

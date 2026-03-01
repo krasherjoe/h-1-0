@@ -13,6 +13,7 @@ class Customer {
   final bool isSynced;      // 同期フラグ
   final DateTime updatedAt; // 最終更新日時
   final bool isLocked;      // ロック
+  final bool isHidden;      // 非表示
   final String? headChar1;  // インデックス1
   final String? headChar2;  // インデックス2
 
@@ -30,6 +31,7 @@ class Customer {
     this.isSynced = false,
     DateTime? updatedAt,
     this.isLocked = false,
+    this.isHidden = false,
     this.headChar1,
     this.headChar2,
   }) : updatedAt = updatedAt ?? DateTime.now();
@@ -57,6 +59,7 @@ class Customer {
       'head_char2': headChar2,
       'is_locked': isLocked ? 1 : 0,
       'is_synced': isSynced ? 1 : 0,
+      'is_hidden': isHidden ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
     };
   }
@@ -75,6 +78,7 @@ class Customer {
       odooId: map['odoo_id'],
       isLocked: (map['is_locked'] ?? 0) == 1,
       isSynced: map['is_synced'] == 1,
+      isHidden: (map['is_hidden'] ?? 0) == 1,
       updatedAt: DateTime.parse(map['updated_at']),
       headChar1: map['head_char1'],
       headChar2: map['head_char2'],
@@ -93,6 +97,7 @@ class Customer {
     bool? isSynced,
     DateTime? updatedAt,
     bool? isLocked,
+    bool? isHidden,
     String? email,
     int? contactVersionId,
     String? headChar1,
@@ -112,6 +117,7 @@ class Customer {
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,
       isLocked: isLocked ?? this.isLocked,
+      isHidden: isHidden ?? this.isHidden,
       headChar1: headChar1 ?? this.headChar1,
       headChar2: headChar2 ?? this.headChar2,
     );

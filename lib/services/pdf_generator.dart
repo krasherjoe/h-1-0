@@ -11,7 +11,15 @@ import 'activity_log_repository.dart';
 
 /// PDFドキュメントの構築（プレビューと実保存の両方で使用）
 Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
-  final pdf = pw.Document();
+  final metaJson = invoice.metaJsonValue;
+  final metaHash = invoice.metaHashValue;
+
+  final pdf = pw.Document(
+    title: '${invoice.documentTypeName} ${invoice.invoiceNumber}',
+    author: 'h1-app',
+    subject: 'metaHash:$metaHash',
+    keywords: metaJson,
+  );
 
   final fontData = await rootBundle.load("assets/fonts/ipaexg.ttf");
   final ipaex = pw.Font.ttf(fontData);
@@ -221,7 +229,7 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
               pw.Container(
                 width: 50,
                 height: 50,
-                child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: invoice.contentHash, drawText: false),
+                child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: metaHash, drawText: false),
               ),
             ],
           ),

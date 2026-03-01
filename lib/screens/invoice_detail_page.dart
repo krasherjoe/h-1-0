@@ -12,6 +12,7 @@ import '../services/company_repository.dart';
 import 'product_picker_modal.dart';
 import '../models/company_model.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
+import '../services/app_settings_repository.dart';
 
 class _DetailSnapshot {
   final String formalName;
@@ -29,6 +30,25 @@ class _DetailSnapshot {
     required this.includeTax,
     required this.isDraft,
   });
+}
+
+class _DraftBadge extends StatelessWidget {
+  const _DraftBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Text(
+        '下書き',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
+      ),
+    );
+  }
 }
 
 List<InvoiceItem> _cloneItemsDetail(List<InvoiceItem> source) {
@@ -63,14 +83,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   late double _taxRate; // 追加
   late bool _includeTax; // 追加
   String? _currentFilePath;
-  final _invoiceRepo = InvoiceRepository();
-  final _customerRepo = CustomerRepository();
-  final _companyRepo = CompanyRepository();
+  final InvoiceRepository _invoiceRepo = InvoiceRepository();
+  final CustomerRepository _customerRepo = CustomerRepository();
+  final CompanyRepository _companyRepo = CompanyRepository();
+  final AppSettingsRepository _settingsRepo = AppSettingsRepository(); // 追加
   CompanyInfo? _companyInfo;
   bool _showFormalWarning = true;
   final List<_DetailSnapshot> _undoStack = [];
   final List<_DetailSnapshot> _redoStack = [];
   bool _isApplyingSnapshot = false;
+  bool _summaryIsBlue = false; // デフォルトは白
 
   @override
   void initState() {
@@ -84,6 +106,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     _includeTax = _currentInvoice.taxRate > 0; // 初期化
     _isEditing = false;
     _loadCompanyInfo();
+    _loadSummaryTheme();
+  }
+
+  Future<void> _loadSummaryTheme() async {
+    final saved = await _settingsRepo.getSummaryTheme();
+    if (!mounted) return;
+    setState(() => _summaryIsBlue = saved == 'blue');
   }
 
   Future<void> _loadCompanyInfo() async {
@@ -186,12 +215,39 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     SharePlus.instance.share(ShareParams(text: csvData, subject: '請求書データ_CSV'));
   }
 
+  Future<void> _pickSummaryColor() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.palette, color: Colors.indigo),
+              title: const Text('インディゴ'),
+              onTap: () => Navigator.pop(context, 'blue'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.palette, color: Colors.grey),
+              title: const Text('白'),
+              onTap: () => Navigator.pop(context, 'white'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected == null) return;
+    setState(() => _summaryIsBlue = selected == 'blue');
+    await _settingsRepo.setSummaryTheme(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
     final isDraft = _currentInvoice.isDraft;
     final docTypeName = _currentInvoice.documentTypeName;
-    final themeColor = Colors.white; // 常に明色
+    final themeColor = Theme.of(context).scaffoldBackgroundColor;
     final textColor = Colors.black87;
 
     final locked = _currentInvoice.isLocked;
@@ -292,18 +348,18 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade800,
+                    color: Colors.indigo, // 合計金額と同じカラー
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.indigo.shade900),
+                    border: Border.all(color: Colors.indigo.shade700),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.edit_note, color: Colors.white70),
                       const SizedBox(width: 8),
-                      Expanded(
+                      const Expanded(
                         child: Text(
-                          "下書き: 未確定・PDFは正式発行で確定",
-                          style: const TextStyle(color: Colors.white70),
+                          "未確定・PDFは正式発行で確定",
+                          style: TextStyle(color: Colors.white70),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -314,7 +370,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          "下書${docTypeName}",
+                          "下書$docTypeName",
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
@@ -406,8 +462,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,25 +480,34 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
                 if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
-                  const SizedBox(height: 6),
-                  Text("件名: ${_currentInvoice.subject}",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
-                ],
-                if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
-                  Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 14, color: textColor)),
-                if ((_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address) != null)
-                  Text("住所: ${_currentInvoice.contactAddressSnapshot ?? _currentInvoice.customer.address}", style: TextStyle(color: textColor)),
-                if ((_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel) != null)
-                  Text("TEL: ${_currentInvoice.contactTelSnapshot ?? _currentInvoice.customer.tel}", style: TextStyle(color: textColor)),
-                if ((_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email) != null)
-                  Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
-                if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
+                  const Text("件名", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                  const SizedBox(height: 2),
                   Text(
-                    "備考: ${_currentInvoice.notes}",
-                    style: TextStyle(color: textColor.withAlpha((0.9 * 255).round())),
+                    _currentInvoice.subject!,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
                   ),
                 ],
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
+                        Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 14, color: textColor)),
+                      if ((_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email) != null)
+                        Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
+                      if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          "備考: ${_currentInvoice.notes}",
+                          style: TextStyle(color: textColor.withAlpha((0.9 * 255).round())),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -520,32 +592,43 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final int tax = (subtotal * currentTaxRate).floor();
     final int total = subtotal + tax;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.indigo,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", Colors.white70),
-          if (currentTaxRate > 0) ...[
-            const Divider(color: Colors.white24),
-            if (_companyInfo?.taxDisplayMode == 'normal')
-              _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", "￥${formatter.format(tax)}", Colors.white70),
-            if (_companyInfo?.taxDisplayMode == 'text_only')
-              _buildSummaryRow("消費税", "（税別）", Colors.white70),
+    final bool useBlue = _summaryIsBlue;
+    final Color bgColor = useBlue ? Colors.indigo : Colors.white;
+    final Color borderColor = useBlue ? Colors.transparent : Colors.grey.shade300;
+    final Color labelColor = useBlue ? Colors.white70 : Colors.black87;
+    final Color totalColor = useBlue ? Colors.white : Colors.black87;
+    final Color dividerColor = useBlue ? Colors.white24 : Colors.grey.shade300;
+
+    return GestureDetector(
+      onLongPress: _pickSummaryColor,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", labelColor),
+            if (currentTaxRate > 0) ...[
+              Divider(color: dividerColor),
+              if (_companyInfo?.taxDisplayMode == 'normal')
+                _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", "￥${formatter.format(tax)}", labelColor),
+              if (_companyInfo?.taxDisplayMode == 'text_only')
+                _buildSummaryRow("消費税", "（税別）", labelColor),
+            ],
+            Divider(color: dividerColor),
+            _buildSummaryRow(
+              currentTaxRate > 0 ? "合計金額 (税込)" : "合計金額",
+              "￥${formatter.format(total)}",
+              totalColor,
+              isTotal: true,
+            ),
           ],
-          const Divider(color: Colors.white24),
-          _buildSummaryRow(
-            currentTaxRate > 0 ? "合計金額 (税込)" : "合計金額",
-            "￥${formatter.format(total)}",
-            Colors.white,
-            isTotal: true,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -721,7 +804,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("この下書き伝票を「確定」として正式に発行しますか？"),
+                Row(
+                  children: const [
+                    _DraftBadge(),
+                    SizedBox(width: 8),
+                    Expanded(child: Text("この伝票を「確定」として正式に発行しますか？")),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 if (showWarning)
                   Container(
@@ -785,7 +874,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         children: [
           const Icon(Icons.drafts, color: Colors.orange),
           const SizedBox(width: 12),
-          const Expanded(child: Text("下書き状態として保持", style: TextStyle(fontWeight: FontWeight.bold))),
+          const Expanded(
+            child: Row(
+              children: [
+                _DraftBadge(),
+                SizedBox(width: 8),
+                Text("状態として保持", style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
           Switch(
             value: _currentInvoice.isDraft,
             onChanged: (val) {

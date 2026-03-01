@@ -6,11 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
+import '../widgets/contact_picker_sheet.dart';
 
 class CustomerMasterScreen extends StatefulWidget {
   final bool selectionMode;
+  final bool showHidden;
 
-  const CustomerMasterScreen({super.key, this.selectionMode = false});
+  const CustomerMasterScreen({super.key, this.selectionMode = false, this.showHidden = false});
 
   @override
   State<CustomerMasterScreen> createState() => _CustomerMasterScreenState();
@@ -87,6 +89,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   }
 
   Future<void> _showContactUpdateDialog(Customer customer) async {
+    if (customer.isLocked) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロック中の顧客は連絡先を更新できません')));
+      }
+      return;
+    }
     final emailController = TextEditingController(text: customer.email ?? "");
     final telController = TextEditingController(text: customer.tel ?? "");
     final addressController = TextEditingController(text: customer.address ?? "");
@@ -130,7 +138,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _loadCustomers() async {
     setState(() => _isLoading = true);
     try {
-      final customers = await _customerRepo.getAllCustomers();
+      final customers = await _customerRepo.getAllCustomers(includeHidden: widget.showHidden);
       if (!mounted) return;
       setState(() {
         _customers = customers;
@@ -149,13 +157,20 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     List<Customer> list = _customers.where((c) {
       return c.displayName.toLowerCase().contains(query) || c.formalName.toLowerCase().contains(query);
     }).toList();
+    if (!widget.showHidden) {
+      list = list.where((c) => !c.isHidden).toList();
+    }
     // Kana filtering disabled temporarily for stability
     switch (_sortKey) {
       case 'name_desc':
-        list.sort((a, b) => _normalizedName(b.displayName).compareTo(_normalizedName(a.displayName)));
+        list.sort((a, b) => widget.showHidden
+            ? b.id.compareTo(a.id)
+            : _normalizedName(b.displayName).compareTo(_normalizedName(a.displayName)));
         break;
       default:
-        list.sort((a, b) => _normalizedName(a.displayName).compareTo(_normalizedName(b.displayName)));
+        list.sort((a, b) => widget.showHidden
+            ? b.id.compareTo(a.id)
+            : _normalizedName(a.displayName).compareTo(_normalizedName(b.displayName)));
     }
     _filtered = list;
   }
@@ -205,16 +220,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   late final Map<String, String> _defaultKanaMap = _buildDefaultKanaMap();
 
-  String _normalizeIndexChar(String input) {
-    var s = input.replaceAll(RegExp(r"\s+|\u3000"), "");
-    if (s.isEmpty) return '';
-    String ch = s.characters.first;
-    final code = ch.codeUnitAt(0);
-    if (code >= 0x30A1 && code <= 0x30F6) {
-      ch = String.fromCharCode(code - 0x60); // katakana -> hiragana
-    }
-    return ch;
-  }
 
   Future<void> _addOrEditCustomer({Customer? customer}) async {
     final isEdit = customer != null;
@@ -244,26 +249,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       final Contact? picked = await showModalBottomSheet<Contact>(
         context: context,
         isScrollControlled: true,
-        builder: (ctx) => SafeArea(
-          child: SizedBox(
-            height: MediaQuery.of(ctx).size.height * 0.6,
-            child: ListView.builder(
-              itemCount: contacts.length,
-              itemBuilder: (_, i) {
-                final c = contacts[i];
-                final orgCompany = c.organizations.isNotEmpty ? c.organizations.first.company : '';
-                final personParts = [c.name.last, c.name.first].where((v) => v.isNotEmpty).toList();
-                final person = personParts.isNotEmpty ? personParts.join(' ').trim() : c.displayName;
-                final label = orgCompany.isNotEmpty ? orgCompany : person;
-                return ListTile(
-                  title: Text(label),
-                  subtitle: person.isNotEmpty ? Text(person) : null,
-                  onTap: () => Navigator.pop(ctx, c),
-                );
-              },
-            ),
-          ),
-        ),
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => ContactPickerSheet(contacts: contacts, title: isEdit ? '電話帳から上書き' : '電話帳から新規入力'),
       );
       if (!mounted) return;
       if (picked != null) {
@@ -404,22 +391,25 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 TextButton(
                   onPressed: () {
                     if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("表示名と正式名称は必須です")));
                       return;
                     }
-                    final head1 = _normalizeIndexChar(head1Controller.text);
-                    final head2 = _normalizeIndexChar(head2Controller.text);
+                    final head1 = head1Controller.text.trim();
+                    final head2 = head2Controller.text.trim();
+                    final locked = customer?.isLocked ?? false;
+                    final newId = locked ? const Uuid().v4() : (customer?.id ?? const Uuid().v4());
                     final newCustomer = Customer(
-                      id: customer?.id ?? const Uuid().v4(),
-                      displayName: displayNameController.text,
-                      formalName: formalNameController.text,
+                      id: newId,
+                      displayName: displayNameController.text.trim(),
+                      formalName: formalNameController.text.trim(),
                       title: selectedTitle,
-                      department: departmentController.text.isEmpty ? null : departmentController.text,
-                      address: addressController.text.isEmpty ? null : addressController.text,
-                      tel: telController.text.isEmpty ? null : telController.text,
-                      email: emailController.text.isEmpty ? null : emailController.text,
-                      headChar1: head1.isEmpty ? _headKana(displayNameController.text) : head1,
+                      department: departmentController.text.trim().isEmpty ? null : departmentController.text.trim(),
+                      address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+                      tel: telController.text.trim().isEmpty ? null : telController.text.trim(),
+                      email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+                      headChar1: head1.isEmpty ? null : head1,
                       headChar2: head2.isEmpty ? null : head2,
-                      isLocked: customer?.isLocked ?? false,
+                      isLocked: false,
                     );
                     Navigator.pop(context, newCustomer);
                   },
@@ -783,7 +773,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       ),
                       title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
                       subtitle: Text("${c.formalName} ${c.title}"),
-                      onTap: widget.selectionMode ? () => Navigator.pop(context, c) : () => _showDetailPane(c),
+                      onTap: widget.selectionMode
+                          ? () {
+                              if (c.isHidden) return; // do not select hidden
+                              Navigator.pop(context, c);
+                            }
+                          : () => _showDetailPane(c),
                       trailing: widget.selectionMode
                           ? null
                           : IconButton(
@@ -861,23 +856,33 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               leading: const Icon(Icons.edit),
               title: const Text('編集'),
               enabled: !c.isLocked,
-              onTap: c.isLocked
-                  ? null
-                  : () {
-                      Navigator.pop(context);
-                      _addOrEditCustomer(customer: c);
-                    },
+              onTap: () {
+                Navigator.pop(context);
+                _addOrEditCustomer(customer: c);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.contact_mail),
               title: const Text('連絡先を更新'),
+              enabled: !c.isLocked,
               onTap: () {
+                if (c.isLocked) return;
                 Navigator.pop(context);
                 _showContactUpdateDialog(c);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              leading: const Icon(Icons.visibility_off),
+              title: const Text('非表示にする'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _customerRepo.setHidden(c.id, true);
+                if (!mounted) return;
+                _loadCustomers();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
               title: const Text('削除', style: TextStyle(color: Colors.redAccent)),
               enabled: !c.isLocked,
               onTap: c.isLocked
@@ -957,10 +962,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showContactUpdateSheet(c);
-                    },
+                    onPressed: c.isLocked
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                            _showContactUpdateSheet(c);
+                          },
                     icon: const Icon(Icons.contact_mail),
                     label: const Text("連絡先を更新"),
                   ),
@@ -1018,7 +1025,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               ListTile(
                 leading: const Icon(Icons.contact_mail),
                 title: const Text('連絡先を更新'),
+                enabled: !c.isLocked,
                 onTap: () {
+                  if (c.isLocked) return;
                   Navigator.pop(context);
                   _showContactUpdateDialog(c);
                 },

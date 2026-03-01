@@ -41,7 +41,7 @@ class InvoiceHistoryList extends StatelessWidget {
 
     return ListView.builder(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(bottom: 120), // FAB分の固定余白
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 120), // 横揃えとFAB余白
       itemCount: invoices.length,
       itemBuilder: (context, index) {
         final invoice = invoices[index];

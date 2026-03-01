@@ -71,6 +71,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("F1:自社情報"),
         backgroundColor: Colors.indigo,

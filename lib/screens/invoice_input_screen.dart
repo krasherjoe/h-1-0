@@ -6,32 +6,39 @@ import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
-import 'invoice_detail_page.dart';
 import '../services/gps_service.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import '../models/product_model.dart';
+import '../services/app_settings_repository.dart';
+import '../services/edit_log_repository.dart';
 
 class InvoiceInputForm extends StatefulWidget {
   final Function(Invoice invoice, String filePath) onInvoiceGenerated;
   final Invoice? existingInvoice; // 追加: 編集時の既存伝票
   final DocumentType initialDocumentType;
+  final bool startViewMode;
+  final bool showNewBadge;
+  final bool showCopyBadge;
 
   const InvoiceInputForm({
     super.key,
     required this.onInvoiceGenerated,
     this.existingInvoice, // 追加
     this.initialDocumentType = DocumentType.invoice,
+    this.startViewMode = true,
+    this.showNewBadge = false,
+    this.showCopyBadge = false,
   });
 
   @override
   State<InvoiceInputForm> createState() => _InvoiceInputFormState();
 }
 
-List<InvoiceItem> _cloneItems(List<InvoiceItem> source) {
+List<InvoiceItem> _cloneItems(List<InvoiceItem> source, {bool resetIds = false}) {
   return source
       .map((e) => InvoiceItem(
-            id: e.id,
+            id: resetIds ? null : e.id,
             productId: e.productId,
             description: e.description,
             quantity: e.quantity,
@@ -52,33 +59,105 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _isDraft = true; // デフォルトは下書き
   final TextEditingController _subjectController = TextEditingController(); // 追加
   bool _isSaving = false; // 保存中フラグ
+  String? _currentId; // 保存対象のID（コピー時に新規になる）
+  bool _isLocked = false;
   final List<_InvoiceSnapshot> _undoStack = [];
   final List<_InvoiceSnapshot> _redoStack = [];
   bool _isApplyingSnapshot = false;
   bool get _canUndo => _undoStack.length > 1;
   bool get _canRedo => _redoStack.isNotEmpty;
+  bool _isViewMode = true; // デフォルトでビューワ
+  bool _summaryIsBlue = false; // デフォルトは白
+  final AppSettingsRepository _settingsRepo = AppSettingsRepository();
+  bool _showNewBadge = false;
+  bool _showCopyBadge = false;
+  final EditLogRepository _editLogRepo = EditLogRepository();
+  List<EditLogEntry> _editLogs = [];
+  final FocusNode _subjectFocusNode = FocusNode();
+  String _lastLoggedSubject = "";
 
-  // 署名用の実験的パス
-  final List<Offset?> _signaturePath = [];
+  String _documentTypeLabel(DocumentType type) {
+    switch (type) {
+      case DocumentType.estimation:
+        return "見積書";
+      case DocumentType.delivery:
+        return "納品書";
+      case DocumentType.invoice:
+        return "請求書";
+      case DocumentType.receipt:
+        return "領収書";
+    }
+  }
+
+  Color _documentTypeColor(DocumentType type) {
+    switch (type) {
+      case DocumentType.estimation:
+        return Colors.blue;
+      case DocumentType.delivery:
+        return Colors.teal;
+      case DocumentType.invoice:
+        return Colors.indigo;
+      case DocumentType.receipt:
+        return Colors.green;
+    }
+  }
+
+  String _customerNameWithHonorific(Customer customer) {
+    final base = customer.formalName;
+    final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
+    return hasHonorific ? base : "$base ${customer.title}";
+  }
+
+  String _ensureCurrentId() {
+    _currentId ??= DateTime.now().millisecondsSinceEpoch.toString();
+    return _currentId!;
+  }
+
+  void _copyAsNew() {
+    if (widget.existingInvoice == null && _currentId == null) return;
+    final clonedItems = _cloneItems(_items, resetIds: true);
+    setState(() {
+      _currentId = DateTime.now().millisecondsSinceEpoch.toString();
+      _isDraft = true;
+      _isLocked = false;
+      _selectedDate = DateTime.now();
+      _items
+        ..clear()
+        ..addAll(clonedItems);
+      _isViewMode = false;
+      _showCopyBadge = true;
+      _showNewBadge = false;
+      _pushHistory(clearRedo: true);
+      _editLogs.clear();
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _subjectController.addListener(_onSubjectChanged);
+    _subjectFocusNode.addListener(() {
+      if (!_subjectFocusNode.hasFocus) {
+        final current = _subjectController.text;
+        if (current != _lastLoggedSubject) {
+          final id = _ensureCurrentId();
+          final msg = "件名を『$current』に更新しました";
+          _editLogRepo.addLog(id, msg).then((_) => _loadEditLogs());
+          _lastLoggedSubject = current;
+        }
+      }
+    });
+    _subjectController.addListener(_onSubjectChanged);
     _loadInitialData();
-  }
-
-  @override
-  void dispose() {
-    _subjectController.removeListener(_onSubjectChanged);
-    _subjectController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadInitialData() async {
     _repository.cleanupOrphanedPdfs();
     final customerRepo = CustomerRepository();
     await customerRepo.getAllCustomers();
+
+    final savedSummary = await _settingsRepo.getSummaryTheme();
+    _summaryIsBlue = savedSummary == 'blue';
 
     setState(() {
       // 既存伝票がある場合は初期値を上書き
@@ -91,15 +170,39 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _documentType = inv.documentType;
         _selectedDate = inv.date;
         _isDraft = inv.isDraft;
+        _currentId = inv.id;
+        _isLocked = inv.isLocked;
         if (inv.subject != null) _subjectController.text = inv.subject!;
       } else {
         _taxRate = 0;
         _includeTax = false;
         _isDraft = true;
         _documentType = widget.initialDocumentType;
+        _currentId = null;
+        _isLocked = false;
       }
     });
+    _isViewMode = widget.startViewMode; // 指定に従う
+    _showNewBadge = widget.showNewBadge;
+    _showCopyBadge = widget.showCopyBadge;
     _pushHistory(clearRedo: true);
+    _lastLoggedSubject = _subjectController.text;
+    if (_currentId != null) {
+      _loadEditLogs();
+    }
+  }
+
+  @override
+  void dispose() {
+    _subjectFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadEditLogs() async {
+    if (_currentId == null) return;
+    final logs = await _editLogRepo.getLogs(_currentId!);
+    if (!mounted) return;
+    setState(() => _editLogs = logs);
   }
 
   void _onSubjectChanged() {
@@ -122,6 +225,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ));
       });
       _pushHistory();
+      final id = _ensureCurrentId();
+      final msg = "商品「${product.name}」を追加しました";
+      _editLogRepo.addLog(id, msg).then((_) => _loadEditLogs());
     });
   }
 
@@ -143,8 +249,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       await gpsService.logLocation(); // 履歴テーブルにも保存
     }
 
+    final invoiceId = _ensureCurrentId();
+
     final invoice = Invoice(
-      id: widget.existingInvoice?.id, // 既存IDがあれば引き継ぐ
+      id: invoiceId,
       customer: _selectedCustomer!,
       date: _selectedDate,
       items: _items,
@@ -166,6 +274,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         if (path != null) {
           final updatedInvoice = invoice.copyWith(filePath: path);
           await _repository.saveInvoice(updatedInvoice);
+          _currentId = updatedInvoice.id;
           if (mounted) widget.onInvoiceGenerated(updatedInvoice, path);
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
         } else {
@@ -173,9 +282,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         }
       } else {
         await _repository.saveInvoice(invoice);
+        _currentId = invoice.id;
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
-        if (mounted) Navigator.pop(context);
       }
+      await _editLogRepo.addLog(_currentId!, "伝票を保存しました");
+      await _loadEditLogs();
+      if (mounted) setState(() => _isViewMode = true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
@@ -187,7 +299,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   void _showPreview() {
     if (_selectedCustomer == null) return;
+    final id = _ensureCurrentId();
+    _editLogRepo.addLog(id, "PDFプレビューを開きました").then((_) => _loadEditLogs());
     final invoice = Invoice(
+      id: id,
       customer: _selectedCustomer!,
       date: _selectedDate, // 修正
       items: _items,
@@ -195,6 +310,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
+      isDraft: _isDraft,
+      isLocked: _isLocked,
     );
 
     Navigator.push(
@@ -203,34 +320,27 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         builder: (context) => InvoicePdfPreviewPage(
           invoice: invoice,
           isUnlocked: true,
-          isLocked: false,
-          allowFormalIssue: widget.existingInvoice != null && !(widget.existingInvoice?.isLocked ?? false),
-          onFormalIssue: (widget.existingInvoice != null)
+          isLocked: _isLocked,
+          allowFormalIssue: invoice.isDraft && !_isLocked,
+          onFormalIssue: invoice.isDraft
               ? () async {
-                  final promoted = invoice.copyWith(isDraft: false);
+                  final promoted = invoice.copyWith(id: id, isDraft: false, isLocked: true);
                   await _invoiceRepo.saveInvoice(promoted);
                   final newPath = await generateInvoicePdf(promoted);
                   final saved = newPath != null ? promoted.copyWith(filePath: newPath) : promoted;
                   await _invoiceRepo.saveInvoice(saved);
+                  await _editLogRepo.addLog(_ensureCurrentId(), "正式発行しました");
                   if (!context.mounted) return false;
-                  Navigator.pop(context); // close preview
-                  Navigator.pop(context); // exit edit screen
-                  if (!context.mounted) return false;
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => InvoiceDetailPage(
-                        invoice: saved,
-                        isUnlocked: true,
-                      ),
-                    ),
-                  );
+                  setState(() {
+                    _isDraft = false;
+                    _isLocked = true;
+                  });
                   return true;
                 }
               : null,
-          showShare: false,
-          showEmail: false,
-          showPrint: false,
+          showShare: true,
+          showEmail: true,
+          showPrint: true,
         ),
       ),
     );
@@ -317,26 +427,58 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
-    final themeColor = Colors.white;
+    final themeColor = Theme.of(context).scaffoldBackgroundColor;
     final textColor = Colors.black87;
+
+    final docColor = _documentTypeColor(_documentType);
 
     return Scaffold(
       backgroundColor: themeColor,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        backgroundColor: docColor,
         leading: const BackButton(),
-        title: const Text("A1:伝票入力"),
+        title: Text("A1:${_documentTypeLabel(_documentType)}"),
         actions: [
+          if (_isDraft)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: _DraftBadge(),
+            ),
           IconButton(
-            icon: const Icon(Icons.undo),
-            onPressed: _canUndo ? _undo : null,
-            tooltip: "元に戻す",
+            icon: const Icon(Icons.copy),
+            tooltip: "コピーして新規",
+            onPressed: _copyAsNew,
           ),
-          IconButton(
-            icon: const Icon(Icons.redo),
-            onPressed: _canRedo ? _redo : null,
-            tooltip: "やり直す",
-          ),
+          if (_isLocked)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.lock, color: Colors.white),
+            )
+          else if (_isViewMode)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: "編集モードにする",
+              onPressed: () => setState(() => _isViewMode = false),
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.undo),
+              onPressed: _canUndo ? _undo : null,
+              tooltip: "元に戻す",
+            ),
+            IconButton(
+              icon: const Icon(Icons.redo),
+              onPressed: _canRedo ? _redo : null,
+              tooltip: "やり直す",
+            ),
+            if (!_isLocked)
+              IconButton(
+                icon: const Icon(Icons.save),
+                tooltip: "保存",
+                onPressed: _isSaving ? null : () => _saveInvoice(generatePdf: false),
+              ),
+          ],
         ],
       ),
       body: Stack(
@@ -359,9 +501,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       _buildItemsSection(fmt),
                       const SizedBox(height: 20),
                       _buildSummarySection(fmt),
-                      const SizedBox(height: 20),
-                      _buildSignatureSection(),
                       const SizedBox(height: 12),
+                      _buildEditLogsSection(),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -391,62 +533,95 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Widget _buildDateSection() {
     final fmt = DateFormat('yyyy/MM/dd');
     return GestureDetector(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: _selectedDate,
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-        );
-        if (picked != null) {
-          setState(() => _selectedDate = picked);
-          _pushHistory();
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
-            const SizedBox(width: 8),
-            Text("伝票日付: ${fmt.format(_selectedDate)}", style: const TextStyle(fontWeight: FontWeight.bold)),
-            const Spacer(),
-            const Icon(Icons.chevron_right, size: 18, color: Colors.indigo),
-          ],
+      onTap: _isViewMode
+          ? null
+          : () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                setState(() => _selectedDate = picked);
+                _pushHistory();
+              }
+            },
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
+              const SizedBox(width: 8),
+              Text("伝票日付: ${fmt.format(_selectedDate)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+              if (_showNewBadge)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text("新規", style: TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              if (_showCopyBadge)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text("複写", style: TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              if (!_isViewMode && !_isLocked) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, size: 18, color: Colors.indigo),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCustomerSection() {
-    return Card(
-      elevation: 0,
-      color: Colors.blueGrey.shade50,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
+      ),
       child: ListTile(
         leading: const Icon(Icons.business, color: Colors.blueGrey),
-        title: Text(_selectedCustomer?.formalName ?? "取引先を選択してください",
+        title: Text(
+            _selectedCustomer != null ? _customerNameWithHonorific(_selectedCustomer!) : "取引先を選択してください",
             style: TextStyle(color: _selectedCustomer == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.bold)),
-        subtitle: const Text("顧客マスターから選択"), // 修正
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () async {
-          final Customer? picked = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CustomerMasterScreen(selectionMode: true),
-              fullscreenDialog: true,
-            ),
-          );
-          if (picked != null) {
-            setState(() => _selectedCustomer = picked);
-            _pushHistory();
-          }
-        },
+        subtitle: _isViewMode ? null : const Text("顧客マスターから選択"),
+        trailing: (_isViewMode || _isLocked) ? null : const Icon(Icons.chevron_right),
+        onTap: (_isViewMode || _isLocked)
+            ? null
+            : () async {
+                final Customer? picked = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CustomerMasterScreen(selectionMode: true),
+                    fullscreenDialog: true,
+                  ),
+                );
+                if (picked != null) {
+                  setState(() => _selectedCustomer = picked);
+                  _pushHistory();
+                }
+              },
       ),
     );
   }
@@ -459,7 +634,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text("明細項目", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextButton.icon(onPressed: _addItem, icon: const Icon(Icons.add), label: const Text("追加")),
+            if (!_isViewMode && !_isLocked)
+              TextButton.icon(onPressed: _addItem, icon: const Icon(Icons.add), label: const Text("追加")),
           ],
         ),
         if (_items.isEmpty)
@@ -467,18 +643,43 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Center(child: Text("商品が追加されていません", style: TextStyle(color: Colors.grey))),
           )
+        else if (_isViewMode)
+          Column(
+            children: _items
+                .map((item) => Card(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      elevation: 0.5,
+                      child: ListTile(
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        title: Text(item.description, style: const TextStyle(fontSize: 13.5)),
+                        subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}", style: const TextStyle(fontSize: 12.5)),
+                        trailing: Text(
+                          "￥${fmt.format(item.unitPrice * item.quantity)}",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                        ),
+                      ),
+                    ))
+                .toList(),
+          )
         else
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _items.length,
-            onReorder: (oldIndex, newIndex) {
+            onReorder: (oldIndex, newIndex) async {
+              int targetIndex = newIndex;
               setState(() {
-                if (newIndex > oldIndex) newIndex -= 1;
+                if (targetIndex > oldIndex) targetIndex -= 1;
                 final item = _items.removeAt(oldIndex);
-                _items.insert(newIndex, item);
+                _items.insert(targetIndex, item);
               });
               _pushHistory();
+              final id = _ensureCurrentId();
+              final item = _items[targetIndex];
+              final msg = "明細を並べ替えました: ${item.description} を ${oldIndex + 1} → ${targetIndex + 1}";
+              await _editLogRepo.addLog(id, msg);
+              await _loadEditLogs();
             },
             buildDefaultDragHandles: false,
             itemBuilder: (context, idx) {
@@ -487,84 +688,90 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 key: ValueKey('item_${idx}_${item.description}'),
                 index: idx,
                 child: Card(
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  elevation: 0.5,
                   child: ListTile(
-                    title: Text(item.description),
-                    subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}"),
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    title: Text(item.description, style: const TextStyle(fontSize: 13.5)),
+                    subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}", style: const TextStyle(fontSize: 12.5)),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text("￥${fmt.format(item.unitPrice * item.quantity)}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 8),
+                        if (!_isViewMode && !_isLocked) ...[
+                          IconButton(
+                            icon: const Icon(Icons.remove, size: 18),
+                            onPressed: () async {
+                              if (item.quantity <= 1) return;
+                              setState(() => _items[idx] = item.copyWith(quantity: item.quantity - 1));
+                              _pushHistory();
+                              final id = _ensureCurrentId();
+                              final msg = "${item.description} の数量を ${item.quantity - 1} に変更しました";
+                              await _editLogRepo.addLog(id, msg);
+                              await _loadEditLogs();
+                            },
+                            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                            padding: EdgeInsets.zero,
+                          ),
+                          Text('${item.quantity}', style: const TextStyle(fontSize: 12.5)),
+                          IconButton(
+                            icon: const Icon(Icons.add, size: 18),
+                            onPressed: () async {
+                              setState(() => _items[idx] = item.copyWith(quantity: item.quantity + 1));
+                              _pushHistory();
+                              final id = _ensureCurrentId();
+                              final msg = "${item.description} の数量を ${item.quantity + 1} に変更しました";
+                              await _editLogRepo.addLog(id, msg);
+                              await _loadEditLogs();
+                            },
+                            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ],
+                        Text("￥${fmt.format(item.unitPrice * item.quantity)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                        const SizedBox(width: 6),
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                          onPressed: () {
+                          icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                          onPressed: () async {
+                            final removed = _items[idx];
                             setState(() => _items.removeAt(idx));
                             _pushHistory();
+                            final id = _ensureCurrentId();
+                            final msg = "商品「${removed.description}」を削除しました";
+                            await _editLogRepo.addLog(id, msg);
+                            await _loadEditLogs();
                           },
                           tooltip: "削除",
+                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                          padding: EdgeInsets.zero,
                         ),
                       ],
                     ),
-                    onTap: () {
-                      // 簡易編集ダイアログ（キーボードでせり上げない）
-                      final descCtrl = TextEditingController(text: item.description);
-                      final qtyCtrl = TextEditingController(text: item.quantity.toString());
-                      final priceCtrl = TextEditingController(text: item.unitPrice.toString());
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          final inset = MediaQuery.of(context).viewInsets.bottom;
-                          return MediaQuery.removeViewInsets(
-                            removeBottom: true,
-                            context: context,
-                            child: AlertDialog(
-                              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                              title: const Text("明細の編集"),
-                              content: SingleChildScrollView(
-                                padding: EdgeInsets.only(bottom: inset + 12),
-                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "品名 / 項目")),
-                                    TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: "数量"), keyboardType: TextInputType.number),
-                                    TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: "単価"), keyboardType: TextInputType.number),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton.icon(
-                                  icon: const Icon(Icons.search, size: 18),
-                                  label: const Text("マスター参照"),
-                                  onPressed: () async {
-                                    Navigator.pop(context); // close edit dialog before jumping
-                                    await Navigator.push(
-                                      this.context,
-                                      MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
-                                    );
-                                  },
-                                ),
-                                TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _items[idx] = item.copyWith(
-                                        description: descCtrl.text,
-                                        quantity: int.tryParse(qtyCtrl.text) ?? item.quantity,
-                                        unitPrice: int.tryParse(priceCtrl.text) ?? item.unitPrice,
-                                      );
-                                    });
-                                    _pushHistory();
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("更新"),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                    onTap: () async {
+                      if (_isViewMode || _isLocked) return;
+                      final messenger = ScaffoldMessenger.of(context);
+                      final product = await Navigator.push<Product>(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProductMasterScreen(selectionMode: true)),
                       );
+                      if (product != null) {
+                        if (!mounted) return;
+                        final prevDesc = item.description;
+                        setState(() {
+                          _items[idx] = item.copyWith(
+                            productId: product.id,
+                            description: product.name,
+                            unitPrice: product.defaultUnitPrice,
+                          );
+                        });
+                        _pushHistory();
+                        final id = _ensureCurrentId();
+                        final msg = "商品を $prevDesc から ${product.name} に変更しました";
+                        await _editLogRepo.addLog(id, msg);
+                        await _loadEditLogs();
+                        if (!mounted) return;
+                        messenger.showSnackBar(SnackBar(content: Text(msg)));
+                      }
                     },
                   ),
                 ),
@@ -580,29 +787,65 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final int tax = _includeTax ? (subtotal * _taxRate).floor() : 0;
     final int total = subtotal + tax;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.indigo,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", Colors.white70),
-          if (tax > 0) ...[
-            const Divider(color: Colors.white24),
-            _buildSummaryRow("消費税", "￥${formatter.format(tax)}", Colors.white70),
-          ],
-          const Divider(color: Colors.white24),
-          _buildSummaryRow(
-            tax > 0 ? "合計金額 (税込)" : "合計金額",
-            "￥${formatter.format(total)}",
-            Colors.white,
-            isTotal: true,
+    final useBlue = _summaryIsBlue;
+    final bgColor = useBlue ? Colors.indigo : Colors.white;
+    final borderColor = Colors.transparent;
+    final labelColor = useBlue ? Colors.white70 : Colors.black87;
+    final totalColor = useBlue ? Colors.white : Colors.black87;
+    final dividerColor = useBlue ? Colors.white24 : Colors.grey.shade300;
+
+    return GestureDetector(
+      onLongPress: () async {
+        final selected = await showModalBottomSheet<String>(
+          context: context,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          builder: (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.palette, color: Colors.indigo),
+                  title: const Text('インディゴ'),
+                  onTap: () => Navigator.pop(context, 'blue'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.palette, color: Colors.grey),
+                  title: const Text('白'),
+                  onTap: () => Navigator.pop(context, 'white'),
+                ),
+              ],
+            ),
           ),
-        ],
+        );
+        if (selected == null) return;
+        setState(() => _summaryIsBlue = selected == 'blue');
+        await _settingsRepo.setSummaryTheme(selected);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", labelColor),
+            if (tax > 0) ...[
+              Divider(color: dividerColor),
+              _buildSummaryRow("消費税", "￥${formatter.format(tax)}", labelColor),
+            ],
+            Divider(color: dividerColor),
+            _buildSummaryRow(
+              tax > 0 ? "合計金額 (税込)" : "合計金額",
+              "￥${formatter.format(total)}",
+              totalColor,
+              isTotal: true,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -634,43 +877,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildSignatureSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("手書き署名 (実験的)", style: TextStyle(fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () => setState(() => _signaturePath.clear()), child: const Text("クリア")),
-          ],
-        ),
-        Container(
-          height: 150,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                RenderBox renderBox = context.findRenderObject() as RenderBox;
-                _signaturePath.add(renderBox.globalToLocal(details.globalPosition));
-              });
-            },
-            onPanEnd: (details) => _signaturePath.add(null),
-            child: CustomPaint(
-              painter: SignaturePainter(_signaturePath),
-              size: Size.infinite,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildBottomActionBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -697,16 +903,33 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _saveInvoice(generatePdf: false),
-                    icon: const Icon(Icons.save),
-                    label: const Text("保存"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
+                  child: _isLocked
+                      ? ElevatedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.lock),
+                          label: const Text("ロック中"),
+                        )
+                      : (_isViewMode
+                          ? ElevatedButton.icon(
+                              onPressed: () => setState(() => _isViewMode = false),
+                              icon: const Icon(Icons.edit),
+                              label: const Text("編集"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                            )
+                          : ElevatedButton.icon(
+                              onPressed: () => _saveInvoice(generatePdf: false),
+                              icon: const Icon(Icons.save),
+                              label: const Text("保存"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                            )),
                 ),
               ],
             ),
@@ -726,12 +949,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
           ),
           child: TextField(
+            focusNode: _subjectFocusNode,
             controller: _subjectController,
             style: TextStyle(color: textColor),
+            readOnly: _isViewMode || _isLocked,
+            enableInteractiveSelection: !(_isViewMode || _isLocked),
             decoration: InputDecoration(
               hintText: "例：事務所改修工事 / 〇〇月分リース料",
               hintStyle: TextStyle(color: textColor.withAlpha((0.5 * 255).round())),
@@ -742,6 +969,91 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEditLogsSection() {
+    if (_currentId == null) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0.5,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x22000000),
+                  blurRadius: 10,
+                  spreadRadius: -4,
+                  offset: Offset(0, 2),
+                  blurStyle: BlurStyle.inner,
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("編集ログ (直近1週間)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 8),
+                if (_editLogs.isEmpty)
+                  const Text("編集ログはありません", style: TextStyle(color: Colors.grey, fontSize: 12))
+                else
+                  ..._editLogs.map((e) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.circle, size: 6, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    DateFormat('yyyy/MM/dd HH:mm').format(e.createdAt),
+                                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                                  ),
+                                  Text(
+                                    e.message,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DraftBadge extends StatelessWidget {
+  const _DraftBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Text(
+        '下書き',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
+      ),
     );
   }
 }
@@ -766,26 +1078,4 @@ class _InvoiceSnapshot {
     required this.isDraft,
     required this.subject,
   });
-}
-
-class SignaturePainter extends CustomPainter {
-  final List<Offset?> points;
-  SignaturePainter(this.points);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()
-      ..color = Colors.black
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 3.0;
-
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != null && points[i + 1] != null) {
-        canvas.drawLine(points[i]!, points[i + 1]!, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(SignaturePainter oldDelegate) => true;
 }

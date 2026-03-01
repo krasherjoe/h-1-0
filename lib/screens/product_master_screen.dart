@@ -6,8 +6,9 @@ import 'barcode_scanner_screen.dart';
 
 class ProductMasterScreen extends StatefulWidget {
   final bool selectionMode;
+  final bool showHidden;
 
-  const ProductMasterScreen({super.key, this.selectionMode = false});
+  const ProductMasterScreen({super.key, this.selectionMode = false, this.showHidden = false});
 
   @override
   State<ProductMasterScreen> createState() => _ProductMasterScreenState();
@@ -30,7 +31,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
 
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
-    final products = await _productRepo.getAllProducts();
+    final products = await _productRepo.getAllProducts(includeHidden: widget.showHidden);
     if (!mounted) return;
     setState(() {
       _products = products;
@@ -47,6 +48,12 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                (p.barcode?.toLowerCase().contains(query) ?? false) ||
                (p.category?.toLowerCase().contains(query) ?? false);
       }).toList();
+      if (!widget.showHidden) {
+        _filteredProducts = _filteredProducts.where((p) => !p.isHidden).toList();
+      }
+      if (widget.showHidden) {
+        _filteredProducts.sort((a, b) => b.id.compareTo(a.id));
+      }
     });
   }
 
@@ -106,16 +113,19 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 ElevatedButton(
                   onPressed: () {
                     if (nameController.text.isEmpty) return;
+                    final locked = product?.isLocked ?? false;
+                    final newId = locked ? const Uuid().v4() : (product?.id ?? const Uuid().v4());
                     Navigator.pop(
                       context,
                       Product(
-                        id: product?.id ?? const Uuid().v4(),
+                        id: newId,
                         name: nameController.text.trim(),
                         defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
                         barcode: barcodeController.text.isEmpty ? null : barcodeController.text.trim(),
                         category: categoryController.text.isEmpty ? null : categoryController.text.trim(),
                         stockQuantity: int.tryParse(stockController.text) ?? 0,
                         odooId: product?.odooId,
+                        isLocked: false,
                       ),
                     );
                   },
@@ -188,10 +198,19 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                             ],
                           ),
                         ),
-                        title: Text(p.name, style: TextStyle(fontWeight: FontWeight.bold, color: p.isLocked ? Colors.grey : Colors.black87)),
+                        title: Text(
+                          p.name + (p.isHidden ? " (非表示)" : ""),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: p.isHidden
+                                ? Colors.grey
+                                : (p.isLocked ? Colors.grey : Colors.black87),
+                          ),
+                        ),
                         subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
                         onTap: () {
                           if (widget.selectionMode) {
+                            if (p.isHidden) return; // safety: do not return hidden in selection
                             Navigator.pop(context, p);
                           } else {
                             _showDetailPane(p);
@@ -212,6 +231,16 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                                       _showEditDialog(product: p);
                                     },
                                   ),
+                                  if (!p.isHidden)
+                                    ListTile(
+                                      leading: const Icon(Icons.visibility_off),
+                                      title: const Text("非表示にする"),
+                                      onTap: () async {
+                                        Navigator.pop(ctx);
+                                        await _productRepo.setHidden(p.id, true);
+                                        if (mounted) _loadProducts();
+                                      },
+                                    ),
                                   if (!p.isLocked)
                                     ListTile(
                                       leading: const Icon(Icons.delete_outline, color: Colors.redAccent),

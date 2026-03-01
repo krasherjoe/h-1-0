@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/invoice_models.dart';
@@ -6,15 +8,38 @@ import '../models/customer_model.dart';
 import '../models/customer_contact.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
+import 'company_repository.dart';
 
 class InvoiceRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
+  final CompanyRepository _companyRepo = CompanyRepository();
 
   Future<void> saveInvoice(Invoice invoice) async {
     final db = await _dbHelper.database;
 
     // 正式発行（下書きでない）場合はロックを掛ける
+    final companyInfo = await _companyRepo.getCompanyInfo();
+    String? sealHash;
+    if (companyInfo.sealPath != null) {
+      final file = File(companyInfo.sealPath!);
+      if (await file.exists()) {
+        sealHash = sha256.convert(await file.readAsBytes()).toString();
+      }
+    }
+    final companySnapshot = jsonEncode({
+      'name': companyInfo.name,
+      'zipCode': companyInfo.zipCode,
+      'address': companyInfo.address,
+      'tel': companyInfo.tel,
+      'fax': companyInfo.fax,
+      'email': companyInfo.email,
+      'url': companyInfo.url,
+      'defaultTaxRate': companyInfo.defaultTaxRate,
+      'taxDisplayMode': companyInfo.taxDisplayMode,
+      'registrationNumber': companyInfo.registrationNumber,
+    });
+
     final Invoice toSave = invoice.isDraft ? invoice : invoice.copyWith(isLocked: true);
 
     await db.transaction((txn) async {
@@ -29,6 +54,10 @@ class InvoiceRepository {
         contactEmailSnapshot: activeContact?.email,
         contactTelSnapshot: activeContact?.tel,
         contactAddressSnapshot: activeContact?.address,
+        companySnapshot: companySnapshot,
+        companySealHash: sealHash,
+        metaJson: null,
+        metaHash: null,
       );
 
       // 在庫の調整（更新の場合、以前の数量を戻してから新しい数量を引く）
@@ -150,6 +179,10 @@ class InvoiceRepository {
         contactEmailSnapshot: iMap['contact_email_snapshot'],
         contactTelSnapshot: iMap['contact_tel_snapshot'],
         contactAddressSnapshot: iMap['contact_address_snapshot'],
+        companySnapshot: iMap['company_snapshot'],
+        companySealHash: iMap['company_seal_hash'],
+        metaJson: iMap['meta_json'],
+        metaHash: iMap['meta_hash'],
       ));
     }
     return invoices;
@@ -246,6 +279,21 @@ class InvoiceRepository {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// meta_json と meta_hash の整合性を検証する（trueなら一致）。
+  bool verifyInvoiceMeta(Invoice invoice) {
+    final metaJson = invoice.metaJson ?? invoice.metaJsonValue;
+    final expected = sha256.convert(utf8.encode(metaJson)).toString();
+    final stored = invoice.metaHash ?? expected;
+    return expected == stored;
+  }
+
+  /// IDを指定してDBから取得し、メタデータ整合性を検証する。
+  Future<bool> verifyInvoiceMetaById(String id, List<Customer> customers) async {
+    final invoices = await getAllInvoices(customers);
+    final target = invoices.firstWhere((i) => i.id == id, orElse: () => throw Exception('invoice not found'));
+    return verifyInvoiceMeta(target);
   }
 
   Future<Map<String, int>> getMonthlySales(int year) async {

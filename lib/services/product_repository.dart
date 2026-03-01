@@ -8,27 +8,38 @@ class ProductRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
 
-  Future<List<Product>> getAllProducts() async {
+  Future<List<Product>> getAllProducts({bool includeHidden = false}) async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('products', orderBy: 'name ASC');
-    
+    final String where = includeHidden ? '' : 'WHERE COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT p.*, COALESCE(mh.is_hidden, p.is_hidden, 0) AS is_hidden
+      FROM products p
+      LEFT JOIN master_hidden mh ON mh.master_type = 'product' AND mh.master_id = p.id
+      $where
+      ORDER BY ${includeHidden ? 'p.id DESC' : 'p.name ASC'}
+    ''');
+
     if (maps.isEmpty) {
       await _generateSampleProducts();
-      return getAllProducts();
+      return getAllProducts(includeHidden: includeHidden);
     }
-    
+
     return List.generate(maps.length, (i) => Product.fromMap(maps[i]));
   }
 
-  Future<List<Product>> searchProducts(String query) async {
+  Future<List<Product>> searchProducts(String query, {bool includeHidden = false}) async {
     final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'products',
-      where: 'name LIKE ? OR barcode LIKE ? OR category LIKE ?',
-      whereArgs: ['%$query%', '%$query%', '%$query%'],
-      orderBy: 'name ASC',
-      limit: 50,
-    );
+    final args = ['%$query%', '%$query%', '%$query%'];
+    final String whereHidden = includeHidden ? '' : 'AND COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT p.*, COALESCE(mh.is_hidden, p.is_hidden, 0) AS is_hidden
+      FROM products p
+      LEFT JOIN master_hidden mh ON mh.master_type = 'product' AND mh.master_id = p.id
+      WHERE (p.name LIKE ? OR p.barcode LIKE ? OR p.category LIKE ?)
+      $whereHidden
+      ORDER BY ${includeHidden ? 'p.id DESC' : 'p.name ASC'}
+      LIMIT 50
+    ''', args);
     return List.generate(maps.length, (i) => Product.fromMap(maps[i]));
   }
 
@@ -79,6 +90,25 @@ class ProductRepository {
       targetType: "PRODUCT",
       targetId: id,
       details: "商品を削除しました",
+    );
+  }
+
+  Future<void> setHidden(String id, bool hidden) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'master_hidden',
+      {
+        'master_type': 'product',
+        'master_id': id,
+        'is_hidden': hidden ? 1 : 0,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await _logRepo.logAction(
+      action: hidden ? "HIDE_PRODUCT" : "UNHIDE_PRODUCT",
+      targetType: "PRODUCT",
+      targetId: id,
+      details: hidden ? "商品を非表示にしました" : "商品を再表示しました",
     );
   }
 }
