@@ -29,13 +29,14 @@ class MothershipClient {
     }
     final clientId = await ensureClientId();
     final remaining = expiryInfo.remaining?.inSeconds;
+    final payload = <String, dynamic>{'clientId': clientId};
+    if (remaining != null) {
+      payload['remainingLifespanSeconds'] = remaining;
+    }
     await _postJson(
       uri: config.heartbeatUri,
       apiKey: config.apiKey,
-      payload: {
-        'clientId': clientId,
-        if (remaining != null) 'remainingLifespanSeconds': remaining,
-      },
+      payload: payload,
       logLabel: 'heartbeat',
     );
   }

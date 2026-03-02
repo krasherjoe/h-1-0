@@ -29,7 +29,7 @@ class MothershipServer {
     final handler = const Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_apiKeyMiddleware(config.apiKey))
-        .addHandler(router);
+        .addHandler(router.call);
 
     final server = await serve(handler, config.host, config.port);
     return server;

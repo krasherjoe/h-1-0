@@ -219,61 +219,72 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       drawer: (_useDashboardHome || !_isUnlocked)
           ? null
           : Drawer(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  DrawerHeader(
-                    decoration: const BoxDecoration(color: Colors.indigo),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text("販売アシスト1号", style: TextStyle(color: Colors.white, fontSize: 20)),
-                        SizedBox(height: 8),
-                        Text("メニュー", style: TextStyle(color: Colors.white70)),
-                      ],
+              child: SafeArea(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    DrawerHeader(
+                      decoration: const BoxDecoration(color: Colors.indigo),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("販売アシスト1号", style: TextStyle(color: Colors.white, fontSize: 20)),
+                          SizedBox(height: 8),
+                          Text("クイックメニュー", style: TextStyle(color: Colors.white70)),
+                        ],
+                      ),
                     ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.receipt_long),
-                    title: const Text("伝票マスター"),
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.people),
-                    title: const Text("顧客マスター"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMasterScreen()));
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.inventory_2),
-                    title: const Text("商品マスター"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductMasterScreen()));
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.settings),
-                    title: const Text("設定"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.admin_panel_settings),
-                    title: const Text("管理メニュー"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementScreen()));
-                    },
-                  ),
-                ],
+                    _drawerHeading("アクション"),
+                    ListTile(
+                      leading: const Icon(Icons.add_circle_outline, color: Colors.indigo),
+                      title: const Text("新しい伝票を作成"),
+                      subtitle: const Text("ドキュメント種別を選択"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showCreateTypeMenu();
+                      },
+                    ),
+                    _drawerHeading("マスター"),
+                    ListTile(
+                      leading: const Icon(Icons.receipt_long),
+                      title: const Text("伝票マスター"),
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.people),
+                      title: const Text("顧客マスター"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMasterScreen()));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.inventory_2),
+                      title: const Text("商品マスター"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductMasterScreen()));
+                      },
+                    ),
+                    _drawerHeading("システム"),
+                    ListTile(
+                      leading: const Icon(Icons.settings),
+                      title: const Text("設定"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.admin_panel_settings),
+                      title: const Text("管理メニュー"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementScreen()));
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
       appBar: AppBar(
@@ -386,11 +397,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           children: [
             if (!_useDashboardHome)
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: SlideToUnlock(
                   isLocked: !_isUnlocked,
+                  lockedText: "A2をロック解除",
+                  unlockedText: "解除済",
                   onUnlocked: _toggleUnlock,
-                  text: "スライドでロック解除",
                 ),
               ),
             Expanded(
@@ -436,11 +448,18 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         onPressed: _isUnlocked
             ? () => _showCreateTypeMenu()
             : _requireUnlock,
-        label: const Text("新規伝票作成"),
+        label: const Text("新しい伝票"),
         icon: const Icon(Icons.add),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
+    );
+  }
+
+  Widget _drawerHeading(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, letterSpacing: 0.5)),
     );
   }
 

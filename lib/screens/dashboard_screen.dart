@@ -219,11 +219,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           )
                         : SlideToUnlock(
                             isLocked: !_historyUnlocked,
+                            lockedText: 'スライドでロック解除 (A2)',
+                            unlockedText: 'A2解除済',
                             onUnlocked: () async {
                               setState(() => _historyUnlocked = true);
                               await _repo.setDashboardHistoryUnlocked(true);
                             },
-                            text: 'スライドでロック解除 (A2)',
                           ),
                   ),
                   if (_statusEnabled)

@@ -180,7 +180,7 @@ class _MessageBubble extends StatelessWidget {
               borderRadius: borderRadius,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -196,7 +196,7 @@ class _MessageBubble extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   timeText,
-                  style: theme.textTheme.labelSmall?.copyWith(color: textColor.withOpacity(0.8), fontSize: 11),
+                  style: theme.textTheme.labelSmall?.copyWith(color: textColor.withValues(alpha: 0.8), fontSize: 11),
                 ),
               ],
             ),

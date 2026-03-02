@@ -9,11 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:h_1/main.dart';
+import 'package:h_1/utils/build_expiry_info.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    final expiryInfo = BuildExpiryInfo.fromEnvironment();
+    await tester.pumpWidget(MyApp(expiryInfo: expiryInfo));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
