@@ -17,6 +17,8 @@ class AppSettingsRepository {
     DashboardMenuItem(id: 'c1', title: '顧客マスター', route: 'customer_master', iconName: 'customer'),
     DashboardMenuItem(id: 'p1', title: '商品マスター', route: 'product_master', iconName: 'product'),
     DashboardMenuItem(id: 'm1', title: 'マスター管理', route: 'master_hub', iconName: 'master'),
+    DashboardMenuItem(id: 'p2', title: '仕入伝票', route: 'purchase_entries', iconName: 'shopping_cart'),
+    DashboardMenuItem(id: 'p3', title: '支払管理', route: 'purchase_receipts', iconName: 'payments'),
     DashboardMenuItem(id: 'r1', title: '売上・資金管理レポート', route: 'sales_report', iconName: 'analytics'),
     DashboardMenuItem(id: 's1', title: '設定', route: 'settings', iconName: 'settings'),
   ];
