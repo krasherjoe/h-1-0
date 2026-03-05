@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
+import '../config/app_config.dart';
+import '../constants/dashboard_icons.dart';
 import 'invoice_history_screen.dart';
 import 'invoice_input_screen.dart';
 import 'invoice_detail_page.dart';
@@ -12,7 +14,6 @@ import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
 import '../widgets/slide_to_unlock.dart';
-import '../config/app_config.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -39,13 +40,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final statusEnabled = await _repo.getDashboardStatusEnabled();
     final statusText = await _repo.getDashboardStatusText();
     final rawMenu = await _repo.getDashboardMenu();
-    final enabledRoutes = AppConfig.enabledRoutes;
-    final menu = rawMenu.where((m) => enabledRoutes.contains(m.route)).toList();
+    final isDebug = AppConfig.enableDebugFeatures;
+    final normalizedMenu = isDebug ? rawMenu.map((e) => e.copyWith(enabled: true)).toList() : rawMenu;
+    final visibleMenu = isDebug ? normalizedMenu : normalizedMenu.where((item) => item.enabled).toList();
     final unlocked = await _repo.getDashboardHistoryUnlocked();
     setState(() {
       _statusEnabled = statusEnabled;
       _statusText = statusText;
-      _menu = menu;
+      _menu = visibleMenu;
       _loading = false;
       _historyUnlocked = unlocked;
     });
@@ -53,11 +55,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _navigate(DashboardMenuItem item) async {
     Widget? target;
-    final enabledRoutes = AppConfig.enabledRoutes;
-    if (!enabledRoutes.contains(item.route)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('この機能は現在ご利用いただけません')));
-      return;
-    }
     switch (item.route) {
       case 'invoice_history':
         if (!_historyUnlocked) {
@@ -153,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   IconData _iconForName(String name) {
-    return kIconsMap[name] ?? Icons.apps;
+    return kDashboardIcons[name] ?? Icons.apps;
   }
 
   String _routeLabel(String route) {
@@ -206,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               const Icon(Icons.lock_open, color: Colors.green),
                               const SizedBox(width: 8),
-                              const Expanded(child: Text('A2ロック解除済')),
+                              const Expanded(child: Text('A2 ロック解除済')),
                               OutlinedButton.icon(
                                 onPressed: () async {
                                   setState(() => _historyUnlocked = false);
@@ -220,7 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         : SlideToUnlock(
                             isLocked: !_historyUnlocked,
                             lockedText: 'スライドでロック解除 (A2)',
-                            unlockedText: 'A2解除済',
+                            unlockedText: 'A2 解除済',
                             onUnlocked: () async {
                               setState(() => _historyUnlocked = true);
                               await _repo.setDashboardHistoryUnlocked(true);
@@ -262,21 +259,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
-
-// fallback icon map for dashboard
-const Map<String, IconData> kIconsMap = {
-  'list_alt': Icons.list_alt,
-  'edit_note': Icons.edit_note,
-  'history': Icons.history,
-  'settings': Icons.settings,
-  'invoice': Icons.receipt_long,
-  'customer': Icons.people,
-  'product': Icons.inventory_2,
-  'menu': Icons.menu,
-  'analytics': Icons.analytics,
-  'map': Icons.map,
-  'master': Icons.storage,
-  'qr': Icons.qr_code,
-  'camera': Icons.camera_alt,
-  'contact': Icons.contact_mail,
-};
