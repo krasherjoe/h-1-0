@@ -434,7 +434,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     return Scaffold(
       backgroundColor: themeColor,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: docColor,
         leading: const BackButton(),
