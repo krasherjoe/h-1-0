@@ -2,6 +2,7 @@ class Product {
   final String id;
   final String name;
   final int defaultUnitPrice;
+  final int wholesalePrice;
   final String? barcode;
   final String? category;
   final int stockQuantity; // 追加
@@ -13,6 +14,7 @@ class Product {
     required this.id,
     required this.name,
     this.defaultUnitPrice = 0,
+    this.wholesalePrice = 0,
     this.barcode,
     this.category,
     this.stockQuantity = 0, // 追加
@@ -26,6 +28,7 @@ class Product {
       'id': id,
       'name': name,
       'default_unit_price': defaultUnitPrice,
+      'wholesale_price': wholesalePrice,
       'barcode': barcode,
       'category': category,
       'stock_quantity': stockQuantity, // 追加
@@ -40,6 +43,7 @@ class Product {
       id: map['id'],
       name: map['name'],
       defaultUnitPrice: map['default_unit_price'] ?? 0,
+      wholesalePrice: map['wholesale_price'] ?? 0,
       barcode: map['barcode'],
       category: map['category'],
       stockQuantity: map['stock_quantity'] ?? 0, // 追加
@@ -53,6 +57,7 @@ class Product {
     String? id,
     String? name,
     int? defaultUnitPrice,
+    int? wholesalePrice,
     String? barcode,
     String? category,
     int? stockQuantity,
@@ -64,6 +69,7 @@ class Product {
       id: id ?? this.id,
       name: name ?? this.name,
       defaultUnitPrice: defaultUnitPrice ?? this.defaultUnitPrice,
+      wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       barcode: barcode ?? this.barcode,
       category: category ?? this.category,
       stockQuantity: stockQuantity ?? this.stockQuantity,
