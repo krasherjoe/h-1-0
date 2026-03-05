@@ -289,7 +289,6 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
       context: context,
       isScrollControlled: true,
       builder: (_) => ProductPickerModal(
-        onItemSelected: (_) {},
         onProductSelected: (product) {
           setState(() => _lines[index].applyProduct(product));
         },

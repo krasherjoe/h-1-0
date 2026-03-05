@@ -18,17 +18,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _repo = AppSettingsRepository();
   String _theme = 'system';
   String _summaryTheme = 'white';
-  String _statusText = '工事中';
+  final TextEditingController _statusTextController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       final theme = await _repo.getTheme();
-      setState(() => _theme = theme ?? 'system');
+      setState(() => _theme = theme);
       final summaryTheme = await _repo.getSummaryTheme();
-      setState(() => _summaryTheme = summaryTheme ?? 'white');
+      setState(() => _summaryTheme = summaryTheme);
+      final statusText = await _repo.getDashboardStatusText();
+      setState(() => _statusTextController.text = statusText);
     });
+  }
+
+  @override
+  void dispose() {
+    _statusTextController.dispose();
+    super.dispose();
   }
 
   @override
@@ -115,13 +123,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextField(
+                  controller: _statusTextController,
                   decoration: const InputDecoration(
                     labelText: 'ステータステキスト（例：営業中、休業中、工事中）',
                     border: OutlineInputBorder(),
                   ),
                   onChanged: (v) async {
                     await _repo.setDashboardStatusText(v);
-                    setState(() => _statusText = v);
                   },
                 ),
               ],
