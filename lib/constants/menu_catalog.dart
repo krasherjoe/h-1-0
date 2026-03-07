@@ -116,7 +116,7 @@ const List<MenuDefinition> kMenuDefinitions = [
   MenuDefinition(
     id: 'a1',
     title: '売上入力',
-    route: 'invoice_input',
+    route: 'sales_entry',
     category: '02. 販売管理',
     iconName: 'edit_note',
     description: 'レジモードの主戦場となる売上入力',
@@ -136,6 +136,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     category: '02. 販売管理',
     iconName: 'picture_as_pdf',
     description: '請求書PDF生成と送付',
+  ),
+  MenuDefinition(
+    id: 'doc1',
+    title: '伝票入力',
+    route: 'invoice_input',
+    category: '02. 販売管理',
+    iconName: 'description',
+    description: '見積・納品・請求・領収の汎用伝票入力',
   ),
   MenuDefinition(
     id: 'a2',
