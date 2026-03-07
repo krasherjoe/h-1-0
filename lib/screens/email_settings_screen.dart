@@ -169,16 +169,29 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
         return;
       }
       final email = account.email;
-      final entries = _smtpBccCtrl.text
+      final controller = _smtpBccCtrl;
+      final currentText = controller.text;
+      final entries = currentText
           .split(',')
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
           .toList();
-      if (!entries.contains(email)) {
-        entries.add(email);
+      if (entries.contains(email)) {
+        _showSnackbar('既に $email が含まれています');
+        return;
       }
+      String newText;
+      if (currentText.trim().isEmpty) {
+        newText = email;
+      } else {
+        final needsComma = !currentText.trim().endsWith(',');
+        newText = needsComma ? '$currentText, $email' : '$currentText$email';
+      }
+      controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
       setState(() {
-        _smtpBccCtrl.text = entries.join(', ');
         _selectedDeviceBcc = email;
       });
       _showSnackbar('BCCに $email を追加しました');
