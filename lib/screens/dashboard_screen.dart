@@ -16,6 +16,9 @@ import 'menu_placeholder_screen.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
 import 'invoice_issue_screen.dart';
+import 'support_desk_screen.dart';
+import 'warehouse_dashboard_screen.dart';
+import 'staff_management_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -126,6 +129,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const StocktakeInputScreen();
       case 'stock_transfer':
         return const StockTransferScreen();
+      case 'support_desk':
+        return const SupportDeskScreen();
+      case 'warehouse_dashboard':
+        return const WarehouseDashboardScreen();
+      case 'staff_management':
+        return const StaffManagementScreen();
       default:
         return MenuPlaceholderScreen(item: item);
     }

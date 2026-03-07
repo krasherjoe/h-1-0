@@ -1,6 +1,6 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-03-07 17:10
+最終更新: 2026-03-07 19:00
 
 ## 🔴 緊急・高優先度
 
@@ -13,7 +13,6 @@
 ## 🟡 中優先度
 
 ### 未着手
-- [ ] 請求書発行機能実装
 
 ## 🟢 低優先度
 
@@ -22,6 +21,15 @@
 - [ ] 多言語対応検討
 
 ## ✅ 完了 (直近7日)
+
+- [x] SUP/WH/STテンプレート画面実装 (2026-03-07)
+  - 関連: `lib/screens/support_desk_screen.dart`, `lib/screens/warehouse_dashboard_screen.dart`, `lib/screens/staff_management_screen.dart`, `lib/constants/menu_catalog.dart`, `lib/screens/dashboard_screen.dart`
+  - 内容:
+    - SUP:サポート窓口管理画面（チケット管理テンプレート）を新規作成
+    - WH:倉庫ダッシュボード画面（在庫状況可視化テンプレート）を新規作成
+    - ST:スタッフ管理画面（スタッフ・権限管理テンプレート）を新規作成
+    - メニューカタログに3画面を登録、ダッシュボード連携完了
+    - `flutter test` で動作確認
 
 - [x] 請求書発行機能実装 (2026-03-07)
   - 関連: `lib/screens/invoice_issue_screen.dart`, `lib/screens/dashboard_screen.dart`

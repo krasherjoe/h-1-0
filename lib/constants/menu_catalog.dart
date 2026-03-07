@@ -273,6 +273,30 @@ const List<MenuDefinition> kMenuDefinitions = [
     iconName: 'article',
     description: '操作ログや監査ログの閲覧',
   ),
+  MenuDefinition(
+    id: 'sup',
+    title: 'サポート窓口管理',
+    route: 'support_desk',
+    category: '06. システム設定',
+    iconName: 'support_agent',
+    description: '顧客サポートチケットの管理と対応',
+  ),
+  MenuDefinition(
+    id: 'wh',
+    title: '倉庫ダッシュボード',
+    route: 'warehouse_dashboard',
+    category: '04. 在庫管理',
+    iconName: 'warehouse',
+    description: '倉庫別在庫状況の可視化と分析',
+  ),
+  MenuDefinition(
+    id: 'st',
+    title: 'スタッフ管理',
+    route: 'staff_management',
+    category: '06. システム設定',
+    iconName: 'badge',
+    description: 'スタッフ情報と権限の管理',
+  ),
 ];
 
 final Map<String, MenuDefinition> kMenuDefinitionMap = {for (final def in kMenuDefinitions) def.id: def};
