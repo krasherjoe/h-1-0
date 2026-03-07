@@ -275,6 +275,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
+                    const Icon(Icons.mail, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('メール設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('SM:メール設定'),
+                  subtitle: const Text('SMTP/BCC設定、Gmailアカウント選択'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EmailSettingsScreen())),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     const Icon(Icons.sync, color: Colors.indigo),
                     const SizedBox(width: 8),
                     const Expanded(child: Text('同期設定', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -347,32 +375,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const MothershipDiscoverySettingsScreen()),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.mail, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    const Expanded(child: Text('E-mail', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('設定'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EmailSettingsScreen())),
                 ),
               ],
             ),
