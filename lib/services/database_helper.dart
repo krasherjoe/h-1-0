@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 28;
+  static const _databaseVersion = 30;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -228,6 +228,52 @@ class DatabaseHelper {
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_mothership_locations_host ON mothership_locations(host)');
     }
+    if (oldVersion < 29) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS suppliers (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          contact_person TEXT,
+          email TEXT,
+          tel TEXT,
+          address TEXT,
+          closing_day INTEGER,
+          payment_site_days INTEGER DEFAULT 30,
+          notes TEXT,
+          is_hidden INTEGER DEFAULT 0,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name)');
+    }
+    if (oldVersion < 30) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS warehouses (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          location TEXT,
+          notes TEXT,
+          is_hidden INTEGER DEFAULT 0,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_warehouses_name ON warehouses(name)');
+      
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS staff (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT,
+          tel TEXT,
+          department TEXT,
+          position TEXT,
+          notes TEXT,
+          is_hidden INTEGER DEFAULT 0,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_staff_name ON staff(name)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -421,6 +467,50 @@ class DatabaseHelper {
       )
     ''');
     await db.execute('CREATE INDEX idx_mothership_locations_host ON mothership_locations(host)');
+
+    await db.execute('''
+      CREATE TABLE suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_person TEXT,
+        email TEXT,
+        tel TEXT,
+        address TEXT,
+        closing_day INTEGER,
+        payment_site_days INTEGER DEFAULT 30,
+        notes TEXT,
+        is_hidden INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_suppliers_name ON suppliers(name)');
+
+    await db.execute('''
+      CREATE TABLE warehouses (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        location TEXT,
+        notes TEXT,
+        is_hidden INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_warehouses_name ON warehouses(name)');
+
+    await db.execute('''
+      CREATE TABLE staff (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT,
+        tel TEXT,
+        department TEXT,
+        position TEXT,
+        notes TEXT,
+        is_hidden INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_staff_name ON staff(name)');
   }
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
