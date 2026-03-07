@@ -1,6 +1,6 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-03-07 12:54
+最終更新: 2026-03-07 13:30
 
 ## 🔴 緊急・高優先度
 
@@ -110,3 +110,71 @@
 ### セッション終了時
 1. 「進行中」タスクに現在の状況を記録
 2. 次のセッションへの引き継ぎ事項をメモ
+
+---
+
+## 🔍 実装時のクイックリファレンス
+
+### よく使うファイルパス
+- DB管理: `lib/services/database_helper.dart`
+- 設定保存: `lib/services/app_settings_repository.dart`
+- PDF生成: `lib/services/pdf_generator.dart`
+- メール送信: `lib/services/email_sender.dart`
+- Google連携: `lib/services/google_account_service.dart`
+- Driveバックアップ: `lib/services/drive_backup_service.dart`
+
+### 技術スタック詳細
+- **Flutter SDK**: 3.x
+- **言語**: Dart
+- **データベース**: SQLite (`sqflite` パッケージ)
+- **状態管理**: StatefulWidget + setState
+- **PDF**: `pdf` + `printing` パッケージ
+- **メール**: `mailer` (SMTP) + `flutter_email_sender` (デバイス)
+- **Google API**: `google_sign_in` + `googleapis`
+
+### データベース情報
+- **ファイル名**: `gemi_invoice.db`
+- **主要テーブル**: customers, products, invoices, suppliers, warehouses
+- **バックアップ先**: Google Drive (`SalesAssist Backups/<clientId>/`)
+
+### 設定キー一覧（SharedPreferences）
+- `smtp_host` - SMTPホスト名
+- `smtp_port` - SMTPポート番号
+- `smtp_user` - SMTPユーザー名
+- `smtp_bcc` - BCC（カンマ区切り）
+- `mail_send_method` - 送信方法（smtp/device_mailer）
+- `last_backup_time` - 最終バックアップ日時
+- `auto_backup_enabled` - 自動バックアップON/OFF
+
+### 画面ID割り当て済み
+- S1:設定, SM:メール設定
+- P1:商品マスター, C1:得意先マスター, SI:仕入先マスター
+- WH:倉庫マスター, ST:担当者マスター
+- ES:見積入力, OR:受注入力
+- IQ:在庫照会, CS:得意先別売上推移, PA:商品別粗利分析
+- M1:マスター管理, D2:ダッシュボード設定, CH:母艦チャット
+
+### デバッグコマンド
+```bash
+# コード検証
+flutter analyze --no-fatal-infos
+
+# アプリ再ビルド
+flutter build apk --release
+
+# 開発サーバー起動（ホットリロード）
+flutter run
+
+# DBリセット（開発時）
+adb uninstall com.example.h_1
+```
+
+---
+
+## 📚 関連ドキュメント
+
+- **README.md**: プロジェクト全体概要、AI作業フロー、クイックスタート
+- **TODO.md**: このファイル（タスク管理）
+- **.windsurf/plans/**: 実装計画ファイル（長期タスク用）
+
+---

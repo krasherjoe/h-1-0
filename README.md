@@ -105,6 +105,224 @@ Add mothership GPS discovery feature
 - 非ホーム画面: 必ず戻るボタンを表示
 - ホーム画面: メニューボタンを表示（戻るボタンの代わり）
 
+
+## 🤖 AI向けクイックスタート
+
+### 📋 セッション開始チェックリスト
+
+```
+□ README.md（このファイル）を読んでプロジェクト概要を把握
+□ TODO.mdを開いて現在のタスク状況を確認
+□ 🔴緊急タスクがないか確認
+□ 進行中タスクの引き継ぎ事項を確認
+□ ユーザーの指示を待つ
+```
+
+### 🗺️ プロジェクト構造クイックマップ
+
+#### **主要ディレクトリ**
+```
+lib/
+├── screens/          # UI画面（画面IDルール: XX:画面名）
+├── services/         # ビジネスロジック・リポジトリ
+├── models/           # データモデル
+├── widgets/          # 再利用可能ウィジェット
+└── utils/            # ユーティリティ
+```
+
+#### **重要ファイル一覧**
+
+**📱 エントリーポイント**
+- `lib/main.dart` - アプリ起動、テーマ、自動バックアップチェック
+
+**🗄️ データ管理**
+- `lib/services/database_helper.dart` - SQLite DB初期化・スキーマ管理
+- `lib/services/app_settings_repository.dart` - アプリ設定の永続化
+
+**📄 帳票・PDF**
+- `lib/services/pdf_generator.dart` - PDF生成（見積・納品・請求・領収書）
+- `lib/widgets/invoice_pdf_preview_page.dart` - PDF プレビュー・送信
+
+**📧 メール送信**
+- `lib/screens/email_settings_screen.dart` - SMTP/BCC設定UI
+- `lib/services/email_sender.dart` - メール送信ロジック
+
+**☁️ Google連携**
+- `lib/services/google_account_service.dart` - Google Sign-In管理
+- `lib/services/drive_backup_service.dart` - Google Driveバックアップ
+- `lib/services/auto_backup_service.dart` - 自動バックアップ・リストア
+
+**⚙️ 設定画面**
+- `lib/screens/settings_screen.dart` - S1:設定（Google連携、バックアップ、同期）
+- `lib/screens/dashboard_screen.dart` - ダッシュボード
+
+### 🎯 よくある実装パターン
+
+#### **1. 新しい画面を追加する場合**
+```dart
+// 画面IDは2文字必須（例: NW:新機能）
+class NewFeatureScreen extends StatefulWidget {
+  const NewFeatureScreen({super.key});
+  
+  @override
+  State<NewFeatureScreen> createState() => _NewFeatureScreenState();
+}
+
+class _NewFeatureScreenState extends State<NewFeatureScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('NW:新機能'), // ← 画面ID必須
+      ),
+      body: // ...
+    );
+  }
+}
+```
+
+#### **2. データベース操作（リポジトリパターン）**
+```dart
+// services/配下にリポジトリクラスを作成
+class MyRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+  
+  Future<List<MyModel>> getAll() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('my_table');
+    return rows.map((r) => MyModel.fromMap(r)).toList();
+  }
+  
+  Future<void> save(MyModel model) async {
+    final db = await _dbHelper.database;
+    await db.insert('my_table', model.toMap());
+  }
+}
+```
+
+#### **3. SharedPreferencesで設定保存**
+```dart
+// AppSettingsRepository を使用
+final repo = AppSettingsRepository();
+await repo.setString('my_key', 'value');
+final value = await repo.getString('my_key');
+```
+
+#### **4. Google Drive操作**
+```dart
+// DriveBackupService を使用
+final driveService = DriveBackupService();
+final dbFile = File('/path/to/gemi_invoice.db');
+await driveService.uploadDatabaseSnapshot(dbFile);
+```
+
+### 🔧 コーディング規約
+
+#### **命名規則**
+- クラス: `PascalCase` (例: `CustomerRepository`)
+- 変数・メソッド: `camelCase` (例: `getUserName`)
+- プライベートメンバー: `_leadingUnderscore` (例: `_isLoading`)
+- 定数: `kPrefixCamelCase` (例: `kMailSendMethodSmtp`)
+
+#### **画面ID一覧（既存）**
+- `S1:設定` - 設定画面
+- `SM:メール設定` - メール設定
+- `P1:商品マスター` - 商品管理
+- `C1:得意先マスター` - 顧客管理
+- `M1:マスター管理` - マスター管理ハブ
+- `D2:ダッシュボード設定` - ダッシュボード設定
+
+**新規画面追加時は既存IDと重複しないよう注意**
+
+#### **エラーハンドリング**
+```dart
+try {
+  // 処理
+} catch (e) {
+  if (mounted) {  // ← Widget破棄後のsetState防止
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('エラー: $e')),
+    );
+  }
+}
+```
+
+### 🐛 デバッグ・トラブルシューティング
+
+#### **flutter analyze でエラーが出る場合**
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze --no-fatal-infos
+```
+
+#### **よくあるエラーと対処法**
+
+**1. `use_build_context_synchronously`**
+```dart
+// NG: async後に直接context使用
+await someAsyncFunction();
+Navigator.push(context, ...);  // ← 警告
+
+// OK: mounted チェック
+await someAsyncFunction();
+if (!mounted) return;
+Navigator.push(context, ...);
+```
+
+**2. `duplicate_definition`**
+- 変数・メソッドの重複宣言
+- インポートの重複確認
+
+**3. `unused_field` / `unused_element`**
+- 未使用の変数・メソッドを削除
+- または実装を完成させる
+
+#### **データベースリセット（開発時のみ）**
+```bash
+# アプリをアンインストールしてDBクリア
+adb uninstall com.example.h_1
+```
+
+### 📝 Git運用
+
+#### **コミットメッセージテンプレート**
+```
+[1行目] 変更内容の要約（50文字以内、日本語）
+
+[3行目以降] 詳細説明
+- 変更点1
+- 変更点2
+- 変更点3
+```
+
+#### **例**
+```
+Google Drive自動バックアップ機能実装
+
+- AutoBackupService新規作成
+- 起動時24時間経過チェック
+- 初回起動時リストア提案ダイアログ
+```
+
+### ⚡ 実装時の注意点
+
+1. **非同期処理は起動をブロックしない**
+   - `main()` での重い処理は `Future.microtask()` で非同期化
+
+2. **データベース操作は必ずtry-catch**
+   - ユーザーにエラーを通知
+
+3. **画面遷移時はマウント状態確認**
+   - `if (!mounted) return;`
+
+4. **Google API呼び出しは認証チェック必須**
+   - `GoogleAccountService.instance.currentAccount`
+
+5. **ファイルパスは絶対パスで記述**
+   - TODO.md、コメント、ドキュメント全て
+
+---
+
 ---
 
 ---
