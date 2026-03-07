@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/invoice_models.dart';
+import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
 
 class CustomerSalesTrendScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class CustomerSalesTrendScreen extends StatefulWidget {
 
 class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
   final InvoiceRepository _repo = InvoiceRepository();
+  final CustomerRepository _customerRepo = CustomerRepository();
   List<_CustomerSalesSummary> _summary = [];
   bool _isLoading = true;
   String _period = 'month';
@@ -24,11 +26,12 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final invoices = await _repo.getAllInvoices();
+    final customers = await _customerRepo.getAllCustomers();
+    final invoices = await _repo.getAllInvoices(customers);
     
     final now = DateTime.now();
     final filtered = invoices.where((inv) {
-      if (inv.documentType != 'invoice') return false;
+      if (inv.documentType != DocumentType.invoice) return false;
       final diff = now.difference(inv.date).inDays;
       switch (_period) {
         case 'week':
@@ -46,17 +49,17 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
 
     final Map<String, _CustomerSalesSummary> map = {};
     for (final inv in filtered) {
-      final key = inv.customerId;
+      final key = inv.customer.id;
       if (!map.containsKey(key)) {
         map[key] = _CustomerSalesSummary(
-          customerId: inv.customerId,
-          customerName: inv.customerName,
+          customerId: inv.customer.id,
+          customerName: inv.customer.displayName,
           totalAmount: 0,
           count: 0,
         );
       }
       map[key] = map[key]!.copyWith(
-        totalAmount: map[key]!.totalAmount + (inv.totalAmount ?? 0),
+        totalAmount: map[key]!.totalAmount + inv.totalAmount,
         count: map[key]!.count + 1,
       );
     }

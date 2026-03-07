@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/invoice_models.dart';
+import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
 import 'customer_master_screen.dart';
 
@@ -25,10 +26,11 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
 
   Future<void> _loadEstimates() async {
     setState(() => _isLoading = true);
-    final allInvoices = await _repo.getAllInvoices();
+    final customers = await CustomerRepository().getAllCustomers();
+    final allInvoices = await _repo.getAllInvoices(customers);
     if (!mounted) return;
     setState(() {
-      _estimates = allInvoices.where((inv) => inv.documentType == 'estimate').toList();
+      _estimates = allInvoices.where((inv) => inv.documentType == DocumentType.estimation).toList();
       _estimates.sort((a, b) => b.date.compareTo(a.date));
       _isLoading = false;
     });
@@ -46,11 +48,10 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
 
     final newEstimate = Invoice(
       id: const Uuid().v4(),
-      customerId: customer.id,
-      customerName: customer.formalName,
+      customer: customer,
       date: DateTime.now(),
       items: [],
-      documentType: 'estimate',
+      documentType: DocumentType.estimation,
       isDraft: true,
     );
 
@@ -106,12 +107,12 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                           ),
                         ),
                         title: Text(
-                          est.customerName,
+                          est.customer.displayName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
                           '${est.date.year}/${est.date.month}/${est.date.day} - ${est.isDraft ? '下書き' : '確定'}\n'
-                          '合計: ¥${est.totalAmount?.toString() ?? '0'}',
+                          '合計: ¥${est.totalAmount}',
                         ),
                         isThreeLine: true,
                         trailing: const Icon(Icons.chevron_right),

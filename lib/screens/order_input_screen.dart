@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/invoice_models.dart';
+import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
 import 'customer_master_screen.dart';
 
@@ -25,10 +26,11 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
 
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
-    final allInvoices = await _repo.getAllInvoices();
+    final customers = await CustomerRepository().getAllCustomers();
+    final allInvoices = await _repo.getAllInvoices(customers);
     if (!mounted) return;
     setState(() {
-      _orders = allInvoices.where((inv) => inv.documentType == 'order').toList();
+      _orders = allInvoices.where((inv) => inv.documentType == DocumentType.delivery).toList();
       _orders.sort((a, b) => b.date.compareTo(a.date));
       _isLoading = false;
     });
@@ -46,11 +48,10 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
 
     final newOrder = Invoice(
       id: const Uuid().v4(),
-      customerId: customer.id,
-      customerName: customer.formalName,
+      customer: customer,
       date: DateTime.now(),
       items: [],
-      documentType: 'order',
+      documentType: DocumentType.delivery,
       isDraft: true,
     );
 
@@ -106,12 +107,12 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                           ),
                         ),
                         title: Text(
-                          order.customerName,
+                          order.customer.displayName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
                           '${order.date.year}/${order.date.month}/${order.date.day} - ${order.isDraft ? '下書き' : '確定'}\n'
-                          '合計: ¥${order.totalAmount?.toString() ?? '0'}',
+                          '合計: ¥${order.totalAmount}',
                         ),
                         isThreeLine: true,
                         trailing: const Icon(Icons.chevron_right),

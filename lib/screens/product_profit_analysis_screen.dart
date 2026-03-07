@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/invoice_models.dart';
+import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
 
 class ProductProfitAnalysisScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class ProductProfitAnalysisScreen extends StatefulWidget {
 
 class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScreen> {
   final InvoiceRepository _repo = InvoiceRepository();
+  final CustomerRepository _customerRepo = CustomerRepository();
   List<_ProductProfitSummary> _summary = [];
   bool _isLoading = true;
   String _period = 'month';
@@ -24,11 +26,12 @@ class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScree
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final invoices = await _repo.getAllInvoices();
+    final customers = await _customerRepo.getAllCustomers();
+    final invoices = await _repo.getAllInvoices(customers);
     
     final now = DateTime.now();
     final filtered = invoices.where((inv) {
-      if (inv.documentType != 'invoice') return false;
+      if (inv.documentType != DocumentType.invoice) return false;
       final diff = now.difference(inv.date).inDays;
       switch (_period) {
         case 'week':
