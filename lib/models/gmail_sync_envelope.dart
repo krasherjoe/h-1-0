@@ -51,7 +51,6 @@ class GmailSyncEnvelope {
       case GmailEnvelopeEncoding.base64Only:
         return base64Url.encode(utf8.encode(jsonStr));
       case GmailEnvelopeEncoding.gzipBase64:
-      default:
         final compressed = gzip.encode(utf8.encode(jsonStr));
         return base64Url.encode(compressed);
     }
@@ -67,7 +66,6 @@ class GmailSyncEnvelope {
         jsonStr = utf8.decode(base64Url.decode(encoded));
         break;
       case GmailEnvelopeEncoding.gzipBase64:
-      default:
         Uint8List decodedBytes;
         try {
           decodedBytes = base64Url.decode(encoded);

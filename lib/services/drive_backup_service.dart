@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:path/path.dart' as p;
 
-import 'app_settings_repository.dart';
 import 'google_api_service_base.dart';
 import 'mothership_client.dart';
 
@@ -11,14 +10,11 @@ import 'mothership_client.dart';
 /// SQLite やログファイルをアップロードするサービス。
 class DriveBackupService extends GoogleApiServiceBase {
   DriveBackupService({
-    AppSettingsRepository? settingsRepository,
     MothershipClient? nodeIdProvider,
-  })  : _settingsRepository = settingsRepository ?? AppSettingsRepository(),
-        _nodeIdProvider = nodeIdProvider ?? MothershipClient();
+  })  : _nodeIdProvider = nodeIdProvider ?? MothershipClient();
 
   static const String _rootFolderName = 'SalesAssist Backups';
 
-  final AppSettingsRepository _settingsRepository;
   final MothershipClient _nodeIdProvider;
 
   Future<void> uploadDatabaseSnapshot(File databaseFile, {String? description}) async {
@@ -98,7 +94,6 @@ class DriveBackupService extends GoogleApiServiceBase {
     final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(':', '-');
     final ext = p.extension(base);
     final nameWithoutExt = base.replaceAll(ext, '');
-    final label = _settingsRepository.getGmailSyncLabelName();
     return '${nameWithoutExt}_$timestamp$ext';
   }
 }

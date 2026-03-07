@@ -218,9 +218,9 @@ class GmailSyncClient extends GoogleApiServiceBase {
       (label) => label.name == labelName,
       orElse: () => gmail.Label(),
     );
-    if (existing != null && existing.labelId != null && existing.labelId!.isNotEmpty) {
-      await _settingsRepository.setGmailSyncLabelId(existing.labelId!);
-      return existing.labelId!;
+    if (existing != null && existing.id != null && existing.id!.isNotEmpty) {
+      await _settingsRepository.setGmailSyncLabelId(existing.id!);
+      return existing.id!;
     }
     final created = await api.users.labels.create(
       gmail.Label()
@@ -229,7 +229,7 @@ class GmailSyncClient extends GoogleApiServiceBase {
         ..messageListVisibility = 'show',
       _userId,
     );
-    final labelId = created.labelId ?? 'Label_1';
+    final labelId = created.id ?? 'Label_1';
     await _settingsRepository.setGmailSyncLabelId(labelId);
     return labelId;
   }

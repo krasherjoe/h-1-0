@@ -12,9 +12,9 @@ extension GmailEnvelopeEncodingExt on GmailEnvelopeEncoding {
       case 'plain':
         return GmailEnvelopeEncoding.plainJson;
       case 'gzip':
-      default:
         return GmailEnvelopeEncoding.gzipBase64;
     }
+    return GmailEnvelopeEncoding.gzipBase64;
   }
 
   String get storageValue {
@@ -24,7 +24,6 @@ extension GmailEnvelopeEncodingExt on GmailEnvelopeEncoding {
       case GmailEnvelopeEncoding.plainJson:
         return 'plain';
       case GmailEnvelopeEncoding.gzipBase64:
-      default:
         return 'gzip';
     }
   }
@@ -36,7 +35,6 @@ extension GmailEnvelopeEncodingExt on GmailEnvelopeEncoding {
       case GmailEnvelopeEncoding.plainJson:
         return 'plain';
       case GmailEnvelopeEncoding.gzipBase64:
-      default:
         return 'gzip';
     }
   }
@@ -52,9 +50,9 @@ extension GmailEnvelopeEncodingExt on GmailEnvelopeEncoding {
       case 'plain':
         return GmailEnvelopeEncoding.plainJson;
       case 'gzip':
-      default:
         return GmailEnvelopeEncoding.gzipBase64;
     }
+    return GmailEnvelopeEncoding.gzipBase64;
   }
 }
 
@@ -72,9 +70,9 @@ extension SyncTransportModeExt on SyncTransportMode {
       case 'auto':
         return SyncTransportMode.auto;
       case 'gmail':
-      default:
         return SyncTransportMode.gmailOnly;
     }
+    return SyncTransportMode.gmailOnly;
   }
 
   String get storageValue {
@@ -84,7 +82,6 @@ extension SyncTransportModeExt on SyncTransportMode {
       case SyncTransportMode.auto:
         return 'auto';
       case SyncTransportMode.gmailOnly:
-      default:
         return 'gmail';
     }
   }
