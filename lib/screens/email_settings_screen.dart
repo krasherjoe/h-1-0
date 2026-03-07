@@ -8,6 +8,7 @@ import '../constants/mail_send_method.dart';
 import '../constants/mail_templates.dart';
 import '../services/app_settings_repository.dart';
 import '../services/email_sender.dart';
+import '../services/google_account_service.dart';
 
 class EmailSettingsScreen extends StatefulWidget {
   const EmailSettingsScreen({super.key});
@@ -30,10 +31,12 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
   bool _smtpTls = true;
   bool _smtpIgnoreBadCert = false;
   bool _loadingLogs = false;
+  bool _selectingBccFromDevice = false;
   String _mailSendMethod = kMailSendMethodSmtp;
   List<String> _smtpLogs = [];
   String _mailHeaderTemplateId = kMailTemplateIdDefault;
   String _mailFooterTemplateId = kMailTemplateIdDefault;
+  String? _selectedDeviceBcc;
 
   static const _kSmtpHost = 'smtp_host';
   static const _kSmtpPort = 'smtp_port';
@@ -153,6 +156,40 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     });
 
     await _loadSmtpLogs();
+  }
+
+  Future<void> _pickBccFromDeviceAccount() async {
+    if (_selectingBccFromDevice) return;
+    setState(() => _selectingBccFromDevice = true);
+    try {
+      final account = await GoogleAccountService.instance.pickAccount();
+      if (!mounted) return;
+      if (account == null) {
+        _showSnackbar('アカウントが選択されませんでした');
+        return;
+      }
+      final email = account.email;
+      final entries = _smtpBccCtrl.text
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      if (!entries.contains(email)) {
+        entries.add(email);
+      }
+      setState(() {
+        _smtpBccCtrl.text = entries.join(', ');
+        _selectedDeviceBcc = email;
+      });
+      _showSnackbar('BCCに $email を追加しました');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackbar('Gmailアカウントの取得に失敗しました: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _selectingBccFromDevice = false);
+      }
+    }
   }
 
   Future<void> _loadSmtpLogs() async {
@@ -395,6 +432,28 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
                     controller: _smtpBccCtrl,
                     decoration: const InputDecoration(labelText: 'BCC (カンマ区切り可) *必須'),
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _mailSendMethod == kMailSendMethodDeviceMailer && _selectingBccFromDevice
+                              ? null
+                              : (_selectingBccFromDevice ? null : _pickBccFromDeviceAccount),
+                          icon: const Icon(Icons.account_circle_outlined),
+                          label: Text(_selectingBccFromDevice ? '取得中...' : '端末のGmailから選択'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_selectedDeviceBcc != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '選択中: $_selectedDeviceBcc',
+                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                    ),
                   SwitchListTile(
                     title: const Text('STARTTLS を使用'),
                     value: _smtpTls,
