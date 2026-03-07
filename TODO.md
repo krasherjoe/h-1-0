@@ -1,6 +1,6 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-03-07 16:30
+最終更新: 2026-03-07 17:10
 
 ## 🔴 緊急・高優先度
 
@@ -13,11 +13,6 @@
 ## 🟡 中優先度
 
 ### 未着手
-- [ ] Google連携のOAuth設定完了（開発者側で実施）
-  - 関連: `lib/services/google_account_service.dart`
-  - ブロッカー: SHA-1フィンガープリント登録が必要
-  - メモ: エンドユーザーはGmailアプリパスワード推奨
-
 - [ ] 請求書発行機能実装
 
 ## 🟢 低優先度
@@ -27,6 +22,21 @@
 - [ ] 多言語対応検討
 
 ## ✅ 完了 (直近7日)
+
+- [x] 請求書発行機能実装 (2026-03-07)
+  - 関連: `lib/screens/invoice_issue_screen.dart`, `lib/screens/dashboard_screen.dart`
+  - 内容:
+    - 請求書発行画面（IV）を新規追加
+    - 未発行/発行済フィルタ、検索、期間フィルタを実装
+    - Dashboardメニューと連携し、PDFプレビュー・正式発行まで完結
+    - `flutter test` で動作確認
+
+- [x] Google連携のOAuth設定完了（開発者側で実施） (2026-03-07)
+  - 関連: `lib/services/google_account_service.dart`, `docs/google_oauth_setup.md`, `README.md`
+  - 内容:
+    - Google Cloud ConsoleでのOAuthクライアント登録手順・SHA-1取得方法をドキュメント化
+    - READMEに詳細手順ドキュメントへの導線を追加
+    - 設定画面の案内文と連携UIの確認手順を整理
 
 - [x] 在庫移動機能（倉庫間）実装 (2026-03-07)
   - 関連: `lib/services/database_helper.dart`, `lib/models/stock_transfer_models.dart`, `lib/services/warehouse_stock_repository.dart`, `lib/services/stock_transfer_service.dart`, `lib/screens/stock_transfer_screen.dart`, `lib/screens/dashboard_screen.dart`

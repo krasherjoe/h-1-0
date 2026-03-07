@@ -364,6 +364,7 @@ keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androidd
 - ✅ `GoogleAccountService` 実装済み
 - ⚠️ OAuth 2.0 クライアント ID の設定が必要（各開発者・デプロイ環境ごと）
 - ⚠️ リリースビルド用の SHA-1 フィンガープリントも別途登録が必要
+- 📄 詳細手順: [`docs/google_oauth_setup.md`](docs/google_oauth_setup.md)
 
 ### トラブルシューティング
 

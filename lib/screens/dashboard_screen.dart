@@ -15,6 +15,7 @@ import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
+import 'invoice_issue_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -111,6 +112,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           initialDocumentType: DocumentType.invoice,
         );
+      case 'invoice_issue':
+        return const InvoiceIssueScreen();
       case 'customer_master':
         return const CustomerMasterScreen();
       case 'product_master':
