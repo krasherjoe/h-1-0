@@ -12,6 +12,7 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'supplier_master_screen.dart';
 import 'quotation_input_screen.dart';
+import 'order_input_screen.dart';
 import 'warehouse_master_screen.dart';
 import 'sales_return_input_screen.dart';
 import 'staff_master_screen.dart';
@@ -130,6 +131,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const SupplierMasterScreen();
       case 'quotation_input':
         return const QuotationInputScreen();
+      case 'order_input':
+        return const OrderInputScreen();
       case 'sales_return_input':
         return const SalesReturnInputScreen();
       case 'warehouse_master':
