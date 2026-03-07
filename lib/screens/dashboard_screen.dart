@@ -10,6 +10,7 @@ import 'invoice_input_screen.dart';
 import 'invoice_detail_page.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
+import 'supplier_master_screen.dart';
 import 'settings_screen.dart';
 import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
@@ -121,6 +122,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const CustomerMasterScreen();
       case 'product_master':
         return const ProductMasterScreen();
+      case 'supplier_master':
+        return const SupplierMasterScreen();
       case 'master_hub':
         return const MasterHubPage();
       case 'settings':
