@@ -44,6 +44,56 @@ Add mothership GPS discovery feature
 
 ---
 
+## Google Sign-In 設定手順
+
+アプリで Google アカウント連携を有効にするには、以下の設定が必要です。
+
+### 1. Google Cloud Console での設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
+2. プロジェクトを作成または選択
+3. 「APIとサービス」→「認証情報」を開く
+4. 「OAuth 2.0 クライアント ID」を作成
+   - アプリケーションの種類: **Android**
+   - パッケージ名: `com.example.h_1`
+   - SHA-1 証明書フィンガープリント: デバッグキーストアの SHA-1（下記コマンドで取得）
+
+**SHA-1 フィンガープリント取得方法:**
+```bash
+# Linux/macOS
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+
+# Windows
+keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android
+```
+
+### 2. Android 設定（オプション）
+
+`google_sign_in` パッケージは Google Play Services を使用するため、`google-services.json` は**不要**です。ただし、Firebase を併用する場合は以下の手順も実施してください。
+
+1. Google Cloud Console から `google-services.json` をダウンロード
+2. `android/app/` ディレクトリに配置
+3. `android/build.gradle.kts` に Google Services プラグインを追加
+
+### 3. 現在の状態
+
+- ✅ `google_sign_in: ^6.2.1` パッケージ導入済み
+- ✅ `GoogleAccountService` 実装済み
+- ⚠️ OAuth 2.0 クライアント ID の設定が必要（各開発者・デプロイ環境ごと）
+- ⚠️ リリースビルド用の SHA-1 フィンガープリントも別途登録が必要
+
+### トラブルシューティング
+
+**エラー: "Googleアカウントに未連携です"**
+- OAuth 2.0 クライアント ID が未設定、またはパッケージ名・SHA-1 が不一致
+- Google Cloud Console で正しい認証情報を作成してください
+
+**アカウント選択画面が表示されない**
+- デバイスに Google アカウントが登録されているか確認
+- Google Play Services が最新版か確認
+
+---
+
 ## 現状の実装状況
 
 - Flutter ベースの販売アシスト1号アプリ

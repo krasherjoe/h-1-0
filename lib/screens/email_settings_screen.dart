@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/mail_send_method.dart';
@@ -162,7 +163,11 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     if (_selectingBccFromDevice) return;
     setState(() => _selectingBccFromDevice = true);
     try {
-      final account = await GoogleAccountService.instance.pickAccount();
+      final googleService = GoogleAccountService.instance;
+      GoogleSignInAccount? account = googleService.currentAccount ?? await googleService.recoverAccount();
+      if (account == null) {
+        account = await googleService.pickAccount();
+      }
       if (!mounted) return;
       if (account == null) {
         _showSnackbar('アカウントが選択されませんでした');
