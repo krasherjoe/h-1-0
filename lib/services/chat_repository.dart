@@ -22,7 +22,13 @@ class ChatRepository {
     return rows.map(_fromRow).toList().reversed.toList();
   }
 
-  Future<void> addOutbound({required String clientId, required String body}) async {
+  Future<void> addOutbound({
+    required String clientId,
+    required String body,
+    int? sequence,
+    String? payloadType,
+    String? signature,
+  }) async {
     final db = await _db();
     final now = DateTime.now().toUtc();
     await db.insert(
@@ -34,6 +40,9 @@ class ChatRepository {
         'body': body,
         'created_at': now.millisecondsSinceEpoch,
         'synced': 0,
+        'sequence': sequence,
+        'payload_type': payloadType,
+        'signature': signature,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -51,6 +60,9 @@ class ChatRepository {
         'created_at': message.createdAt.millisecondsSinceEpoch,
         'synced': 1,
         'delivered_at': DateTime.now().toUtc().millisecondsSinceEpoch,
+        'sequence': message.sequence,
+        'payload_type': message.payloadType,
+        'signature': message.signature,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -83,6 +95,9 @@ class ChatRepository {
       createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int, isUtc: true),
       synced: (row['synced'] as int? ?? 1) == 1,
       deliveredAt: row['delivered_at'] != null ? DateTime.fromMillisecondsSinceEpoch(row['delivered_at'] as int, isUtc: true) : null,
+      sequence: row['sequence'] as int?,
+      payloadType: row['payload_type'] as String?,
+      signature: row['signature'] as String?,
     );
   }
 }

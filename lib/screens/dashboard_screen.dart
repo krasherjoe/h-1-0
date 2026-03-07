@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
 import '../config/app_config.dart';
 import '../constants/dashboard_icons.dart';
+import '../models/dashboard_menu_item.dart';
+import '../widgets/menu_category_header.dart';
 import 'invoice_history_screen.dart';
 import 'invoice_input_screen.dart';
 import 'invoice_detail_page.dart';
@@ -10,10 +12,12 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'settings_screen.dart';
 import 'master_hub_page.dart';
+import 'menu_placeholder_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
 import '../widgets/slide_to_unlock.dart';
+import '../constants/menu_catalog.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,12 +33,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _statusText = '工事中';
   List<DashboardMenuItem> _menu = [];
   bool _historyUnlocked = false;
+  bool _showCategoryDescriptions = true;
+  final Set<String> _collapsedCategories = <String>{};
 
   @override
   void initState() {
     super.initState();
     _load();
   }
+
+  void _toggleCategory(String category) {
+    setState(() {
+      if (_collapsedCategories.contains(category)) {
+        _collapsedCategories.remove(category);
+      } else {
+        _collapsedCategories.add(category);
+      }
+    });
+  }
+
+  bool _isCategoryCollapsed(String category) => _collapsedCategories.contains(category);
 
   Future<void> _load() async {
     final statusEnabled = await _repo.getDashboardStatusEnabled();
@@ -44,27 +62,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final normalizedMenu = isDebug ? rawMenu.map((e) => e.copyWith(enabled: true)).toList() : rawMenu;
     final visibleMenu = isDebug ? normalizedMenu : normalizedMenu.where((item) => item.enabled).toList();
     final unlocked = await _repo.getDashboardHistoryUnlocked();
+    final showCategoryDesc = await _repo.getDashboardShowCategoryDescriptions();
     setState(() {
       _statusEnabled = statusEnabled;
       _statusText = statusText;
       _menu = visibleMenu;
       _loading = false;
       _historyUnlocked = unlocked;
+      _showCategoryDescriptions = showCategoryDesc;
     });
   }
 
   void _navigate(DashboardMenuItem item) async {
-    Widget? target;
+    final target = _buildTargetScreen(item);
+    if (target == null) {
+      return;
+    }
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => target));
+    if (item.route == 'settings') {
+      await _load();
+    }
+  }
+
+  Widget? _buildTargetScreen(DashboardMenuItem item) {
     switch (item.route) {
       case 'invoice_history':
         if (!_historyUnlocked) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
-          return;
+          return null;
         }
-        target = const InvoiceHistoryScreen(initialUnlocked: true);
-        break;
+        return const InvoiceHistoryScreen(initialUnlocked: true);
       case 'invoice_input':
-        target = InvoiceInputForm(
+        return InvoiceInputForm(
           onInvoiceGenerated: (invoice, path) async {
             final locationService = LocationService();
             final pos = await locationService.getCurrentLocation();
@@ -80,27 +109,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
           initialDocumentType: DocumentType.invoice,
         );
-        break;
       case 'customer_master':
-        target = const CustomerMasterScreen();
-        break;
+        return const CustomerMasterScreen();
       case 'product_master':
-        target = const ProductMasterScreen();
-        break;
+        return const ProductMasterScreen();
       case 'master_hub':
-        target = const MasterHubPage();
-        break;
+        return const MasterHubPage();
       case 'settings':
-        target = const SettingsScreen();
-        break;
+        return const SettingsScreen();
       default:
-        target = const InvoiceHistoryScreen();
-        break;
-    }
-
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => target!));
-    if (item.route == 'settings') {
-      await _load();
+        return MenuPlaceholderScreen(item: item);
     }
   }
 
@@ -126,7 +144,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text(_routeLabel(item.route), style: const TextStyle(color: Colors.grey)),
+                  Text(_subtitle(item), style: const TextStyle(color: Colors.grey)),
+                  if (_showCategoryDescriptions && item.description != null) ...[
+                    const SizedBox(height: 4),
+                    Text(item.description!, style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                  ]
                 ],
               ),
             ),
@@ -153,23 +175,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return kDashboardIcons[name] ?? Icons.apps;
   }
 
-  String _routeLabel(String route) {
-    switch (route) {
-      case 'invoice_history':
-        return 'A2:伝票一覧';
-      case 'invoice_input':
-        return 'A1:伝票入力';
-      case 'customer_master':
-        return 'C1:顧客マスター';
-      case 'product_master':
-        return 'P1:商品マスター';
-      case 'master_hub':
-        return 'M1:マスター管理';
-      case 'settings':
-        return 'S1:設定';
-      default:
-        return route;
+  String _subtitle(DashboardMenuItem item) {
+    final screenId = item.id.toUpperCase();
+    return '$screenId • ${item.route}';
+  }
+
+  List<Widget> _buildMenuSections() {
+    if (_menu.isEmpty) return const [];
+    final grouped = <String, List<DashboardMenuItem>>{};
+    for (final item in _menu) {
+      grouped.putIfAbsent(item.category, () => []).add(item);
     }
+
+    final widgets = <Widget>[];
+    final processed = <String>{};
+
+    Widget buildSection(String category, List<DashboardMenuItem> items) {
+      final description = kMenuCategoryDescriptions[category];
+      final collapsed = _isCategoryCollapsed(category);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8, top: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MenuCategoryHeader(
+              title: category,
+              description: description,
+              showDescription: _showCategoryDescriptions,
+              collapsible: true,
+              collapsed: collapsed,
+              onToggle: () => _toggleCategory(category),
+            ),
+            AnimatedCrossFade(
+              firstChild: Column(
+                children: items
+                    .map((e) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _tile(e),
+                        ))
+                    .toList(),
+              ),
+              secondChild: const SizedBox.shrink(),
+              crossFadeState: collapsed ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        ),
+      );
+    }
+
+    for (final category in kMenuCategoryOrder) {
+      final items = grouped[category];
+      if (items == null || items.isEmpty) continue;
+      widgets.add(buildSection(category, items));
+      processed.add(category);
+    }
+
+    // add any categories not listed in kMenuCategoryOrder
+    grouped.forEach((category, items) {
+      if (processed.contains(category)) return;
+      widgets.add(buildSection(category, items));
+    });
+
+    return widgets;
   }
 
   @override
@@ -242,10 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                     ),
-                  ..._menu.map((e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _tile(e),
-                      )),
+                  ..._buildMenuSections(),
                   if (_menu.isEmpty)
                     const Center(
                       child: Padding(

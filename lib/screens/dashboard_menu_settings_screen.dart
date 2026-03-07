@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
+import '../models/dashboard_menu_item.dart';
+import '../widgets/menu_category_header.dart';
 
 class DashboardMenuSettingsScreen extends StatefulWidget {
   const DashboardMenuSettingsScreen({super.key});
@@ -12,6 +14,7 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
   final _repo = AppSettingsRepository();
   List<DashboardMenuItem> _items = [];
   bool _loading = true;
+  bool _showCategoryDescriptions = true;
 
   @override
   void initState() {
@@ -21,10 +24,12 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
 
   Future<void> _load() async {
     final items = await _repo.getDashboardMenu();
+    final showCategoryDesc = await _repo.getDashboardShowCategoryDescriptions();
     if (!mounted) return;
     setState(() {
       _items = items;
       _loading = false;
+      _showCategoryDescriptions = showCategoryDesc;
     });
   }
 
@@ -58,6 +63,7 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text('D2:ダッシュボード設定'),
         actions: [
@@ -74,9 +80,25 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        'ドラッグして並べ替え、スイッチで表示/非表示を切り替えます。\nDEBUGビルドでは常に全項目が表示されます。',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ドラッグして並べ替え、スイッチで表示/非表示を切り替えます。\nDEBUGビルドでは常に全項目が表示されます。',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('カテゴリ説明を表示'),
+                            subtitle: const Text('ダッシュボードと設定画面双方の説明文を連動'),
+                            value: _showCategoryDescriptions,
+                            onChanged: (value) async {
+                              await _repo.setDashboardShowCategoryDescriptions(value);
+                              setState(() => _showCategoryDescriptions = value);
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -85,17 +107,24 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
                     onReorder: _reorder,
                     itemBuilder: (context, index) {
                       final item = _items[index];
+                      final showHeader = index == 0 || _items[index - 1].category != item.category;
                       return Padding(
                         key: ValueKey(item.id),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: Card(
-                          child: SwitchListTile(
-                            value: item.enabled,
-                            onChanged: (value) => _toggle(index, value),
-                            title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(item.route),
-                            secondary: CircleAvatar(child: Text(item.id.toUpperCase())),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (showHeader) MenuCategoryDivider(title: item.category),
+                            Card(
+                              child: SwitchListTile(
+                                value: item.enabled,
+                                onChanged: (value) => _toggle(index, value),
+                                title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: _subtitle(item),
+                                secondary: CircleAvatar(child: Text(item.id.toUpperCase())),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -106,4 +135,23 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
             ),
     );
   }
+
+  Widget _subtitle(DashboardMenuItem item) {
+    if (!_showCategoryDescriptions || (item.description?.isEmpty ?? true)) {
+      return Text('${item.category} • ${item.route}');
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('${item.category} • ${item.route}'),
+        const SizedBox(height: 4),
+        Text(
+          item.description!,
+          style: const TextStyle(color: Colors.black54, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
 }

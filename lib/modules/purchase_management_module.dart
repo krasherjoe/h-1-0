@@ -12,7 +12,7 @@ class PurchaseManagementModule extends FeatureModule {
   String get key => 'purchase_management';
 
   @override
-  bool get isEnabled => AppConfig.enablePurchaseManagement;
+  bool get isEnabled => AppConfig.enablePurchaseModule;
 
   @override
   List<ModuleDashboardCard> get dashboardCards => [

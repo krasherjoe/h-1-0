@@ -2,7 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 26;
+  static const _databaseVersion = 28;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -210,6 +210,24 @@ class DatabaseHelper {
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)');
     }
+    if (oldVersion < 27) {
+      await _safeAddColumn(db, 'chat_messages', 'sequence INTEGER');
+      await _safeAddColumn(db, 'chat_messages', 'payload_type TEXT');
+      await _safeAddColumn(db, 'chat_messages', 'signature TEXT');
+    }
+    if (oldVersion < 28) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS mothership_locations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          host TEXT NOT NULL,
+          latitude REAL NOT NULL,
+          longitude REAL NOT NULL,
+          last_seen TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_mothership_locations_host ON mothership_locations(host)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -384,10 +402,25 @@ class DatabaseHelper {
         body TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         synced INTEGER DEFAULT 0,
-        delivered_at INTEGER
+        delivered_at INTEGER,
+        sequence INTEGER,
+        payload_type TEXT,
+        signature TEXT
       )
     ''');
     await db.execute('CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at)');
+
+    await db.execute('''
+      CREATE TABLE mothership_locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        host TEXT NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        last_seen TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_mothership_locations_host ON mothership_locations(host)');
   }
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {

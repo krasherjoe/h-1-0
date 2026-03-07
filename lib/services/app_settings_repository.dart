@@ -1,5 +1,10 @@
 import 'dart:convert';
+
 import 'package:sqflite/sqflite.dart';
+
+import '../constants/menu_catalog.dart';
+import '../models/dashboard_menu_item.dart';
+import '../models/sync_preferences.dart';
 import 'database_helper.dart';
 
 class AppSettingsRepository {
@@ -8,20 +13,16 @@ class AppSettingsRepository {
   static const _kDashboardStatusText = 'dashboard_status_text';
   static const _kDashboardMenu = 'dashboard_menu';
   static const _kDashboardHistoryUnlocked = 'dashboard_history_unlocked';
+  static const _kDashboardShowCategoryDescriptions = 'dashboard_show_category_desc';
   static const _kTheme = 'app_theme';
   static const _kSummaryTheme = 'summary_theme';
-
-  static const List<DashboardMenuItem> _defaultDashboardMenu = [
-    DashboardMenuItem(id: 'a1', title: '伝票入力', route: 'invoice_input', iconName: 'edit_note'),
-    DashboardMenuItem(id: 'a2', title: '伝票一覧', route: 'invoice_history', iconName: 'list_alt'),
-    DashboardMenuItem(id: 'c1', title: '顧客マスター', route: 'customer_master', iconName: 'customer'),
-    DashboardMenuItem(id: 'p1', title: '商品マスター', route: 'product_master', iconName: 'product'),
-    DashboardMenuItem(id: 'm1', title: 'マスター管理', route: 'master_hub', iconName: 'master'),
-    DashboardMenuItem(id: 'p2', title: '仕入伝票', route: 'purchase_entries', iconName: 'shopping_cart'),
-    DashboardMenuItem(id: 'p3', title: '支払管理', route: 'purchase_receipts', iconName: 'payments'),
-    DashboardMenuItem(id: 'r1', title: '売上・資金管理レポート', route: 'sales_report', iconName: 'analytics'),
-    DashboardMenuItem(id: 's1', title: '設定', route: 'settings', iconName: 'settings'),
-  ];
+  static const _kGmailSyncBccAddress = 'gmail_sync_bcc_address';
+  static const _kGmailSyncLabelName = 'gmail_sync_label_name';
+  static const _kGmailSyncLabelId = 'gmail_sync_label_id';
+  static const _kGmailSyncHistoryId = 'gmail_sync_history_id';
+  static const _kGmailSyncSequence = 'gmail_sync_sequence';
+  static const _kGmailSyncEncodingMode = 'gmail_sync_encoding_mode';
+  static const _kSyncTransportMode = 'sync_transport_mode';
 
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
@@ -62,8 +63,12 @@ class AppSettingsRepository {
     await _setValue(_kDashboardStatusText, text);
   }
 
+  Future<bool> getDashboardShowCategoryDescriptions() async => getBool(_kDashboardShowCategoryDescriptions, defaultValue: true);
+
+  Future<void> setDashboardShowCategoryDescriptions(bool value) async => setBool(_kDashboardShowCategoryDescriptions, value);
+
   List<DashboardMenuItem> getDefaultDashboardMenu() {
-    return _defaultDashboardMenu.map((item) => item.copyWith()).toList(growable: false);
+    return kMenuDefinitions.map((def) => def.toMenuItem()).toList(growable: false);
   }
 
   Future<List<DashboardMenuItem>> getDashboardMenu() async {
@@ -99,6 +104,59 @@ class AppSettingsRepository {
 
   Future<String> getSummaryTheme() async => await getString(_kSummaryTheme) ?? 'white';
   Future<void> setSummaryTheme(String theme) async => setString(_kSummaryTheme, theme);
+
+  Future<String?> getGmailSyncBccAddress() async {
+    final address = await getString(_kGmailSyncBccAddress);
+    if (address != null && address.isNotEmpty) return address;
+    return await getString('smtp_bcc');
+  }
+
+  Future<void> setGmailSyncBccAddress(String value) async => setString(_kGmailSyncBccAddress, value);
+
+  Future<String> getGmailSyncLabelName() async => await getString(_kGmailSyncLabelName) ?? 'SalesAssist Sync';
+
+  Future<void> setGmailSyncLabelName(String value) async => setString(_kGmailSyncLabelName, value);
+
+  Future<String?> getGmailSyncLabelId() async => getString(_kGmailSyncLabelId);
+
+  Future<void> setGmailSyncLabelId(String labelId) async => setString(_kGmailSyncLabelId, labelId);
+
+  Future<void> clearGmailSyncLabelCache() async {
+    await _remove(_kGmailSyncLabelId);
+  }
+
+  Future<String?> getGmailSyncHistoryId() async => getString(_kGmailSyncHistoryId);
+
+  Future<void> setGmailSyncHistoryId(String historyId) async => setString(_kGmailSyncHistoryId, historyId);
+
+  Future<int> nextGmailSequence() async {
+    final current = int.tryParse(await getString(_kGmailSyncSequence) ?? '0') ?? 0;
+    final next = current + 1;
+    await setString(_kGmailSyncSequence, next.toString());
+    return next;
+  }
+
+  Future<void> resetGmailSequence([int value = 0]) async {
+    await setString(_kGmailSyncSequence, value.toString());
+  }
+
+  Future<GmailEnvelopeEncoding> getGmailEnvelopeEncoding() async {
+    final raw = await _getValue(_kGmailSyncEncodingMode);
+    return GmailEnvelopeEncodingExt.fromStorage(raw);
+  }
+
+  Future<void> setGmailEnvelopeEncoding(GmailEnvelopeEncoding mode) async {
+    await _setValue(_kGmailSyncEncodingMode, mode.storageValue);
+  }
+
+  Future<SyncTransportMode> getSyncTransportMode() async {
+    final raw = await _getValue(_kSyncTransportMode);
+    return SyncTransportModeExt.fromStorage(raw);
+  }
+
+  Future<void> setSyncTransportMode(SyncTransportMode mode) async {
+    await _setValue(_kSyncTransportMode, mode.storageValue);
+  }
 
   Future<String?> getString(String key) async => _getValue(key);
   Future<void> setString(String key, String value) async => _setValue(key, value);
@@ -201,47 +259,5 @@ class AppSettingsRepository {
     }
 
     return merged;
-  }
-}
-
-class DashboardMenuItem {
-  final String id;
-  final String title;
-  final String route;
-  final bool enabled; // 有効/無効フラグ (デフォルト true)
-  final String? iconName; // Material icon name
-  final String? customIconPath; // optional local file path
-
-  const DashboardMenuItem({required this.id, required this.title, required this.route, this.enabled = true, this.iconName, this.customIconPath});
-
-  DashboardMenuItem copyWith({String? id, String? title, String? route, bool? enabled, String? iconName, String? customIconPath}) {
-    return DashboardMenuItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      route: route ?? this.route,
-      enabled: enabled ?? this.enabled,
-      iconName: iconName ?? this.iconName,
-      customIconPath: customIconPath ?? this.customIconPath,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'route': route,
-        'enabled': enabled,
-        'iconName': iconName,
-        'customIconPath': customIconPath,
-      };
-
-  factory DashboardMenuItem.fromJson(Map<String, dynamic> json) {
-    return DashboardMenuItem(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      route: json['route'] as String,
-      enabled: (json['enabled'] as bool?) ?? true, // デフォルト true で互換性確保
-      iconName: json['iconName'] as String?,
-      customIconPath: json['customIconPath'] as String?,
-    );
   }
 }

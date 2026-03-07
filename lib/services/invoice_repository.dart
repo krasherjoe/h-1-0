@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/invoice_models.dart';
 import '../models/customer_model.dart';
 import '../models/customer_contact.dart';
+import '../models/invoice_sync_payload.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 import 'company_repository.dart';
@@ -58,6 +59,8 @@ class InvoiceRepository {
         companySealHash: sealHash,
         metaJson: null,
         metaHash: null,
+        isSynced: false,
+        updatedAt: DateTime.now(),
       );
 
       // 在庫の調整（更新の場合、以前の数量を戻してから新しい数量を引く）
@@ -324,5 +327,73 @@ class InvoiceRepository {
 
     if (results.isEmpty || results.first['total'] == null) return 0;
     return (results.first['total'] as num).toInt();
+  }
+
+  Future<List<InvoiceSyncSnapshot>> pendingSyncSnapshots({int limit = 10}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'is_synced = 0',
+      orderBy: 'updated_at ASC',
+      limit: limit,
+    );
+    final snapshots = <InvoiceSyncSnapshot>[];
+    for (final row in rows) {
+      final items = await db.query(
+        'invoice_items',
+        where: 'invoice_id = ?',
+        whereArgs: [row['id']],
+      );
+      snapshots.add(InvoiceSyncSnapshot(invoiceRow: row, items: items));
+    }
+    return snapshots;
+  }
+
+  Future<void> markSynced(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final db = await _dbHelper.database;
+    await db.update(
+      'invoices',
+      {'is_synced': 1},
+      where: 'id IN (${List.filled(ids.length, '?').join(',')})',
+      whereArgs: ids,
+    );
+  }
+
+  Future<void> applyInboundSnapshot(InvoiceSyncPayload payload) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      DateTime? currentUpdatedAt;
+      final existing = await txn.query(
+        'invoices',
+        where: 'id = ?',
+        whereArgs: [payload.recordId],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        final existingUpdatedAt = existing.first['updated_at'];
+        if (existingUpdatedAt is String) {
+          currentUpdatedAt = DateTime.tryParse(existingUpdatedAt);
+        }
+      }
+      final inboundUpdatedAt = DateTime.tryParse(payload.updatedAt);
+      if (currentUpdatedAt != null && inboundUpdatedAt != null && !inboundUpdatedAt.isAfter(currentUpdatedAt)) {
+        return;
+      }
+
+      final row = Map<String, dynamic>.from(payload.invoiceRow);
+      row['id'] = payload.recordId;
+      row['updated_at'] = payload.updatedAt;
+      row['is_synced'] = 1;
+      await txn.insert('invoices', row, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      await txn.delete('invoice_items', where: 'invoice_id = ?', whereArgs: [payload.recordId]);
+      for (final item in payload.items) {
+        final copy = Map<String, dynamic>.from(item);
+        copy['invoice_id'] = payload.recordId;
+        copy['id'] ??= DateTime.now().microsecondsSinceEpoch.toString();
+        await txn.insert('invoice_items', copy, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
   }
 }
