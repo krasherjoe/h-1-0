@@ -12,6 +12,7 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'supplier_master_screen.dart';
 import 'warehouse_master_screen.dart';
+import 'staff_master_screen.dart';
 import 'settings_screen.dart';
 import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
@@ -127,6 +128,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const SupplierMasterScreen();
       case 'warehouse_master':
         return const WarehouseMasterScreen();
+      case 'staff_master':
+        return const StaffMasterScreen();
       case 'master_hub':
         return const MasterHubPage();
       case 'settings':
