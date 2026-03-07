@@ -114,6 +114,22 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '受注登録と進捗管理',
   ),
   MenuDefinition(
+    id: 'a1',
+    title: '売上入力',
+    route: 'sales_entry',
+    category: '02. 販売管理',
+    iconName: 'point_of_sale',
+    description: 'レジモード売上入力',
+  ),
+  MenuDefinition(
+    id: 'sr1',
+    title: '売上返品入力',
+    route: 'sales_return_input',
+    category: '02. 販売管理',
+    iconName: 'assignment_return',
+    description: '返品・値引処理',
+  ),
+  MenuDefinition(
     id: 'inv1',
     title: '請求書発行',
     route: 'invoice_issue',
