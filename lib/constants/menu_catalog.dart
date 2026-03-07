@@ -98,6 +98,14 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 02. 販売管理
   MenuDefinition(
+    id: 'q1',
+    title: '見積入力',
+    route: 'quotation_input',
+    category: '02. 販売管理',
+    iconName: 'request_quote',
+    description: '見積作成と履歴管理',
+  ),
+  MenuDefinition(
     id: 'o1',
     title: '受注入力',
     route: 'order_input',
