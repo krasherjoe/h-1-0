@@ -370,6 +370,156 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     }
   }
 
+
+  void _showBccHelpDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('BCC設定ガイド'),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '📧 Gmail推奨設定',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text('1. Googleアカウントで2段階認証を有効化'),
+            const SizedBox(height: 4),
+            const Text('2. アプリパスワードを発行（16桁）', style: TextStyle(fontSize: 13)),
+            const SizedBox(height: 4),
+            const Text('   https://myaccount.google.com/apppasswords', style: TextStyle(fontSize: 11, color: Colors.blue)),
+            const SizedBox(height: 12),
+            const Text(
+              '⚙️ SMTP設定例（Gmail）',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('• SMTPホスト: smtp.gmail.com', style: TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                  Text('• SMTPポート: 587', style: TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                  Text('• ユーザー名: your-email@gmail.com', style: TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                  Text('• パスワード: 16桁のアプリパスワード', style: TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                  Text('• STARTTLS: ON', style: TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '✉️ BCCについて',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text('送信控えを残すため、BCCに自分のメールアドレスを設定してください。', style: TextStyle(fontSize: 13)),
+            const SizedBox(height: 4),
+            const Text('複数設定する場合はカンマ区切りで入力できます。', style: TextStyle(fontSize: 13)),
+            const SizedBox(height: 12),
+            const Text(
+              '🔒 セキュリティ',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text('アプリパスワードは端末の暗号化ストレージに保存され、画面ロックで保護されます。', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('閉じる'),
+        ),
+      ],
+    ),
+  );
+}
+
+
+  void _showSmtpHelpDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('SMTP設定ヘルプ'),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '📧 Gmail（推奨）',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('SMTPホスト: smtp.gmail.com', style: TextStyle(fontSize: 12)),
+                  Text('SMTPポート: 587', style: TextStyle(fontSize: 12)),
+                  Text('STARTTLS: ON', style: TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '📧 Outlook/Hotmail',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('SMTPホスト: smtp-mail.outlook.com', style: TextStyle(fontSize: 12)),
+                  Text('SMTPポート: 587', style: TextStyle(fontSize: 12)),
+                  Text('STARTTLS: ON', style: TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '⚠️ 注意事項',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text('• Gmailの場合、通常のパスワードではなくアプリパスワード（16桁）が必要です', style: TextStyle(fontSize: 13)),
+            const SizedBox(height: 4),
+            const Text('• アプリパスワードの発行には2段階認証の有効化が必要です', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('閉じる'),
+        ),
+      ],
+    ),
+  );
+}
+
+
   void _showSnackbar(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -426,29 +576,55 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _smtpHostCtrl,
-                    decoration: const InputDecoration(labelText: 'SMTPホスト名'),
+                    decoration: InputDecoration(
+                      labelText: 'SMTPホスト名',
+                      hintText: 'smtp.gmail.com',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.help_outline, size: 20),
+                        onPressed: _showSmtpHelpDialog,
+                        tooltip: 'SMTP設定例を表示',
+                      ),
+                    ),
                     enabled: _mailSendMethod == kMailSendMethodSmtp,
                   ),
                   TextField(
                     controller: _smtpPortCtrl,
-                    decoration: const InputDecoration(labelText: 'SMTPポート番号'),
+                    decoration: const InputDecoration(
+                      labelText: 'SMTPポート番号',
+                      hintText: '587',
+                    ),
                     keyboardType: TextInputType.number,
                     enabled: _mailSendMethod == kMailSendMethodSmtp,
                   ),
                   TextField(
                     controller: _smtpUserCtrl,
-                    decoration: const InputDecoration(labelText: 'SMTPユーザー名'),
+                    decoration: const InputDecoration(
+                      labelText: 'SMTPユーザー名',
+                      hintText: 'your-email@gmail.com',
+                    ),
                     enabled: _mailSendMethod == kMailSendMethodSmtp,
                   ),
                   TextField(
                     controller: _smtpPassCtrl,
-                    decoration: const InputDecoration(labelText: 'SMTPパスワード'),
+                    decoration: const InputDecoration(
+                      labelText: 'SMTPパスワード',
+                      helperText: 'Gmailの場合はアプリパスワード（16桁）を入力',
+                    ),
                     obscureText: true,
                     enabled: _mailSendMethod == kMailSendMethodSmtp,
                   ),
                   TextField(
                     controller: _smtpBccCtrl,
-                    decoration: const InputDecoration(labelText: 'BCC (カンマ区切り可) *必須'),
+                    decoration: InputDecoration(
+                      labelText: 'BCC (カンマ区切り可) *必須',
+                      hintText: 'your-email@gmail.com',
+                      helperText: '送信控えを残すため必須です',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.help_outline, size: 20),
+                        onPressed: _showBccHelpDialog,
+                        tooltip: 'BCC設定ガイドを表示',
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -459,7 +635,7 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
                               ? null
                               : (_selectingBccFromDevice ? null : _pickBccFromDeviceAccount),
                           icon: const Icon(Icons.account_circle_outlined),
-                          label: Text(_selectingBccFromDevice ? '取得中...' : '端末のGmailから選択'),
+                          label: Text(_selectingBccFromDevice ? '取得中...' : '📧 端末のGmailから選択'),
                         ),
                       ),
                     ],

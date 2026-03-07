@@ -13,6 +13,10 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'dashboard_menu_settings_screen.dart';
 import 'mothership_discovery_settings_screen.dart';
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/database_helper.dart';
+import '../services/drive_backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -33,6 +37,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
   GoogleSignInAccount? _googleAccount;
   bool _linkingAccount = false;
   StreamSubscription<GoogleSignInAccount?>? _accountSubscription;
+  bool _backingUp = false;
+  String? _lastBackupTime;
+  bool _autoBackupEnabled = false;
+
+  Future<void> _loadBackupSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastBackup = prefs.getString('last_backup_time');
+    final autoBackup = prefs.getBool('auto_backup_enabled') ?? false;
+    if (mounted) {
+      setState(() {
+        _lastBackupTime = lastBackup;
+        _autoBackupEnabled = autoBackup;
+      });
+    }
+  }
+
+  Future<void> _backupToGoogleDrive() async {
+    if (_backingUp) return;
+    setState(() => _backingUp = true);
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+      final dbFile = File(dbPath);
+      
+      if (!await dbFile.exists()) {
+        throw Exception('データベースファイルが見つかりません');
+      }
+      
+      final driveService = DriveBackupService();
+      await driveService.uploadDatabaseSnapshot(
+        dbFile,
+        description: 'Manual backup - ${DateTime.now().toIso8601String()}',
+      );
+      
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now().toIso8601String();
+      await prefs.setString('last_backup_time', now);
+      
+      if (mounted) {
+        setState(() => _lastBackupTime = now);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Google Driveにバックアップしました')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ バックアップ失敗: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _backingUp = false);
+      }
+    }
+  }
+
+  Future<void> _setAutoBackup(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_backup_enabled', enabled);
+    setState(() => _autoBackupEnabled = enabled);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(enabled ? '自動バックアップを有効化しました' : '自動バックアップを無効化しました')),
+    );
+  }
+
+  String _formatBackupTime(String? isoTime) {
+    if (isoTime == null) return '未実施';
+    try {
+      final dt = DateTime.parse(isoTime);
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inMinutes < 1) return 'たった今';
+      if (diff.inHours < 1) return '${diff.inMinutes}分前';
+      if (diff.inDays < 1) return '${diff.inHours}時間前';
+      if (diff.inDays < 7) return '${diff.inDays}日前';
+      return '${dt.year}/${dt.month}/${dt.day} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return isoTime;
+    }
+  }
+
 
   @override
   void initState() {
@@ -49,6 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final encoding = await _repo.getGmailEnvelopeEncoding();
       setState(() => _encodingMode = encoding);
       final transport = await _repo.getSyncTransportMode();
+      await _loadBackupSettings();
       setState(() => _transportMode = transport);
       final account = await _googleAccountService.recoverAccount();
       if (!mounted) return;
@@ -285,7 +373,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('SM:メール設定'),
                   subtitle: const Text('SMTP/BCC設定、Gmailアカウント選択'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EmailSettingsScreen())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmailSettingsScreen())),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.cloud_upload, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('データバックアップ', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '最終バックアップ: ${_formatBackupTime(_lastBackupTime)}',
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _backingUp ? null : _backupToGoogleDrive,
+                        icon: _backingUp 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.backup),
+                        label: Text(_backingUp ? 'バックアップ中...' : '今すぐバックアップ'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('自動バックアップ'),
+                  subtitle: const Text('毎日起動時に自動実行（24時間経過後）'),
+                  value: _autoBackupEnabled,
+                  onChanged: _setAutoBackup,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Google Drive連携が必要です。上記「Googleアカウント連携」で設定してください。',
+                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
