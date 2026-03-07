@@ -5,20 +5,10 @@
 ## 🔴 緊急・高優先度
 
 ### 進行中
-- [ ] TODO.md作成とREADME更新（AI管理基盤整備）
-  - 関連: `TODO.md`, `README.md`
-  - 状況: ドキュメント作成中
+なし
 
 ### 未着手
-- [ ] BCC設定UI改善（ヘルプ・プレースホルダー追加）
-  - 関連: `lib/screens/email_settings_screen.dart`
-  - 目的: 一般ユーザーが迷わず設定完了できる
-  - 内容: ヘルプアイコン、設定手順ダイアログ、プレースホルダー改善
-
-- [ ] Google Drive手動バックアップボタン追加
-  - 関連: `lib/screens/settings_screen.dart`, `lib/services/drive_backup_service.dart`
-  - 目的: データ消失防止
-  - 内容: 設定画面にバックアップセクション追加、即時実行機能
+なし
 
 ## 🟡 中優先度
 
