@@ -1,8 +1,10 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
+import '../constants/warehouse_constants.dart';
+
 class DatabaseHelper {
-  static const _databaseVersion = 30;
+  static const _databaseVersion = 31;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -274,6 +276,54 @@ class DatabaseHelper {
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_staff_name ON staff(name)');
     }
+    if (oldVersion < 31) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS warehouse_stock (
+          product_id TEXT NOT NULL,
+          warehouse_id TEXT NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL,
+          PRIMARY KEY(product_id, warehouse_id),
+          FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE,
+          FOREIGN KEY(warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_stock_product ON warehouse_stock(product_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_stock_warehouse ON warehouse_stock(warehouse_id)');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS stock_transfers (
+          id TEXT PRIMARY KEY,
+          document_no TEXT NOT NULL,
+          from_warehouse_id TEXT NOT NULL,
+          to_warehouse_id TEXT NOT NULL,
+          memo TEXT,
+          transfer_date TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          created_by_device TEXT,
+          FOREIGN KEY(from_warehouse_id) REFERENCES warehouses(id),
+          FOREIGN KEY(to_warehouse_id) REFERENCES warehouses(id)
+        )
+      ''');
+      await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_transfers_document_no ON stock_transfers(document_no)');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS stock_transfer_items (
+          id TEXT PRIMARY KEY,
+          transfer_id TEXT NOT NULL,
+          product_id TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          notes TEXT,
+          FOREIGN KEY(transfer_id) REFERENCES stock_transfers(id) ON DELETE CASCADE,
+          FOREIGN KEY(product_id) REFERENCES products(id)
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_transfer_items_transfer ON stock_transfer_items(transfer_id)');
+
+      await _seedDefaultWarehouse(db);
+      await _migrateExistingStockIntoDefaultWarehouse(db);
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -498,6 +548,51 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_warehouses_name ON warehouses(name)');
 
     await db.execute('''
+      CREATE TABLE warehouse_stock (
+        product_id TEXT NOT NULL,
+        warehouse_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY(product_id, warehouse_id),
+        FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY(warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_warehouse_stock_product ON warehouse_stock(product_id)');
+    await db.execute('CREATE INDEX idx_warehouse_stock_warehouse ON warehouse_stock(warehouse_id)');
+
+    await db.execute('''
+      CREATE TABLE stock_transfers (
+        id TEXT PRIMARY KEY,
+        document_no TEXT NOT NULL,
+        from_warehouse_id TEXT NOT NULL,
+        to_warehouse_id TEXT NOT NULL,
+        memo TEXT,
+        transfer_date TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        created_by_device TEXT,
+        FOREIGN KEY(from_warehouse_id) REFERENCES warehouses(id),
+        FOREIGN KEY(to_warehouse_id) REFERENCES warehouses(id)
+      )
+    ''');
+    await db.execute('CREATE UNIQUE INDEX idx_stock_transfers_document_no ON stock_transfers(document_no)');
+
+    await db.execute('''
+      CREATE TABLE stock_transfer_items (
+        id TEXT PRIMARY KEY,
+        transfer_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        notes TEXT,
+        FOREIGN KEY(transfer_id) REFERENCES stock_transfers(id) ON DELETE CASCADE,
+        FOREIGN KEY(product_id) REFERENCES products(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_stock_transfer_items_transfer ON stock_transfer_items(transfer_id)');
+
+    await _seedDefaultWarehouse(db);
+    await db.execute('''
       CREATE TABLE staff (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -518,6 +613,39 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE $table ADD COLUMN $columnDef');
     } catch (_) {
       // Ignore if the column already exists.
+    }
+  }
+
+  Future<void> _seedDefaultWarehouse(Database db) async {
+    const defaultId = kDefaultWarehouseId;
+    final existing = await db.query('warehouses', where: 'id = ?', whereArgs: [defaultId]);
+    if (existing.isNotEmpty) return;
+    await db.insert('warehouses', {
+      'id': defaultId,
+      'name': kDefaultWarehouseName,
+      'location': null,
+      'notes': '既存在庫の初期配置用',
+      'is_hidden': 0,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> _migrateExistingStockIntoDefaultWarehouse(Database db) async {
+    const defaultId = kDefaultWarehouseId;
+    final products = await db.query('products');
+    final now = DateTime.now().toIso8601String();
+    for (final product in products) {
+      final quantity = product['stock_quantity'] as int? ?? 0;
+      await db.insert(
+        'warehouse_stock',
+        {
+          'product_id': product['id'],
+          'warehouse_id': defaultId,
+          'quantity': quantity,
+          'updated_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
   }
 }

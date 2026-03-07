@@ -13,6 +13,8 @@ import 'product_master_screen.dart';
 import 'settings_screen.dart';
 import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
+import 'stocktake_input_screen.dart';
+import 'stock_transfer_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -117,6 +119,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const MasterHubPage();
       case 'settings':
         return const SettingsScreen();
+      case 'stocktake_input':
+        return const StocktakeInputScreen();
+      case 'stock_transfer':
+        return const StockTransferScreen();
       default:
         return MenuPlaceholderScreen(item: item);
     }

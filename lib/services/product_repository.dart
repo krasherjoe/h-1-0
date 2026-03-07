@@ -111,4 +111,28 @@ class ProductRepository {
       details: hidden ? "商品を非表示にしました" : "商品を再表示しました",
     );
   }
+
+  Future<void> updateStockQuantities(Map<String, int> adjustments) async {
+    if (adjustments.isEmpty) return;
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      for (final entry in adjustments.entries) {
+        await txn.update(
+          'products',
+          {'stock_quantity': entry.value},
+          where: 'id = ?',
+          whereArgs: [entry.key],
+        );
+      }
+    });
+
+    for (final entry in adjustments.entries) {
+      await _logRepo.logAction(
+        action: 'STOCKTAKE_ADJUST',
+        targetType: 'PRODUCT',
+        targetId: entry.key,
+        details: '棚卸で在庫数を${entry.value}に更新',
+      );
+    }
+  }
 }

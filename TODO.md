@@ -1,6 +1,6 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-03-07 13:30
+最終更新: 2026-03-07 16:30
 
 ## 🔴 緊急・高優先度
 
@@ -18,8 +18,6 @@
   - ブロッカー: SHA-1フィンガープリント登録が必要
   - メモ: エンドユーザーはGmailアプリパスワード推奨
 
-- [ ] 在庫移動機能（倉庫間）実装
-- [ ] 棚卸入力画面作成
 - [ ] 請求書発行機能実装
 
 ## 🟢 低優先度
@@ -29,6 +27,21 @@
 - [ ] 多言語対応検討
 
 ## ✅ 完了 (直近7日)
+
+- [x] 在庫移動機能（倉庫間）実装 (2026-03-07)
+  - 関連: `lib/services/database_helper.dart`, `lib/models/stock_transfer_models.dart`, `lib/services/warehouse_stock_repository.dart`, `lib/services/stock_transfer_service.dart`, `lib/screens/stock_transfer_screen.dart`, `lib/screens/dashboard_screen.dart`
+  - 内容:
+    - 倉庫別在庫・在庫移動テーブルのマイグレーション追加
+    - WarehouseStockRepository / StockTransferService 実装
+    - IM:在庫移動画面を追加し、Dashboardからアクセス可能に
+    - `flutter test` で動作確認
+
+- [x] 棚卸入力画面作成 (2026-03-07)
+  - 関連: `lib/screens/stocktake_input_screen.dart`, `lib/services/product_repository.dart`, `lib/screens/dashboard_screen.dart`
+  - 内容:
+    - 全商品リストの棚卸入力フォーム追加
+    - 在庫数の検索・並び替え・一括保存
+    - Dashboardメニューから遷移可能に対応
 
 - [x] プロジェクト管理基盤整備 (2026-03-07, commit: 255859c)
   - 関連: `TODO.md`, `README.md`

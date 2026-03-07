@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../constants/warehouse_constants.dart';
 import '../models/warehouse_model.dart';
 import 'activity_log_repository.dart';
 import 'database_helper.dart';
@@ -63,5 +64,21 @@ class WarehouseRepository {
       targetId: id,
       details: hidden ? '倉庫を非表示にしました' : '倉庫を再表示しました',
     );
+  }
+
+  Future<Warehouse> ensureDefaultWarehouse() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('warehouses', where: 'id = ?', whereArgs: [kDefaultWarehouseId]);
+    if (rows.isNotEmpty) {
+      return Warehouse.fromMap(rows.first);
+    }
+    final defaultWarehouse = Warehouse(
+      id: kDefaultWarehouseId,
+      name: kDefaultWarehouseName,
+      updatedAt: DateTime.now(),
+      notes: '自動生成された倉庫',
+    );
+    await saveWarehouse(defaultWarehouse);
+    return defaultWarehouse;
   }
 }
