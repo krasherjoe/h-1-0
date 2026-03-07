@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/sync_preferences.dart';
@@ -38,6 +39,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _linkingAccount = false;
   StreamSubscription<GoogleSignInAccount?>? _accountSubscription;
   bool _backingUp = false;
+  bool _restoring = false;
+  List<dynamic>? _availableBackups;
   String? _lastBackupTime;
   bool _autoBackupEnabled = false;
 
@@ -52,6 +55,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
     }
   }
+
+
+  Future<void> _loadAvailableBackups() async {
+    setState(() => _restoring = true);
+    try {
+      final driveService = DriveBackupService();
+      final backups = await driveService.listBackupFiles();
+      if (mounted) {
+        setState(() {
+          _availableBackups = backups;
+          _restoring = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _restoring = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('バックアップ一覧の取得に失敗: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _restoreFromGoogleDrive() async {
+    // 確認ダイアログ
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('データ復元確認'),
+        content: const Text(
+          '現在のデータベースをGoogle Driveの最新バックアップで上書きします。\n\n'
+          '※現在のデータは失われます。続けますか？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('復元する'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _restoring = true);
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+      
+      // DBを閉じる
+      await db.close();
+      
+      final driveService = DriveBackupService();
+      final success = await driveService.restoreLatestBackup(dbPath);
+      
+      if (!success) {
+        throw Exception('復元可能なバックアップが見つかりません');
+      }
+      
+      if (mounted) {
+        setState(() => _restoring = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ データを復元しました。アプリを再起動してください。')),
+        );
+        
+        // アプリ再起動を促す
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('復元完了'),
+            content: const Text('データベースを復元しました。\nアプリを再起動してください。'),
+            actions: [
+              ElevatedButton(
+                onPressed: () => SystemNavigator.pop(),
+                child: const Text('アプリを終了'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _restoring = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ 復元失敗: $e')),
+        );
+      }
+    }
+  }
+
 
   Future<void> _backupToGoogleDrive() async {
     if (_backingUp) return;
@@ -429,7 +529,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: const Text('毎日起動時に自動実行（24時間経過後）'),
                   value: _autoBackupEnabled,
                   onChanged: _setAutoBackup,
+                ),                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _restoring ? null : _restoreFromGoogleDrive,
+                  icon: _restoring
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.restore),
+                  label: Text(_restoring ? '復元中...' : 'バックアップから復元'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                  ),
                 ),
+
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.all(8),

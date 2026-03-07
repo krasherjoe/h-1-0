@@ -96,4 +96,93 @@ class DriveBackupService extends GoogleApiServiceBase {
     final nameWithoutExt = base.replaceAll(ext, '');
     return '${nameWithoutExt}_$timestamp$ext';
   }
+
+  /// Google Driveから最新のバックアップファイル一覧を取得
+  Future<List<drive.File>> listBackupFiles() async {
+    return withClient((client) async {
+      final api = drive.DriveApi(client);
+      final folderId = await _ensureNodeFolder(api);
+      
+      final response = await api.files.list(
+        q: "'$folderId' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'",
+        spaces: 'drive',
+        orderBy: 'modifiedTime desc',
+        $fields: 'files(id,name,modifiedTime,size,description)',
+        pageSize: 50,
+      );
+      
+      return response.files ?? [];
+    });
+  }
+
+  /// 指定されたファイルIDのバックアップを取得してローカルに保存
+  Future<File> downloadBackup(String fileId, String localPath) async {
+    return withClient((client) async {
+      final api = drive.DriveApi(client);
+      
+      final media = await api.files.get(
+        fileId,
+        downloadOptions: drive.DownloadOptions.fullMedia,
+      ) as drive.Media;
+      
+      final localFile = File(localPath);
+      final sink = localFile.openWrite();
+      
+      await for (final chunk in media.stream) {
+        sink.add(chunk);
+      }
+      
+      await sink.close();
+      return localFile;
+    });
+  }
+
+  /// 最新のバックアップをダウンロードしてDBを復元
+  Future<bool> restoreLatestBackup(String targetDbPath) async {
+    try {
+      final backups = await listBackupFiles();
+      if (backups.isEmpty) {
+        return false;
+      }
+      
+      // 最新のDBファイルを探す（.db拡張子）
+      final dbBackup = backups.firstWhere(
+        (f) => f.name?.endsWith('.db') ?? false,
+        orElse: () => drive.File(),
+      );
+      
+      if (dbBackup.id == null) {
+        return false;
+      }
+      
+      // 一時ファイルにダウンロード
+      final tempPath = '$targetDbPath.tmp';
+      await downloadBackup(dbBackup.id!, tempPath);
+      
+      // 既存DBをバックアップ
+      final targetFile = File(targetDbPath);
+      if (await targetFile.exists()) {
+        await targetFile.rename('$targetDbPath.old');
+      }
+      
+      // 復元
+      await File(tempPath).rename(targetDbPath);
+      
+      // 古いバックアップを削除
+      final oldBackup = File('$targetDbPath.old');
+      if (await oldBackup.exists()) {
+        await oldBackup.delete();
+      }
+      
+      return true;
+    } catch (e) {
+      // エラー時は元に戻す
+      final oldBackup = File('$targetDbPath.old');
+      if (await oldBackup.exists()) {
+        await oldBackup.rename(targetDbPath);
+      }
+      rethrow;
+    }
+  }
+
 }

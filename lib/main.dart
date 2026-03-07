@@ -17,6 +17,7 @@ import 'services/app_settings_repository.dart';
 import 'services/chat_sync_scheduler.dart';
 import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
+import 'services/auto_backup_service.dart';
 import 'utils/build_expiry_info.dart';
 
 void main() async {
@@ -27,6 +28,8 @@ void main() async {
     runApp(ExpiredApp(expiryInfo: expiryInfo));
     return;
   }
+  // 起動時に自動バックアップチェック（非同期、アプリ起動を妨げない）
+  AutoBackupService.checkAndBackupOnStartup();
   runApp(MyApp(expiryInfo: expiryInfo));
 }
 
@@ -50,6 +53,49 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _sendHeartbeat();
     _chatSyncScheduler.start();
+    _checkFirstLaunchRestore();
+  }
+
+  void _checkFirstLaunchRestore() {
+    Future.microtask(() async {
+      final shouldOffer = await AutoBackupService.shouldOfferRestore();
+      if (shouldOffer && mounted) {
+        _showRestoreDialog();
+      }
+    });
+  }
+
+  void _showRestoreDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('バックアップからの復元'),
+        content: const Text(
+          'Google Driveにバックアップが見つかりました。\n'
+          'データを復元しますか？\n\n'
+          '※設定画面からいつでも復元できます。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('後で'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // 設定画面へ誘導（リストア機能がある）
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('設定 > データバックアップ > バックアップから復元 で復元できます'),
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            },
+            child: const Text('設定画面を開く'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

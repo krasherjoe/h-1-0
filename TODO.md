@@ -13,16 +13,6 @@
 ## 🟡 中優先度
 
 ### 未着手
-- [ ] Google Drive自動バックアップ実装
-  - 起動時24時間経過チェック→自動実行
-  - 最終バックアップ日時の表示
-  - 自動バックアップON/OFF切り替え
-
-- [ ] Google Driveリストア機能実装
-  - 初回起動時の自動リストアチェック
-  - 手動リストア機能
-  - リストア前の確認ダイアログ
-
 - [ ] Google連携のOAuth設定完了（開発者側で実施）
   - 関連: `lib/services/google_account_service.dart`
   - ブロッカー: SHA-1フィンガープリント登録が必要
@@ -39,6 +29,18 @@
 - [ ] 多言語対応検討
 
 ## ✅ 完了 (直近7日)
+
+- [x] プロジェクト管理基盤整備 (2026-03-07, commit: 255859c)
+  - 関連: `TODO.md`, `README.md`
+  - 内容: TODO.md作成（AI管理用）、README.mdにプロジェクト管理方針追加
+
+- [x] BCC設定UI改善 (2026-03-07, commit: 255859c)
+  - 関連: `lib/screens/email_settings_screen.dart`
+  - 内容: ヘルプダイアログ、プレースホルダー、ヘルプアイコン追加
+
+- [x] Google Drive手動バックアップ機能追加 (2026-03-07, commit: 255859c)
+  - 関連: `lib/screens/settings_screen.dart`, `lib/services/drive_backup_service.dart`
+  - 内容: バックアップセクション、今すぐバックアップボタン、最終バックアップ日時表示
 
 - [x] S1:設定画面に戻るボタン追加 (2026-03-07)
   - 関連: `lib/screens/settings_screen.dart`
