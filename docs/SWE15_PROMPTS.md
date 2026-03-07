@@ -42,9 +42,11 @@
 
 ---
 
-## 📋 基本プロンプトテンプレート
+## 📋 完全実装可能なプロンプト例
 
-### テンプレート1: 新規画面追加（最も基本）
+### 例1: 配送記録一覧画面の完全実装
+
+**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
 
 ```markdown
 タスク: 配送記録一覧画面の実装
@@ -58,54 +60,690 @@
 
 ## 実装する画面
 - 画面ID: DL（2文字、既存と重複しないこと）
-- 画面タイトル: 配送記録一覧
+- 画面タイトル: DL:配送記録一覧
 - 機能: 配送記録の一覧表示と管理
 - カテゴリ: sales
 
+---
+
 ## Step 1: モデルクラス作成
 
-ファイル: lib/models/delivery_model.dart
+ファイル: `lib/models/delivery_model.dart`
 
 以下のコードをそのまま作成してください：
 
-（コード全文を記載）
+```dart
+import 'package:flutter/material.dart';
+import 'base_document.dart';
+import 'customer_model.dart';
+
+/// 配送記録モデル
+class Delivery extends BaseDocument {
+  final String deliveryAddress;
+  final String? deliveryNote;
+  
+  Delivery({
+    required super.id,
+    required super.documentNumber,
+    required super.date,
+    super.customer,
+    required super.items,
+    required super.subtotal,
+    required super.taxAmount,
+    required super.total,
+    required super.taxRate,
+    super.notes,
+    super.subject,
+    required super.status,
+    required super.createdAt,
+    required super.updatedAt,
+    required this.deliveryAddress,
+    this.deliveryNote,
+  });
+
+  @override
+  Color getStatusColor() {
+    switch (status) {
+      case DocumentStatus.draft:
+        return Colors.grey;
+      case DocumentStatus.confirmed:
+        return Colors.blue;
+      case DocumentStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  @override
+  Color getThemeColor() {
+    return Colors.green;
+  }
+
+  @override
+  String getDocumentTypeName() {
+    return '配送';
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'document_number': documentNumber,
+      'date': date.toIso8601String(),
+      'customer_id': customer?.id,
+      'delivery_address': deliveryAddress,
+      'delivery_note': deliveryNote,
+      'subtotal': subtotal,
+      'tax_amount': taxAmount,
+      'total': total,
+      'tax_rate': taxRate,
+      'notes': notes,
+      'subject': subject,
+      'status': status.name,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory Delivery.fromMap(Map<String, dynamic> map, Customer? customer) {
+    return Delivery(
+      id: map['id'] as String,
+      documentNumber: map['document_number'] as String,
+      date: DateTime.parse(map['date'] as String),
+      customer: customer,
+      items: [],
+      deliveryAddress: map['delivery_address'] as String,
+      deliveryNote: map['delivery_note'] as String?,
+      subtotal: map['subtotal'] as int,
+      taxAmount: map['tax_amount'] as int,
+      total: map['total'] as int,
+      taxRate: (map['tax_rate'] as num).toDouble(),
+      notes: map['notes'] as String?,
+      subject: map['subject'] as String?,
+      status: DocumentStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => DocumentStatus.draft,
+      ),
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
+    );
+  }
+}
+```
 
 完了したら「✅ Step 1完了」と報告してください。
 
+---
+
 ## Step 2: リポジトリクラス作成
 
-ファイル: lib/services/delivery_repository.dart
+ファイル: `lib/services/delivery_repository.dart`
 
 以下のコードをそのまま作成してください：
 
-（コード全文を記載）
+```dart
+import '../models/delivery_model.dart';
+import '../models/customer_model.dart';
+import 'database_helper.dart';
+import 'customer_repository.dart';
+
+class DeliveryRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+  final CustomerRepository _customerRepo = CustomerRepository();
+
+  Future<List<Delivery>> getAll() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'deliveries',
+      orderBy: 'date DESC',
+    );
+
+    final List<Delivery> deliveries = [];
+    for (var map in maps) {
+      Customer? customer;
+      if (map['customer_id'] != null) {
+        customer = await _customerRepo.getById(map['customer_id'] as String);
+      }
+      deliveries.add(Delivery.fromMap(map, customer));
+    }
+    return deliveries;
+  }
+
+  Future<Delivery?> getById(String id) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'deliveries',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+
+    Customer? customer;
+    if (maps.first['customer_id'] != null) {
+      customer = await _customerRepo.getById(maps.first['customer_id'] as String);
+    }
+
+    return Delivery.fromMap(maps.first, customer);
+  }
+
+  Future<void> insert(Delivery delivery) async {
+    final db = await _dbHelper.database;
+    await db.insert('deliveries', delivery.toMap());
+  }
+
+  Future<void> update(Delivery delivery) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'deliveries',
+      delivery.toMap(),
+      where: 'id = ?',
+      whereArgs: [delivery.id],
+    );
+  }
+
+  Future<void> delete(String id) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'deliveries',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+}
+```
 
 完了したら「✅ Step 2完了」と報告してください。
 
-（以下、Step 3-6を同様に記載）
+---
+
+## Step 3: データベーステーブル作成
+
+ファイル: `lib/services/database_helper.dart`
+
+### 3-1: バージョン番号更新
+
+7行目の以下の行を見つけてください：
+```dart
+static const _databaseVersion = 33;
+```
+
+以下に変更してください：
+```dart
+static const _databaseVersion = 34;
+```
+
+### 3-2: マイグレーション追加
+
+`_onUpgrade` メソッド内の最後（`if (oldVersion < 33)` ブロックの後）に以下を追加してください：
+
+```dart
+    if (oldVersion < 34) {
+      await db.execute('''
+        CREATE TABLE deliveries (
+          id TEXT PRIMARY KEY,
+          document_number TEXT NOT NULL,
+          date TEXT NOT NULL,
+          customer_id TEXT,
+          delivery_address TEXT NOT NULL,
+          delivery_note TEXT,
+          subtotal INTEGER NOT NULL,
+          tax_amount INTEGER NOT NULL,
+          total INTEGER NOT NULL,
+          tax_rate REAL NOT NULL,
+          notes TEXT,
+          subject TEXT,
+          status TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (customer_id) REFERENCES customers (id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_deliveries_date ON deliveries(date)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_deliveries_customer ON deliveries(customer_id)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_deliveries_status ON deliveries(status)
+      ''');
+    }
+```
+
+完了したら「✅ Step 3完了」と報告してください。
+
+---
+
+## Step 4: 画面クラス作成
+
+ファイル: `lib/screens/delivery_list_screen.dart`
+
+以下のコードをそのまま作成してください：
+
+```dart
+import 'package:flutter/material.dart';
+import '../models/delivery_model.dart';
+import '../services/delivery_repository.dart';
+import '../widgets/generic_list_screen.dart';
+import '../widgets/document_card.dart';
+
+class DeliveryListScreen extends StatelessWidget {
+  const DeliveryListScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GenericListScreen<Delivery>(
+      screenId: 'DL',
+      screenTitle: '配送記録一覧',
+      repository: DeliveryRepository(),
+      itemBuilder: (delivery) => DocumentCard(
+        document: delivery,
+        onTap: () {
+          // TODO: 詳細画面への遷移（後で実装）
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('配送記録: ${delivery.documentNumber}')),
+          );
+        },
+      ),
+      onAdd: () {
+        // TODO: 新規作成画面への遷移（後で実装）
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('新規作成機能は後で実装します')),
+        );
+      },
+    );
+  }
+}
+```
+
+完了したら「✅ Step 4完了」と報告してください。
+
+---
+
+## Step 5: メニューカタログに追加
+
+ファイル: `lib/constants/menu_catalog.dart`
+
+`allMenus` リストの最後（最後の `MenuDefinition` の後、閉じ括弧 `]` の前）に以下を追加してください：
+
+```dart
+  MenuDefinition(
+    id: 'DL',
+    title: '配送記録一覧',
+    route: 'delivery_list',
+    category: MenuCategory.sales,
+    icon: Icons.local_shipping,
+    description: '配送記録の一覧表示と管理',
+  ),
+```
+
+**注意**: 最後から2番目の `MenuDefinition` の閉じ括弧 `)` の後にカンマ `,` があることを確認してください。
+
+完了したら「✅ Step 5完了」と報告してください。
+
+---
+
+## Step 6: ダッシュボードにルート追加
+
+ファイル: `lib/screens/dashboard_screen.dart`
+
+### 6-1: import追加
+
+ファイルの上部、他のimport文の後に以下を追加してください：
+
+```dart
+import 'delivery_list_screen.dart';
+```
+
+### 6-2: ルート追加
+
+`_getScreen` メソッド内のswitch文に以下のcaseを追加してください（他のcaseの後、default:の前）：
+
+```dart
+      case 'delivery_list':
+        return const DeliveryListScreen();
+```
+
+完了したら「✅ Step 6完了」と報告してください。
+
+---
 
 ## 最終確認
 
-以下を実行して確認してください：
+以下を順番に実行して確認してください：
 
-1. ターミナルで flutter analyze を実行
-   - エラーが0件であることを確認
-2. アプリを起動して動作確認
-   - ダッシュボードにメニューが表示されること
-   - メニューをタップして画面が表示されること
+### 確認1: コード解析
+ターミナルで以下を実行：
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze
+```
+
+**期待結果**: エラーが0件であること
+**エラーがある場合**: エラー内容を報告してください
+
+### 確認2: アプリ起動
+アプリを起動して以下を確認：
+1. ダッシュボードに「配送記録一覧」メニューが表示されること
+2. メニューをタップして画面が表示されること
+3. 画面タイトルが「DL:配送記録一覧」であること
+
+---
 
 ## 完了報告
 
 以下の形式で報告してください：
 
-✅ Step 1-6 完了
+```
+✅ Step 1: モデルクラス作成完了
+✅ Step 2: リポジトリクラス作成完了
+✅ Step 3: データベーステーブル作成完了
+✅ Step 4: 画面クラス作成完了
+✅ Step 5: メニューカタログ追加完了
+✅ Step 6: ダッシュボードルート追加完了
 ✅ flutter analyze: エラー0件
-✅ 動作確認: OK
+✅ 動作確認: 画面表示OK
+```
 ```
 
 ---
 
-### テンプレート2: 既存画面の修正
+### 例2: 在庫一覧画面の完全実装
+
+**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+
+```markdown
+タスク: 在庫一覧画面の実装
+
+## 前提条件
+- プロジェクト: 販売アシスト1号（Flutter/Dart）
+- プロジェクトパス: /home/user/dev/h-1.flutter.0
+- データベース現在バージョン: 33
+
+## 実装する画面
+- 画面ID: IV（Inventory）
+- 画面タイトル: IV:在庫一覧
+- 機能: 商品在庫の一覧表示
+- カテゴリ: inventory
+
+---
+
+## Step 1: 在庫モデル作成
+
+ファイル: `lib/models/inventory_model.dart`
+
+以下のコードをそのまま作成してください：
+
+```dart
+class Inventory {
+  final String id;
+  final String productId;
+  final String productName;
+  final int quantity;
+  final String warehouseId;
+  final String warehouseName;
+  final DateTime updatedAt;
+
+  Inventory({
+    required this.id,
+    required this.productId,
+    required this.productName,
+    required this.quantity,
+    required this.warehouseId,
+    required this.warehouseName,
+    required this.updatedAt,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'product_id': productId,
+      'product_name': productName,
+      'quantity': quantity,
+      'warehouse_id': warehouseId,
+      'warehouse_name': warehouseName,
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory Inventory.fromMap(Map<String, dynamic> map) {
+    return Inventory(
+      id: map['id'] as String,
+      productId: map['product_id'] as String,
+      productName: map['product_name'] as String,
+      quantity: map['quantity'] as int,
+      warehouseId: map['warehouse_id'] as String,
+      warehouseName: map['warehouse_name'] as String,
+      updatedAt: DateTime.parse(map['updated_at'] as String),
+    );
+  }
+}
+```
+
+完了したら「✅ Step 1完了」と報告してください。
+
+---
+
+## Step 2: 在庫リポジトリ作成
+
+ファイル: `lib/services/inventory_repository.dart`
+
+以下のコードをそのまま作成してください：
+
+```dart
+import '../models/inventory_model.dart';
+import 'database_helper.dart';
+
+class InventoryRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  Future<List<Inventory>> getAll() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT 
+        i.id,
+        i.product_id,
+        p.name as product_name,
+        i.quantity,
+        i.warehouse_id,
+        w.name as warehouse_name,
+        i.updated_at
+      FROM inventory i
+      LEFT JOIN products p ON i.product_id = p.id
+      LEFT JOIN warehouses w ON i.warehouse_id = w.id
+      ORDER BY p.name
+    ''');
+
+    return maps.map((map) => Inventory.fromMap(map)).toList();
+  }
+
+  Future<List<Inventory>> getByWarehouse(String warehouseId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT 
+        i.id,
+        i.product_id,
+        p.name as product_name,
+        i.quantity,
+        i.warehouse_id,
+        w.name as warehouse_name,
+        i.updated_at
+      FROM inventory i
+      LEFT JOIN products p ON i.product_id = p.id
+      LEFT JOIN warehouses w ON i.warehouse_id = w.id
+      WHERE i.warehouse_id = ?
+      ORDER BY p.name
+    ''', [warehouseId]);
+
+    return maps.map((map) => Inventory.fromMap(map)).toList();
+  }
+}
+```
+
+完了したら「✅ Step 2完了」と報告してください。
+
+---
+
+## Step 3: 在庫一覧画面作成
+
+ファイル: `lib/screens/inventory_list_screen.dart`
+
+以下のコードをそのまま作成してください：
+
+```dart
+import 'package:flutter/material.dart';
+import '../models/inventory_model.dart';
+import '../services/inventory_repository.dart';
+
+class InventoryListScreen extends StatefulWidget {
+  const InventoryListScreen({Key? key}) : super(key: key);
+
+  @override
+  State<InventoryListScreen> createState() => _InventoryListScreenState();
+}
+
+class _InventoryListScreenState extends State<InventoryListScreen> {
+  final InventoryRepository _repository = InventoryRepository();
+  List<Inventory> _inventories = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInventories();
+  }
+
+  Future<void> _loadInventories() async {
+    setState(() => _isLoading = true);
+    try {
+      final inventories = await _repository.getAll();
+      if (mounted) {
+        setState(() {
+          _inventories = inventories;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エラー: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('IV:在庫一覧'),
+        backgroundColor: Colors.orange,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _inventories.isEmpty
+              ? const Center(child: Text('在庫データがありません'))
+              : RefreshIndicator(
+                  onRefresh: _loadInventories,
+                  child: ListView.builder(
+                    itemCount: _inventories.length,
+                    itemBuilder: (context, index) {
+                      final inventory = _inventories[index];
+                      return ListTile(
+                        leading: const Icon(Icons.inventory_2, color: Colors.orange),
+                        title: Text(inventory.productName),
+                        subtitle: Text('倉庫: ${inventory.warehouseName}'),
+                        trailing: Text(
+                          '${inventory.quantity}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: inventory.quantity > 0 ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+    );
+  }
+}
+```
+
+完了したら「✅ Step 3完了」と報告してください。
+
+---
+
+## Step 4: メニューカタログに追加
+
+ファイル: `lib/constants/menu_catalog.dart`
+
+`allMenus` リストの最後に以下を追加してください：
+
+```dart
+  MenuDefinition(
+    id: 'IV',
+    title: '在庫一覧',
+    route: 'inventory_list',
+    category: MenuCategory.inventory,
+    icon: Icons.inventory_2,
+    description: '商品在庫の一覧表示',
+  ),
+```
+
+完了したら「✅ Step 4完了」と報告してください。
+
+---
+
+## Step 5: ダッシュボードにルート追加
+
+ファイル: `lib/screens/dashboard_screen.dart`
+
+### 5-1: import追加
+```dart
+import 'inventory_list_screen.dart';
+```
+
+### 5-2: ルート追加
+`_getScreen` メソッドのswitch文に追加：
+```dart
+      case 'inventory_list':
+        return const InventoryListScreen();
+```
+
+完了したら「✅ Step 5完了」と報告してください。
+
+---
+
+## 最終確認
+
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze
+```
+
+エラーが0件であることを確認してください。
+
+---
+
+## 完了報告
+
+```
+✅ Step 1-5 完了
+✅ flutter analyze: エラー0件
+✅ 動作確認: 画面表示OK
+```
+```
+
+---
+
+### 例3: バグ修正（null参照エラー）
+
+**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
 
 ```markdown
 タスク: 顧客名null参照エラーの修正
@@ -118,48 +756,415 @@
 ## 問題の詳細
 - 現象: 顧客選択時にアプリがクラッシュする
 - エラーメッセージ: Null check operator used on a null value
-- 発生箇所: quotation_input_screen.dart の 123行目付近
-- 該当コード:
-```dart
-Text(customer.name)  // ← この行でクラッシュ
-```
+- 発生箇所: lib/screens/quotation_input_screen.dart の 123行目付近
 
-## 原因
-customer.nameがnullの場合の処理が不足している
+## 修正手順
 
-## 修正内容
+### Step 1: エラー箇所の特定
 
-ファイル: lib/screens/quotation_input_screen.dart
+ファイル: `lib/screens/quotation_input_screen.dart`
 
-123行目付近の以下のコードを見つけて：
+123行目付近で以下のようなコードを探してください：
 
 ```dart
 Text(customer.name)
 ```
 
-以下に修正してください：
+このコードが見つかったら、次のStepに進んでください。
+
+### Step 2: null安全な修正
+
+見つけたコードを以下に修正してください：
 
 ```dart
 Text(customer.name ?? '名称未設定')
 ```
 
-## 同様の問題がないか確認
+**修正理由**: `customer.name` がnullの場合、`??` 演算子により「名称未設定」が表示されます。
 
-同じファイル内で customer. で検索し、他にもnullチェックが必要な箇所がないか確認してください。
-見つかった場合は同様に修正してください。
+### Step 3: 同様の問題がないか確認
 
-## 確認事項
+同じファイル内で `customer.` で検索し、他にもnullチェックが必要な箇所を探してください。
 
-1. flutter analyze を実行してエラーがないこと
-2. 顧客選択時にクラッシュしないこと
-3. 名前がnullの場合に「名称未設定」と表示されること
+よくあるパターン:
+- `customer.name` → `customer.name ?? '名称未設定'`
+- `customer.phone` → `customer.phone ?? '電話番号なし'`
+- `customer.address` → `customer.address ?? '住所なし'`
+
+見つかった箇所をすべて修正してください。
+
+### Step 4: 確認
+
+1. ターミナルで実行：
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze
+```
+
+2. アプリを起動して確認：
+   - 顧客選択時にクラッシュしないこと
+   - 名前がnullの顧客で「名称未設定」と表示されること
+
+---
 
 ## 完了報告
 
-✅ 修正完了（123行目）
-✅ 他の箇所も確認完了（X箇所修正）
-✅ flutter analyze: エラー0件
+```
+✅ Step 1: エラー箇所特定完了
+✅ Step 2: null安全な修正完了（123行目）
+✅ Step 3: 同様の問題確認完了（X箇所修正）
+✅ Step 4: flutter analyze エラー0件
 ✅ 動作確認: クラッシュなし
+```
+```
+
+---
+
+### 例4: データベーステーブル追加のみ
+
+**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+
+```markdown
+タスク: 配送ルートテーブルの追加
+
+## 前提条件
+- プロジェクト: 販売アシスト1号（Flutter/Dart）
+- プロジェクトパス: /home/user/dev/h-1.flutter.0
+- データベース現在バージョン: 33
+
+## テーブル仕様
+- テーブル名: delivery_routes
+- 用途: 配送ルート情報を保存
+- カラム:
+  - id: TEXT PRIMARY KEY
+  - route_name: TEXT NOT NULL（ルート名）
+  - start_location: TEXT（開始地点）
+  - end_location: TEXT（終了地点）
+  - distance: REAL（距離km）
+  - estimated_time: INTEGER（推定時間分）
+  - created_at: TEXT
+  - updated_at: TEXT
+
+---
+
+## Step 1: バージョン番号更新
+
+ファイル: `lib/services/database_helper.dart`
+
+7行目の以下の行を見つけてください：
+```dart
+static const _databaseVersion = 33;
+```
+
+以下に変更してください：
+```dart
+static const _databaseVersion = 34;
+```
+
+完了したら「✅ Step 1完了」と報告してください。
+
+---
+
+## Step 2: マイグレーション追加
+
+同じファイル `lib/services/database_helper.dart` の `_onUpgrade` メソッド内の最後に以下を追加してください：
+
+**追加位置**: `if (oldVersion < 33)` ブロックの後
+
+```dart
+    if (oldVersion < 34) {
+      await db.execute('''
+        CREATE TABLE delivery_routes (
+          id TEXT PRIMARY KEY,
+          route_name TEXT NOT NULL,
+          start_location TEXT,
+          end_location TEXT,
+          distance REAL,
+          estimated_time INTEGER,
+          created_at TEXT,
+          updated_at TEXT
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_delivery_routes_name 
+        ON delivery_routes(route_name)
+      ''');
+    }
+```
+
+完了したら「✅ Step 2完了」と報告してください。
+
+---
+
+## 確認
+
+1. ターミナルで実行：
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze
+```
+
+2. アプリを起動してマイグレーションが実行されることを確認
+   - エラーなく起動すればOK
+
+---
+
+## 完了報告
+
+```
+✅ Step 1: バージョン番号更新完了（33 → 34）
+✅ Step 2: マイグレーション追加完了
+✅ flutter analyze: エラー0件
+✅ アプリ起動確認: マイグレーション成功
+```
+```
+
+---
+
+### 例5: メニュー項目追加のみ
+
+**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+
+```markdown
+タスク: 売上分析メニューの追加
+
+## 前提条件
+- プロジェクト: 販売アシスト1号（Flutter/Dart）
+- プロジェクトパス: /home/user/dev/h-1.flutter.0
+
+## 追加するメニュー
+- 画面ID: SA（Sales Analysis）
+- タイトル: 売上分析
+- ルート名: sales_analysis
+- カテゴリ: analysis
+- アイコン: Icons.analytics
+- 説明: 売上データの分析とグラフ表示
+
+---
+
+## Step 1: メニューカタログに追加
+
+ファイル: `lib/constants/menu_catalog.dart`
+
+`allMenus` リストの最後（最後の `MenuDefinition` の後、閉じ括弧 `]` の前）に以下を追加してください：
+
+```dart
+  MenuDefinition(
+    id: 'SA',
+    title: '売上分析',
+    route: 'sales_analysis',
+    category: MenuCategory.analysis,
+    icon: Icons.analytics,
+    description: '売上データの分析とグラフ表示',
+  ),
+```
+
+**重要**: 最後から2番目の `MenuDefinition` の閉じ括弧 `)` の後にカンマ `,` があることを確認してください。
+
+完了したら「✅ Step 1完了」と報告してください。
+
+---
+
+## Step 2: ダッシュボードにルート追加（仮実装）
+
+ファイル: `lib/screens/dashboard_screen.dart`
+
+`_getScreen` メソッド内のswitch文に以下のcaseを追加してください：
+
+```dart
+      case 'sales_analysis':
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('SA:売上分析'),
+            backgroundColor: Colors.purple,
+          ),
+          body: const Center(
+            child: Text('売上分析画面（実装予定）'),
+          ),
+        );
+```
+
+**注意**: これは仮実装です。後で正式な画面を作成します。
+
+完了したら「✅ Step 2完了」と報告してください。
+
+---
+
+## 確認
+
+1. ターミナルで実行：
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze
+```
+
+2. アプリを起動して確認：
+   - ダッシュボードに「売上分析」メニューが表示されること
+   - メニューをタップして仮画面が表示されること
+
+---
+
+## 完了報告
+
+```
+✅ Step 1: メニューカタログ追加完了
+✅ Step 2: ダッシュボードルート追加完了（仮実装）
+✅ flutter analyze: エラー0件
+✅ 動作確認: メニュー表示OK
+```
+```
+
+---
+
+### 例6: ウィジェット追加
+
+**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+
+```markdown
+タスク: 配送ステータスバッジウィジェットの作成
+
+## 前提条件
+- プロジェクト: 販売アシスト1号（Flutter/Dart）
+- プロジェクトパス: /home/user/dev/h-1.flutter.0
+
+## ウィジェット仕様
+- ウィジェット名: DeliveryStatusBadge
+- 用途: 配送ステータスを色付きバッジで表示
+- ステータス:
+  - pending（配送前）: 灰色、「未配送」
+  - inProgress（配送中）: 青色、「配送中」
+  - completed（完了）: 緑色、「完了」
+  - cancelled（キャンセル）: 赤色、「キャンセル」
+
+---
+
+## Step 1: ステータスenum作成
+
+ファイル: `lib/models/delivery_status.dart`
+
+以下のコードをそのまま作成してください：
+
+```dart
+enum DeliveryStatus {
+  pending,
+  inProgress,
+  completed,
+  cancelled,
+}
+
+extension DeliveryStatusExtension on DeliveryStatus {
+  String get displayName {
+    switch (this) {
+      case DeliveryStatus.pending:
+        return '未配送';
+      case DeliveryStatus.inProgress:
+        return '配送中';
+      case DeliveryStatus.completed:
+        return '完了';
+      case DeliveryStatus.cancelled:
+        return 'キャンセル';
+    }
+  }
+}
+```
+
+完了したら「✅ Step 1完了」と報告してください。
+
+---
+
+## Step 2: バッジウィジェット作成
+
+ファイル: `lib/widgets/delivery_status_badge.dart`
+
+以下のコードをそのまま作成してください：
+
+```dart
+import 'package:flutter/material.dart';
+import '../models/delivery_status.dart';
+
+class DeliveryStatusBadge extends StatelessWidget {
+  final DeliveryStatus status;
+  final double fontSize;
+
+  const DeliveryStatusBadge({
+    Key? key,
+    required this.status,
+    this.fontSize = 12,
+  }) : super(key: key);
+
+  Color _getColor() {
+    switch (status) {
+      case DeliveryStatus.pending:
+        return Colors.grey;
+      case DeliveryStatus.inProgress:
+        return Colors.blue;
+      case DeliveryStatus.completed:
+        return Colors.green;
+      case DeliveryStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getColor().withOpacity(0.2),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: _getColor(), width: 1),
+      ),
+      child: Text(
+        status.displayName,
+        style: TextStyle(
+          color: _getColor(),
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+```
+
+完了したら「✅ Step 2完了」と報告してください。
+
+---
+
+## Step 3: 使用例の確認
+
+このウィジェットは以下のように使用できます：
+
+```dart
+// 使用例
+DeliveryStatusBadge(status: DeliveryStatus.inProgress)
+
+// フォントサイズ指定
+DeliveryStatusBadge(
+  status: DeliveryStatus.completed,
+  fontSize: 14,
+)
+```
+
+---
+
+## 確認
+
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze
+```
+
+---
+
+## 完了報告
+
+```
+✅ Step 1: ステータスenum作成完了
+✅ Step 2: バッジウィジェット作成完了
+✅ flutter analyze: エラー0件
+```
 ```
 
 ---
