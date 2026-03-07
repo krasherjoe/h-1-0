@@ -67,10 +67,9 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text('OR:受注入力'),
-        backgroundColor: Colors.purple,
+        title: const Text('O1:受注入力'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -79,14 +78,17 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.shopping_cart, size: 64, color: Colors.grey),
+                      const Icon(Icons.assignment_turned_in, size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('受注が登録されていません'),
+                      const Text(
+                        '受注が登録されていません',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
                       const SizedBox(height: 8),
                       ElevatedButton.icon(
                         onPressed: _createNewOrder,
                         icon: const Icon(Icons.add),
-                        label: const Text('新規作成'),
+                        label: const Text('新規受注作成'),
                       ),
                     ],
                   ),
@@ -100,10 +102,10 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: order.isDraft ? Colors.orange.shade100 : Colors.purple.shade100,
+                          backgroundColor: order.isDraft ? Colors.orange.shade100 : Colors.teal.shade100,
                           child: Icon(
-                            order.isDraft ? Icons.edit_note : Icons.shopping_cart,
-                            color: order.isDraft ? Colors.orange : Colors.purple,
+                            order.isDraft ? Icons.edit_note : Icons.assignment_turned_in,
+                            color: order.isDraft ? Colors.orange : Colors.teal,
                           ),
                         ),
                         title: Text(
@@ -111,8 +113,8 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          '${order.date.year}/${order.date.month}/${order.date.day} - ${order.isDraft ? '下書き' : '確定'}\n'
-                          '合計: ¥${order.totalAmount}',
+                          '${order.date.year}/${order.date.month.toString().padLeft(2, '0')}/${order.date.day.toString().padLeft(2, '0')} - ${order.isDraft ? '下書き' : '確定'}\n'
+                          '合計: ¥${order.totalAmount.toStringAsFixed(0)}',
                         ),
                         isThreeLine: true,
                         trailing: const Icon(Icons.chevron_right),
@@ -125,11 +127,10 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _createNewOrder,
-        backgroundColor: Colors.purple.shade800,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('新規受注'),
       ),
     );
   }
