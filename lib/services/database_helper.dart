@@ -7,12 +7,14 @@ class DatabaseHelper {
   static const _databaseVersion = 36;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
+  static Database? testDatabase; // For testing
 
   factory DatabaseHelper() => _instance;
 
   DatabaseHelper._internal();
 
   Future<Database> get database async {
+    if (testDatabase != null) return testDatabase!;
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;

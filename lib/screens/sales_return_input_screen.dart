@@ -6,9 +6,14 @@ import '../models/sales_model.dart';
 import '../services/sales_repository.dart';
 
 /// 売上返品入力画面（汎用テンプレート使用）
-class SalesReturnInputScreen extends StatelessWidget {
+class SalesReturnInputScreen extends StatefulWidget {
   const SalesReturnInputScreen({super.key});
 
+  @override
+  State<SalesReturnInputScreen> createState() => _SalesReturnInputScreenState();
+}
+
+class _SalesReturnInputScreenState extends State<SalesReturnInputScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = SalesRepository();
@@ -35,6 +40,7 @@ class SalesReturnInputScreen extends StatelessWidget {
           status: sales.status,
           themeColor: Colors.red,
           onTap: () {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('返品詳細画面は今後実装予定です')),
             );
@@ -65,6 +71,7 @@ class SalesReturnInputScreen extends StatelessWidget {
                 if (confirmed == true) {
                   try {
                     await repo.deleteSales(sales.id);
+                    if (!mounted) return;
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('返品を削除しました')),
@@ -72,6 +79,7 @@ class SalesReturnInputScreen extends StatelessWidget {
                     }
                     onRefresh();
                   } catch (e) {
+                    if (!mounted) return;
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('削除に失敗しました: $e')),
@@ -110,6 +118,7 @@ class SalesReturnInputScreen extends StatelessWidget {
 
       // 新規作成
       onCreateNew: () async {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('返品作成画面は今後実装予定です')),
         );
@@ -123,6 +132,7 @@ class SalesReturnInputScreen extends StatelessWidget {
         actionLabel: '新規返品作成',
         iconColor: Colors.red,
         onAction: () {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('返品作成画面は今後実装予定です')),
           );

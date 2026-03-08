@@ -6,9 +6,14 @@ import '../models/sales_model.dart';
 import '../services/sales_repository.dart';
 
 /// 売上入力画面（汎用テンプレート使用）
-class SalesEntryScreen extends StatelessWidget {
+class SalesEntryScreen extends StatefulWidget {
   const SalesEntryScreen({super.key});
 
+  @override
+  State<SalesEntryScreen> createState() => _SalesEntryScreenState();
+}
+
+class _SalesEntryScreenState extends State<SalesEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = SalesRepository();
@@ -32,6 +37,7 @@ class SalesEntryScreen extends StatelessWidget {
           status: sales.status,
           themeColor: sales.getThemeColor(),
           onTap: () {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('売上詳細画面は今後実装予定です')),
             );
@@ -43,14 +49,20 @@ class SalesEntryScreen extends StatelessWidget {
               onPressed: () async {
                 try {
                   await repo.copySales(sales);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('売上をコピーしました')),
-                  );
+                  if (!mounted) return;
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('売上をコピーしました')),
+                    );
+                  }
                   onRefresh();
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('コピーに失敗しました: $e')),
-                  );
+                  if (!mounted) return;
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('コピーに失敗しました: $e')),
+                    );
+                  }
                 }
               },
             ),
@@ -79,6 +91,7 @@ class SalesEntryScreen extends StatelessWidget {
                 if (confirmed == true) {
                   try {
                     await repo.deleteSales(sales.id);
+                    if (!mounted) return;
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('売上を削除しました')),
@@ -86,6 +99,7 @@ class SalesEntryScreen extends StatelessWidget {
                     }
                     onRefresh();
                   } catch (e) {
+                    if (!mounted) return;
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('削除に失敗しました: $e')),
@@ -124,6 +138,7 @@ class SalesEntryScreen extends StatelessWidget {
 
       // 新規作成
       onCreateNew: () async {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('売上作成画面は今後実装予定です')),
         );
@@ -137,6 +152,7 @@ class SalesEntryScreen extends StatelessWidget {
         actionLabel: '新規売上作成',
         iconColor: Colors.green,
         onAction: () {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('売上作成画面は今後実装予定です')),
           );

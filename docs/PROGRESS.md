@@ -80,3 +80,21 @@
 - ✅ SWE15_PROMPTS.md と TASK_TEMPLATES.md を新ドキュメントに統合して削除
 - ✅ ドキュメント間の依存関係を整理
 - ✅ 自動進行プロトコルを確立
+
+## 2026-03-08 LINT-FIX-002
+- ✅ order_input_screen.dart: StatefulWidget変換完了（既に完了済み）
+- ✅ sales_entry_screen.dart: StatefulWidget変換完了
+- ✅ sales_return_input_screen.dart: StatefulWidget変換完了
+- ✅ 全ファイルでmountedチェック追加完了
+- ✅ context使用のlint警告を修正
+- ✅ flutter analyze: エラー0件
+
+## 2026-03-08 TEST-ADD-001
+- ✅ quotation_model_test.dart 作成完了
+- ✅ sales_model_test.dart 作成完了
+- ✅ customer_model_test.dart 作成完了
+- ✅ quotation_repository_test.dart 作成完了
+- ✅ document_card_test.dart 作成完了
+- ✅ empty_state_widget_test.dart 作成完了
+- ✅ flutter test: すべてパス（60テスト）
+- ✅ カバレッジレポート生成

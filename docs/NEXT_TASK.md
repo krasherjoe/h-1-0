@@ -1,33 +1,43 @@
 # 次のタスク
 
-**最終更新**: 2026-03-08 20:10
+**最終更新**: 2026-03-08 20:38
 
 ---
 
 ## 🎯 今すぐ実行するタスク
 
-### タスクID: LINT-FIX-002
+### タスクID: TEST-ADD-001
 **優先度**: 🔴 高  
 **担当**: SWE1.5  
-**推定時間**: 30分  
+**推定時間**: 2時間  
 **状態**: ⏳ 待機中
 
 ---
 
 ## 📝 タスク概要
 
-残りのlint警告を修正する（StatefulWidget変換とmountedチェック追加）
+基本的な単体テストを追加する。モデルクラス、リポジトリクラス、基本的なウィジェットのテストを作成し、コード品質を向上させる。
 
 ### 背景
-`quotation_input_screen.dart` で実施したのと同じパターンで、残り3つの画面ファイルを修正します。lint警告は「StatelessWidgetのbuildメソッド内で非同期処理後にcontextを使用している」というもので、StatefulWidgetに変換して`mounted`チェックを追加することで解決します。
+現在テストコードがほとんど存在しないため、基本的な単体テストを追加してリグレッションを防ぎ、将来のリファクタリングを安全にする。
 
 ---
 
 ## 🎯 対象ファイル
 
-1. `lib/screens/order_input_screen.dart` - 受注入力画面
-2. `lib/screens/sales_entry_screen.dart` - 売上入力画面
-3. `lib/screens/sales_return_input_screen.dart` - 売上返品入力画面
+### モデルクラスのテスト
+1. `lib/models/quotation_model.dart` - 見積モデル
+2. `lib/models/sales_model.dart` - 売上モデル
+3. `lib/models/customer_model.dart` - 得意先モデル
+
+### リポジトリクラスのテスト
+1. `lib/services/quotation_repository.dart` - 見積リポジトリ
+2. `lib/services/sales_repository.dart` - 売上リポジトリ
+3. `lib/services/customer_repository.dart` - 得意先リポジトリ
+
+### ウィジェットのテスト
+1. `lib/widgets/document_card.dart` - ドキュメントカード
+2. `lib/widgets/empty_state_widget.dart` - 空状態ウィジェット
 
 ---
 
@@ -35,40 +45,43 @@
 
 詳細な手順は以下のファイルを参照してください：
 
-👉 **`docs/tasks/LINT-FIX-002.md`**
+👉 **`docs/tasks/TEST-ADD-001.md`**
 
 ### 概要
-1. 各ファイルをStatefulWidgetに変換
-2. 非同期処理後のUI更新前に`if (!mounted) return;`を追加
-3. `flutter analyze`でエラー0件を確認
-4. `docs/PROGRESS.md`に完了報告
+1. テストディレクトリ構造を確認
+2. モデルクラスの単体テストを作成
+3. リポジトリクラスの単体テストを作成
+4. ウィジェットテストを作成
+5. `flutter test`でテスト実行
+6. カバレッジを確認
+7. `docs/PROGRESS.md`に完了報告
 
 ---
 
 ## ✅ 完了条件
 
-- [ ] `order_input_screen.dart` をStatefulWidgetに変換
-- [ ] `sales_entry_screen.dart` をStatefulWidgetに変換
-- [ ] `sales_return_input_screen.dart` をStatefulWidgetに変換
-- [ ] すべてのファイルでmountedチェックを適切に追加
-- [ ] `flutter analyze` エラー0件
+- [ ] モデルクラス3つの単体テスト作成
+- [ ] リポジトリクラス3つの単体テスト作成
+- [ ] ウィジェット2つのテスト作成
+- [ ] `flutter test` すべてパス
+- [ ] カバレッジ70%以上
 - [ ] `docs/PROGRESS.md` に完了報告を追記
 
 ---
 
 ## 🔄 完了後の次タスク
 
-このタスク完了後、`docs/NEXT_TASK.md` を以下に更新してください：
+このタスク完了後、`docs/NEXT_TASK.md` を次のタスクに更新：
 
-**次のタスク**: TEST-ADD-001（単体テスト追加）
+**次のタスク**: STAGE-I（仕入モジュール完成）
 
 ---
 
 ## 📚 参考ドキュメント
 
 ### 必須
-- **タスク詳細**: `docs/tasks/LINT-FIX-002.md`
-- **完了済み参考**: `lib/screens/quotation_input_screen.dart`
+- **タスク詳細**: `docs/tasks/TEST-ADD-001.md`
+- **Flutterテストガイド**: https://docs.flutter.dev/testing
 
 ### 補足
 - **コーディング規約**: `docs/CODING_GUIDE.md`
@@ -82,18 +95,18 @@
 SWE1.5は以下のコマンドで開始してください：
 
 ```
-タスクLINT-FIX-002を開始します。
-docs/tasks/LINT-FIX-002.md を確認して実行します。
+タスクTEST-ADD-001を開始します。
+docs/tasks/TEST-ADD-001.md を確認して実行します。
 ```
 
 ---
 
 ## ⚠️ 注意事項
 
-- **パターンの一貫性**: `quotation_input_screen.dart`と同じパターンを適用
-- **mountedチェックの位置**: 非同期処理（await）の直後、UI更新の直前
-- **context.mounted vs mounted**: StatefulWidgetでは`mounted`プロパティを使用
-- **質問禁止**: パターンは確立済み、ドキュメントを参照して自己解決
+- **テストの独立性**: 各テストは独立して実行できるようにする
+- **モックの使用**: データベースアクセスはモックを使用する
+- **アサーションの明確化**: 何をテストしているか明確にする
+- **質問禁止**: テストパターンは確立済み、ドキュメントを参照して自己解決
 
 ---
 

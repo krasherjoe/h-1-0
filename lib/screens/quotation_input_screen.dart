@@ -50,15 +50,19 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                 try {
                   await repo.copyQuotation(quotation);
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('見積をコピーしました')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('見積をコピーしました')),
+                    );
+                  }
                   onRefresh();
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('コピーに失敗しました: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('コピーに失敗しました: $e')),
+                    );
+                  }
                 }
               },
             ),
@@ -98,15 +102,19 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                   try {
                     await repo.deleteQuotation(quotation.id);
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('見積を削除しました')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('見積を削除しました')),
+                      );
+                    }
                     onRefresh();
                   } catch (e) {
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('削除に失敗しました: $e')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('削除に失敗しました: $e')),
+                      );
+                    }
                   }
                 }
               },
