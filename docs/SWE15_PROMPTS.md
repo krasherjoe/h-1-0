@@ -42,46 +42,53 @@
 
 ---
 
-## 📋 完全実装可能なプロンプト例
+## � オートパイロット運用フロー
 
-### 例1: 配送記録一覧画面の完全実装
+この章では、SWE1.5に長時間張り付かなくてもタスクを自律的に進められるよう、Stage単位の分割統治と進捗ログ連携を定義します。監督者（あなた）は `docs/PROGRESS.md` を確認し、完了していたら「次はStage Xを実行してください」と伝えるだけでOKです。
 
-**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+### Stage進行ルール
 
-```markdown
-タスク: 配送記録一覧画面の実装
+1. **Stage開始コマンド**：各Stageの冒頭で「内容を理解したら `Proceed Stage X` と返答してください」と指示。
+2. **進捗ログ**：完了報告は必ず `docs/PROGRESS.md` に追記 → 同じ内容をチャットにも貼ってから待機。
+3. **待機指示**：Stage完了後は「次のStage指示を受けるまで待機してください」と必ず伝える。
+4. **途中再開**：Stage冒頭に「前回途中で止まっていた場合の再開方法」を明記し、途中終了しても自力で再開させる。
 
-## 前提条件
-- プロジェクト: 販売アシスト1号（Flutter/Dart）
-- プロジェクトパス: /home/user/dev/h-1.flutter.0
-- 参考ドキュメント: docs/CODING_GUIDE.md パターン1
-- 参考実装: lib/screens/quotation_input_screen.dart
-- データベース現在バージョン: 33
+### Stage一覧（完了条件）
 
-## 実装する画面
-- 画面ID: DL（2文字、既存と重複しないこと）
-- 画面タイトル: DL:配送記録一覧
-- 機能: 配送記録の一覧表示と管理
-- カテゴリ: sales
+| Stage | 内容 | 完了確認 | 次の合図 |
+|-------|------|----------|-----------|
+| A | 例1 Step1-2（配送モデル＋リポジトリ） | ✅ Step2完了 | 「次はStage Bを実行してください」 |
+| B | 例1 Step3（deliveriesテーブル追加） | ✅ Step3完了 | 「次はStage Cを実行してください」 |
+| C | 例1 Step4-6（画面＋メニュー＋ルート＋確認） | ✅ Step6＋analyze＋動作 | 「次はStage Dを実行してください」 |
+| D | 例2 Step1（在庫モデル） | ✅ Step1完了 | 「次はStage Eを実行してください」 |
+| E | 例2 Step2（在庫リポジトリ） | ✅ Step2完了 | 「次はStage Fを実行してください」 |
+| F | 例2 Step3（在庫画面＋確認） | ✅ Step3＋analyze | 「次はStage Gを実行してください」 |
+| G | 例3＋4（null参照修正＋routeテーブル） | ✅ 2タスク完了 | 「次はStage Hを実行してください」 |
+| H | 例5＋6（メニュー追加＋ウィジェット） | ✅ 2タスク完了 | 完了 |
 
 ---
 
-## Step 1: モデルクラス作成
+## Stage A: 例1-1（配送モデル＆リポジトリ）
 
-ファイル: `lib/models/delivery_model.dart`
+**開始宣言テンプレ**
+```
+Stage Aを開始します。内容を理解したら「Proceed Stage A」と返答してください。
+```
 
-以下のコードをそのまま作成してください：
+**途中再開方法**
+- docs/PROGRESS.md に Step1完了ログがあれば Step2 から再開
+- ログがなければ Step1 から開始
 
+### Step 1: `lib/models/delivery_model.dart`
 ```dart
 import 'package:flutter/material.dart';
 import 'base_document.dart';
 import 'customer_model.dart';
 
-/// 配送記録モデル
 class Delivery extends BaseDocument {
   final String deliveryAddress;
   final String? deliveryNote;
-  
+
   Delivery({
     required super.id,
     required super.documentNumber,
@@ -114,14 +121,10 @@ class Delivery extends BaseDocument {
   }
 
   @override
-  Color getThemeColor() {
-    return Colors.green;
-  }
+  Color getThemeColor() => Colors.green;
 
   @override
-  String getDocumentTypeName() {
-    return '配送';
-  }
+  String getDocumentTypeName() => '配送';
 
   @override
   Map<String, dynamic> toMap() {
@@ -170,16 +173,7 @@ class Delivery extends BaseDocument {
 }
 ```
 
-完了したら「✅ Step 1完了」と報告してください。
-
----
-
-## Step 2: リポジトリクラス作成
-
-ファイル: `lib/services/delivery_repository.dart`
-
-以下のコードをそのまま作成してください：
-
+### Step 2: `lib/services/delivery_repository.dart`
 ```dart
 import '../models/delivery_model.dart';
 import '../models/customer_model.dart';
@@ -252,29 +246,21 @@ class DeliveryRepository {
 }
 ```
 
-完了したら「✅ Step 2完了」と報告してください。
+**Stage A 完了報告テンプレ**
+```
+Stage A 完了
+✅ Step 1: delivery_model.dart 作成
+✅ Step 2: delivery_repository.dart 作成
+```
 
 ---
 
-## Step 3: データベーステーブル作成
+## Stage B: 例1-2（deliveriesテーブル追加）
+**開始宣言**：`Proceed Stage B`
 
-ファイル: `lib/services/database_helper.dart`
-
-### 3-1: バージョン番号更新
-
-7行目の以下の行を見つけてください：
-```dart
-static const _databaseVersion = 33;
-```
-
-以下に変更してください：
-```dart
-static const _databaseVersion = 34;
-```
-
-### 3-2: マイグレーション追加
-
-`_onUpgrade` メソッド内の最後（`if (oldVersion < 33)` ブロックの後）に以下を追加してください：
+### Step 3: `lib/services/database_helper.dart`
+1. `static const _databaseVersion = 34;` に更新
+2. `_onUpgrade` の末尾に以下を追加
 
 ```dart
     if (oldVersion < 34) {
@@ -313,16 +299,19 @@ static const _databaseVersion = 34;
     }
 ```
 
-完了したら「✅ Step 3完了」と報告してください。
+**Stage B 完了報告**
+```
+Stage B 完了
+✅ Step 3: DatabaseHelper バージョンアップ＆deliveriesテーブル作成
+```
 
 ---
 
-## Step 4: 画面クラス作成
+## Stage C: 例1-3（画面／メニュー／ルート）
 
-ファイル: `lib/screens/delivery_list_screen.dart`
+**開始宣言**：`Proceed Stage C`
 
-以下のコードをそのまま作成してください：
-
+### Step 4: `lib/screens/delivery_list_screen.dart`
 ```dart
 import 'package:flutter/material.dart';
 import '../models/delivery_model.dart';
@@ -359,16 +348,7 @@ class DeliveryListScreen extends StatelessWidget {
 }
 ```
 
-完了したら「✅ Step 4完了」と報告してください。
-
----
-
-## Step 5: メニューカタログに追加
-
-ファイル: `lib/constants/menu_catalog.dart`
-
-`allMenus` リストの最後（最後の `MenuDefinition` の後、閉じ括弧 `]` の前）に以下を追加してください：
-
+### Step 5: `lib/constants/menu_catalog.dart`
 ```dart
   MenuDefinition(
     id: 'DL',
@@ -380,103 +360,35 @@ class DeliveryListScreen extends StatelessWidget {
   ),
 ```
 
-**注意**: 最後から2番目の `MenuDefinition` の閉じ括弧 `)` の後にカンマ `,` があることを確認してください。
-
-完了したら「✅ Step 5完了」と報告してください。
-
----
-
-## Step 6: ダッシュボードにルート追加
-
-ファイル: `lib/screens/dashboard_screen.dart`
-
-### 6-1: import追加
-
-ファイルの上部、他のimport文の後に以下を追加してください：
-
+### Step 6: `lib/screens/dashboard_screen.dart`
 ```dart
 import 'delivery_list_screen.dart';
-```
-
-### 6-2: ルート追加
-
-`_getScreen` メソッド内のswitch文に以下のcaseを追加してください（他のcaseの後、default:の前）：
-
-```dart
+...
       case 'delivery_list':
         return const DeliveryListScreen();
 ```
 
-完了したら「✅ Step 6完了」と報告してください。
+### 確認
+1. `flutter analyze`
+2. アプリ起動 → 「配送記録一覧」メニュー表示、画面タイトルが `DL:配送記録一覧`
 
----
-
-## 最終確認
-
-以下を順番に実行して確認してください：
-
-### 確認1: コード解析
-ターミナルで以下を実行：
-```bash
-cd /home/user/dev/h-1.flutter.0
-flutter analyze
+**Stage C 完了報告**
 ```
-
-**期待結果**: エラーが0件であること
-**エラーがある場合**: エラー内容を報告してください
-
-### 確認2: アプリ起動
-アプリを起動して以下を確認：
-1. ダッシュボードに「配送記録一覧」メニューが表示されること
-2. メニューをタップして画面が表示されること
-3. 画面タイトルが「DL:配送記録一覧」であること
-
----
-
-## 完了報告
-
-以下の形式で報告してください：
-
-```
-✅ Step 1: モデルクラス作成完了
-✅ Step 2: リポジトリクラス作成完了
-✅ Step 3: データベーステーブル作成完了
-✅ Step 4: 画面クラス作成完了
-✅ Step 5: メニューカタログ追加完了
-✅ Step 6: ダッシュボードルート追加完了
+Stage C 完了
+✅ Step 4: delivery_list_screen.dart 作成
+✅ Step 5: menu_catalog 追加
+✅ Step 6: dashboard_screen 追加
 ✅ flutter analyze: エラー0件
-✅ 動作確認: 画面表示OK
-```
+✅ 動作確認: メニュー表示OK
 ```
 
 ---
 
-### 例2: 在庫一覧画面の完全実装
+## Stage D: 例2-1（在庫モデル）
 
-**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+**開始宣言**：`Proceed Stage D`
 
-```markdown
-タスク: 在庫一覧画面の実装
-
-## 前提条件
-- プロジェクト: 販売アシスト1号（Flutter/Dart）
-- プロジェクトパス: /home/user/dev/h-1.flutter.0
-- データベース現在バージョン: 33
-
-## 実装する画面
-- 画面ID: IV（Inventory）
-- 画面タイトル: IV:在庫一覧
-- 機能: 商品在庫の一覧表示
-- カテゴリ: inventory
-
----
-
-## Step 1: 在庫モデル作成
-
-ファイル: `lib/models/inventory_model.dart`
-
-以下のコードをそのまま作成してください：
-
+### Step 1: `lib/models/inventory_model.dart`
 ```dart
 class Inventory {
   final String id;
@@ -523,16 +435,15 @@ class Inventory {
 }
 ```
 
-完了したら「✅ Step 1完了」と報告してください。
+**Stage D 完了報告**：`Stage D 完了（Inventoryモデル作成）`
 
 ---
 
-## Step 2: 在庫リポジトリ作成
+## Stage E: 例2-2（在庫リポジトリ）
 
-ファイル: `lib/services/inventory_repository.dart`
+**開始宣言**：`Proceed Stage E`
 
-以下のコードをそのまま作成してください：
-
+### Step 2: `lib/services/inventory_repository.dart`
 ```dart
 import '../models/inventory_model.dart';
 import 'database_helper.dart';
@@ -583,16 +494,15 @@ class InventoryRepository {
 }
 ```
 
-完了したら「✅ Step 2完了」と報告してください。
+**Stage E 完了報告**：`Stage E 完了（InventoryRepository追加）`
 
 ---
 
-## Step 3: 在庫一覧画面作成
+## Stage F: 例2-3（在庫画面＋確認）
 
-ファイル: `lib/screens/inventory_list_screen.dart`
+**開始宣言**：`Proceed Stage F`
 
-以下のコードをそのまま作成してください：
-
+### Step 3: `lib/screens/inventory_list_screen.dart`
 ```dart
 import 'package:flutter/material.dart';
 import '../models/inventory_model.dart';
@@ -674,16 +584,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
 }
 ```
 
-完了したら「✅ Step 3完了」と報告してください。
-
----
-
-## Step 4: メニューカタログに追加
-
-ファイル: `lib/constants/menu_catalog.dart`
-
-`allMenus` リストの最後に以下を追加してください：
-
+### Step 4: `lib/constants/menu_catalog.dart`
 ```dart
   MenuDefinition(
     id: 'IV',
@@ -695,146 +596,80 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   ),
 ```
 
-完了したら「✅ Step 4完了」と報告してください。
-
----
-
-## Step 5: ダッシュボードにルート追加
-
-ファイル: `lib/screens/dashboard_screen.dart`
-
-### 5-1: import追加
+### Step 5: `lib/screens/dashboard_screen.dart`
 ```dart
 import 'inventory_list_screen.dart';
-```
-
-### 5-2: ルート追加
-`_getScreen` メソッドのswitch文に追加：
-```dart
+...
       case 'inventory_list':
         return const InventoryListScreen();
 ```
 
-完了したら「✅ Step 5完了」と報告してください。
+### 確認
+1. `flutter analyze`
+2. アプリ起動 → 「在庫一覧」メニュー表示、画面タイトルが `IV:在庫一覧`
 
----
-
-## 最終確認
-
-```bash
-cd /home/user/dev/h-1.flutter.0
-flutter analyze
+**Stage F 完了報告**
 ```
-
-エラーが0件であることを確認してください。
-
----
-
-## 完了報告
-
-```
-✅ Step 1-5 完了
+Stage F 完了
+✅ Step 3: inventory_list_screen.dart 作成
+✅ Step 4: menu_catalog 追加
+✅ Step 5: dashboard_screen 追加
 ✅ flutter analyze: エラー0件
-✅ 動作確認: 画面表示OK
-```
-```
-
----
-
-### 例3: バグ修正（null参照エラー）
-
-**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
-
-```markdown
-タスク: 顧客名null参照エラーの修正
-
-## 前提条件
-- プロジェクト: 販売アシスト1号（Flutter/Dart）
-- プロジェクトパス: /home/user/dev/h-1.flutter.0
-- 参考ドキュメント: docs/CODING_GUIDE.md よくある間違い
-
-## 問題の詳細
-- 現象: 顧客選択時にアプリがクラッシュする
-- エラーメッセージ: Null check operator used on a null value
-- 発生箇所: lib/screens/quotation_input_screen.dart の 123行目付近
-
-## 修正手順
-
-### Step 1: エラー箇所の特定
-
-ファイル: `lib/screens/quotation_input_screen.dart`
-
-123行目付近で以下のようなコードを探してください：
-
-```dart
-Text(customer.name)
-```
-
-このコードが見つかったら、次のStepに進んでください。
-
-### Step 2: null安全な修正
-
-見つけたコードを以下に修正してください：
-
-```dart
-Text(customer.name ?? '名称未設定')
-```
-
-**修正理由**: `customer.name` がnullの場合、`??` 演算子により「名称未設定」が表示されます。
-
-### Step 3: 同様の問題がないか確認
-
-同じファイル内で `customer.` で検索し、他にもnullチェックが必要な箇所を探してください。
-
-よくあるパターン:
-- `customer.name` → `customer.name ?? '名称未設定'`
-- `customer.phone` → `customer.phone ?? '電話番号なし'`
-- `customer.address` → `customer.address ?? '住所なし'`
-
-見つかった箇所をすべて修正してください。
-
-### Step 4: 確認
-
-1. ターミナルで実行：
-```bash
-cd /home/user/dev/h-1.flutter.0
-flutter analyze
-```
-
-2. アプリを起動して確認：
-   - 顧客選択時にクラッシュしないこと
-   - 名前がnullの顧客で「名称未設定」と表示されること
-
----
-
-## 完了報告
-
-```
-✅ Step 1: エラー箇所特定完了
-✅ Step 2: null安全な修正完了（123行目）
-✅ Step 3: 同様の問題確認完了（X箇所修正）
-✅ Step 4: flutter analyze エラー0件
-✅ 動作確認: クラッシュなし
-```
+✅ 動作確認: メニュー表示OK
 ```
 
 ---
 
-### 例4: データベーステーブル追加のみ
+## Stage G: 例3＋例4（null参照修正＆delivery_routesテーブル）
 
-**このプロンプトをそのままSWE1.5にコピー＆ペーストしてください**
+1. `lib/screens/quotation_input_screen.dart` で `customer.name ?? '名称未設定'` などのnull安全化を実施し、`customer.` で検索して類似箇所を修正。
+2. `flutter analyze` ＆顧客選択動作確認。
+3. `lib/services/database_helper.dart` に `delivery_routes` テーブルとindexを追加（例4のSQLを使用）。
+4. `flutter analyze` ＆アプリ起動 → マイグレーション成功を確認。
 
-```markdown
-タスク: 配送ルートテーブルの追加
+**Stage G 完了報告**
+```
+Stage G 完了
+✅ 例3: null参照修正（修正箇所X件）
+✅ 例4: delivery_routesテーブル追加
+✅ flutter analyze: エラー0件
+✅ 動作確認: OK
+```
 
-## 前提条件
-- プロジェクト: 販売アシスト1号（Flutter/Dart）
-- プロジェクトパス: /home/user/dev/h-1.flutter.0
-- データベース現在バージョン: 33
+---
 
-## テーブル仕様
-- テーブル名: delivery_routes
-- 用途: 配送ルート情報を保存
+## Stage H: 例5＋例6（メニュー追加＆ウィジェット）
+
+1. `lib/constants/menu_catalog.dart` に SA メニューを追加。
+2. `lib/screens/dashboard_screen.dart` に `sales_analysis` case を仮実装（Scaffold）。
+3. `flutter analyze` ＆メニュー表示確認。
+4. `lib/models/delivery_status.dart` に `enum DeliveryStatus` と `extension` を追加。
+5. `lib/widgets/delivery_status_badge.dart` を作成し、色付きバッジを実装。
+6. `flutter analyze` を実行。
+
+**Stage H 完了報告**
+```
+Stage H 完了
+✅ 例5: 売上分析メニュー追加
+✅ 例6: DeliveryStatusBadge 作成
+✅ flutter analyze: エラー0件
+## 📋 Stage完了ログ（docs/PROGRESS.md）
+
+SWE1.5に以下を徹底させてください。
+
+1. Stageが終わるたびに `docs/PROGRESS.md` の末尾へ追記：
+   ```
+   ## 2026-03-08 Stage C
+   - ✅ Step 4: delivery_list_screen.dart 作成
+   - ✅ Step 5: menu_catalog 追加
+   - ✅ Step 6: dashboard_screen 追加
+   - ✅ flutter analyze: エラー0件
+   - ✅ 動作確認: メニュー表示OK
+   ```
+2. 同じ内容をチャットにも貼って「次のStage指示を待機します」と宣言。
+3. 監督者は `docs/PROGRESS.md` を確認し、完了Stageに応じて「次はStage Xを実行してください」と一行送るだけで進行可能。
+
+---
 - カラム:
   - id: TEXT PRIMARY KEY
   - route_name: TEXT NOT NULL（ルート名）

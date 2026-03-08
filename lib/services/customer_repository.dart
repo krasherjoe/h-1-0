@@ -183,6 +183,18 @@ class CustomerRepository {
     return CustomerContact.fromMap(rows.first);
   }
 
+  Future<Customer?> getById(String id) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'customers',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+    return Customer.fromMap(maps.first);
+  }
+
   Future<void> setHidden(String id, bool hidden) async {
     final db = await _dbHelper.database;
     await db.insert(
