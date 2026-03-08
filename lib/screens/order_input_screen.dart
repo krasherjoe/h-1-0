@@ -59,7 +59,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${customer.displayName} の受注を作成しました')),
+      SnackBar(content: Text('${customer?.displayName ?? '未設定顧客'} の受注を作成しました')),
     );
     _loadOrders();
   }
@@ -109,7 +109,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                           ),
                         ),
                         title: Text(
-                          order.customer.displayName,
+                          order.customer?.displayName ?? '未設定顧客',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(

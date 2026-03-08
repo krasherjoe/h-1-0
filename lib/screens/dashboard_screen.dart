@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final pos = await locationService.getCurrentLocation();
             if (pos != null) {
               final customerRepo = CustomerRepository();
-              await customerRepo.addGpsHistory(invoice.customer.id, pos.latitude, pos.longitude);
+              await customerRepo.addGpsHistory(invoice.customer?.id ?? '', pos.latitude, pos.longitude);
             }
             if (!mounted) return;
             Navigator.push(

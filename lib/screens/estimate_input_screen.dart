@@ -59,7 +59,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${customer.displayName} の見積を作成しました')),
+      SnackBar(content: Text('${customer?.displayName ?? '未設定顧客'} の見積を作成しました')),
     );
     _loadEstimates();
   }
@@ -107,7 +107,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                           ),
                         ),
                         title: Text(
-                          est.customer.displayName,
+                          est.customer?.displayName ?? '未設定顧客',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(

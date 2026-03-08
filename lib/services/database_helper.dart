@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 34;
+  static const _databaseVersion = 35;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -434,6 +434,32 @@ class DatabaseHelper {
 
       await db.execute('''
         CREATE INDEX idx_deliveries_status ON deliveries(status)
+      ''');
+    }
+    if (oldVersion < 35) {
+      await db.execute('''
+        CREATE TABLE delivery_routes (
+          id TEXT PRIMARY KEY,
+          route_name TEXT NOT NULL,
+          start_location TEXT,
+          end_location TEXT,
+          distance REAL,
+          estimated_time INTEGER,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_delivery_routes_name ON delivery_routes(route_name)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_delivery_routes_start ON delivery_routes(start_location)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_delivery_routes_end ON delivery_routes(end_location)
       ''');
     }
   }

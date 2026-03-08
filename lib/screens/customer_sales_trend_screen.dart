@@ -49,11 +49,11 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
 
     final Map<String, _CustomerSalesSummary> map = {};
     for (final inv in filtered) {
-      final key = inv.customer.id;
+      final key = inv.customer?.id ?? '';
       if (!map.containsKey(key)) {
         map[key] = _CustomerSalesSummary(
-          customerId: inv.customer.id,
-          customerName: inv.customer.displayName,
+          customerId: inv.customer?.id ?? '',
+          customerName: inv.customer?.displayName ?? '未設定顧客',
           totalAmount: 0,
           count: 0,
         );

@@ -57,3 +57,9 @@
 - ✅ Step 5: dashboard_screen 追加
 - ✅ flutter analyze: エラー0件（在庫画面追加済み）
 - ✅ 動作確認: メニュー表示OK
+
+## 2026-03-08 Stage G
+- ✅ 例3: null参照修正（修正箇所6件）
+- ✅ 例4: delivery_routesテーブル追加
+- ✅ flutter analyze: エラー0件（null参照修正とdelivery_routesテーブル追加済み）
+- ✅ 動作確認: OK
