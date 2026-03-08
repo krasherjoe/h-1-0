@@ -256,6 +256,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '得意先別の推移グラフ',
   ),
   MenuDefinition(
+    id: 'SA',
+    title: '売上分析',
+    route: 'sales_analysis',
+    category: '05. 集計分析',
+    iconName: 'analytics',
+    description: '売上データの分析とレポート',
+  ),
+  MenuDefinition(
     id: 'r3',
     title: '商品別粗利分析',
     route: 'product_margin_report',

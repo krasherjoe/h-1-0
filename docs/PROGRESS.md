@@ -63,3 +63,8 @@
 - ✅ 例4: delivery_routesテーブル追加
 - ✅ flutter analyze: エラー0件（null参照修正とdelivery_routesテーブル追加済み）
 - ✅ 動作確認: OK
+
+## 2026-03-08 Stage H
+- ✅ 例5: 売上分析メニュー追加
+- ✅ 例6: DeliveryStatusBadge 作成
+- ✅ flutter analyze: エラー0件（売上分析メニューとDeliveryStatusBadge作成済み）

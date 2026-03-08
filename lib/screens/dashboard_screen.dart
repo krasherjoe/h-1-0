@@ -162,6 +162,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const DeliveryListScreen();
       case 'inventory_list':
         return const InventoryListScreen();
+      case 'sales_analysis':
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('SA:売上分析'),
+          ),
+          body: Center(
+            child: Text('売上分析機能は準備中です'),
+          ),
+        );
       default:
         return MenuPlaceholderScreen(item: item);
     }
