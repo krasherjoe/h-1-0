@@ -264,6 +264,14 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 05. 集計分析
   MenuDefinition(
+    id: 'analytics_dashboard',
+    title: '集計ダッシュボード',
+    route: 'analytics_dashboard',
+    category: '05. 集計分析',
+    iconName: 'analytics',
+    description: '売上・仕入・在庫の集計ダッシュボード',
+  ),
+  MenuDefinition(
     id: 'r1',
     title: '売上日報',
     route: 'sales_report',

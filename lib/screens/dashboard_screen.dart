@@ -21,6 +21,8 @@ import 'inventory_management_screen.dart';
 import 'payment_schedule_screen.dart';
 import 'payment_register_screen.dart';
 import 'cash_flow_screen.dart';
+import 'analytics_dashboard_screen.dart';
+import 'report_detail_screen.dart';
 import 'warehouse_master_screen.dart';
 import 'staff_master_screen.dart';
 import 'settings_screen.dart';
@@ -187,6 +189,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const PaymentRegisterScreen();
       case 'cash_flow':
         return const CashFlowScreen();
+      case 'analytics_dashboard':
+        return const AnalyticsDashboardScreen();
+      case 'analytics_report':
       case 'sales_analysis':
         return Scaffold(
           appBar: AppBar(
