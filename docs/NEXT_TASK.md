@@ -1,43 +1,45 @@
 # 次のタスク
 
-**最終更新**: 2026-03-08 20:38
+**最終更新**: 2026-03-08 21:37
 
 ---
 
 ## 🎯 今すぐ実行するタスク
 
-### タスクID: TEST-ADD-001
+### タスクID: STAGE-II
 **優先度**: 🔴 高  
 **担当**: SWE1.5  
-**推定時間**: 2時間  
+**推定時間**: 6時間  
 **状態**: ⏳ 待機中
 
 ---
 
 ## 📝 タスク概要
 
-基本的な単体テストを追加する。モデルクラス、リポジトリクラス、基本的なウィジェットのテストを作成し、コード品質を向上させる。
+支払管理モジュールを完成させる。支払予定管理、支払実績登録、支払消込、資金繰り表の各機能を実装し、仕入先への支払業務を完全に自動化する。
 
 ### 背景
-現在テストコードがほとんど存在しないため、基本的な単体テストを追加してリグレッションを防ぎ、将来のリファクタリングを安全にする。
+STAGE-Iで仕入モジュールを実装完了したが、支払管理機能が未実装のため、仕入先への支払状況を把握できない。支払管理モジュールを実装することで、仕入から支払までの完全な購買管理サイクルを完成させる。
 
 ---
 
 ## 🎯 対象ファイル
 
-### モデルクラスのテスト
-1. `lib/models/quotation_model.dart` - 見積モデル
-2. `lib/models/sales_model.dart` - 売上モデル
-3. `lib/models/customer_model.dart` - 得意先モデル
+### 支払モデル
+1. `lib/models/payment_model.dart` - 支払モデル（新規作成）
+2. `lib/models/payment_schedule_model.dart` - 支払予定モデル（新規作成）
 
-### リポジトリクラスのテスト
-1. `lib/services/quotation_repository.dart` - 見積リポジトリ
-2. `lib/services/sales_repository.dart` - 売上リポジトリ
-3. `lib/services/customer_repository.dart` - 得意先リポジトリ
+### 支払リポジトリ
+1. `lib/services/payment_repository.dart` - 支払リポジトリ（新規作成）
+2. `lib/services/payment_schedule_repository.dart` - 支払予定リポジトリ（新規作成）
 
-### ウィジェットのテスト
-1. `lib/widgets/document_card.dart` - ドキュメントカード
-2. `lib/widgets/empty_state_widget.dart` - 空状態ウィジェット
+### 支払画面
+1. `lib/screens/payment_schedule_screen.dart` - 支払予定一覧画面（新規作成）
+2. `lib/screens/payment_register_screen.dart` - 支払実績登録画面（新規作成）
+3. `lib/screens/cash_flow_screen.dart` - 資金繰り表画面（新規作成）
+
+### メニュー更新
+1. `lib/constants/menu_catalog.dart` - メニューカタログに支払関連を追加
 
 ---
 
@@ -45,26 +47,31 @@
 
 詳細な手順は以下のファイルを参照してください：
 
-👉 **`docs/tasks/TEST-ADD-001.md`**
+👉 **`docs/tasks/STAGE-II.md`**
 
 ### 概要
-1. テストディレクトリ構造を確認
-2. モデルクラスの単体テストを作成
-3. リポジトリクラスの単体テストを作成
-4. ウィジェットテストを作成
-5. `flutter test`でテスト実行
-6. カバレッジを確認
-7. `docs/PROGRESS.md`に完了報告
+1. 支払モデルと支払予定モデルを実装
+2. 支払リポジトリと支払予定リポジトリを実装
+3. 支払予定一覧画面を実装
+4. 支払実績登録画面を実装
+5. 資金繰り表画面を実装
+6. メニューに支払関連項目を追加
+7. データベーススキーマを更新
+8. `flutter analyze` と `flutter test` で確認
 
 ---
 
 ## ✅ 完了条件
 
-- [ ] モデルクラス3つの単体テスト作成
-- [ ] リポジトリクラス3つの単体テスト作成
-- [ ] ウィジェット2つのテスト作成
+- [ ] 支払モデルと支払予定モデルの実装
+- [ ] 支払リポジトリと支払予定リポジトリの実装
+- [ ] 支払予定一覧画面の実装
+- [ ] 支払実績登録画面の実装
+- [ ] 資金繰り表画面の実装
+- [ ] メニューに支払関連項目を追加
+- [ ] データベーススキーマの更新
+- [ ] `flutter analyze` エラー0件
 - [ ] `flutter test` すべてパス
-- [ ] カバレッジ70%以上
 - [ ] `docs/PROGRESS.md` に完了報告を追記
 
 ---
@@ -73,20 +80,22 @@
 
 このタスク完了後、`docs/NEXT_TASK.md` を次のタスクに更新：
 
-**次のタスク**: STAGE-I（仕入モジュール完成）
+**次のタスク**: STAGE-III（集計分析モジュール）
 
 ---
 
 ## 📚 参考ドキュメント
 
 ### 必須
-- **タスク詳細**: `docs/tasks/TEST-ADD-001.md`
-- **Flutterテストガイド**: https://docs.flutter.dev/testing
+- **タスク詳細**: `docs/tasks/STAGE-II.md`
+- **既存実装参考**: `lib/models/purchase_model.dart`
+- **既存実装参考**: `lib/models/supplier_model.dart`
 
 ### 補足
 - **コーディング規約**: `docs/CODING_GUIDE.md`
 - **進捗ログ**: `docs/PROGRESS.md`
 - **自動進行ルール**: `docs/AUTO_PROGRESS.md`
+- **クイックリファレンス**: `docs/QUICK_REF.md`
 
 ---
 
@@ -95,18 +104,19 @@
 SWE1.5は以下のコマンドで開始してください：
 
 ```
-タスクTEST-ADD-001を開始します。
-docs/tasks/TEST-ADD-001.md を確認して実行します。
+タスクSTAGE-IIを開始します。
+docs/tasks/STAGE-II.md を確認して実行します。
 ```
 
 ---
 
 ## ⚠️ 注意事項
 
-- **テストの独立性**: 各テストは独立して実行できるようにする
-- **モックの使用**: データベースアクセスはモックを使用する
-- **アサーションの明確化**: 何をテストしているか明確にする
-- **質問禁止**: テストパターンは確立済み、ドキュメントを参照して自己解決
+- **画面IDのルール**: すべての画面タイトルはユニークな2文字IDから開始（例: P1:支払予定）
+- **StatefulWidget変換**: 非同期処理を含む画面はStatefulWidgetに変換しmountedチェックを追加
+- **データベース整合性**: 支払データと仕入データの連携を適切に実装
+- **既存パターンの活用**: 仕入管理や顧客管理の実装パターンを参考にする
+- **質問禁止**: 実装パターンは確立済み、ドキュメントを参照して自己解決
 
 ---
 

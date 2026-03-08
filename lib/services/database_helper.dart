@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 36;
+  static const _databaseVersion = 37;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -213,6 +213,62 @@ class DatabaseHelper {
         )
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)');
+    }
+    if (oldVersion < 37) {
+      // 支払実績テーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS payments (
+          id TEXT PRIMARY KEY,
+          payment_number TEXT NOT NULL,
+          payment_date TEXT NOT NULL,
+          supplier_id TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          payment_method TEXT NOT NULL,
+          bank_account TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
+        )
+      ''');
+      
+      // 支払・仕入紐付けテーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS payment_purchases (
+          id TEXT PRIMARY KEY,
+          payment_id TEXT NOT NULL,
+          purchase_id TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          FOREIGN KEY (payment_id) REFERENCES payments (id),
+          FOREIGN KEY (purchase_id) REFERENCES purchases (id)
+        )
+      ''');
+      
+      // 支払予定テーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS payment_schedules (
+          id TEXT PRIMARY KEY,
+          purchase_id TEXT NOT NULL,
+          due_date TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'unpaid',
+          paid_date TEXT,
+          payment_id TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (purchase_id) REFERENCES purchases (id),
+          FOREIGN KEY (payment_id) REFERENCES payments (id)
+        )
+      ''');
+      
+      // インデックス作成
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_supplier ON payments(supplier_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_purchases_payment ON payment_purchases(payment_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_purchases_purchase ON payment_purchases(purchase_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_purchase ON payment_schedules(purchase_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date ON payment_schedules(due_date)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_status ON payment_schedules(status)');
     }
     if (oldVersion < 27) {
       await _safeAddColumn(db, 'chat_messages', 'sequence INTEGER');

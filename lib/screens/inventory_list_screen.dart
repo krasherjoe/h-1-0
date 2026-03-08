@@ -23,7 +23,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   Future<void> _loadInventories() async {
     setState(() => _isLoading = true);
     try {
-      final inventories = await _repository.getAll();
+      final inventories = await _repository.getAllInventory();
       if (mounted) {
         setState(() {
           _inventories = inventories;

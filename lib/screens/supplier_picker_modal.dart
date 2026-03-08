@@ -238,7 +238,8 @@ class _SupplierFormDialogState extends State<_SupplierFormDialog> {
             widget.onSubmit(
               Supplier(
                 id: widget.supplier?.id ?? '',
-                name: _nameController.text.trim(),
+                displayName: _nameController.text.trim(),
+        formalName: _nameController.text.trim(),
                 contactPerson: _contactController.text.trim().isEmpty ? null : _contactController.text.trim(),
                 tel: _telController.text.trim().isEmpty ? null : _telController.text.trim(),
                 email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),

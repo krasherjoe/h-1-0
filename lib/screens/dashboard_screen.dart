@@ -15,6 +15,12 @@ import 'order_input_screen.dart';
 import 'quotation_input_screen.dart';
 import 'sales_entry_screen.dart';
 import 'sales_return_input_screen.dart';
+import 'purchase_input_screen.dart';
+import 'purchase_return_input_screen.dart';
+import 'inventory_management_screen.dart';
+import 'payment_schedule_screen.dart';
+import 'payment_register_screen.dart';
+import 'cash_flow_screen.dart';
 import 'warehouse_master_screen.dart';
 import 'staff_master_screen.dart';
 import 'settings_screen.dart';
@@ -146,7 +152,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'purchase_order_input':
         return const PurchaseOrderListScreen();
       case 'purchase_return_input':
-        return const PurchaseReturnListScreen();
+        return const PurchaseReturnInputScreen();
+      case 'purchase_entries':
+        return const PurchaseInputScreen();
       case 'purchase_receipts':
         return const PurchasePaymentListScreen();
       case 'warehouse_master':
@@ -170,7 +178,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'delivery_list':
         return const DeliveryListScreen();
       case 'inventory_list':
-        return const InventoryListScreen();
+        return const InventoryManagementScreen();
+      case 'inventory_lookup':
+        return const InventoryManagementScreen();
+      case 'payment_schedule':
+        return const PaymentScheduleScreen();
+      case 'payment_register':
+        return const PaymentRegisterScreen();
+      case 'cash_flow':
+        return const CashFlowScreen();
       case 'sales_analysis':
         return Scaffold(
           appBar: AppBar(

@@ -195,6 +195,30 @@ const List<MenuDefinition> kMenuDefinitions = [
     iconName: 'payments',
     description: '支払予定・実績の照会',
   ),
+  MenuDefinition(
+    id: 'pay1',
+    title: '支払予定',
+    route: 'payment_schedule',
+    category: '03. 仕入管理',
+    iconName: 'payment',
+    description: '支払予定の一覧と管理',
+  ),
+  MenuDefinition(
+    id: 'pay2',
+    title: '支払登録',
+    route: 'payment_register',
+    category: '03. 仕入管理',
+    iconName: 'receipt_long',
+    description: '支払実績の登録',
+  ),
+  MenuDefinition(
+    id: 'cf1',
+    title: '資金繰り',
+    route: 'cash_flow',
+    category: '05. 集計分析',
+    iconName: 'trending_up',
+    description: '資金繰りの予測と分析',
+  ),
 
   // 04. 在庫管理
   MenuDefinition(
