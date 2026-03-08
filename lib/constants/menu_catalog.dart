@@ -206,6 +206,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '倉庫別在庫を即時照会',
   ),
   MenuDefinition(
+    id: 'IV',
+    title: '在庫一覧',
+    route: 'inventory_list',
+    category: '04. 在庫管理',
+    iconName: 'inventory_2',
+    description: '商品在庫の一覧表示',
+  ),
+  MenuDefinition(
     id: 'i2',
     title: '在庫移動',
     route: 'stock_transfer',

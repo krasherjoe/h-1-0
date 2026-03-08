@@ -27,6 +27,7 @@ import 'support_desk_screen.dart';
 import 'warehouse_dashboard_screen.dart';
 import 'staff_management_screen.dart';
 import 'delivery_list_screen.dart';
+import 'inventory_list_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -159,6 +160,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const StaffManagementScreen();
       case 'delivery_list':
         return const DeliveryListScreen();
+      case 'inventory_list':
+        return const InventoryListScreen();
       default:
         return MenuPlaceholderScreen(item: item);
     }

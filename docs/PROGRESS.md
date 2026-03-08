@@ -50,3 +50,10 @@
 ## 2026-03-08 Stage E
 - ✅ Step 2: inventory_repository.dart 作成
 - ✅ flutter analyze: エラー0件（inventoryリポジトリ追加済み）
+
+## 2026-03-08 Stage F
+- ✅ Step 3: inventory_list_screen.dart 作成
+- ✅ Step 4: menu_catalog 追加
+- ✅ Step 5: dashboard_screen 追加
+- ✅ flutter analyze: エラー0件（在庫画面追加済み）
+- ✅ 動作確認: メニュー表示OK
