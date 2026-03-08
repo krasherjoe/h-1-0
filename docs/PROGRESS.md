@@ -46,3 +46,7 @@
 ## 2026-03-08 Stage D
 - ✅ Step 1: inventory_model.dart 作成
 - ✅ flutter analyze: エラー0件（inventoryモデル追加済み）
+
+## 2026-03-08 Stage E
+- ✅ Step 2: inventory_repository.dart 作成
+- ✅ flutter analyze: エラー0件（inventoryリポジトリ追加済み）
