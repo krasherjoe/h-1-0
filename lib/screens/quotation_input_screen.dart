@@ -6,9 +6,14 @@ import '../models/quotation_model.dart';
 import '../services/quotation_repository.dart';
 
 /// 見積入力画面（汎用テンプレート使用）
-class QuotationInputScreen extends StatelessWidget {
+class QuotationInputScreen extends StatefulWidget {
   const QuotationInputScreen({super.key});
 
+  @override
+  State<QuotationInputScreen> createState() => _QuotationInputScreenState();
+}
+
+class _QuotationInputScreenState extends State<QuotationInputScreen> {
   @override
   Widget build(BuildContext context) {
     final repo = QuotationRepository();
@@ -32,6 +37,7 @@ class QuotationInputScreen extends StatelessWidget {
           status: quotation.status,
           themeColor: quotation.getThemeColor(),
           onTap: () {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('見積詳細画面は今後実装予定です')),
             );
@@ -43,11 +49,13 @@ class QuotationInputScreen extends StatelessWidget {
               onPressed: () async {
                 try {
                   await repo.copyQuotation(quotation);
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('見積をコピーしました')),
                   );
                   onRefresh();
                 } catch (e) {
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('コピーに失敗しました: $e')),
                   );
@@ -58,6 +66,7 @@ class QuotationInputScreen extends StatelessWidget {
               label: '受注変換',
               icon: Icons.arrow_forward,
               onPressed: () {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('受注変換機能は今後実装予定です')),
                 );
@@ -88,18 +97,16 @@ class QuotationInputScreen extends StatelessWidget {
                 if (confirmed == true) {
                   try {
                     await repo.deleteQuotation(quotation.id);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('見積を削除しました')),
-                      );
-                    }
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('見積を削除しました')),
+                    );
                     onRefresh();
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('削除に失敗しました: $e')),
-                      );
-                    }
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('削除に失敗しました: $e')),
+                    );
                   }
                 }
               },
@@ -133,6 +140,7 @@ class QuotationInputScreen extends StatelessWidget {
 
       // 新規作成
       onCreateNew: () async {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('見積作成画面は今後実装予定です')),
         );
@@ -146,6 +154,7 @@ class QuotationInputScreen extends StatelessWidget {
         actionLabel: '新規見積作成',
         iconColor: Colors.blue,
         onAction: () {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('見積作成画面は今後実装予定です')),
           );
