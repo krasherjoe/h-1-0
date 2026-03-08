@@ -103,9 +103,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   String _customerNameWithHonorific(Customer customer) {
-    final base = customer?.formalName ?? '';
+    final base = customer.formalName;
     final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
-    return hasHonorific ? base : "$base ${customer?.title ?? '様'}";
+    return hasHonorific ? base : "$base ${customer.title}";
   }
 
   String _ensureCurrentId() {

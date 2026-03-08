@@ -653,6 +653,65 @@ Stage H 完了
 ✅ 例5: 売上分析メニュー追加
 ✅ 例6: DeliveryStatusBadge 作成
 ✅ flutter analyze: エラー0件
+
+## Codex Stage Roadmap（I〜M）
+
+SWE1.5での細切れ作業を完了したら、以下の大型StageをCodexクラスのモデルに渡してください。各Stageでは設計～DB～サービス～UI～テストを1ターンで仕上げる想定です。
+
+### Stage I (Codex): 仕入モジュール完成
+- 対象メニュー: `purchase_order_input` (po1), `purchase_return_input` (pr1), `purchase_receipts` (p3)
+- やること
+  - 発注・仕入返品・支払予定テーブル／モデル／リポジトリを追加（purchase_orders, purchase_returns, purchase_payments など）
+  - 入力／一覧／詳細画面を作成し、仕入在庫・支払管理と連動
+  - 既存 `purchase_entries` / `purchase_receipts` と統合し、在庫引当・支払残計算を一貫化
+- 確認: `flutter analyze`, DBマイグレーション成功、ダッシュボード「仕入管理」メニューが操作可能
+- 完了報告例:
+  ```
+  Stage I (Codex) 完了
+  ✅ 発注・返品・支払モジュール実装
+  ✅ DBマイグレーション: purchase_orders / returns / payments 追加
+  ✅ ダッシュボード: 発注/返品/支払メニュー動作確認
+  ✅ flutter analyze: エラー0件
+  ```
+
+### Stage J (Codex): 在庫オペレーション強化
+- 対象メニュー: `inventory_lookup` (i1), `stock_adjustment` (i4)、既存 `stock_transfer`, `stocktake_input`
+- やること
+  - 在庫照会ルートを `stock_inquiry_screen.dart` と統合し、倉庫／商品フィルタ、即時検索APIを整備
+  - 在庫調整ワークフロー（理由、承認、履歴テーブル）を追加
+  - 棚卸・在庫移動画面の共通コンポーネント化で入力UXを統一
+- 確認: `flutter analyze`, 在庫照会・調整・棚卸のE2Eテスト、倉庫別数量差分の反映
+- 完了報告: 「Stage J (Codex) 完了」＋各機能のチェックリスト
+
+### Stage K (Codex): 集計・分析アップグレード
+- 対象メニュー: `sales_analysis` (SA), `customer_sales_report` (r2) 拡張, `product_margin_report` (r3), `inventory_valuation_report` (r4)
+- やること
+  - 売上分析画面に実データ連動チャート、フィルタ保存、エクスポートを実装
+  - 粗利分析／在庫評価額レポート用の集計サービスとキャッシュ設計
+  - レポート画面共通ウィジェット（期間セレクタ、グラフ、表）を整備
+- 確認: `flutter analyze`, グラフ描画確認、集計結果テスト（単体＋結合）
+- 完了報告: 各レポートのスクリーンショットや出力ログを添付
+
+### Stage L (Codex): 権限・監査
+- 対象メニュー: `user_permissions` (s2), `log_management` (s3)、その他管理系
+- やること
+  - ロール／権限テーブルとアクセス制御を導入（画面単位のRO/RW制御）
+  - 操作ログ／監査ログを拡張し、検索・フィルタ・エクスポート機能を提供
+  - 設定画面からユーザー／ロールの管理ができるUIを作成
+- 確認: ロール別でメニュー表示が切り替わること、ログ検索が機能すること、`flutter analyze`
+- 完了報告: 「Stage L (Codex) 完了」＋権限/監査テスト結果
+
+### Stage M (Codex): 販売フロー仕上げ
+- 対象: 見積→受注→売上→配送→請求までの一貫フロー
+- やること
+  - DocumentモデルとDBスキーマを統一し、状態遷移・在庫引当・配送連携を整理
+  - PDF/メール出力、顧客通知、在庫引落、配送ステータス連動のE2E仕様を確立
+  - 最終的にダッシュボードから主要販売業務が完了できることを確認
+- 確認: 代表的な業務シナリオの結合テスト、`flutter analyze`、PROGRESSログ
+- 完了報告: 「Stage M (Codex) 完了」＋フロー図やテスト結果
+
+> **運用ルール**: Codex StageもSWE1.5と同様に `docs/PROGRESS.md` に完了ログを追記し、同内容をチャットへ報告してください。チャット上では「次はStage {I|J|…} (Codex) を実行してください」の形で指示を受け取ります。
+
 ## 📋 Stage完了ログ（docs/PROGRESS.md）
 
 SWE1.5に以下を徹底させてください。

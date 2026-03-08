@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
 import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
@@ -37,7 +38,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
   }
 
   Future<void> _createNewEstimate() async {
-    final customer = await Navigator.push(
+    final customer = await Navigator.push<Customer?>(
       context,
       MaterialPageRoute(
         builder: (_) => const CustomerMasterScreen(selectionMode: true),
@@ -59,7 +60,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${customer?.displayName ?? '未設定顧客'} の見積を作成しました')),
+      SnackBar(content: Text('${customer.displayName} の見積を作成しました')),
     );
     _loadEstimates();
   }
@@ -107,7 +108,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                           ),
                         ),
                         title: Text(
-                          est.customer?.displayName ?? '未設定顧客',
+                          est.customer.displayName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(

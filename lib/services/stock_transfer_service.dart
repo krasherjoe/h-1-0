@@ -5,7 +5,6 @@ import '../models/stock_transfer_models.dart';
 import 'activity_log_repository.dart';
 import 'database_helper.dart';
 import 'product_repository.dart';
-import 'warehouse_repository.dart';
 import 'warehouse_stock_repository.dart';
 
 class StockTransferService {
@@ -13,7 +12,7 @@ class StockTransferService {
 
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final WarehouseStockRepository _warehouseStockRepo = WarehouseStockRepository();
-  final WarehouseRepository _warehouseRepo = WarehouseRepository();
+  // final WarehouseRepository _warehouseRepo = WarehouseRepository(); // unused
   final ProductRepository _productRepo = ProductRepository();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
 
@@ -143,7 +142,6 @@ class StockTransferService {
     if (transfer.isEmpty) return;
     final header = transfer.first;
     final lines = await db.query('stock_transfer_items', where: 'transfer_id = ?', whereArgs: [transferId]);
-    final now = DateTime.now();
 
     final productIds = <String>{};
 

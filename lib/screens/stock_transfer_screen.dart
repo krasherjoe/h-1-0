@@ -18,11 +18,10 @@ class StockTransferScreen extends StatefulWidget {
 }
 
 class _TransferLine {
-  _TransferLine({required this.product, required this.quantity, this.notes, this.available});
+  _TransferLine({required this.product, required this.quantity, this.available});
 
   final Product product;
   int quantity;
-  String? notes;
   int? available;
 }
 
@@ -183,7 +182,6 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
               (line) => StockTransferLineInput(
                 productId: line.product.id,
                 quantity: line.quantity,
-                notes: line.notes,
               ),
             )
             .toList(),
@@ -333,7 +331,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
 
   Widget _warehouseDropdown({required String label, Warehouse? selected, required ValueChanged<Warehouse?> onChanged}) {
     return DropdownButtonFormField<Warehouse>(
-      value: selected,
+      initialValue: selected,
       decoration: InputDecoration(labelText: label),
       items: _warehouses
           .map(

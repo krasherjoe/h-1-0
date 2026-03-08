@@ -79,17 +79,6 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
     }
   }
 
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'active':
-        return '有効';
-      case 'inactive':
-        return '無効';
-      default:
-        return status;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,7 +183,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                               const SizedBox(height: 4),
                               Chip(
                                 label: Text(_getRoleLabel(staff['role'])),
-                                backgroundColor: _getRoleColor(staff['role']).withOpacity(0.2),
+                                backgroundColor: _getRoleColor(staff['role']).withValues(alpha: 0.2),
                                 labelStyle: TextStyle(
                                   color: _getRoleColor(staff['role']),
                                   fontSize: 12,

@@ -87,7 +87,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: DropdownButtonFormField<String>(
-                    value: _selectedWarehouseId,
+                    initialValue: _selectedWarehouseId,
                     decoration: const InputDecoration(
                       labelText: '倉庫選択',
                       border: OutlineInputBorder(),

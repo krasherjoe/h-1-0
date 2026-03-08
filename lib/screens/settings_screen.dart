@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +15,6 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'dashboard_menu_settings_screen.dart';
 import 'mothership_discovery_settings_screen.dart';
-import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_helper.dart';
 import '../services/drive_backup_service.dart';
@@ -40,7 +40,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   StreamSubscription<GoogleSignInAccount?>? _accountSubscription;
   bool _backingUp = false;
   bool _restoring = false;
-  List<dynamic>? _availableBackups;
   String? _lastBackupTime;
   bool _autoBackupEnabled = false;
 
@@ -56,30 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
-  Future<void> _loadAvailableBackups() async {
-    setState(() => _restoring = true);
-    try {
-      final driveService = DriveBackupService();
-      final backups = await driveService.listBackupFiles();
-      if (mounted) {
-        setState(() {
-          _availableBackups = backups;
-          _restoring = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _restoring = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('バックアップ一覧の取得に失敗: $e')),
-        );
-      }
-    }
-  }
-
   Future<void> _restoreFromGoogleDrive() async {
-    // 確認ダイアログ
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -110,7 +86,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final db = await dbHelper.database;
       final dbPath = db.path;
       
-      // DBを閉じる
       await db.close();
       
       final driveService = DriveBackupService();
@@ -126,7 +101,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SnackBar(content: Text('✅ データを復元しました。アプリを再起動してください。')),
         );
         
-        // アプリ再起動を促す
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -151,7 +125,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
   }
-
 
   Future<void> _backupToGoogleDrive() async {
     if (_backingUp) return;
@@ -199,6 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_backup_enabled', enabled);
     setState(() => _autoBackupEnabled = enabled);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(enabled ? '自動バックアップを有効化しました' : '自動バックアップを無効化しました')),
     );
@@ -208,8 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (isoTime == null) return '未実施';
     try {
       final dt = DateTime.parse(isoTime);
-      final now = DateTime.now();
-      final diff = now.difference(dt);
+      final diff = DateTime.now().difference(dt);
       if (diff.inMinutes < 1) return 'たった今';
       if (diff.inHours < 1) return '${diff.inMinutes}分前';
       if (diff.inDays < 1) return '${diff.inHours}時間前';
@@ -219,7 +192,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return isoTime;
     }
   }
-
 
   @override
   void initState() {
@@ -529,7 +501,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: const Text('毎日起動時に自動実行（24時間経過後）'),
                   value: _autoBackupEnabled,
                   onChanged: _setAutoBackup,
-                ),                const SizedBox(height: 8),
+                ),
+                const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _restoring ? null : _restoreFromGoogleDrive,
                   icon: _restoring
@@ -544,7 +517,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     foregroundColor: Colors.orange,
                   ),
                 ),
-
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -588,7 +560,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<GmailEnvelopeEncoding>(
-                  value: _encodingMode,
+                  initialValue: _encodingMode,
                   decoration: const InputDecoration(
                     labelText: 'エンベロープ圧縮モード',
                     border: OutlineInputBorder(),
@@ -616,7 +588,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SyncTransportMode>(
-                  value: _transportMode,
+                  initialValue: _transportMode,
                   decoration: const InputDecoration(
                     labelText: '同期トランスポート',
                     border: OutlineInputBorder(),

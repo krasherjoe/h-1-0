@@ -49,18 +49,17 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
 
     final Map<String, _CustomerSalesSummary> map = {};
     for (final inv in filtered) {
-      final key = inv.customer?.id ?? '';
-      if (!map.containsKey(key)) {
-        map[key] = _CustomerSalesSummary(
-          customerId: inv.customer?.id ?? '',
-          customerName: inv.customer?.displayName ?? '未設定顧客',
-          totalAmount: 0,
-          count: 0,
-        );
-      }
-      map[key] = map[key]!.copyWith(
-        totalAmount: map[key]!.totalAmount + inv.totalAmount,
-        count: map[key]!.count + 1,
+      final customer = inv.customer;
+      final key = customer.id;
+      final current = map[key] ?? _CustomerSalesSummary(
+        customerId: customer.id,
+        customerName: customer.displayName,
+        totalAmount: 0,
+        count: 0,
+      );
+      map[key] = current.copyWith(
+        totalAmount: current.totalAmount + inv.totalAmount,
+        count: current.count + 1,
       );
     }
 

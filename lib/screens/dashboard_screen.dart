@@ -28,6 +28,9 @@ import 'warehouse_dashboard_screen.dart';
 import 'staff_management_screen.dart';
 import 'delivery_list_screen.dart';
 import 'inventory_list_screen.dart';
+import 'purchase_order_screen.dart';
+import 'purchase_return_screen.dart';
+import 'purchase_payment_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -114,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final pos = await locationService.getCurrentLocation();
             if (pos != null) {
               final customerRepo = CustomerRepository();
-              await customerRepo.addGpsHistory(invoice.customer?.id ?? '', pos.latitude, pos.longitude);
+              await customerRepo.addGpsHistory(invoice.customer.id, pos.latitude, pos.longitude);
             }
             if (!mounted) return;
             Navigator.push(
@@ -140,6 +143,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const SalesEntryScreen();
       case 'sales_return_input':
         return const SalesReturnInputScreen();
+      case 'purchase_order_input':
+        return const PurchaseOrderListScreen();
+      case 'purchase_return_input':
+        return const PurchaseReturnListScreen();
+      case 'purchase_receipts':
+        return const PurchasePaymentListScreen();
       case 'warehouse_master':
         return const WarehouseMasterScreen();
       case 'staff_master':

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
 import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
@@ -37,7 +38,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
   }
 
   Future<void> _createNewOrder() async {
-    final customer = await Navigator.push(
+    final customer = await Navigator.push<Customer?>(
       context,
       MaterialPageRoute(
         builder: (_) => const CustomerMasterScreen(selectionMode: true),
@@ -59,7 +60,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${customer?.displayName ?? '未設定顧客'} の受注を作成しました')),
+      SnackBar(content: Text('${customer.displayName} の受注を作成しました')),
     );
     _loadOrders();
   }
@@ -109,7 +110,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                           ),
                         ),
                         title: Text(
-                          order.customer?.displayName ?? '未設定顧客',
+                          order.customer.displayName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(

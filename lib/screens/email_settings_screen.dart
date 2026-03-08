@@ -165,9 +165,7 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     try {
       final googleService = GoogleAccountService.instance;
       GoogleSignInAccount? account = googleService.currentAccount ?? await googleService.recoverAccount();
-      if (account == null) {
-        account = await googleService.pickAccount();
-      }
+      account ??= await googleService.pickAccount();
       if (!mounted) return;
       if (account == null) {
         _showSnackbar('アカウントが選択されませんでした');

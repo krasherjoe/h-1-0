@@ -113,7 +113,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => InvoiceInputForm(
-          onInvoiceGenerated: (_, __) {},
+          onInvoiceGenerated: (invoice, path) {},
           initialDocumentType: DocumentType.invoice,
           startViewMode: false,
           showNewBadge: true,

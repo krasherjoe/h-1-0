@@ -167,7 +167,7 @@ class _SupportDeskScreenState extends State<SupportDeskScreen> {
                                 children: [
                                   Chip(
                                     label: Text(_getStatusLabel(ticket['status'])),
-                                    backgroundColor: _getStatusColor(ticket['status']).withOpacity(0.2),
+                                    backgroundColor: _getStatusColor(ticket['status']).withValues(alpha: 0.2),
                                     labelStyle: TextStyle(
                                       color: _getStatusColor(ticket['status']),
                                       fontSize: 12,

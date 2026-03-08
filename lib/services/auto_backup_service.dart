@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 import 'drive_backup_service.dart';
@@ -39,7 +40,7 @@ class AutoBackupService {
       }
     } catch (e) {
       // エラーは無視（起動を妨げない）
-      print('Auto backup failed: $e');
+      debugPrint('Auto backup failed: $e');
     }
   }
 
@@ -102,7 +103,7 @@ class AutoBackupService {
 
       return hasBackup;
     } catch (e) {
-      print('Restore check failed: $e');
+    debugPrint('Restore check failed: $e');
       return false;
     }
   }

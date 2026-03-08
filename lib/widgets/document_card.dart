@@ -131,7 +131,7 @@ class DocumentCard extends StatelessWidget {
 
     return Chip(
       label: Text(label),
-      backgroundColor: color is MaterialColor ? color.shade100 : color.withOpacity(0.2),
+      backgroundColor: color is MaterialColor ? color.shade100 : color.withValues(alpha: 0.2),
       labelStyle: TextStyle(
         color: color is MaterialColor ? color.shade700 : color,
         fontSize: 12,

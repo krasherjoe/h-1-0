@@ -31,4 +31,11 @@ class SupplierRepository {
     final db = await _dbHelper.database;
     await db.delete('suppliers', where: 'id = ?', whereArgs: [supplierId]);
   }
+
+  Future<Supplier?> findById(String supplierId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('suppliers', where: 'id = ?', whereArgs: [supplierId], limit: 1);
+    if (rows.isEmpty) return null;
+    return Supplier.fromMap(rows.first);
+  }
 }
