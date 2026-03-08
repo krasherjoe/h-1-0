@@ -31,3 +31,18 @@
 - ✅ Step 1: delivery_model.dart 作成
 - ✅ Step 2: delivery_repository.dart 作成
 - ✅ flutter analyze: エラー0件（delivery関連のエラー解消済み）
+
+## 2026-03-08 Stage B
+- ✅ Step 3: DatabaseHelper バージョンアップ＆deliveriesテーブル作成
+- ✅ flutter analyze: エラー0件（DBマイグレーション追加済み）
+
+## 2026-03-08 Stage C
+- ✅ Step 4: delivery_list_screen.dart 作成
+- ✅ Step 5: menu_catalog 追加
+- ✅ Step 6: dashboard_screen 追加
+- ✅ flutter analyze: エラー0件（delivery_list_screen修正済み）
+- ✅ 動作確認: メニュー表示OK
+
+## 2026-03-08 Stage D
+- ✅ Step 1: inventory_model.dart 作成
+- ✅ flutter analyze: エラー0件（inventoryモデル追加済み）

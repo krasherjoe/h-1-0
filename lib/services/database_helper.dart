@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 33;
+  static const _databaseVersion = 34;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
@@ -401,6 +401,40 @@ class DatabaseHelper {
         )
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_items_sales ON sales_items(sales_id)');
+    }
+    if (oldVersion < 34) {
+      await db.execute('''
+        CREATE TABLE deliveries (
+          id TEXT PRIMARY KEY,
+          document_number TEXT NOT NULL,
+          date TEXT NOT NULL,
+          customer_id TEXT,
+          delivery_address TEXT NOT NULL,
+          delivery_note TEXT,
+          subtotal INTEGER NOT NULL,
+          tax_amount INTEGER NOT NULL,
+          total INTEGER NOT NULL,
+          tax_rate REAL NOT NULL,
+          notes TEXT,
+          subject TEXT,
+          status TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (customer_id) REFERENCES customers (id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_deliveries_date ON deliveries(date)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_deliveries_customer ON deliveries(customer_id)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_deliveries_status ON deliveries(status)
+      ''');
     }
   }
 

@@ -146,6 +146,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '見積・納品・請求・領収の汎用伝票入力',
   ),
   MenuDefinition(
+    id: 'DL',
+    title: '配送記録一覧',
+    route: 'delivery_list',
+    category: '02. 販売管理',
+    iconName: 'local_shipping',
+    description: '配送記録の一覧表示と管理',
+  ),
+  MenuDefinition(
     id: 'a2',
     title: '伝票一覧',
     route: 'invoice_history',
