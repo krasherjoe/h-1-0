@@ -1083,6 +1083,98 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at)');
     await db.execute('CREATE UNIQUE INDEX idx_stock_transfers_document_no ON stock_transfers(document_no)');
 
+    // 販売フロー関連テーブル
+    await db.execute('''
+      CREATE TABLE stock_allocations (
+        id TEXT PRIMARY KEY,
+        order_id TEXT,
+        sales_id TEXT,
+        product_id TEXT NOT NULL,
+        warehouse_id TEXT NOT NULL,
+        allocated_quantity INTEGER NOT NULL,
+        required_quantity INTEGER,
+        available_quantity INTEGER,
+        status TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        created_by TEXT,
+        released_at TEXT,
+        released_by TEXT,
+        FOREIGN KEY(order_id) REFERENCES orders(id),
+        FOREIGN KEY(sales_id) REFERENCES sales(id),
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(warehouse_id) REFERENCES warehouses(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_stock_allocations_order ON stock_allocations(order_id)');
+    await db.execute('CREATE INDEX idx_stock_allocations_sales ON stock_allocations(sales_id)');
+    await db.execute('CREATE INDEX idx_stock_allocations_product ON stock_allocations(product_id)');
+
+    await db.execute('''
+      CREATE TABLE flow_status_logs (
+        id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        document_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        user_id TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_flow_status_logs_document ON flow_status_logs(document_id)');
+    await db.execute('CREATE INDEX idx_flow_status_logs_type ON flow_status_logs(document_type)');
+    await db.execute('CREATE INDEX idx_flow_status_logs_created ON flow_status_logs(created_at)');
+
+    await db.execute('''
+      CREATE TABLE deliveries (
+        id TEXT PRIMARY KEY,
+        delivery_no TEXT UNIQUE NOT NULL,
+        sales_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        delivery_address TEXT,
+        delivery_date TEXT,
+        tracking_number TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        created_by TEXT,
+        delivered_at TEXT,
+        FOREIGN KEY(sales_id) REFERENCES sales(id),
+        FOREIGN KEY(created_by) REFERENCES users(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_deliveries_sales ON deliveries(sales_id)');
+    await db.execute('CREATE INDEX idx_deliveries_status ON deliveries(status)');
+
+    await db.execute('''
+      CREATE TABLE invoices (
+        id TEXT PRIMARY KEY,
+        invoice_no TEXT UNIQUE NOT NULL,
+        sales_id TEXT NOT NULL,
+        client_id TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        subtotal REAL NOT NULL,
+        tax REAL NOT NULL,
+        total REAL NOT NULL,
+        status TEXT NOT NULL,
+        due_date TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        created_by TEXT,
+        issued_at TEXT,
+        paid_at TEXT,
+        FOREIGN KEY(sales_id) REFERENCES sales(id),
+        FOREIGN KEY(client_id) REFERENCES clients(id),
+        FOREIGN KEY(created_by) REFERENCES users(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_invoices_sales ON invoices(sales_id)');
+    await db.execute('CREATE INDEX idx_invoices_client ON invoices(client_id)');
+    await db.execute('CREATE INDEX idx_invoices_status ON invoices(status)');
+    await db.execute('CREATE INDEX idx_invoices_due_date ON invoices(due_date)');
+
     await db.execute('''
       CREATE TABLE stock_transfer_items (
         id TEXT PRIMARY KEY,
