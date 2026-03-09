@@ -178,6 +178,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 Colors.purple,
               ),
             ),
+          ],
         ),
         const SizedBox(height: 8),
         Row(
