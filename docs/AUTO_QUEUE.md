@@ -19,11 +19,11 @@
 **修正**: `name: '仕入先不明'` → `displayName: '仕入先不明', formalName: '仕入先不明'`  
 **完了日**: 2026-03-09
 
-### ERR-003 ⏳ `report_widgets.dart` — 構文・型・import修正
+### ERR-003 ✅ `report_widgets.dart` — 構文・型・import修正
 **対象**: `lib/widgets/report_widgets.dart`  
 **エラー**: 構文エラー2件・型エラー1件・import位置1件  
 **修正**: `import 'dart:math'` をファイル先頭に移動、`num→double` キャスト追加、括弧修正  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### ERR-004 ⏳ `camera_delivery_photo_service.dart` — ui.Canvas/Paint修正
 **対象**: `lib/services/camera_delivery_photo_service.dart`  
