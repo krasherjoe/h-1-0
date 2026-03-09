@@ -25,11 +25,11 @@
 **修正**: `import 'dart:math'` をファイル先頭に移動、`num→double` キャスト追加、括弧修正  
 **完了日**: 2026-03-09
 
-### ERR-004 ⏳ `camera_delivery_photo_service.dart` — ui.Canvas/Paint修正
+### ERR-004 ✅ `camera_delivery_photo_service.dart` — ui.Canvas/Paint修正
 **対象**: `lib/services/camera_delivery_photo_service.dart`  
 **エラー**: `Canvas`, `Paint` が未定義（`ui.` プレフィックスなし）  
 **修正**: `Canvas(recorder)` → `ui.Canvas(recorder)`、`Paint()` → `ui.Paint()`  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### ERR-005 ⏳ `profit_analysis_screen.dart` — 括弧構文エラー修正
 **対象**: `lib/screens/profit_analysis_screen.dart`  
