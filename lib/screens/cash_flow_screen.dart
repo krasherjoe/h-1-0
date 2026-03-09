@@ -14,7 +14,6 @@ class CashFlowScreen extends StatefulWidget {
 }
 
 class _CashFlowScreenState extends State<CashFlowScreen> {
-  List<Payment> _payments = [];
   List<PaymentSchedule> _schedules = [];
   Map<String, int> _monthlyPayments = {};
   Map<String, int> _monthlySchedules = {};
