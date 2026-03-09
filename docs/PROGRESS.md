@@ -184,3 +184,24 @@
 
 ### 次期フェーズ
 **Phase 1**: 業種カスタマイズ（2026-04開始予定）
+
+## 2026-03-09 PHASE-1-WEEK1
+- ✅ カスタムフィールドモデル実装（CustomField、CustomFieldValue、CustomFieldValidation）
+- ✅ カスタムフィールドリポジトリ実装（CustomFieldRepository）
+- ✅ 7業種テンプレート実装（小売、サービス、製造、卸売、飲食、建設、その他）
+- ✅ DBスキーマv39更新（custom_fields、custom_field_valuesテーブル）
+- ✅ flutter analyze: 警告なし
+- ✅ flutter build: 成功
+- ✅ git commit: 完了（日本語コミットメッセージ）
+
+## 2026-03-09 PHASE-1-WEEK2
+- ✅ カスタムフィールド設定画面（C1）実装
+- ✅ カスタムフィールド編集画面（C2）実装
+- ✅ カスタムフィールド順序変更画面（C3）実装
+- ✅ BusinessProfile画面にカスタムフィールド設定ナビゲーション追加
+- ✅ フィールドタイプ選択とバリデーション設定機能
+- ✅ 選択肢管理と既定値設定機能
+- ✅ ドラッグ＆ドロップによる順序変更機能
+- ✅ flutter analyze: 警告なし
+- ✅ flutter build: 成功
+- ✅ git commit: 完了（日本語コミットメッセージ）

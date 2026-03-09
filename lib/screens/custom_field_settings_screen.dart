@@ -3,6 +3,7 @@ import '../models/custom_field_model.dart';
 import '../services/custom_field_repository.dart';
 import 'custom_field_edit_screen.dart';
 import 'custom_field_reorder_screen.dart';
+import 'industry_template_screen.dart';
 
 /// カスタムフィールド設定画面
 class CustomFieldSettingsScreen extends StatefulWidget {
@@ -165,12 +166,32 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
     }
   }
 
+  Future<void> _selectIndustryTemplate() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IndustryTemplateScreen(
+          businessProfileId: widget.businessProfileId,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadFields();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('C1:カスタムフィールド設定'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard_customize),
+            onPressed: _selectIndustryTemplate,
+            tooltip: '業種テンプレート選択',
+          ),
           IconButton(
             icon: const Icon(Icons.reorder),
             onPressed: _fields.isNotEmpty ? _reorderFields : null,
@@ -218,10 +239,24 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _addField,
-            icon: const Icon(Icons.add),
-            label: const Text('最初のフィールドを追加'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _selectIndustryTemplate,
+                icon: const Icon(Icons.dashboard_customize),
+                label: const Text('業種テンプレート選択'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _addField,
+                icon: const Icon(Icons.add),
+                label: const Text('手動で追加'),
+              ),
+            ],
           ),
         ],
       ),
