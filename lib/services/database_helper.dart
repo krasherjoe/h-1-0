@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 37;
+  static const _databaseVersion = 38;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -612,6 +612,72 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX idx_purchase_payments_supplier ON purchase_payments(supplier_id)');
       await db.execute('CREATE INDEX idx_purchase_payments_order ON purchase_payments(purchase_order_id)');
     }
+    if (oldVersion < 38) {
+      // BusinessProfileテーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS business_profiles (
+          id TEXT PRIMARY KEY,
+          business_type TEXT NOT NULL,
+          product_units TEXT NOT NULL,
+          needs_inventory INTEGER NOT NULL DEFAULT 1,
+          needs_gps INTEGER NOT NULL DEFAULT 0,
+          needs_photos INTEGER NOT NULL DEFAULT 0,
+          workflow TEXT NOT NULL,
+          pricing TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_business_profiles_type ON business_profiles(business_type)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_business_profiles_updated ON business_profiles(updated_at)');
+
+      // 在庫ロケーションテーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS inventory_locations (
+          id TEXT PRIMARY KEY,
+          warehouse_id TEXT NOT NULL,
+          location_code TEXT NOT NULL,
+          location_name TEXT NOT NULL,
+          description TEXT,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(warehouse_id) REFERENCES warehouses(id),
+          UNIQUE(warehouse_id, location_code)
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_locations_warehouse ON inventory_locations(warehouse_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_locations_active ON inventory_locations(is_active)');
+
+      // 在庫移動履歴テーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS inventory_movements (
+          id TEXT PRIMARY KEY,
+          product_id TEXT NOT NULL,
+          warehouse_id TEXT NOT NULL,
+          location_id TEXT,
+          movement_type TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          reference_id TEXT,
+          reference_type TEXT,
+          notes TEXT,
+          movement_date TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(product_id) REFERENCES products(id),
+          FOREIGN KEY(warehouse_id) REFERENCES warehouses(id),
+          FOREIGN KEY(location_id) REFERENCES inventory_locations(id)
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_product ON inventory_movements(product_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_warehouse ON inventory_movements(warehouse_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_location ON inventory_movements(location_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_type ON inventory_movements(movement_type)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_date ON inventory_movements(movement_date)');
+
+      // デフォルトの業種プロファイルを初期化
+      await _initializeDefaultBusinessProfile(db);
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -894,6 +960,9 @@ class DatabaseHelper {
       )
     ''');
     await db.execute('CREATE INDEX idx_staff_name ON staff(name)');
+
+    // デフォルトの業種プロファイルを初期化
+    await _initializeDefaultBusinessProfile(db);
   }
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
@@ -935,5 +1004,24 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
+  }
+
+  Future<void> _initializeDefaultBusinessProfile(Database db) async {
+    final existing = await db.query('business_profiles', limit: 1);
+    if (existing.isNotEmpty) return;
+
+    final now = DateTime.now().toIso8601String();
+    await db.insert('business_profiles', {
+      'id': 'default',
+      'business_type': 'retail',
+      'product_units': '個,式',
+      'needs_inventory': 1,
+      'needs_gps': 0,
+      'needs_photos': 0,
+      'workflow': 'both',
+      'pricing': 'standard',
+      'created_at': now,
+      'updated_at': now,
+    });
   }
 }

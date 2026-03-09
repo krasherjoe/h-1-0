@@ -7,6 +7,8 @@ import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../models/base_document.dart';
 import '../models/inventory_model.dart';
+import 'inventory_location_screen.dart';
+import 'inventory_movement_screen.dart';
 
 class InventoryManagementScreen extends StatefulWidget {
   const InventoryManagementScreen({super.key});
@@ -20,90 +22,78 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
   Widget build(BuildContext context) {
     final repo = InventoryRepository();
 
-    return GenericListScreen<Inventory>(
-      screenId: 'I1',
-      title: '在庫管理',
-      icon: Icons.inventory,
-      themeColor: Colors.purple,
-
-      // データ取得
-      fetchData: () => repo.getAllInventory(),
-
-      // カード表示
-      buildCard: (context, inventory, onRefresh) {
-        return DocumentCard(
-          title: inventory.productName,
-          subtitle: _buildSubtitle(inventory),
-          amount: '${inventory.quantity}個',
-          date: inventory.updatedAt,
-          status: _getDocumentStatus(inventory),
-          themeColor: inventory.getStockStatusColor(),
-          onTap: () {
-            if (!mounted) return;
-            _showInventoryDialog(inventory);
-          },
-          actions: [
-            CardAction(
-              label: '調整',
-              icon: Icons.edit,
-              onPressed: () {
-                if (!mounted) return;
-                _showAdjustmentDialog(inventory, onRefresh);
-              },
-            ),
-            CardAction(
-              label: '引当',
-              icon: Icons.inventory_2,
-              onPressed: () {
-                if (!mounted) return;
-                _showReservationDialog(inventory, onRefresh);
-              },
-            ),
-          ],
-        );
-      },
-
-      // フィルタ
-      filters: [
-        FilterOption(
-          label: '全て',
-          value: 'all',
-          filter: (inventory) => inventory,
-        ),
-        FilterOption(
-          label: '適正在庫',
-          value: 'normal',
-          filter: (inventories) => inventories.where((i) => i.quantity > (i.reorderPoint ?? 0)).toList(),
-        ),
-        FilterOption(
-          label: '要発注',
-          value: 'low',
-          filter: (inventories) => inventories.where((i) => i.isLowStock && !i.isOutOfStock).toList(),
-        ),
-        FilterOption(
-          label: '欠品',
-          value: 'out',
-          filter: (inventories) => inventories.where((i) => i.isOutOfStock).toList(),
-        ),
-      ],
-
-      // 新規作成
-      onCreateNew: () async {
-        if (!mounted) return;
-        _showAddInventoryDialog();
-      },
-
-      // 空状態
-      emptyWidget: EmptyStateWidget(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('I1:在庫管理'),
+        backgroundColor: Colors.purple,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InventoryLocationScreen()),
+              );
+            },
+            icon: const Icon(Icons.location_on),
+            tooltip: 'ロケーション管理',
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InventoryMovementScreen()),
+              );
+            },
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: '移動・棚卸',
+          ),
+        ],
+      ),
+      body: GenericListScreen<Inventory>(
+        screenId: 'I1',
+        title: '在庫管理',
         icon: Icons.inventory,
-        title: '在庫がありません',
-        subtitle: '新しい在庫を登録してください',
-        actionLabel: '在庫登録',
-        iconColor: Colors.purple,
-        onAction: () {
-          if (!mounted) return;
-          _showAddInventoryDialog();
+        themeColor: Colors.purple,
+
+        // データ取得
+        fetchData: () => repo.getAllInventory(),
+
+        // カード表示
+        buildCard: (context, inventory, onRefresh) {
+          return DocumentCard(
+            title: inventory.productName,
+            subtitle: _buildSubtitle(inventory),
+            amount: '${inventory.quantity}個',
+            date: inventory.updatedAt,
+            status: _getDocumentStatus(inventory),
+            themeColor: inventory.getStockStatusColor(),
+            onTap: () {
+              if (!mounted) return;
+              _showInventoryDialog(inventory);
+            },
+            actions: [
+              CardAction(
+                label: '調整',
+                icon: Icons.edit,
+                onPressed: () {
+                  if (!mounted) return;
+                  _showAdjustmentDialog(inventory, () {});
+                },
+              ),
+            ],
+          );
         },
+
+        // 空状態
+        emptyWidget: const EmptyStateWidget(
+          icon: Icons.inventory_outlined,
+          title: '在庫データがありません',
+          subtitle: '在庫を登録して管理を開始しましょう',
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddInventoryDialog(),
+        child: const Icon(Icons.add),
       ),
     );
   }

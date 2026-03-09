@@ -361,6 +361,32 @@ const List<MenuDefinition> kMenuDefinitions = [
     iconName: 'badge',
     description: 'スタッフ情報と権限の管理',
   ),
+
+  // 07. 業種設定
+  MenuDefinition(
+    id: 'b1',
+    title: '業種設定',
+    route: 'business_profile',
+    category: '07. 業種設定',
+    iconName: 'business',
+    description: '業種別の業務フローと機能設定',
+  ),
+  MenuDefinition(
+    id: 'i4',
+    title: '在庫ロケーション',
+    route: 'inventory_location',
+    category: '04. 在庫管理',
+    iconName: 'location_on',
+    description: '倉庫内ロケーションの管理',
+  ),
+  MenuDefinition(
+    id: 'i5',
+    title: '在庫移動・棚卸',
+    route: 'inventory_movement',
+    category: '04. 在庫管理',
+    iconName: 'swap_horiz',
+    description: '在庫移動と棚卸の記録',
+  ),
 ];
 
 final Map<String, MenuDefinition> kMenuDefinitionMap = {for (final def in kMenuDefinitions) def.id: def};

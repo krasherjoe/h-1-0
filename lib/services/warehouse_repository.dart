@@ -21,6 +21,10 @@ class WarehouseRepository {
     return rows.map((row) => Warehouse.fromMap(row)).toList();
   }
 
+  Future<List<Warehouse>> getAllWarehouses() async {
+    return fetchWarehouses(includeHidden: true);
+  }
+
   Future<void> saveWarehouse(Warehouse warehouse) async {
     final db = await _dbHelper.database;
     await db.insert(

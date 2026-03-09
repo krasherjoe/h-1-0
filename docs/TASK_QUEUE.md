@@ -8,12 +8,22 @@
 
 ## 🔴 高優先度（即時実行）
 
-### 1. ✅ LINT-FIX-001: quotation_input_screen.dart修正
+### 1. 🚧 STAGE-IV: 在庫オペレーション強化 + BusinessProfile Lite
+**状態**: 実装予定（SWE1.5）  
+**推定時間**: 8時間  
+**内容**: 
+- BusinessProfile Lite（業種フラグ、設定画面）
+- 在庫ロケーション管理／棚卸・移動記録（I4/I5）
+- DBスキーマ version 38、メニュー/ルーティング更新
+
+**参考**: `docs/NEXT_TASK.md`, `docs/05_FUTURE_PLANS.md` Phase1, `docs/PROJECT_MASTER_PLAN.md` Stage J
+
+### 2. ✅ LINT-FIX-001: quotation_input_screen.dart修正
 **状態**: 完了  
 **完了日**: 2026-03-08  
 **内容**: StatefulWidget変換とmountedチェック追加
 
-### 2. ⏳ LINT-FIX-002: 残りのlint警告修正
+### 3. ⏳ LINT-FIX-002: 残りのlint警告修正
 **状態**: 次のタスク  
 **担当**: SWE1.5  
 **推定時間**: 30分  
@@ -24,7 +34,7 @@
 
 **詳細**: `docs/tasks/LINT-FIX-002.md`
 
-### 3. ⏳ TEST-ADD-001: 単体テスト追加
+### 4. ⏳ TEST-ADD-001: 単体テスト追加
 **状態**: 待機中  
 **担当**: SWE1.5  
 **推定時間**: 2時間  
@@ -39,7 +49,7 @@
 
 ## 🟡 中優先度（Phase 0完了後）
 
-### 4. ⏳ STAGE-I: 仕入モジュール完成
+### 5. ⏳ STAGE-I: 仕入モジュール完成
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 4時間  
@@ -51,7 +61,7 @@
 
 **参考**: `docs/SWE15_PROMPTS.md` Stage I
 
-### 5. ⏳ STAGE-J: 在庫オペレーション強化
+### 6. ⏳ STAGE-J: 在庫オペレーション強化
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 4時間  
@@ -62,7 +72,7 @@
 
 **参考**: `docs/SWE15_PROMPTS.md` Stage J
 
-### 6. ⏳ STAGE-K: 集計・分析アップグレード
+### 7. ⏳ STAGE-K: 集計・分析アップグレード
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 6時間  
@@ -73,7 +83,7 @@
 
 **参考**: `docs/SWE15_PROMPTS.md` Stage K
 
-### 7. ⏳ STAGE-L: 権限・監査
+### 8. ⏳ STAGE-L: 権限・監査
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 6時間  
@@ -84,7 +94,7 @@
 
 **参考**: `docs/SWE15_PROMPTS.md` Stage L
 
-### 8. ⏳ STAGE-M: 販売フロー仕上げ
+### 9. ⏳ STAGE-M: 販売フロー仕上げ
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 8時間  
@@ -99,7 +109,7 @@
 
 ## 🟢 低優先度（Phase 1以降）
 
-### 9. ⏳ CUSTOM-001: 業種カスタマイズ機能
+### 10. ⏳ CUSTOM-001: 業種カスタマイズ機能
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 4週間  
@@ -110,7 +120,7 @@
 
 **参考**: `docs/05_FUTURE_PLANS.md` Phase 1
 
-### 10. ⏳ EBOOK-001: 電子帳簿保存法対応
+### 11. ⏳ EBOOK-001: 電子帳簿保存法対応
 **状態**: 待機中  
 **担当**: Codex  
 **推定時間**: 12週間  

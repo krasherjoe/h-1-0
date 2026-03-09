@@ -22,7 +22,9 @@ import 'payment_schedule_screen.dart';
 import 'payment_register_screen.dart';
 import 'cash_flow_screen.dart';
 import 'analytics_dashboard_screen.dart';
-import 'report_detail_screen.dart';
+import 'business_profile_lite_screen.dart';
+import 'inventory_location_screen.dart';
+import 'inventory_movement_screen.dart';
 import 'warehouse_master_screen.dart';
 import 'staff_master_screen.dart';
 import 'settings_screen.dart';
@@ -201,6 +203,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Text('売上分析機能は準備中です'),
           ),
         );
+      case 'business_profile':
+        return const BusinessProfileScreen();
+      case 'inventory_location':
+        return const InventoryLocationScreen();
+      case 'inventory_movement':
+        return const InventoryMovementScreen();
       default:
         return MenuPlaceholderScreen(item: item);
     }
