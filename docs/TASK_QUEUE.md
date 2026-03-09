@@ -1,6 +1,6 @@
 # タスクキュー
 
-**最終更新**: 2026-03-08
+**最終更新**: 2026-03-09
 
 このドキュメントは待機中のタスクを優先順位順に管理します。
 
@@ -8,22 +8,17 @@
 
 ## 🔴 高優先度（即時実行）
 
-### 1. 🚧 STAGE-IV: 在庫オペレーション強化 + BusinessProfile Lite
-**状態**: 実装予定（SWE1.5）  
-**推定時間**: 8時間  
+### 1. ✅ STAGE-IV: 在庫オペレーション強化 + BusinessProfile Lite
+**状態**: 完了  
+**完了日**: 2026-03-09  
 **内容**: 
-- BusinessProfile Lite（業種フラグ、設定画面）
-- 在庫ロケーション管理／棚卸・移動記録（I4/I5）
-- DBスキーマ version 38、メニュー/ルーティング更新
+- BusinessProfile Lite（業種フラグ、設定画面）✅
+- 在庫ロケーション管理／棚卸・移動記録（I4/I5）✅
+- DBスキーマ version 38、メニュー/ルーティング更新✅
 
 **参考**: `docs/NEXT_TASK.md`, `docs/05_FUTURE_PLANS.md` Phase1, `docs/PROJECT_MASTER_PLAN.md` Stage J
 
-### 2. ✅ LINT-FIX-001: quotation_input_screen.dart修正
-**状態**: 完了  
-**完了日**: 2026-03-08  
-**内容**: StatefulWidget変換とmountedチェック追加
-
-### 3. ⏳ LINT-FIX-002: 残りのlint警告修正
+### 2. 🚧 LINT-FIX-002: 残りのlint警告修正
 **状態**: 次のタスク  
 **担当**: SWE1.5  
 **推定時間**: 30分  
@@ -33,6 +28,11 @@
 - sales_return_input_screen.dart
 
 **詳細**: `docs/tasks/LINT-FIX-002.md`
+
+### 3. ✅ LINT-FIX-001: quotation_input_screen.dart修正
+**状態**: 完了  
+**完了日**: 2026-03-08  
+**内容**: StatefulWidget変換とmountedチェック追加
 
 ### 4. ⏳ TEST-ADD-001: 単体テスト追加
 **状態**: 待機中  
@@ -219,6 +219,7 @@
 
 ### 完了済み
 - ✅ LINT-FIX-001
+- ✅ STAGE-IV
 
 ### 進行中
 - 🔄 LINT-FIX-002
@@ -232,7 +233,7 @@
 ### 待機中（低優先度）
 - ⏳ CUSTOM-001, EBOOK-001, PERF-001（3タスク）
 
-**合計**: 10タスク（1完了、1進行中、8待機中）
+**合計**: 11タスク（2完了、1進行中、8待機中）
 
 ---
 

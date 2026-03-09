@@ -131,3 +131,22 @@
 - ✅ flutter test: すべてパス
 - ✅ flutter build: 成功
 - ✅ git commit: 完了（日本語コミットメッセージ）
+
+## 2026-03-09 STAGE-IV
+- ✅ BusinessProfile Liteモデルとリポジトリの実装
+- ✅ 業種設定画面（B1）の実装
+- ✅ 在庫ロケーションモデルとリポジトリの実装
+- ✅ 在庫ロケーション管理画面（I4）の実装
+- ✅ 在庫移動モデルとリポジトリの実装
+- ✅ 在庫移動・棚卸画面（I5）の実装
+- ✅ 既存在庫画面との統合とナビゲーション追加
+- ✅ メニューとダッシュボードのルーティングを更新
+- ✅ データベーススキーマをバージョン38に更新
+- ✅ flutter build: 成功
+- ✅ git commit: 完了（日本語コミットメッセージ）
+
+## 2026-03-09 LINT-FIX-002
+- ✅ 対象ファイルのlint警告を確認（order_input_screen.dart, sales_entry_screen.dart, sales_return_input_screen.dart）
+- ✅ 3ファイルとも警告0件を確認
+- ✅ flutter analyze: 対象ファイルクリーン
+- ✅ git commit: 完了（日本語コミットメッセージ）
