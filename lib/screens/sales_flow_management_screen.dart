@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/sales_flow_models.dart';
 import '../services/sales_flow_repository.dart';
-import '../services/pdf_export_service.dart';
-import '../services/email_notification_service.dart';
 
 /// 販売フロー管理画面
 class SalesFlowManagementScreen extends StatefulWidget {
@@ -15,14 +13,6 @@ class SalesFlowManagementScreen extends StatefulWidget {
 
 class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
   final SalesFlowRepository _flowRepository = SalesFlowRepository();
-  final PdfExportService _pdfService = PdfExportService();
-  final EmailNotificationService _emailService = EmailNotificationService();
-  
-  List<Map<String, dynamic>> _quotes = [];
-  List<Map<String, dynamic>> _orders = [];
-  List<Map<String, dynamic>> _sales = [];
-  List<Map<String, dynamic>> _deliveries = [];
-  List<Map<String, dynamic>> _invoices = [];
   
   bool _isLoading = true;
   String _selectedTab = 'quotes';
