@@ -18,32 +18,33 @@
 
 **参考**: `docs/NEXT_TASK.md`, `docs/05_FUTURE_PLANS.md` Phase1, `docs/PROJECT_MASTER_PLAN.md` Stage J
 
-### 2. 🚧 LINT-FIX-002: 残りのlint警告修正
+### 2. 🚧 PHASE-0-CLEANUP: Phase 0 完了準備と整理
 **状態**: 次のタスク  
 **担当**: SWE1.5  
-**推定時間**: 30分  
+**推定時間**: 1時間  
 **内容**: 
-- order_input_screen.dart
-- sales_entry_screen.dart
-- sales_return_input_screen.dart
+- TASK_QUEUE.md整理とPhase 0完了記録
+- PROJECT_MASTER_PLAN.md更新
+- ドキュメント最終更新
+- Phase 1準備
 
-**詳細**: `docs/tasks/LINT-FIX-002.md`
+### 3. ✅ LINT-FIX-002: 残りのlint警告修正
+**状態**: 完了  
+**完了日**: 2026-03-09  
+**内容**: 対象ファイルのlint警告が0件でクリーン
 
-### 3. ✅ LINT-FIX-001: quotation_input_screen.dart修正
+### 4. ✅ TEST-ADD-001: 単体テスト追加
+**状態**: 完了  
+**完了日**: 2026-03-09  
+**内容**: 
+- BusinessProfileモデルテスト（12ケース）✅
+- InventoryLocationモデルテスト（18ケース）✅
+- 全66テストケースパス✅
+
+### 5. ✅ LINT-FIX-001: quotation_input_screen.dart修正
 **状態**: 完了  
 **完了日**: 2026-03-08  
 **内容**: StatefulWidget変換とmountedチェック追加
-
-### 4. ⏳ TEST-ADD-001: 単体テスト追加
-**状態**: 待機中  
-**担当**: SWE1.5  
-**推定時間**: 2時間  
-**内容**: 
-- モデルクラスの単体テスト
-- リポジトリクラスの単体テスト
-- 基本的なウィジェットテスト
-
-**詳細**: `docs/tasks/TEST-ADD-001.md`（作成予定）
 
 ---
 
@@ -217,23 +218,30 @@
 
 ## 📊 進捗サマリー
 
-### 完了済み
-- ✅ LINT-FIX-001
-- ✅ STAGE-IV
+### Phase 0 完了済み
+- ✅ STAGE-I: 基本機能実装
+- ✅ STAGE-II: 支払管理モジュール
+- ✅ STAGE-III: 集計分析モジュール
+- ✅ STAGE-IV: 在庫オペレーション強化
+- ✅ LINT-FIX-001: lint警告修正
+- ✅ LINT-FIX-002: 残りのlint警告修正
+- ✅ TEST-ADD-001: 単体テスト追加
 
 ### 進行中
-- 🔄 LINT-FIX-002
+- 🔄 PHASE-0-CLEANUP: Phase 0完了準備と整理
 
-### 待機中（高優先度）
-- ⏳ TEST-ADD-001
+### 待機中（Phase 1準備）
+- ⏳ PHASE-1-KICKOFF: 業種カスタマイズ機能開発開始
 
 ### 待機中（中優先度）
-- ⏳ STAGE-I, J, K, L, M（5タスク）
+- ⏳ STAGE-J, K, L, M（4タスク）※Phase 1完了後
 
 ### 待機中（低優先度）
-- ⏳ CUSTOM-001, EBOOK-001, PERF-001（3タスク）
+- ⏳ CUSTOM-001, EBOOK-001, PERF-001（3タスク）※Phase 2以降
 
-**合計**: 11タスク（2完了、1進行中、8待機中）
+**合計**: 12タスク（8完了、1進行中、3待機中）
+
+**Phase 0完了度**: 100% 🎉
 
 ---
 
