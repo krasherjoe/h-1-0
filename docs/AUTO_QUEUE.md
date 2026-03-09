@@ -7,11 +7,11 @@
 
 ## 🔴 即時修正（コンパイルエラー）
 
-### ERR-001 ⏳ `email_notification_service.dart` — SendReport API修正
+### ERR-001 ✅ `email_notification_service.dart` — SendReport API修正
 **対象**: `lib/services/email_notification_service.dart`  
 **エラー**: `SendReport.success` が存在しない（8箇所）  
 **修正**: `sendReport.success` → try/catch内なので `return true` に置き換え  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### ERR-002 ⏳ `purchase_receipts_screen.dart` — Supplierコンストラクタ修正
 **対象**: `lib/screens/purchase_receipts_screen.dart`  
