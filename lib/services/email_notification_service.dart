@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 import 'package:intl/intl.dart';
-import '../models/sales_flow_models.dart';
 
 /// メール通知サービス
 class EmailNotificationService {
