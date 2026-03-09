@@ -91,7 +91,6 @@ class GpsVisitService {
       
       for (final client in clients) {
         final clientId = client['id'] as String;
-        final clientName = client['name'] as String;
         final clientLat = double.tryParse(client['latitude'].toString()) ?? 0.0;
         final clientLng = double.tryParse(client['longitude'].toString()) ?? 0.0;
         
@@ -156,7 +155,9 @@ class GpsVisitService {
   }) async {
     try {
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       
       final db = await _dbHelper.database;
@@ -427,7 +428,9 @@ class GpsVisitService {
   Future<Position?> getCurrentPosition() async {
     try {
       return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
         timeLimit: const Duration(seconds: 10),
       );
     } catch (e) {
