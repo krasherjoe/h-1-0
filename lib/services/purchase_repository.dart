@@ -2,11 +2,9 @@ import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/purchase_model.dart';
 import '../models/supplier_model.dart';
-import '../models/base_document.dart';
 import '../widgets/document_card.dart';
 import '../services/supplier_repository.dart';
 import '../services/database_helper.dart';
-import '../services/activity_log_repository.dart';
 
 /// 仕入リポジトリ
 class PurchaseRepository {

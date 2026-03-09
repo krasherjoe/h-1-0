@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../models/supplier_model.dart';
 import '../services/supplier_repository.dart';
 import '../widgets/generic_list_screen.dart';
 import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
-import '../models/base_document.dart';
 
 /// 仕入先一覧画面
 class SupplierMasterScreen extends StatefulWidget {
@@ -80,16 +78,18 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
                 if (confirmed == true) {
                   try {
                     await repo.deleteSupplier(supplier.id);
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('仕入先を削除しました')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('仕入先を削除しました')),
+                      );
+                    }
                     onRefresh();
                   } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('削除に失敗しました: $e')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('削除に失敗しました: $e')),
+                      );
+                    }
                   }
                 }
               },
@@ -116,10 +116,11 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
 
       // 新規作成
       onCreateNew: () async {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('仕入先作成画面は今後実装予定です')),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('仕入先作成画面は今後実装予定です')),
+          );
+        }
       },
 
       // 空状態

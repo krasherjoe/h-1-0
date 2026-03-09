@@ -1,10 +1,8 @@
-/// 仕入入力画面（汎用テンプレート使用）
 import 'package:flutter/material.dart';
 import '../services/purchase_repository.dart';
 import '../widgets/generic_list_screen.dart';
 import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
-import '../models/base_document.dart';
 import '../models/purchase_model.dart';
 
 class PurchaseInputScreen extends StatefulWidget {
@@ -50,16 +48,18 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
               onPressed: () async {
                 try {
                   await repo.copyPurchase(purchase);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('仕入をコピーしました')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('仕入をコピーしました')),
+                    );
+                  }
                   onRefresh();
                 } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('コピーに失敗しました: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('コピーに失敗しました: $e')),
+                    );
+                  }
                 }
               },
             ),
@@ -88,16 +88,18 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
                 if (confirmed == true) {
                   try {
                     await repo.deletePurchase(purchase.id);
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('仕入を削除しました')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('仕入を削除しました')),
+                      );
+                    }
                     onRefresh();
                   } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('削除に失敗しました: $e')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('削除に失敗しました: $e')),
+                      );
+                    }
                   }
                 }
               },
