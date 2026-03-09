@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 /// レポート共通ウィジェット
 class ReportWidgets {
@@ -388,6 +389,8 @@ class ReportWidgets {
                         ),
                       ],
                     ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -423,7 +426,7 @@ class ReportWidgets {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
-                  height: 150 * percentage,
+                  height: 150 * (percentage as double),
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(4),
@@ -499,9 +502,6 @@ extension ReportExtensions on List<Map<String, dynamic>> {
     return map((item) => item[key] as T).toList();
   }
 }
-
-/// 数値計算用のヘルパー
-import 'dart:math' as math;
 
 /// レポート用の計算ユーティリティ
 class ReportCalculations {
