@@ -214,7 +214,7 @@ class CameraDeliveryPhotoService {
   // 画像リサイズ
   Future<Uint8List> _resizeImage(ui.Image image, int targetWidth, int targetHeight) async {
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
+    final canvas = ui.Canvas(recorder);
     
     // アスペクト比を維持してリサイズ
     final srcWidth = image.width.toDouble();
@@ -233,7 +233,7 @@ class CameraDeliveryPhotoService {
       image,
       Rect.fromLTWH(0, 0, srcWidth, srcHeight),
       Rect.fromLTWH(offsetX, offsetY, scaledWidth, scaledHeight),
-      Paint(),
+      ui.Paint(),
     );
     
     final picture = recorder.endRecording();
