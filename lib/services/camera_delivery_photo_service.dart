@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:intl/intl.dart';
 import '../services/database_helper.dart';
 
 /// カメラ納品写真サービス
@@ -384,7 +383,6 @@ class CameraDeliveryPhotoService {
         final backupPath = '${photosBackupDir.path}/$fileName';
         
         final originalFile = File(originalPath);
-        final backupFile = File(backupPath);
         
         if (await originalFile.exists()) {
           await originalFile.copy(backupPath);
