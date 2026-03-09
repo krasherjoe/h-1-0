@@ -965,7 +965,7 @@ ProfitAnalysisResult _analyzeProfitIsolate(ProfitAnalysisParams params) {
     totalRevenue: totalRevenue,
     totalCost: totalCost,
     grossProfit: grossProfit,
-    profitMargin: profitMargin,
+    profitMargin: profitMargin.toDouble(),
     dailyData: dailyData,
     topProducts: topProducts,
     monthlyData: monthlyData,
