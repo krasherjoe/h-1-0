@@ -98,10 +98,10 @@
 **内容**: サンプルデータ → `SalesFlowRepository` の実データに接続  
 **完了日**: 2026-03-09
 
-### FEAT-002 ⏳ ナビゲーションに新画面を統合
+### FEAT-002 ✅ ナビゲーションに新画面を統合
 **対象**: `lib/screens/` の新規画面（GPS、カメラ、FTS検索）  
-**内容**: `main_screen_integration.dart` または `management_screen.dart` にメニュー追加  
-**完了日**: —
+**内容**: `management_screen.dart` にメニュー追加  
+**完了日**: 2026-03-09
 
 ---
 
