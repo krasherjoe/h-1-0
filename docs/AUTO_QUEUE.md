@@ -71,11 +71,11 @@
 **修正**: 未使用要素を削除  
 **完了日**: 2026-03-09
 
-### WARN-005 ⏳ `email_notification_service.dart` — 未使用import削除
+### WARN-005 ✅ `email_notification_service.dart` — 未使用import削除
 **対象**: `lib/services/email_notification_service.dart`  
 **警告**: `sales_flow_models.dart` import未使用  
 **修正**: 未使用importを削除  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### WARN-006 ⏳ `gps_visit_service.dart` — 未使用変数・非推奨API修正
 **対象**: `lib/services/gps_visit_service.dart`  
