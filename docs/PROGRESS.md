@@ -150,3 +150,10 @@
 - ✅ 3ファイルとも警告0件を確認
 - ✅ flutter analyze: 対象ファイルクリーン
 - ✅ git commit: 完了（日本語コミットメッセージ）
+
+## 2026-03-09 TEST-ADD-001
+- ✅ BusinessProfileモデルの単体テストを作成（12テストケース）
+- ✅ InventoryLocationモデルの単体テストを作成（18テストケース）
+- ✅ flutter test: モデルテストすべてパス（66テストケース）
+- ✅ flutter build: 成功
+- ✅ git commit: 完了（日本語コミットメッセージ）
