@@ -59,11 +59,11 @@
 **修正**: 未使用要素を削除  
 **完了日**: 2026-03-09
 
-### WARN-003 ⏳ `fast_search_service.dart` / `full_text_search_service.dart` — 未使用import削除
+### WARN-003 ✅ `fast_search_service.dart` / `full_text_search_service.dart` — 未使用import削除
 **対象**: 上記2ファイル  
 **警告**: `package:sqflite/sqflite.dart` 未使用  
 **修正**: 未使用importを削除  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### WARN-004 ⏳ `camera_delivery_photo_service.dart` — 未使用import/variable削除
 **対象**: `lib/services/camera_delivery_photo_service.dart`  
