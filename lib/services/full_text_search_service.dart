@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
 /// 全文検索サービス

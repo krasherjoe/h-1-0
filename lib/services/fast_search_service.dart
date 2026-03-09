@@ -1,4 +1,3 @@
-import 'package:sqflite/sqflite.dart';
 import '../services/database_helper.dart';
 
 /// 高速検索サービス（FTS対応）
