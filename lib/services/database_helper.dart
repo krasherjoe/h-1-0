@@ -1175,6 +1175,138 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_invoices_status ON invoices(status)');
     await db.execute('CREATE INDEX idx_invoices_due_date ON invoices(due_date)');
 
+    // 顧客訪問記録テーブル
+    await db.execute('''
+      CREATE TABLE client_visits (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        accuracy REAL,
+        visit_time TEXT NOT NULL,
+        notes TEXT,
+        is_manual INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(client_id) REFERENCES clients(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_client_visits_client ON client_visits(client_id)');
+    await db.execute('CREATE INDEX idx_client_visits_time ON client_visits(visit_time)');
+    await db.execute('CREATE INDEX idx_client_visits_manual ON client_visits(is_manual)');
+
+    // 配送写真テーブル
+    await db.execute('''
+      CREATE TABLE delivery_photos (
+        id TEXT PRIMARY KEY,
+        file_path TEXT NOT NULL,
+        original_size INTEGER NOT NULL,
+        compressed_size INTEGER NOT NULL,
+        compression_ratio REAL NOT NULL,
+        delivery_id TEXT,
+        order_id TEXT,
+        client_id TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(delivery_id) REFERENCES deliveries(id),
+        FOREIGN KEY(order_id) REFERENCES orders(id),
+        FOREIGN KEY(client_id) REFERENCES clients(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_delivery_photos_delivery ON delivery_photos(delivery_id)');
+    await db.execute('CREATE INDEX idx_delivery_photos_order ON delivery_photos(order_id)');
+    await db.execute('CREATE INDEX idx_delivery_photos_client ON delivery_photos(client_id)');
+    await db.execute('CREATE INDEX idx_delivery_photos_created ON delivery_photos(created_at)');
+
+    // FTS（全文検索）テーブル
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts5(
+        id UNINDEXED,
+        name,
+        description,
+        barcode,
+        category,
+        tags,
+        content='products',
+        content_rowid='rowid'
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS clients_fts USING fts5(
+        id UNINDEXED,
+        name,
+        kana,
+        address,
+        phone,
+        email,
+        notes,
+        content='clients',
+        content_rowid='rowid'
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts5(
+        id UNINDEXED,
+        name,
+        kana,
+        address,
+        phone,
+        email,
+        notes,
+        content='suppliers',
+        content_rowid='rowid'
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS quotes_fts USING fts5(
+        id UNINDEXED,
+        quote_no,
+        title,
+        notes,
+        client_name,
+        content='quotes',
+        content_rowid='rowid'
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS orders_fts USING fts5(
+        id UNINDEXED,
+        order_no,
+        title,
+        notes,
+        client_name,
+        content='orders',
+        content_rowid='rowid'
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS sales_fts USING fts5(
+        id UNINDEXED,
+        sales_no,
+        title,
+        notes,
+        client_name,
+        content='sales',
+        content_rowid='rowid'
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE VIRTUAL TABLE IF NOT EXISTS inventory_fts USING fts5(
+        id UNINDEXED,
+        product_name,
+        warehouse_name,
+        notes,
+        content='warehouse_stock',
+        content_rowid='rowid'
+      )
+    ''');
+
     await db.execute('''
       CREATE TABLE stock_transfer_items (
         id TEXT PRIMARY KEY,
