@@ -77,11 +77,11 @@
 **修正**: 未使用importを削除  
 **完了日**: 2026-03-09
 
-### WARN-006 ⏳ `gps_visit_service.dart` — 未使用変数・非推奨API修正
+### WARN-006 ✅ `gps_visit_service.dart` — 未使用変数・非推奨API修正
 **対象**: `lib/services/gps_visit_service.dart`  
 **警告**: `clientName` 未使用、`desiredAccuracy` 非推奨  
 **修正**: 変数削除、`LocationSettings` を使う形に修正  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### WARN-007 ⏳ その他 lib/ 警告一括整理
 **対象**: `lib/screens/dashboard_screen.dart`, `lib/screens/inventory_movement_screen.dart`, `lib/screens/cash_flow_screen.dart`, 他  
