@@ -16,7 +16,6 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
   
   bool _isLoading = true;
   String _selectedTab = 'quotes';
-  String _searchQuery = '';
   SalesFlowStatus? _selectedStatus;
   
   @override
@@ -144,9 +143,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
                 border: OutlineInputBorder(),
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
+                // TODO: 検索機能を実装
               },
             ),
           ),
