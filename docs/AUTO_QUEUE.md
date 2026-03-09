@@ -31,11 +31,11 @@
 **修正**: `Canvas(recorder)` → `ui.Canvas(recorder)`、`Paint()` → `ui.Paint()`  
 **完了日**: 2026-03-09
 
-### ERR-005 ⏳ `profit_analysis_screen.dart` — 括弧構文エラー修正
+### ERR-005 ✅ `profit_analysis_screen.dart` — 括弧構文エラー修正
 **対象**: `lib/screens/profit_analysis_screen.dart`  
 **エラー**: Expected to find `]` (line 181)  
 **修正**: 括弧バランスを修正  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### ERR-006 ⏳ `isolate_service.dart` — num→double型修正
 **対象**: `lib/services/isolate_service.dart`  
