@@ -37,11 +37,11 @@
 **修正**: 括弧バランスを修正  
 **完了日**: 2026-03-09
 
-### ERR-006 ⏳ `isolate_service.dart` — num→double型修正
+### ERR-006 ✅ `isolate_service.dart` — num→double型修正
 **対象**: `lib/services/isolate_service.dart`  
 **エラー**: `num` を `double` パラメータに渡している（line 968）  
 **修正**: `.toDouble()` キャスト追加  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ---
 
