@@ -1,15 +1,14 @@
-/// 在庫管理画面
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../services/inventory_repository.dart';
 import '../widgets/generic_list_screen.dart';
 import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
-import '../models/base_document.dart';
 import '../models/inventory_model.dart';
 import 'inventory_location_screen.dart';
 import 'inventory_movement_screen.dart';
 
+/// 在庫管理画面
 class InventoryManagementScreen extends StatefulWidget {
   const InventoryManagementScreen({super.key});
 
@@ -188,80 +187,19 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
               try {
                 final repo = InventoryRepository();
                 await repo.adjustInventory(inventory.productId, value);
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('在庫を調整しました')),
-                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('在庫を調整しました')),
+                  );
+                }
                 onRefresh();
               } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('調整に失敗しました: $e')),
-                );
-              }
-            },
-            child: const Text('調整'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showReservationDialog(Inventory inventory, VoidCallback onRefresh) {
-    final controller = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${inventory.productName} - 引当調整'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('現在在庫: ${inventory.quantity}個'),
-            Text('現在引当: ${inventory.reservedQuantity}個'),
-            Text('利用可能: ${inventory.availableQuantity}個'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: '引当調整数量（+で増加、-で減少）',
-                hintText: '例: +5 または -3',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final value = int.tryParse(controller.text);
-              if (value == null) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('有効な数値を入力してください')),
-                );
-                return;
-              }
-              
-              try {
-                final repo = InventoryRepository();
-                await repo.adjustReservation(inventory.productId, value);
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('引当を調整しました')),
-                );
-                onRefresh();
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('調整に失敗しました: $e')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('調整に失敗しました: $e')),
+                  );
+                }
               }
             },
             child: const Text('調整'),
@@ -294,7 +232,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
             ),
             TextField(
               controller: locationController,
-              decoration: const InputDecoration(labelText: '場所（任意）'),
+              decoration: const InputDecoration(labelText: '保管場所'),
             ),
           ],
         ),
@@ -303,16 +241,16 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('キャンセル'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
-              final name = nameController.text.trim();
-              final quantity = int.tryParse(quantityController.text);
-              final location = locationController.text.trim();
+              final name = nameController.text;
+              final quantity = int.tryParse(quantityController.text) ?? 0;
+              final location = locationController.text;
               
-              if (name.isEmpty || quantity == null) {
+              if (name.isEmpty || quantity <= 0) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('商品名と数量を入力してください')),
+                  const SnackBar(content: Text('有効な情報を入力してください')),
                 );
                 return;
               }
@@ -330,16 +268,18 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
                   updatedAt: DateTime.now(),
                 );
                 await repo.saveInventory(inventory);
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('在庫を登録しました')),
-                );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('在庫を登録しました')),
+                  );
+                }
               } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('登録に失敗しました: $e')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('登録に失敗しました: $e')),
+                  );
+                }
               }
             },
             child: const Text('登録'),
