@@ -14,7 +14,6 @@ class CashFlowScreen extends StatefulWidget {
 }
 
 class _CashFlowScreenState extends State<CashFlowScreen> {
-  List<Payment> _payments = [];
   List<PaymentSchedule> _schedules = [];
   Map<String, int> _monthlyPayments = {};
   Map<String, int> _monthlySchedules = {};
@@ -38,7 +37,6 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
       final monthlySchedules = await scheduleRepo.getMonthlyScheduleTotals(months: 6);
 
       setState(() {
-        _payments = payments;
         _schedules = schedules;
         _monthlyPayments = monthlyPayments;
         _monthlySchedules = monthlySchedules;
