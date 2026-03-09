@@ -83,11 +83,11 @@
 **修正**: 変数削除、`LocationSettings` を使う形に修正  
 **完了日**: 2026-03-09
 
-### WARN-007 ⏳ その他 lib/ 警告一括整理
+### WARN-007 ✅ その他 lib/ 警告一括整理
 **対象**: `lib/screens/dashboard_screen.dart`, `lib/screens/inventory_movement_screen.dart`, `lib/screens/cash_flow_screen.dart`, 他  
 **警告**: 未使用import、未使用フィールド  
 **修正**: 未使用要素を削除  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ---
 
