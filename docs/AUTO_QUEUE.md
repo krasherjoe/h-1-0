@@ -47,11 +47,11 @@
 
 ## 🟡 警告整理（unused import / field）
 
-### WARN-001 ⏳ `sales_flow_management_screen.dart` — 未使用フィールド削除
+### WARN-001 ✅ `sales_flow_management_screen.dart` — 未使用フィールド削除
 **対象**: `lib/screens/sales_flow_management_screen.dart`  
 **警告**: `_pdfService`, `_emailService`, `_quotes`, `_orders`, `_sales`, `_deliveries`, `_invoices`, `_searchQuery` が未使用  
-**修正**: 未使用フィールドを削除  
-**完了日**: —
+**修正**: 未使用フィールドを削除（_searchQueryは使用箇所があるため残す）  
+**完了日**: 2026-03-09
 
 ### WARN-002 ⏳ `isolate_service.dart` — 未使用import/field削除
 **対象**: `lib/services/isolate_service.dart`  
