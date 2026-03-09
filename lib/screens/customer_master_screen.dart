@@ -7,6 +7,10 @@ import 'dart:convert';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
 import '../widgets/contact_picker_sheet.dart';
+import '../widgets/custom_field_display_widget.dart';
+import '../services/custom_field_repository.dart';
+import '../services/business_profile_repository.dart';
+import '../models/custom_field_model.dart';
 
 class CustomerMasterScreen extends StatefulWidget {
   final bool selectionMode;
@@ -20,6 +24,8 @@ class CustomerMasterScreen extends StatefulWidget {
 
 class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   final CustomerRepository _customerRepo = CustomerRepository();
+  final CustomFieldRepository _customFieldRepo = CustomFieldRepository();
+  final BusinessProfileRepository _businessProfileRepo = BusinessProfileRepository();
   final TextEditingController _searchController = TextEditingController();
   List<Customer> _customers = [];
   List<Customer> _filtered = [];
@@ -27,6 +33,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   String _sortKey = 'name_asc';
   bool _ignoreCorpPrefix = true;
   Map<String, String> _userKanaMap = {};
+  List<CustomField> _customFields = [];
 
   @override
   void initState() {
@@ -37,9 +44,25 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _init() async {
     await _customerRepo.ensureCustomerColumns();
     await _loadUserKanaMap();
+    await _loadCustomFields();
     if (!context.mounted) return;
     _ensureKanaMapsUsed();
     await _loadCustomers();
+  }
+
+  Future<void> _loadCustomFields() async {
+    try {
+      final profile = await _businessProfileRepo.getCurrentProfile();
+      final fields = await _customFieldRepo.getActiveFieldsByBusinessProfile(profile.id);
+      setState(() {
+        _customFields = fields;
+      });
+    } catch (e) {
+      // カスタムフィールドの読み込み失敗は無視
+      setState(() {
+        _customFields = [];
+      });
+    }
   }
 
   Map<String, String> _buildDefaultKanaMap() {
@@ -947,6 +970,25 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               if (c.tel != null) Text("TEL: ${c.tel}") else const SizedBox.shrink(),
               if (c.email != null) Text("メール: ${c.email}") else const SizedBox.shrink(),
               Text("敬称: ${c.title}"),
+              const SizedBox(height: 12),
+              if (_customFields.isNotEmpty) ...[
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  'カスタムフィールド',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                CustomFieldDisplayWidget(
+                  entityId: c.id,
+                  entityType: 'customer',
+                  fields: _customFields,
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
