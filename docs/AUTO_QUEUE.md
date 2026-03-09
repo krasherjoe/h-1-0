@@ -13,11 +13,11 @@
 **修正**: `sendReport.success` → try/catch内なので `return true` に置き換え  
 **完了日**: 2026-03-09
 
-### ERR-002 ⏳ `purchase_receipts_screen.dart` — Supplierコンストラクタ修正
+### ERR-002 ✅ `purchase_receipts_screen.dart` — Supplierコンストラクタ修正
 **対象**: `lib/screens/purchase_receipts_screen.dart`  
 **エラー**: `Supplier(name:)` → `displayName`/`formalName` が必須（2箇所）  
 **修正**: `name: '仕入先不明'` → `displayName: '仕入先不明', formalName: '仕入先不明'`  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### ERR-003 ⏳ `report_widgets.dart` — 構文・型・import修正
 **対象**: `lib/widgets/report_widgets.dart`  
