@@ -53,11 +53,11 @@
 **修正**: 未使用フィールドを削除（_searchQueryは使用箇所があるため残す）  
 **完了日**: 2026-03-09
 
-### WARN-002 ⏳ `isolate_service.dart` — 未使用import/field削除
+### WARN-002 ✅ `isolate_service.dart` — 未使用import/field削除
 **対象**: `lib/services/isolate_service.dart`  
 **警告**: `dart:isolate` import未使用、`_dbHelper` field未使用、`delay` 変数未使用  
 **修正**: 未使用要素を削除  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### WARN-003 ⏳ `fast_search_service.dart` / `full_text_search_service.dart` — 未使用import削除
 **対象**: 上記2ファイル  
