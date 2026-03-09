@@ -103,11 +103,11 @@
 **内容**: `management_screen.dart` にメニュー追加  
 **完了日**: 2026-03-09
 
-### WARN-008 ⏳ 未使用変数・import一括削除
+### WARN-008 ✅ 未使用変数・import一括削除
 **対象**: 複数ファイル  
 **警告**: `_payments`, `_availableLocations`, `_searchQuery`, `sendReport` など  
 **修正**: 未使用要素を削除またはコメントアウト  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ---
 
