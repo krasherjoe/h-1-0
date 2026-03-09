@@ -31,8 +31,9 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     });
     
     try {
-      // 実際のデータ読み込み処理（サンプルデータ）
-      await Future.delayed(const Duration(seconds: 1));
+      // TODO: 実際のデータ読み込み処理を実装
+      // 現時点ではダミーデータを生成
+      await Future.delayed(const Duration(milliseconds: 500));
       
       setState(() {
         _isLoading = false;
