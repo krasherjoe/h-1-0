@@ -9,8 +9,10 @@ import '../constants/company_profile_keys.dart';
 import '../models/company_model.dart';
 import '../services/company_profile_service.dart';
 import '../services/company_repository.dart';
+import '../services/business_profile_repository.dart';
 import '../widgets/contact_picker_sheet.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
+import 'custom_field_settings_screen.dart';
 
 class BusinessProfileScreen extends StatefulWidget {
   const BusinessProfileScreen({super.key});
@@ -22,6 +24,7 @@ class BusinessProfileScreen extends StatefulWidget {
 class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   final _service = CompanyProfileService();
   final _companyRepo = CompanyRepository();
+  final _businessProfileRepo = BusinessProfileRepository();
   final _companyNameCtrl = TextEditingController();
   final _companyZipCtrl = TextEditingController();
   final _companyAddrCtrl = TextEditingController();
@@ -236,6 +239,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                   _section('消費税設定', _buildTaxSection()),
                   _section('印影（角印）', _buildSealSection()),
                   _section('振込先口座 (最大2件まで有効)', _buildBankSection()),
+                  _section('カスタムフィールド設定', _buildCustomFieldSection()),
                 ],
               ),
             ),
@@ -448,6 +452,40 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         ),
         const SizedBox(height: 6),
         const Text('白い紙に押した判子を真上から撮影してください', style: TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildCustomFieldSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '業種に合わせた独自のフィールドを追加できます。\n例：店舗面積、サービス提供エリア、資格情報など',
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: () async {
+            final profile = await _businessProfileRepo.getCurrentProfile();
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CustomFieldSettingsScreen(
+                    businessProfileId: profile.id,
+                  ),
+                ),
+              );
+            }
+          },
+          icon: const Icon(Icons.dashboard_customize),
+          label: const Text('カスタムフィールドを設定'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.indigo,
+            foregroundColor: Colors.white,
+          ),
+        ),
       ],
     );
   }

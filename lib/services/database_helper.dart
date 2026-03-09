@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 38;
+  static const _databaseVersion = 39;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -963,6 +963,42 @@ class DatabaseHelper {
 
     // デフォルトの業種プロファイルを初期化
     await _initializeDefaultBusinessProfile(db);
+    
+    // バージョン39: カスタムフィールドテーブル追加
+    await db.execute('''
+      CREATE TABLE custom_fields (
+        id TEXT PRIMARY KEY,
+        business_profile_id TEXT NOT NULL,
+        field_name TEXT NOT NULL,
+        field_label TEXT NOT NULL,
+        field_type TEXT NOT NULL,
+        validation TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        description TEXT,
+        default_value TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(business_profile_id) REFERENCES business_profiles(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_custom_fields_profile ON custom_fields(business_profile_id)');
+    await db.execute('CREATE INDEX idx_custom_fields_name ON custom_fields(field_name)');
+    
+    await db.execute('''
+      CREATE TABLE custom_field_values (
+        id TEXT PRIMARY KEY,
+        custom_field_id TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        value TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(custom_field_id) REFERENCES custom_fields(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_custom_field_values_field ON custom_field_values(custom_field_id)');
+    await db.execute('CREATE INDEX idx_custom_field_values_entity ON custom_field_values(entity_id, entity_type)');
   }
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
