@@ -93,10 +93,10 @@
 
 ## 🟢 機能追加タスク（エラー修正完了後）
 
-### FEAT-001 ⏳ `sales_flow_management_screen.dart` — 実DB接続
+### FEAT-001 ✅ `sales_flow_management_screen.dart` — 実DB接続
 **対象**: `lib/screens/sales_flow_management_screen.dart`  
 **内容**: サンプルデータ → `SalesFlowRepository` の実データに接続  
-**完了日**: —
+**完了日**: 2026-03-09
 
 ### FEAT-002 ⏳ ナビゲーションに新画面を統合
 **対象**: `lib/screens/` の新規画面（GPS、カメラ、FTS検索）  
