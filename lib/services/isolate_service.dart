@@ -1,15 +1,11 @@
-import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import '../services/database_helper.dart';
 
 /// マルチスレッド処理サービス
 class IsolateService {
   static final IsolateService _instance = IsolateService._internal();
   factory IsolateService() => _instance;
   IsolateService._internal();
-  
-  final DatabaseHelper _dbHelper = DatabaseHelper();
   
   // 売上分析のバックグラウンド処理
   Future<SalesAnalysisResult> analyzeSalesInBackground({
@@ -984,7 +980,6 @@ BulkProcessResult _processBulkDataIsolate(BulkProcessParams params) {
     try {
       // 各データ項目の処理（サンプル）
       // Future.delayedの代わりに同期処理を使用
-      int delay = 10; // ミリ秒
       
       if (i % 20 == 0) { // 5%の確率でエラー
         errors.add('Item ${i + 1}: 処理エラー');
