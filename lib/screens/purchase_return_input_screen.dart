@@ -4,7 +4,6 @@ import '../services/purchase_repository.dart';
 import '../widgets/generic_list_screen.dart';
 import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
-import '../models/base_document.dart';
 import '../models/purchase_model.dart';
 
 class PurchaseReturnInputScreen extends StatefulWidget {
