@@ -139,11 +139,6 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
     }
   }
 
-  List<InventoryLocation> get _availableLocations {
-    if (_selectedWarehouseId == null) return _locations.where((loc) => loc.isActive).toList();
-    return _locations.where((loc) => loc.warehouseId == _selectedWarehouseId && loc.isActive).toList();
-  }
-
   List<InventoryMovement> get _filteredMovements {
     var filtered = _movements;
 
