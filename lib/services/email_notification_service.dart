@@ -37,7 +37,7 @@ class EmailNotificationService {
         ..html = _buildQuoteSubmittedHtml(quote, client)
         ..attachments = [FileAttachment(quotePdf)];
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('見積提出メール送信エラー: $e');
@@ -59,7 +59,7 @@ class EmailNotificationService {
         ..html = _buildQuoteApprovedHtml(quote, client)
         ..attachments = [FileAttachment(quotePdf)];
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('見積承認メール送信エラー: $e');
@@ -81,7 +81,7 @@ class EmailNotificationService {
         ..html = _buildOrderConfirmedHtml(order, client)
         ..attachments = [FileAttachment(orderPdf)];
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('受注確定メール送信エラー: $e');
@@ -102,7 +102,7 @@ class EmailNotificationService {
         ..subject = '商品発送のお知らせ【${delivery['delivery_no']}】'
         ..html = _buildDeliveryShippedHtml(delivery, client, trackingUrl);
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('配送開始メール送信エラー: $e');
@@ -124,7 +124,7 @@ class EmailNotificationService {
         ..html = _buildDeliveryCompletedHtml(delivery, client)
         ..attachments = [FileAttachment(deliveryPdf)];
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('配送完了メール送信エラー: $e');
@@ -146,7 +146,7 @@ class EmailNotificationService {
         ..html = _buildInvoiceIssuedHtml(invoice, client)
         ..attachments = [FileAttachment(invoicePdf)];
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('請求書発行メール送信エラー: $e');
@@ -168,7 +168,7 @@ class EmailNotificationService {
         ..html = _buildInvoiceDueHtml(invoice, client)
         ..attachments = [FileAttachment(invoicePdf)];
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('請求期限メール送信エラー: $e');
@@ -188,7 +188,7 @@ class EmailNotificationService {
         ..subject = '【警告】在庫不足のお知らせ【${order['order_no']}】'
         ..html = _buildStockShortageHtml(order, shortageItems);
       
-      final sendReport = await send(message, _smtpServer);
+      await send(message, _smtpServer);
       return true;
     } catch (e) {
       print('在庫不足メール送信エラー: $e');
