@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 39;
+  static const _databaseVersion = 40;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -678,6 +678,74 @@ class DatabaseHelper {
       // デフォルトの業種プロファイルを初期化
       await _initializeDefaultBusinessProfile(db);
     }
+    if (oldVersion < 40) {
+      // バージョン40: 電子帳簿保存法対応テーブル追加
+      await db.execute('''
+        CREATE TABLE electronic_ledgers (
+          id TEXT PRIMARY KEY,
+          document_type TEXT NOT NULL,
+          document_data TEXT NOT NULL,
+          document_hash TEXT NOT NULL,
+          metadata TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          business_profile_id TEXT,
+          is_active INTEGER DEFAULT 1
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_electronic_ledgers_type ON electronic_ledgers(document_type)');
+      await db.execute('CREATE INDEX idx_electronic_ledgers_created ON electronic_ledgers(created_at)');
+      await db.execute('CREATE INDEX idx_electronic_ledgers_profile ON electronic_ledgers(business_profile_id)');
+      await db.execute('CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)');
+      
+      await db.execute('''
+        CREATE TABLE electronic_ledger_history (
+          id TEXT PRIMARY KEY,
+          ledger_id TEXT NOT NULL,
+          document_data TEXT NOT NULL,
+          document_hash TEXT NOT NULL,
+          metadata TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(ledger_id) REFERENCES electronic_ledgers(id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_electronic_ledger_history_ledger ON electronic_ledger_history(ledger_id)');
+      await db.execute('CREATE INDEX idx_electronic_ledger_history_created ON electronic_ledger_history(created_at)');
+      
+      await db.execute('''
+        CREATE TABLE electronic_ledger_archive (
+          id TEXT PRIMARY KEY,
+          document_type TEXT NOT NULL,
+          document_data TEXT NOT NULL,
+          document_hash TEXT NOT NULL,
+          metadata TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          business_profile_id TEXT,
+          archived_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_electronic_ledger_archive_type ON electronic_ledger_archive(document_type)');
+      await db.execute('CREATE INDEX idx_electronic_ledger_archive_created ON electronic_ledger_archive(created_at)');
+      await db.execute('CREATE INDEX idx_electronic_ledger_archive_archived ON electronic_ledger_archive(archived_at)');
+      
+      await db.execute('''
+        CREATE TABLE electronic_ledger_settings (
+          id TEXT PRIMARY KEY,
+          business_profile_id TEXT NOT NULL,
+          retention_period TEXT NOT NULL,
+          enable_compression INTEGER DEFAULT 1,
+          enable_encryption INTEGER DEFAULT 0,
+          enable_versioning INTEGER DEFAULT 1,
+          custom_settings TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(business_profile_id) REFERENCES business_profiles(id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -999,6 +1067,73 @@ class DatabaseHelper {
     ''');
     await db.execute('CREATE INDEX idx_custom_field_values_field ON custom_field_values(custom_field_id)');
     await db.execute('CREATE INDEX idx_custom_field_values_entity ON custom_field_values(entity_id, entity_type)');
+    
+    // バージョン40: 電子帳簿保存法対応テーブル追加
+    await db.execute('''
+      CREATE TABLE electronic_ledgers (
+        id TEXT PRIMARY KEY,
+        document_type TEXT NOT NULL,
+        document_data TEXT NOT NULL,
+        document_hash TEXT NOT NULL,
+        metadata TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        business_profile_id TEXT,
+        is_active INTEGER DEFAULT 1
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_electronic_ledgers_type ON electronic_ledgers(document_type)');
+    await db.execute('CREATE INDEX idx_electronic_ledgers_created ON electronic_ledgers(created_at)');
+    await db.execute('CREATE INDEX idx_electronic_ledgers_profile ON electronic_ledgers(business_profile_id)');
+    await db.execute('CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)');
+    
+    await db.execute('''
+      CREATE TABLE electronic_ledger_history (
+        id TEXT PRIMARY KEY,
+        ledger_id TEXT NOT NULL,
+        document_data TEXT NOT NULL,
+        document_hash TEXT NOT NULL,
+        metadata TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(ledger_id) REFERENCES electronic_ledgers(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_electronic_ledger_history_ledger ON electronic_ledger_history(ledger_id)');
+    await db.execute('CREATE INDEX idx_electronic_ledger_history_created ON electronic_ledger_history(created_at)');
+    
+    await db.execute('''
+      CREATE TABLE electronic_ledger_archive (
+        id TEXT PRIMARY KEY,
+        document_type TEXT NOT NULL,
+        document_data TEXT NOT NULL,
+        document_hash TEXT NOT NULL,
+        metadata TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        business_profile_id TEXT,
+        archived_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_electronic_ledger_archive_type ON electronic_ledger_archive(document_type)');
+    await db.execute('CREATE INDEX idx_electronic_ledger_archive_created ON electronic_ledger_archive(created_at)');
+    await db.execute('CREATE INDEX idx_electronic_ledger_archive_archived ON electronic_ledger_archive(archived_at)');
+    
+    await db.execute('''
+      CREATE TABLE electronic_ledger_settings (
+        id TEXT PRIMARY KEY,
+        business_profile_id TEXT NOT NULL,
+        retention_period TEXT NOT NULL,
+        enable_compression INTEGER DEFAULT 1,
+        enable_encryption INTEGER DEFAULT 0,
+        enable_versioning INTEGER DEFAULT 1,
+        custom_settings TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(business_profile_id) REFERENCES business_profiles(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)');
   }
 
   Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
