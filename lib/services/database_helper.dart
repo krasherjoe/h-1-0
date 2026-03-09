@@ -998,6 +998,89 @@ class DatabaseHelper {
         FOREIGN KEY(to_warehouse_id) REFERENCES warehouses(id)
       )
     ''');
+
+    // 認証関連テーブル
+    await db.execute('''
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        full_name TEXT NOT NULL,
+        phone_number TEXT,
+        department TEXT NOT NULL,
+        position TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        last_login_at TEXT,
+        role_ids TEXT
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_users_username ON users(username)');
+    await db.execute('CREATE INDEX idx_users_email ON users(email)');
+    await db.execute('CREATE INDEX idx_users_active ON users(is_active)');
+
+    await db.execute('''
+      CREATE TABLE roles (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        description TEXT,
+        permissions TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_roles_name ON roles(name)');
+    await db.execute('CREATE INDEX idx_roles_active ON roles(is_active)');
+
+    await db.execute('''
+      CREATE TABLE user_roles (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        role_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_user_roles_user ON user_roles(user_id)');
+    await db.execute('CREATE INDEX idx_user_roles_role ON user_roles(role_id)');
+
+    await db.execute('''
+      CREATE TABLE audit_logs (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        action TEXT NOT NULL,
+        resource_type TEXT NOT NULL,
+        resource_id TEXT,
+        old_value TEXT,
+        new_value TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_audit_logs_user ON audit_logs(user_id)');
+    await db.execute('CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id)');
+    await db.execute('CREATE INDEX idx_audit_logs_created ON audit_logs(created_at)');
+
+    await db.execute('''
+      CREATE TABLE user_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_user_sessions_user ON user_sessions(user_id)');
+    await db.execute('CREATE INDEX idx_user_sessions_active ON user_sessions(is_active)');
+    await db.execute('CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at)');
     await db.execute('CREATE UNIQUE INDEX idx_stock_transfers_document_no ON stock_transfers(document_no)');
 
     await db.execute('''
