@@ -54,10 +54,10 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
         final supplier = await _supplierRepository.fetchSuppliers(includeHidden: true).then(
           (list) => list.firstWhere(
             (s) => s.id == id,
-            orElse: () => Supplier(id: id, name: '仕入先不明', updatedAt: DateTime.now()),
+            orElse: () => Supplier(id: id, displayName: '仕入先不明', formalName: '仕入先不明', updatedAt: DateTime.now()),
           ),
         );
-        supplierNames[id] = supplier.name;
+        supplierNames[id] = supplier.displayName;
       }
       if (!mounted) return;
       setState(() {
@@ -346,10 +346,10 @@ class _PurchaseReceiptEditorPageState extends State<PurchaseReceiptEditorPage> {
     final suppliers = await _supplierRepository.fetchSuppliers(includeHidden: true);
     final supplier = suppliers.firstWhere(
       (s) => s.id == supplierId,
-      orElse: () => Supplier(id: supplierId, name: '仕入先不明', updatedAt: DateTime.now()),
+      orElse: () => Supplier(id: supplierId, displayName: '仕入先不明', formalName: '仕入先不明', updatedAt: DateTime.now()),
     );
     if (!mounted) return;
-    setState(() => _supplierName = supplier.name);
+    setState(() => _supplierName = supplier.displayName);
   }
 
   Future<void> _loadData() async {
