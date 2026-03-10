@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-
 import '../models/warehouse_model.dart';
 import '../services/warehouse_repository.dart';
+import '../widgets/generic_master_edit_dialog.dart';
+import '../widgets/master_field_config.dart';
 
 class WarehouseMasterScreen extends StatefulWidget {
   final bool selectionMode;
@@ -57,82 +58,40 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
   }
 
   Future<void> _showEditDialog({Warehouse? warehouse}) async {
-    final isEdit = warehouse != null;
-    final nameController = TextEditingController(text: warehouse?.name ?? '');
-    final locationController = TextEditingController(text: warehouse?.location ?? '');
-    final notesController = TextEditingController(text: warehouse?.notes ?? '');
-
-    final result = await showDialog<Warehouse>(
+    final result = await showMasterEditDialog<Warehouse>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final inset = MediaQuery.of(context).viewInsets.bottom;
-          return MediaQuery.removeViewInsets(
-            removeBottom: true,
-            context: context,
-            child: AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              title: Text(isEdit ? '倉庫を編集' : '倉庫を新規登録'),
-              content: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.only(bottom: inset + 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: '倉庫名',
-                        hintText: '例: 第1倉庫',
-                      ),
-                    ),
-                    TextField(
-                      controller: locationController,
-                      decoration: const InputDecoration(
-                        labelText: '所在地',
-                        hintText: '例: ○○市△△町1-2-3',
-                      ),
-                    ),
-                    TextField(
-                      controller: notesController,
-                      decoration: const InputDecoration(labelText: '備考'),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('キャンセル'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (nameController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('倉庫名は必須です')),
-                      );
-                      return;
-                    }
-                    final newWarehouse = Warehouse(
-                      id: warehouse?.id ?? const Uuid().v4(),
-                      name: nameController.text.trim(),
-                      location: locationController.text.trim().isEmpty
-                          ? null
-                          : locationController.text.trim(),
-                      notes: notesController.text.trim().isEmpty
-                          ? null
-                          : notesController.text.trim(),
-                      updatedAt: DateTime.now(),
-                    );
-                    Navigator.pop(context, newWarehouse);
-                  },
-                  child: const Text('保存'),
-                ),
-              ],
-            ),
-          );
-        },
+      titleNew: '倉庫を新規登録',
+      titleEdit: '倉庫を編集',
+      existing: warehouse,
+      fields: [
+        MasterFieldConfig(
+          key: 'name',
+          label: '倉庫名',
+          hint: '例: 第1倉庫',
+          required: true,
+        ),
+        MasterFieldConfig(
+          key: 'location',
+          label: '所在地',
+          hint: '例: ○○市△△町1-2-3',
+        ),
+        MasterFieldConfig(
+          key: 'notes',
+          label: '備考',
+          maxLines: 3,
+        ),
+      ],
+      initialValues: (w) => {
+        'name': w?.name ?? '',
+        'location': w?.location ?? '',
+        'notes': w?.notes ?? '',
+      },
+      buildModel: (values) => Warehouse(
+        id: warehouse?.id ?? const Uuid().v4(),
+        name: values['name'],
+        location: values['location']?.isEmpty ? null : values['location'],
+        notes: values['notes']?.isEmpty ? null : values['notes'],
+        updatedAt: DateTime.now(),
       ),
     );
 
