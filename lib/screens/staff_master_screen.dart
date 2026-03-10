@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-
 import '../models/staff_model.dart';
 import '../services/staff_repository.dart';
+import '../widgets/generic_master_edit_dialog.dart';
+import '../widgets/master_field_config.dart';
 
 class StaffMasterScreen extends StatefulWidget {
   final bool selectionMode;
@@ -58,111 +59,61 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
   }
 
   Future<void> _showEditDialog({Staff? staff}) async {
-    final isEdit = staff != null;
-    final nameController = TextEditingController(text: staff?.name ?? '');
-    final emailController = TextEditingController(text: staff?.email ?? '');
-    final telController = TextEditingController(text: staff?.tel ?? '');
-    final departmentController = TextEditingController(text: staff?.department ?? '');
-    final positionController = TextEditingController(text: staff?.position ?? '');
-    final notesController = TextEditingController(text: staff?.notes ?? '');
-
-    final result = await showDialog<Staff>(
+    final result = await showMasterEditDialog<Staff>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final inset = MediaQuery.of(context).viewInsets.bottom;
-          return MediaQuery.removeViewInsets(
-            removeBottom: true,
-            context: context,
-            child: AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              title: Text(isEdit ? '担当者を編集' : '担当者を新規登録'),
-              content: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.only(bottom: inset + 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: '担当者名',
-                        hintText: '例: 山田 太郎',
-                      ),
-                    ),
-                    TextField(
-                      controller: departmentController,
-                      decoration: const InputDecoration(
-                        labelText: '部署',
-                        hintText: '例: 営業部',
-                      ),
-                    ),
-                    TextField(
-                      controller: positionController,
-                      decoration: const InputDecoration(
-                        labelText: '役職',
-                        hintText: '例: 課長',
-                      ),
-                    ),
-                    TextField(
-                      controller: telController,
-                      decoration: const InputDecoration(labelText: '電話番号'),
-                      keyboardType: TextInputType.phone,
-                    ),
-                    TextField(
-                      controller: emailController,
-                      decoration: const InputDecoration(labelText: 'メールアドレス'),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    TextField(
-                      controller: notesController,
-                      decoration: const InputDecoration(labelText: '備考'),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('キャンセル'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (nameController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('担当者名は必須です')),
-                      );
-                      return;
-                    }
-                    final newStaff = Staff(
-                      id: staff?.id ?? const Uuid().v4(),
-                      name: nameController.text.trim(),
-                      email: emailController.text.trim().isEmpty
-                          ? null
-                          : emailController.text.trim(),
-                      tel: telController.text.trim().isEmpty
-                          ? null
-                          : telController.text.trim(),
-                      department: departmentController.text.trim().isEmpty
-                          ? null
-                          : departmentController.text.trim(),
-                      position: positionController.text.trim().isEmpty
-                          ? null
-                          : positionController.text.trim(),
-                      notes: notesController.text.trim().isEmpty
-                          ? null
-                          : notesController.text.trim(),
-                      updatedAt: DateTime.now(),
-                    );
-                    Navigator.pop(context, newStaff);
-                  },
-                  child: const Text('保存'),
-                ),
-              ],
-            ),
-          );
-        },
+      titleNew: '担当者を新規登録',
+      titleEdit: '担当者を編集',
+      existing: staff,
+      fields: [
+        MasterFieldConfig(
+          key: 'name',
+          label: '担当者名',
+          hint: '例: 山田 太郎',
+          required: true,
+        ),
+        MasterFieldConfig(
+          key: 'department',
+          label: '部署',
+          hint: '例: 営業部',
+        ),
+        MasterFieldConfig(
+          key: 'position',
+          label: '役職',
+          hint: '例: 課長',
+        ),
+        MasterFieldConfig(
+          key: 'tel',
+          label: '電話番号',
+          keyboardType: TextInputType.phone,
+        ),
+        MasterFieldConfig(
+          key: 'email',
+          label: 'メールアドレス',
+          keyboardType: TextInputType.emailAddress,
+        ),
+        MasterFieldConfig(
+          key: 'notes',
+          label: '備考',
+          maxLines: 3,
+        ),
+      ],
+      initialValues: (s) => {
+        'name': s?.name ?? '',
+        'department': s?.department ?? '',
+        'position': s?.position ?? '',
+        'tel': s?.tel ?? '',
+        'email': s?.email ?? '',
+        'notes': s?.notes ?? '',
+      },
+      buildModel: (values) => Staff(
+        id: staff?.id ?? const Uuid().v4(),
+        name: values['name'],
+        email: values['email']?.isEmpty ? null : values['email'],
+        tel: values['tel']?.isEmpty ? null : values['tel'],
+        department: values['department']?.isEmpty ? null : values['department'],
+        position: values['position']?.isEmpty ? null : values['position'],
+        notes: values['notes']?.isEmpty ? null : values['notes'],
+        updatedAt: DateTime.now(),
       ),
     );
 
