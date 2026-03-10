@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../services/product_repository.dart';
+import '../widgets/generic_master_edit_dialog.dart';
+import '../widgets/master_field_config.dart';
 import 'barcode_scanner_screen.dart';
 
 class ProductMasterScreen extends StatefulWidget {
@@ -58,84 +60,76 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   }
 
   Future<void> _showEditDialog({Product? product}) async {
-    final nameController = TextEditingController(text: product?.name ?? "");
-    final priceController = TextEditingController(text: (product?.defaultUnitPrice ?? 0).toString());
-    final barcodeController = TextEditingController(text: product?.barcode ?? "");
-    final categoryController = TextEditingController(text: product?.category ?? "");
-    final stockController = TextEditingController(text: (product?.stockQuantity ?? 0).toString());
-
-    final result = await showDialog<Product>(
+    final result = await showMasterEditDialog<Product>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final inset = MediaQuery.of(context).viewInsets.bottom;
-          return MediaQuery.removeViewInsets(
-            removeBottom: true,
-            context: context,
-            child: AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              title: Text(product == null ? "商品追加" : "商品編集"),
-              content: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.only(bottom: inset + 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(controller: nameController, decoration: const InputDecoration(labelText: "商品名")),
-                    TextField(controller: categoryController, decoration: const InputDecoration(labelText: "カテゴリ")),
-                    TextField(controller: priceController, decoration: const InputDecoration(labelText: "初期単価"), keyboardType: TextInputType.number),
-                    TextField(controller: stockController, decoration: const InputDecoration(labelText: "在庫数"), keyboardType: TextInputType.number),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(controller: barcodeController, decoration: const InputDecoration(labelText: "バーコード")),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.qr_code_scanner),
-                          onPressed: () async {
-                            final code = await Navigator.push<String>(
-                              context,
-                              MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-                            );
-                            if (code != null) {
-                              setDialogState(() => barcodeController.text = code);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-                ElevatedButton(
-                  onPressed: () {
-                    if (nameController.text.isEmpty) return;
-                    final locked = product?.isLocked ?? false;
-                    final newId = locked ? const Uuid().v4() : (product?.id ?? const Uuid().v4());
-                    Navigator.pop(
-                      context,
-                      Product(
-                        id: newId,
-                        name: nameController.text.trim(),
-                        defaultUnitPrice: int.tryParse(priceController.text) ?? 0,
-                        barcode: barcodeController.text.isEmpty ? null : barcodeController.text.trim(),
-                        category: categoryController.text.isEmpty ? null : categoryController.text.trim(),
-                        stockQuantity: int.tryParse(stockController.text) ?? 0,
-                        odooId: product?.odooId,
-                        isLocked: false,
-                      ),
-                    );
-                  },
-                  child: const Text("保存"),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      titleNew: '商品追加',
+      titleEdit: '商品編集',
+      existing: product,
+      fields: [
+        MasterFieldConfig(
+          key: 'name',
+          label: '商品名',
+          required: true,
+        ),
+        MasterFieldConfig(
+          key: 'category',
+          label: 'カテゴリ',
+        ),
+        MasterFieldConfig(
+          key: 'defaultUnitPrice',
+          label: '初期単価',
+          keyboardType: TextInputType.number,
+        ),
+        MasterFieldConfig(
+          key: 'stockQuantity',
+          label: '在庫数',
+          keyboardType: TextInputType.number,
+        ),
+        MasterFieldConfig(
+          key: 'barcode',
+          label: 'バーコード',
+          suffixBuilder: (controller, setDialogState, updateValue) {
+            return IconButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: () async {
+                final code = await Navigator.push<String>(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                );
+                if (code != null) {
+                  updateValue(code);
+                }
+              },
+            );
+          },
+        ),
+      ],
+      initialValues: (p) => {
+        'name': p?.name ?? '',
+        'category': p?.category ?? '',
+        'defaultUnitPrice': (p?.defaultUnitPrice ?? 0).toString(),
+        'stockQuantity': (p?.stockQuantity ?? 0).toString(),
+        'barcode': p?.barcode ?? '',
+      },
+      buildModel: (values) {
+        final locked = product?.isLocked ?? false;
+        final newId = locked ? const Uuid().v4() : (product?.id ?? const Uuid().v4());
+        final defaultUnitPrice = int.tryParse(values['defaultUnitPrice'] ?? '') ?? 0;
+        final stockQuantity = int.tryParse(values['stockQuantity'] ?? '') ?? 0;
+        final barcode = values['barcode']?.trim();
+        final category = values['category']?.trim();
+
+        return Product(
+          id: newId,
+          name: values['name']?.trim() ?? '',
+          defaultUnitPrice: defaultUnitPrice,
+          stockQuantity: stockQuantity,
+          barcode: (barcode?.isEmpty ?? true) ? null : barcode,
+          category: (category?.isEmpty ?? true) ? null : category,
+          odooId: product?.odooId,
+          isLocked: false,
+        );
+      },
     );
 
     if (result != null) {

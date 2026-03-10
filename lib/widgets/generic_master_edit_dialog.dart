@@ -48,51 +48,48 @@ Future<T?> showMasterEditDialog<T>({
                   // 通常フィールド
                   ...fields.map((field) {
                     final controller = controllers[field.key]!;
-                    if (field.suffixWidget != null) {
-                      // サフィックス付き（バーコードスキャナ等）
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: controller,
-                                decoration: InputDecoration(
-                                  labelText: field.label,
-                                  hintText: field.hint,
-                                  border: const OutlineInputBorder(),
-                                  counterText: field.maxLength != null ? '' : null,
-                                ),
-                                keyboardType: field.keyboardType,
-                                maxLines: field.maxLines,
-                                maxLength: field.maxLength,
-                                onChanged: (value) => values[field.key] = value.trim(),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            field.suffixWidget!,
-                          ],
-                        ),
-                      );
-                    } else {
-                      // 通常テキストフィールド
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: TextField(
-                          controller: controller,
-                          decoration: InputDecoration(
-                            labelText: field.label,
-                            hintText: field.hint,
-                            border: const OutlineInputBorder(),
-                            counterText: field.maxLength != null ? '' : null,
-                          ),
-                          keyboardType: field.keyboardType,
-                          maxLines: field.maxLines,
-                          maxLength: field.maxLength,
-                          onChanged: (value) => values[field.key] = value.trim(),
-                        ),
+                    Widget? suffixWidget = field.suffixWidget;
+                    if (suffixWidget == null && field.suffixBuilder != null) {
+                      suffixWidget = field.suffixBuilder!(
+                        controller,
+                        setDialogState,
+                        (value) {
+                          setDialogState(() {
+                            controller.text = value;
+                            values[field.key] = value.trim();
+                          });
+                        },
                       );
                     }
+
+                    Widget textField = TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        labelText: field.label,
+                        hintText: field.hint,
+                        border: const OutlineInputBorder(),
+                        counterText: field.maxLength != null ? '' : null,
+                      ),
+                      keyboardType: field.keyboardType,
+                      maxLines: field.maxLines,
+                      maxLength: field.maxLength,
+                      onChanged: (value) => values[field.key] = value.trim(),
+                    );
+
+                    if (suffixWidget != null) {
+                      textField = Row(
+                        children: [
+                          Expanded(child: textField),
+                          const SizedBox(width: 8),
+                          suffixWidget,
+                        ],
+                      );
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: textField,
+                    );
                   }),
                   
                   // グループフィールド

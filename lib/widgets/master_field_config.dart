@@ -9,7 +9,12 @@ class MasterFieldConfig {
   final TextInputType keyboardType;
   final int maxLines;          // 備考欄など
   final int? maxLength;        // インデックス文字(1文字)など
-  final Widget? suffixWidget;  // バーコードスキャナボタン等
+  final Widget? suffixWidget;  // 静的なサフィックスウィジェット
+  final Widget Function(
+    TextEditingController controller,
+    StateSetter setDialogState,
+    void Function(String value) updateValue,
+  )? suffixBuilder; // 動的サフィックス（例: スキャナ）
   final String? Function(String)? validator; // カスタムバリデーション
 
   const MasterFieldConfig({
@@ -21,6 +26,7 @@ class MasterFieldConfig {
     this.maxLines = 1,
     this.maxLength,
     this.suffixWidget,
+    this.suffixBuilder,
     this.validator,
   });
 }
