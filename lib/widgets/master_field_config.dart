@@ -9,6 +9,7 @@ class MasterFieldConfig {
   final TextInputType keyboardType;
   final int maxLines;          // 備考欄など
   final int? maxLength;        // インデックス文字(1文字)など
+  final int flex;              // レイアウト: 1=半幅, 2=全幅
   final Widget? suffixWidget;  // 静的なサフィックスウィジェット
   final Widget Function(
     TextEditingController controller,
@@ -25,6 +26,7 @@ class MasterFieldConfig {
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
     this.maxLength,
+    this.flex = 1,
     this.suffixWidget,
     this.suffixBuilder,
     this.validator,
