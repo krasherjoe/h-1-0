@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'settings_screen.dart';
+import 'supplier_master_screen.dart';
+import 'staff_master_screen.dart';
+import 'warehouse_master_screen.dart';
 
 class MasterHubPage extends StatelessWidget {
   const MasterHubPage({super.key});
@@ -20,6 +23,24 @@ class MasterHubPage extends StatelessWidget {
         description: '商品情報の管理・編集',
         icon: Icons.inventory_2,
         builder: (_) => const ProductMasterScreen(),
+      ),
+      MasterEntry(
+        title: '仕入先マスター',
+        description: '仕入先情報の管理・編集',
+        icon: Icons.business,
+        builder: (_) => const SupplierMasterScreen(),
+      ),
+      MasterEntry(
+        title: '担当者マスター',
+        description: '社内担当者の管理・編集',
+        icon: Icons.badge,
+        builder: (_) => const StaffMasterScreen(),
+      ),
+      MasterEntry(
+        title: '倉庫マスター',
+        description: '倉庫・拠点情報の管理・編集',
+        icon: Icons.warehouse,
+        builder: (_) => const WarehouseMasterScreen(),
       ),
       MasterEntry(
         title: '設定',
