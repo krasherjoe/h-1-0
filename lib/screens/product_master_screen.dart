@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../services/product_repository.dart';
-import '../widgets/generic_master_edit_dialog.dart';
 import '../widgets/master_field_config.dart';
+import '../widgets/rich_master_edit_sheet.dart';
 import 'barcode_scanner_screen.dart';
 
 class ProductMasterScreen extends StatefulWidget {
@@ -14,6 +14,104 @@ class ProductMasterScreen extends StatefulWidget {
 
   @override
   State<ProductMasterScreen> createState() => _ProductMasterScreenState();
+}
+
+class ProductPreviewCard extends StatelessWidget {
+  const ProductPreviewCard({
+    super.key,
+    required this.name,
+    required this.category,
+    required this.barcode,
+    required this.unitPrice,
+    required this.stockQuantity,
+  });
+
+  final String name;
+  final String category;
+  final String barcode;
+  final String unitPrice;
+  final String stockQuantity;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade100,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.inventory_2, color: Colors.indigo),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name.isEmpty ? '商品名未入力' : name, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 4),
+                      Text(
+                        category.isEmpty ? 'カテゴリ: 未分類' : 'カテゴリ: $category',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                _ProductInfoChip(label: '単価', value: unitPrice.isEmpty ? '未設定' : '￥$unitPrice'),
+                _ProductInfoChip(label: '在庫', value: stockQuantity.isEmpty ? '0' : stockQuantity),
+                _ProductInfoChip(label: 'バーコード', value: barcode.isEmpty ? '未登録' : barcode),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductInfoChip extends StatelessWidget {
+  const _ProductInfoChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.indigo.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.indigo)),
+          const SizedBox(height: 2),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
 }
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
@@ -60,57 +158,82 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   }
 
   Future<void> _showEditDialog({Product? product}) async {
-    final result = await showMasterEditDialog<Product>(
+    final result = await showRichMasterEditSheet<Product>(
       context: context,
       titleNew: '商品追加',
       titleEdit: '商品編集',
       existing: product,
-      fields: [
-        MasterFieldConfig(
-          key: 'name',
-          label: '商品名',
-          required: true,
-        ),
-        MasterFieldConfig(
-          key: 'category',
-          label: 'カテゴリ',
-        ),
-        MasterFieldConfig(
-          key: 'defaultUnitPrice',
-          label: '初期単価',
-          keyboardType: TextInputType.number,
-        ),
-        MasterFieldConfig(
-          key: 'stockQuantity',
-          label: '在庫数',
-          keyboardType: TextInputType.number,
-        ),
-        MasterFieldConfig(
-          key: 'barcode',
-          label: 'バーコード',
-          suffixBuilder: (controller, setDialogState, updateValue) {
-            return IconButton(
-              icon: const Icon(Icons.qr_code_scanner),
-              onPressed: () async {
-                final code = await Navigator.push<String>(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+      sections: [
+        RichMasterSection(
+          title: '基本情報',
+          description: '商品名・カテゴリ・バーコードを登録します',
+          fields: [
+            const MasterFieldConfig(
+              key: 'name',
+              label: '商品名',
+              hint: '例: USB-Cケーブル 1m',
+              required: true,
+              flex: 2,
+            ),
+            const MasterFieldConfig(
+              key: 'category',
+              label: 'カテゴリ',
+              hint: '例: 周辺機器',
+            ),
+            MasterFieldConfig(
+              key: 'barcode',
+              label: 'バーコード',
+              hint: 'JAN / SKU',
+              suffixBuilder: (controller, setDialogState, updateValue) {
+                return IconButton(
+                  icon: const Icon(Icons.qr_code_scanner),
+                  onPressed: () async {
+                    final code = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                    );
+                    if (code != null) {
+                      updateValue(code);
+                    }
+                  },
                 );
-                if (code != null) {
-                  updateValue(code);
-                }
               },
-            );
-          },
+            ),
+          ],
+        ),
+        RichMasterSection(
+          title: '価格・在庫',
+          description: '販売単価や在庫数を管理します',
+          fields: const [
+            MasterFieldConfig(
+              key: 'defaultUnitPrice',
+              label: '標準単価 (税抜)',
+              hint: '例: 1980',
+              keyboardType: TextInputType.number,
+            ),
+            MasterFieldConfig(
+              key: 'stockQuantity',
+              label: '在庫数',
+              hint: '例: 120',
+              keyboardType: TextInputType.number,
+            ),
+          ],
         ),
       ],
-      initialValues: (p) => {
+      initialValuesBuilder: (p) => {
         'name': p?.name ?? '',
         'category': p?.category ?? '',
         'defaultUnitPrice': (p?.defaultUnitPrice ?? 0).toString(),
         'stockQuantity': (p?.stockQuantity ?? 0).toString(),
         'barcode': p?.barcode ?? '',
       },
+      previewBuilder: (ctx, controller) => ProductPreviewCard(
+        name: controller.valueOf('name'),
+        category: controller.valueOf('category'),
+        barcode: controller.valueOf('barcode'),
+        unitPrice: controller.valueOf('defaultUnitPrice'),
+        stockQuantity: controller.valueOf('stockQuantity'),
+      ),
       buildModel: (values) {
         final locked = product?.isLocked ?? false;
         final newId = locked ? const Uuid().v4() : (product?.id ?? const Uuid().v4());
@@ -134,8 +257,16 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
 
     if (result != null) {
       if (!mounted) return;
-      await _productRepo.saveProduct(result);
-      _loadProducts();
+      try {
+        await _productRepo.saveProduct(result);
+        _loadProducts();
+      } catch (e, st) {
+        print('P1 商品保存エラー: $e');
+        print('スタックトレース: $st');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('商品の保存に失敗しました: $e')));
+        }
+      }
     }
   }
 

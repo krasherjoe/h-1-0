@@ -1,10 +1,11 @@
+import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 40;
+  static const _databaseVersion = 42;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -22,12 +23,37 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'gemi_invoice.db');
-    return await openDatabase(
-      path,
-      version: _databaseVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-    );
+    try {
+      return await openDatabase(
+        path,
+        version: _databaseVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
+    } catch (e) {
+      print('DB初期化エラー: $e');
+      // DBが破損している可能性があるため、バックアップして再作成
+      try {
+        final dbFile = File(path);
+        if (await dbFile.exists()) {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final backupPath = '$path.corrupt-$timestamp';
+          await dbFile.copy(backupPath);
+          await dbFile.delete();
+          print('破損DBをバックアップしました: $backupPath');
+        }
+        // 新規DBを作成
+        return await openDatabase(
+          path,
+          version: _databaseVersion,
+          onCreate: _onCreate,
+          onUpgrade: _onUpgrade,
+        );
+      } catch (recoveryError) {
+        print('DBリカバリエラー: $recoveryError');
+        rethrow;
+      }
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -746,6 +772,36 @@ class DatabaseHelper {
       ''');
       await db.execute('CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)');
     }
+
+    if (oldVersion < 41) {
+      await _safeAddColumn(db, 'suppliers', "display_name TEXT");
+      await _safeAddColumn(db, 'suppliers', "formal_name TEXT");
+      await _safeAddColumn(db, 'suppliers', "title TEXT DEFAULT '様'");
+      await _safeAddColumn(db, 'suppliers', 'department TEXT');
+      await _safeAddColumn(db, 'suppliers', 'payment_terms TEXT');
+      await _safeAddColumn(db, 'suppliers', 'bank_account TEXT');
+      await _safeAddColumn(db, 'suppliers', 'is_locked INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'suppliers', 'head_char1 TEXT');
+      await _safeAddColumn(db, 'suppliers', 'head_char2 TEXT');
+
+      await db.execute('''
+        UPDATE suppliers
+        SET display_name = COALESCE(display_name, name),
+            formal_name = COALESCE(formal_name, name)
+        WHERE display_name IS NULL OR formal_name IS NULL
+      ''');
+
+      await db.execute('''
+        UPDATE suppliers
+        SET title = COALESCE(title, '様'),
+            payment_terms = COALESCE(payment_terms, ''),
+            bank_account = COALESCE(bank_account, '')
+      ''');
+    }
+
+    if (oldVersion < 42) {
+      await _safeAddColumn(db, 'products', 'wholesale_price INTEGER DEFAULT 0');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -802,6 +858,7 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         default_unit_price INTEGER,
+        wholesale_price INTEGER DEFAULT 0,
         barcode TEXT,
         category TEXT,
         stock_quantity INTEGER DEFAULT 0,
@@ -943,19 +1000,27 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE suppliers (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        contact_person TEXT,
-        email TEXT,
-        tel TEXT,
+        display_name TEXT NOT NULL,
+        formal_name TEXT NOT NULL,
+        title TEXT DEFAULT '様',
+        department TEXT,
         address TEXT,
+        tel TEXT,
+        email TEXT,
+        contact_person TEXT,
+        payment_terms TEXT,
+        bank_account TEXT,
         closing_day INTEGER,
         payment_site_days INTEGER DEFAULT 30,
         notes TEXT,
+        is_locked INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
+        head_char1 TEXT,
+        head_char2 TEXT,
         updated_at TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX idx_suppliers_name ON suppliers(name)');
+    await db.execute('CREATE INDEX idx_suppliers_display_name ON suppliers(display_name)');
 
     await db.execute('''
       CREATE TABLE warehouses (
@@ -1146,35 +1211,6 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_deliveries_sales ON deliveries(sales_id)');
     await db.execute('CREATE INDEX idx_deliveries_status ON deliveries(status)');
 
-    await db.execute('''
-      CREATE TABLE invoices (
-        id TEXT PRIMARY KEY,
-        invoice_no TEXT UNIQUE NOT NULL,
-        sales_id TEXT NOT NULL,
-        client_id TEXT NOT NULL,
-        client_name TEXT NOT NULL,
-        title TEXT NOT NULL,
-        subtotal REAL NOT NULL,
-        tax REAL NOT NULL,
-        total REAL NOT NULL,
-        status TEXT NOT NULL,
-        due_date TEXT,
-        notes TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        created_by TEXT,
-        issued_at TEXT,
-        paid_at TEXT,
-        FOREIGN KEY(sales_id) REFERENCES sales(id),
-        FOREIGN KEY(client_id) REFERENCES clients(id),
-        FOREIGN KEY(created_by) REFERENCES users(id)
-      )
-    ''');
-    await db.execute('CREATE INDEX idx_invoices_sales ON invoices(sales_id)');
-    await db.execute('CREATE INDEX idx_invoices_client ON invoices(client_id)');
-    await db.execute('CREATE INDEX idx_invoices_status ON invoices(status)');
-    await db.execute('CREATE INDEX idx_invoices_due_date ON invoices(due_date)');
-
     // 顧客訪問記録テーブル
     await db.execute('''
       CREATE TABLE client_visits (
@@ -1218,94 +1254,100 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_delivery_photos_client ON delivery_photos(client_id)');
     await db.execute('CREATE INDEX idx_delivery_photos_created ON delivery_photos(created_at)');
 
-    // FTS（全文検索）テーブル
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts5(
-        id UNINDEXED,
-        name,
-        description,
-        barcode,
-        category,
-        tags,
-        content='products',
-        content_rowid='rowid'
+    // FTS（全文検索）テーブル - FTS5が利用できない環境ではスキップ
+    try {
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts5(
+          id UNINDEXED,
+          name,
+          description,
+          barcode,
+          category,
+          tags,
+          content='products',
+          content_rowid='rowid'
+        )
+      ''');
+      
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS clients_fts USING fts5(
+          id UNINDEXED,
+          name,
+          kana,
+          address,
+          phone,
+          email,
+          notes,
+          content='clients',
+          content_rowid='rowid'
+        )
+      ''');
+      
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts5(
+          id UNINDEXED,
+          name,
+          kana,
+          address,
+          phone,
+          email,
+          notes,
+          content='suppliers',
+          content_rowid='rowid'
+        )
+      ''');
+      
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS quotes_fts USING fts5(
+          id UNINDEXED,
+          quote_no,
+          title,
+          notes,
+          client_name,
+          content='quotes',
+          content_rowid='rowid'
+        )
+      ''');
+      
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS orders_fts USING fts5(
+          id UNINDEXED,
+          order_no,
+          title,
+          notes,
+          client_name,
+          content='orders',
+          content_rowid='rowid'
       )
     ''');
     
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS clients_fts USING fts5(
-        id UNINDEXED,
-        name,
-        kana,
-        address,
-        phone,
-        email,
-        notes,
-        content='clients',
-        content_rowid='rowid'
-      )
-    ''');
-    
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts5(
-        id UNINDEXED,
-        name,
-        kana,
-        address,
-        phone,
-        email,
-        notes,
-        content='suppliers',
-        content_rowid='rowid'
-      )
-    ''');
-    
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS quotes_fts USING fts5(
-        id UNINDEXED,
-        quote_no,
-        title,
-        notes,
-        client_name,
-        content='quotes',
-        content_rowid='rowid'
-      )
-    ''');
-    
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS orders_fts USING fts5(
-        id UNINDEXED,
-        order_no,
-        title,
-        notes,
-        client_name,
-        content='orders',
-        content_rowid='rowid'
-      )
-    ''');
-    
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS sales_fts USING fts5(
-        id UNINDEXED,
-        sales_no,
-        title,
-        notes,
-        client_name,
-        content='sales',
-        content_rowid='rowid'
-      )
-    ''');
-    
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS inventory_fts USING fts5(
-        id UNINDEXED,
-        product_name,
-        warehouse_name,
-        notes,
-        content='warehouse_stock',
-        content_rowid='rowid'
-      )
-    ''');
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS sales_fts USING fts5(
+          id UNINDEXED,
+          sales_no,
+          title,
+          notes,
+          client_name,
+          content='sales',
+          content_rowid='rowid'
+        )
+      ''');
+      
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS inventory_fts USING fts5(
+          id UNINDEXED,
+          product_name,
+          warehouse_name,
+          notes,
+          content='warehouse_stock',
+          content_rowid='rowid'
+        )
+      ''');
+      
+      print('FTS5テーブルを作成しました');
+    } catch (e) {
+      print('FTS5が利用できないため、全文検索機能は無効化されます: $e');
+    }
 
     await db.execute('''
       CREATE TABLE stock_transfer_items (
@@ -1335,6 +1377,24 @@ class DatabaseHelper {
       )
     ''');
     await db.execute('CREATE INDEX idx_staff_name ON staff(name)');
+
+    // バージョン38: BusinessProfileテーブル
+    await db.execute('''
+      CREATE TABLE business_profiles (
+        id TEXT PRIMARY KEY,
+        business_type TEXT NOT NULL,
+        product_units TEXT NOT NULL,
+        needs_inventory INTEGER DEFAULT 1,
+        needs_gps INTEGER DEFAULT 0,
+        needs_photos INTEGER DEFAULT 0,
+        workflow TEXT NOT NULL,
+        pricing TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_business_profiles_type ON business_profiles(business_type)');
+    await db.execute('CREATE INDEX idx_business_profiles_updated ON business_profiles(updated_at)');
 
     // デフォルトの業種プロファイルを初期化
     await _initializeDefaultBusinessProfile(db);
