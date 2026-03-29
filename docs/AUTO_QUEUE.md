@@ -150,10 +150,11 @@
 **内容**: `_showEditDialog` を `showMasterEditDialog<Product>()` に置換。バーコードスキャナは `suffixWidget` で渡す  
 **完了日**: 2026-03-10
 
-### FEAT-016 ⏳ `master_hub_page.dart` に全マスタメニューを追加
+### FEAT-016 ✅ `master_hub_page.dart` に全マスタメニューを追加
 **対象**: `lib/screens/master_hub_page.dart`  
 **内容**: 仕入先・担当者・倉庫マスタへのメニュー項目を追加  
-**行数**: ~30行
+**行数**: ~30行  
+**完了日**: 2026-03-30
 
 ---
 
