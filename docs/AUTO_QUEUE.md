@@ -109,11 +109,57 @@
 **修正**: 未使用要素を削除またはコメントアウト  
 **完了日**: 2026-03-09
 
+### FEAT-003 ✅ 各マスタ0件時のエラー修正
+**対象**: 各repositoryファイル、`database_helper.dart`  
+**内容**: サンプルデータ自動生成を削除、suppliersテーブルスキーマ修正（v41マイグレーション）  
+**完了日**: 2026-03-10
+
+---
+
+## 🔵 汎用マスタ編集フレームワーク
+
+> 計画詳細: `~/.windsurf/plans/master-edit-framework-b8753f.md`
+
+### FEAT-010 ✅ `MasterFieldConfig` クラス作成
+**対象**: `lib/widgets/master_field_config.dart`（新規）  
+**内容**: フィールド定義クラス `MasterFieldConfig` と `MasterFieldGroup` を作成  
+**完了日**: 2026-03-10
+
+### FEAT-011 ✅ `GenericMasterEditDialog` 作成
+**対象**: `lib/widgets/generic_master_edit_dialog.dart`（新規）  
+**内容**: 汎用マスタ編集ダイアログ `showMasterEditDialog<T>()` を作成。キーボード対応・スクロール・バリデーション含む  
+**完了日**: 2026-03-10
+
+### FEAT-012 ✅ 仕入先マスタ編集画面を実装
+**対象**: `lib/screens/supplier_master_screen.dart`  
+**内容**: `onCreateNew` と編集ボタンで `showMasterEditDialog<Supplier>()` を呼び出す。スナックバー表示を実際の編集ダイアログに差し替え  
+**完了日**: 2026-03-10
+
+### FEAT-013 ✅ 担当者マスタを `GenericMasterEditDialog` に移行
+**対象**: `lib/screens/staff_master_screen.dart`  
+**内容**: `_showEditDialog` 内のAlertDialog構築を `showMasterEditDialog<Staff>()` に置換  
+**完了日**: 2026-03-10
+
+### FEAT-014 ✅ 倉庫マスタを `GenericMasterEditDialog` に移行
+**対象**: `lib/screens/warehouse_master_screen.dart`  
+**内容**: `_showEditDialog` 内のAlertDialog構築を `showMasterEditDialog<Warehouse>()` に置換  
+**完了日**: 2026-03-10
+
+### FEAT-015 ✅ 商品マスタを `GenericMasterEditDialog` に移行
+**対象**: `lib/screens/product_master_screen.dart`  
+**内容**: `_showEditDialog` を `showMasterEditDialog<Product>()` に置換。バーコードスキャナは `suffixWidget` で渡す  
+**完了日**: 2026-03-10
+
+### FEAT-016 ⏳ `master_hub_page.dart` に全マスタメニューを追加
+**対象**: `lib/screens/master_hub_page.dart`  
+**内容**: 仕入先・担当者・倉庫マスタへのメニュー項目を追加  
+**行数**: ~30行
+
 ---
 
 ## ✅ 完了済みタスク
 
-（なし）
+ERR-001〜006, WARN-001〜008, FEAT-001〜003 完了済み（2026-03-09〜10）
 
 ---
 
