@@ -21,6 +21,17 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
   final SupplierRepository _repo = SupplierRepository();
 
   Future<void> _showEditDialog({Supplier? supplier}) async {
+    const allowedTitles = ['様', '御中', '殿', '貴社'];
+
+    String normalizeTitle(String? raw) {
+      if (raw == null || raw.isEmpty) {
+        return allowedTitles.first;
+      }
+      return allowedTitles.contains(raw) ? raw : allowedTitles.first;
+    }
+
+    bool isCompanyTitle(String title) => title == '御中' || title == '貴社';
+
     Future<void> prefillFromContacts(
       BuildContext actionContext,
       RichMasterEditController controller,
@@ -151,7 +162,11 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
         accessories: [
           (ctx, controller) {
             final isCompany = controller.valueOf('companyFlag') != 'individual';
-            final title = controller.valueOf('title').isEmpty ? '様' : controller.valueOf('title');
+            final currentTitle = controller.valueOf('title');
+            final title = allowedTitles.contains(currentTitle) ? currentTitle : allowedTitles.first;
+            if (currentTitle != title) {
+              controller.updateValue('title', title, refresh: false);
+            }
             return Row(
               children: [
                 Expanded(
@@ -176,7 +191,7 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
                   child: DropdownButtonFormField<String>(
                     initialValue: title,
                     decoration: const InputDecoration(labelText: '敬称', border: OutlineInputBorder()),
-                    items: const ['様', '御中', '殿', '貴社']
+                    items: allowedTitles
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                         .toList(),
                     onChanged: (val) {
@@ -326,8 +341,8 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
         'closingDay': s?.closingDay?.toString() ?? '',
         'paymentSiteDays': s?.paymentSiteDays.toString() ?? '30',
         'notes': s?.notes ?? '',
-        'title': s?.title ?? '様',
-        'companyFlag': (s?.title == '御中' || s?.title == '貴社') ? 'company' : 'individual',
+        'title': normalizeTitle(s?.title),
+        'companyFlag': isCompanyTitle(normalizeTitle(s?.title)) ? 'company' : 'individual',
       },
       previewBuilder: (ctx, controller) => SupplierPreviewCard(
         displayName: controller.valueOf('displayName'),

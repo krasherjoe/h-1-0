@@ -1,5 +1,5 @@
-import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 import '../models/payment_model.dart';
 import '../models/supplier_model.dart';
 import '../models/base_document.dart';
@@ -168,57 +168,4 @@ class PaymentRepository {
     return result;
   }
 
-  /// サンプル支払データを生成
-  Future<void> _generateSamplePayments({int limit = 5}) async {
-    final database = await _db.database;
-    final suppliers = await _supplierRepo.getAllSuppliers();
-    
-    if (suppliers.isEmpty) return;
-    
-    final now = DateTime.now();
-    final samplePayments = [
-      Payment(
-        id: const Uuid().v4(),
-        paymentNumber: 'PAY-2026-001',
-        paymentDate: now.subtract(const Duration(days: 10)),
-        supplier: suppliers[0],
-        amount: 55000,
-        paymentMethod: PaymentMethod.bankTransfer,
-        bankAccount: '123-456789',
-        purchaseIds: ['sample-purchase-1'],
-        notes: '1月分仕入支払',
-        createdAt: now.subtract(const Duration(days: 10)),
-        updatedAt: now.subtract(const Duration(days: 10)),
-      ),
-      Payment(
-        id: const Uuid().v4(),
-        paymentNumber: 'PAY-2026-002',
-        paymentDate: now.subtract(const Duration(days: 5)),
-        supplier: suppliers.length > 1 ? suppliers[1] : suppliers[0],
-        amount: 33000,
-        paymentMethod: PaymentMethod.cash,
-        purchaseIds: ['sample-purchase-2'],
-        notes: '2月分仕入支払',
-        createdAt: now.subtract(const Duration(days: 5)),
-        updatedAt: now.subtract(const Duration(days: 5)),
-      ),
-      Payment(
-        id: const Uuid().v4(),
-        paymentNumber: 'PAY-2026-003',
-        paymentDate: now.subtract(const Duration(days: 2)),
-        supplier: suppliers.length > 2 ? suppliers[2] : suppliers[0],
-        amount: 88000,
-        paymentMethod: PaymentMethod.creditCard,
-        bankAccount: '456-789012',
-        purchaseIds: ['sample-purchase-3'],
-        notes: '3月分仕入支払',
-        createdAt: now.subtract(const Duration(days: 2)),
-        updatedAt: now.subtract(const Duration(days: 2)),
-      ),
-    ];
-
-    for (final payment in samplePayments.take(limit)) {
-      await database.insert('payments', payment.toMap());
-    }
-  }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -16,23 +18,49 @@ class OrderInputScreen extends StatefulWidget {
 
 class _OrderInputScreenState extends State<OrderInputScreen> {
   final InvoiceRepository _repo = InvoiceRepository();
+  final CustomerRepository _customerRepo = CustomerRepository();
   List<Invoice> _orders = [];
+  List<Customer> _customers = [];
+  StreamSubscription<List<Invoice>>? _ordersSubscription;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadOrders();
+    _initOrders();
   }
 
-  Future<void> _loadOrders() async {
+  Future<void> _initOrders() async {
     setState(() => _isLoading = true);
-    final customers = await CustomerRepository().getAllCustomers();
-    final allInvoices = await _repo.getAllInvoices(customers);
+    try {
+      final customers = await _customerRepo.getAllCustomers();
+      if (!mounted) return;
+      _customers = customers;
+      await _loadOrders(customers: customers);
+      await _ordersSubscription?.cancel();
+      _ordersSubscription = _repo.watchOrders(customers).listen((orders) {
+        if (!mounted) return;
+        setState(() {
+          _orders = List.of(orders)..sort((a, b) => b.date.compareTo(a.date));
+          _isLoading = false;
+        });
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('受注の読み込みに失敗しました: $e')),
+      );
+    }
+  }
+
+  Future<void> _loadOrders({List<Customer>? customers}) async {
+    final sourceCustomers = customers ?? _customers;
+    if (sourceCustomers.isEmpty) return;
+    final orders = await _repo.getOrders(sourceCustomers);
     if (!mounted) return;
     setState(() {
-      _orders = allInvoices.where((inv) => inv.documentType == DocumentType.delivery).toList();
-      _orders.sort((a, b) => b.date.compareTo(a.date));
+      _orders = List.of(orders)..sort((a, b) => b.date.compareTo(a.date));
       _isLoading = false;
     });
   }
@@ -52,7 +80,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
       customer: customer,
       date: DateTime.now(),
       items: [],
-      documentType: DocumentType.delivery,
+      documentType: DocumentType.order,
       isDraft: true,
     );
 
@@ -63,6 +91,12 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
       SnackBar(content: Text('${customer.displayName} の受注を作成しました')),
     );
     _loadOrders();
+  }
+
+  @override
+  void dispose() {
+    _ordersSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -99,14 +133,16 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                   itemCount: _orders.length,
                   itemBuilder: (context, index) {
                     final order = _orders[index];
+                    final statusLabel = order.orderStatus.label;
+                    final isDraft = order.orderStatus == OrderStatus.draft;
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: order.isDraft ? Colors.orange.shade100 : Colors.teal.shade100,
+                          backgroundColor: isDraft ? Colors.orange.shade100 : Colors.teal.shade100,
                           child: Icon(
-                            order.isDraft ? Icons.edit_note : Icons.assignment_turned_in,
-                            color: order.isDraft ? Colors.orange : Colors.teal,
+                            isDraft ? Icons.edit_note : Icons.assignment_turned_in,
+                            color: isDraft ? Colors.orange : Colors.teal,
                           ),
                         ),
                         title: Text(
@@ -114,7 +150,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          '${order.date.year}/${order.date.month.toString().padLeft(2, '0')}/${order.date.day.toString().padLeft(2, '0')} - ${order.isDraft ? '下書き' : '確定'}\n'
+                          '${order.date.year}/${order.date.month.toString().padLeft(2, '0')}/${order.date.day.toString().padLeft(2, '0')} - $statusLabel\n'
                           '合計: ¥${order.totalAmount.toStringAsFixed(0)}',
                         ),
                         isThreeLine: true,

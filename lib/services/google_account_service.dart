@@ -1,39 +1,50 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Googleアカウント連携とアクセストークン管理を司るサービス。
 /// Gmail／Drive／Sheets／Calendarで共通利用するOAuthセッションを一元管理する。
 class GoogleAccountService {
   GoogleAccountService._internal() {
-    _googleSignIn.onCurrentUserChanged.listen(_accountController.add);
+    _init();
   }
 
   static final GoogleAccountService instance = GoogleAccountService._internal();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: const [
-      'email',
-      'https://www.googleapis.com/auth/gmail.modify',
-      'https://www.googleapis.com/auth/drive.file',
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/calendar.events',
-    ],
-  );
-
+  GoogleSignIn? _googleSignIn;
   final StreamController<GoogleSignInAccount?> _accountController = StreamController.broadcast();
 
+  void _init() {
+    try {
+      _googleSignIn = GoogleSignIn(
+        scopes: const [
+          'email',
+          'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/drive.file',
+          'https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/calendar.events',
+        ],
+      );
+      _googleSignIn?.onCurrentUserChanged.listen(_accountController.add);
+    } catch (e) {
+      print('GoogleSignIn初期化エラー: $e');
+      // Webで初期化失敗しても続行
+    }
+  }
+
   /// 現在の連携アカウント。
-  GoogleSignInAccount? get currentAccount => _googleSignIn.currentUser;
+  GoogleSignInAccount? get currentAccount => _googleSignIn?.currentUser;
 
   /// 連携アカウントが変化した際に通知されるストリーム。
   Stream<GoogleSignInAccount?> get accountStream => _accountController.stream;
 
   /// サイレントログインで既存のセッションを復元する。
   Future<GoogleSignInAccount?> recoverAccount() async {
+    if (_googleSignIn == null) return null;
     try {
-      final account = await _googleSignIn.signInSilently();
-      return account ?? _googleSignIn.currentUser;
+      final account = await _googleSignIn!.signInSilently();
+      return account ?? _googleSignIn?.currentUser;
     } catch (_) {
       return null;
     }
@@ -41,14 +52,15 @@ class GoogleAccountService {
 
   /// ユーザーにアカウント選択UIを提示する。
   Future<GoogleSignInAccount?> pickAccount() async {
-    final account = await _googleSignIn.signIn();
+    if (_googleSignIn == null) return null;
+    final account = await _googleSignIn!.signIn();
     return account;
   }
 
   /// 連携を解除し、トークンを破棄する。
   Future<void> disconnect() async {
     try {
-      await _googleSignIn.disconnect();
+      await _googleSignIn?.disconnect();
     } finally {
       _accountController.add(null);
     }

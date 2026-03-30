@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../models/invoice_list_style.dart';
 import '../models/sync_preferences.dart';
 import '../services/app_settings_repository.dart';
 import '../services/google_account_service.dart';
+import '../services/theme_controller.dart';
 import 'email_settings_screen.dart';
 import 'master_hub_page.dart';
 import 'company_info_screen.dart';
@@ -31,6 +33,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final GoogleAccountService _googleAccountService = GoogleAccountService.instance;
   String _theme = 'system';
   String _summaryTheme = 'white';
+  InvoiceListStyle _invoiceListStyle = InvoiceListStyle.legacy;
+  String _homeMode = 'invoice_history';
   final TextEditingController _statusTextController = TextEditingController();
   bool _showCategoryDescriptions = true;
   GmailEnvelopeEncoding _encodingMode = GmailEnvelopeEncoding.gzipBase64;
@@ -201,6 +205,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _theme = theme);
       final summaryTheme = await _repo.getSummaryTheme();
       setState(() => _summaryTheme = summaryTheme);
+      final listStyle = await _repo.getInvoiceListStyle();
+      setState(() => _invoiceListStyle = listStyle);
+      final homeMode = await _repo.getHomeMode();
+      setState(() => _homeMode = homeMode);
       final statusText = await _repo.getDashboardStatusText();
       setState(() => _statusTextController.text = statusText);
       final showCategoryDesc = await _repo.getDashboardShowCategoryDescriptions();
@@ -303,6 +311,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  children: const [
+                    Icon(Icons.home_outlined, color: Colors.indigo),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('ホーム画面設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment<String>(
+                      value: 'invoice_history',
+                      label: Text('伝票一覧'),
+                      icon: Icon(Icons.receipt_long),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'dashboard',
+                      label: Text('ダッシュボード'),
+                      icon: Icon(Icons.dashboard),
+                    ),
+                  ],
+                  selected: {_homeMode},
+                  onSelectionChanged: (selection) async {
+                    final mode = selection.first;
+                    await _repo.setHomeMode(mode);
+                    if (!mounted) return;
+                    setState(() => _homeMode = mode);
+                    final message = mode == 'dashboard'
+                        ? 'ホーム画面をダッシュボードに設定しました'
+                        : 'ホーム画面を伝票一覧に設定しました';
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'アプリ起動時や戻る操作で開くホーム画面を選択できます。',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     const Icon(Icons.palette, color: Colors.purple),
                     const SizedBox(width: 8),
@@ -318,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                   selected: {_theme},
                   onSelectionChanged: (s) async {
-                    await _repo.setTheme(s.first);
+                    await AppThemeController.instance.setTheme(s.first);
                     setState(() => _theme = s.first);
                   },
                 ),
@@ -333,6 +392,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await _repo.setSummaryTheme(s.first);
                     setState(() => _summaryTheme = s.first);
                   },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.view_carousel, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('伝票一覧スタイル', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<InvoiceListStyle>(
+                  value: _invoiceListStyle,
+                  decoration: const InputDecoration(
+                    labelText: 'IV / Q1 一覧UI',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: InvoiceListStyle.legacy,
+                      child: Text('従来レイアウト（ステータスチップ表示）'),
+                    ),
+                    DropdownMenuItem(
+                      value: InvoiceListStyle.a2,
+                      child: Text('A2スタイル（淡色カード＋長押し確定）'),
+                    ),
+                  ],
+                  onChanged: (style) async {
+                    if (style == null) return;
+                    await _repo.setInvoiceListStyle(style);
+                    setState(() => _invoiceListStyle = style);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '※将来的にその他のスタイルを追加予定です。'
+                  '設定変更後はIV/Q1画面を再表示すると反映されます。',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),

@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/menu_catalog.dart';
 import '../models/dashboard_menu_item.dart';
+import '../models/invoice_list_style.dart';
 import '../models/sync_preferences.dart';
 import 'database_helper.dart';
 
@@ -16,6 +20,9 @@ class AppSettingsRepository {
   static const _kDashboardShowCategoryDescriptions = 'dashboard_show_category_desc';
   static const _kTheme = 'app_theme';
   static const _kSummaryTheme = 'summary_theme';
+  static const _kInvoiceListStyle = 'invoice_list_style';
+  static const _kForceInvoiceTaxInclusiveLabels = 'invoice_force_tax_inclusive_labels';
+  static const _kShowInvoiceTaxExceptionNote = 'invoice_show_tax_exception_note';
   static const _kGmailSyncBccAddress = 'gmail_sync_bcc_address';
   static const _kGmailSyncLabelName = 'gmail_sync_label_name';
   static const _kGmailSyncLabelId = 'gmail_sync_label_id';
@@ -24,9 +31,21 @@ class AppSettingsRepository {
   static const _kGmailSyncEncodingMode = 'gmail_sync_encoding_mode';
   static const _kSyncTransportMode = 'sync_transport_mode';
 
+  static final StreamController<String> _homeModeController = StreamController<String>.broadcast();
+
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  SharedPreferences? _prefs;
+
+  // Webプラットフォーム用のSharedPreferences初期化
+  Future<SharedPreferences> _getPrefs() async {
+    if (_prefs == null) {
+      _prefs = await SharedPreferences.getInstance();
+    }
+    return _prefs!;
+  }
 
   Future<void> _ensureTable() async {
+    if (kIsWeb) return; // Webでは不要
     final db = await _dbHelper.database;
     await db.execute('''
       CREATE TABLE IF NOT EXISTS app_settings (
@@ -41,8 +60,11 @@ class AppSettingsRepository {
     return v ?? 'invoice_history';
   }
 
+  Stream<String> watchHomeMode() => _homeModeController.stream;
+
   Future<void> setHomeMode(String mode) async {
     await _setValue(_kHomeMode, mode);
+    _homeModeController.add(mode);
   }
 
   Future<bool> getDashboardStatusEnabled() async {
@@ -104,6 +126,21 @@ class AppSettingsRepository {
 
   Future<String> getSummaryTheme() async => await getString(_kSummaryTheme) ?? 'white';
   Future<void> setSummaryTheme(String theme) async => setString(_kSummaryTheme, theme);
+
+  Future<InvoiceListStyle> getInvoiceListStyle() async {
+    final raw = await getString(_kInvoiceListStyle);
+    return InvoiceListStyleStorage.fromStorage(raw);
+  }
+
+  Future<void> setInvoiceListStyle(InvoiceListStyle style) async => setString(_kInvoiceListStyle, style.storageValue);
+
+  Future<bool> getForceInvoiceTaxInclusiveLabels() async => getBool(_kForceInvoiceTaxInclusiveLabels, defaultValue: false);
+
+  Future<void> setForceInvoiceTaxInclusiveLabels(bool value) async => setBool(_kForceInvoiceTaxInclusiveLabels, value);
+
+  Future<bool> getShowInvoiceTaxExceptionNote() async => getBool(_kShowInvoiceTaxExceptionNote, defaultValue: false);
+
+  Future<void> setShowInvoiceTaxExceptionNote(bool value) async => setBool(_kShowInvoiceTaxExceptionNote, value);
 
   Future<String?> getGmailSyncBccAddress() async {
     final address = await getString(_kGmailSyncBccAddress);
@@ -209,6 +246,11 @@ class AppSettingsRepository {
 
   /// ヘルパー: 存在しないキーを削除する
   Future<void> _remove(String key) async {
+    if (kIsWeb) {
+      final prefs = await _getPrefs();
+      await prefs.remove(key);
+      return;
+    }
     final db = await _dbHelper.database;
     try {
       await db.delete('app_settings', where: 'key = ?', whereArgs: [key]);
@@ -216,6 +258,10 @@ class AppSettingsRepository {
   }
 
   Future<String?> _getValue(String key) async {
+    if (kIsWeb) {
+      final prefs = await _getPrefs();
+      return prefs.getString(key);
+    }
     await _ensureTable();
     final db = await _dbHelper.database;
     final res = await db.query('app_settings', where: 'key = ?', whereArgs: [key], limit: 1);
@@ -224,6 +270,11 @@ class AppSettingsRepository {
   }
 
   Future<void> _setValue(String key, String value) async {
+    if (kIsWeb) {
+      final prefs = await _getPrefs();
+      await prefs.setString(key, value);
+      return;
+    }
     await _ensureTable();
     final db = await _dbHelper.database;
     await db.insert('app_settings', {'key': key, 'value': value}, conflictAlgorithm: ConflictAlgorithm.replace);

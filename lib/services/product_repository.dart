@@ -1,14 +1,18 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import '../models/product_model.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
-import 'package:uuid/uuid.dart';
 
 class ProductRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
 
   Future<List<Product>> getAllProducts({bool includeHidden = false}) async {
+    if (kIsWeb) {
+      // Webプラットフォームではダミーデータを返す
+      return [];
+    }
     final db = await _dbHelper.database;
     final String where = includeHidden ? '' : 'WHERE COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
@@ -19,15 +23,13 @@ class ProductRepository {
       ORDER BY ${includeHidden ? 'p.id DESC' : 'p.name ASC'}
     ''');
 
-    if (maps.isEmpty) {
-      await _generateSampleProducts();
-      return getAllProducts(includeHidden: includeHidden);
-    }
-
     return List.generate(maps.length, (i) => Product.fromMap(maps[i]));
   }
 
   Future<List<Product>> searchProducts(String query, {bool includeHidden = false}) async {
+    if (kIsWeb) {
+      return [];
+    }
     final db = await _dbHelper.database;
     final args = ['%$query%', '%$query%', '%$query%'];
     final String whereHidden = includeHidden ? '' : 'AND COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
@@ -43,25 +45,10 @@ class ProductRepository {
     return List.generate(maps.length, (i) => Product.fromMap(maps[i]));
   }
 
-  Future<void> _generateSampleProducts() async {
-    final samples = [
-      Product(id: const Uuid().v4(), name: "基本技術料", defaultUnitPrice: 50000, category: "技術料"),
-      Product(id: const Uuid().v4(), name: "出張診断費", defaultUnitPrice: 10000, category: "諸経費"),
-      Product(id: const Uuid().v4(), name: "交換用ハードディスク (1TB)", defaultUnitPrice: 8500, category: "パーツ"),
-      Product(id: const Uuid().v4(), name: "メモリ増設 (8GB)", defaultUnitPrice: 6000, category: "パーツ"),
-      Product(id: const Uuid().v4(), name: "OSインストール作業", defaultUnitPrice: 15000, category: "技術料"),
-      Product(id: const Uuid().v4(), name: "データ復旧作業 (軽度)", defaultUnitPrice: 30000, category: "技術料"),
-      Product(id: const Uuid().v4(), name: "LANケーブル (5m)", defaultUnitPrice: 1200, category: "サプライ"),
-      Product(id: const Uuid().v4(), name: "ウイルス除去作業", defaultUnitPrice: 20000, category: "技術料"),
-      Product(id: const Uuid().v4(), name: "液晶ディスプレイ (24インチ)", defaultUnitPrice: 25000, category: "周辺機器"),
-      Product(id: const Uuid().v4(), name: "定期保守契約料 (月額)", defaultUnitPrice: 5000, category: "保守"),
-    ];
-    for (var s in samples) {
-      await saveProduct(s);
-    }
-  }
-
   Future<void> saveProduct(Product product) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Webプラットフォームでは商品保存は使用できません');
+    }
     final db = await _dbHelper.database;
     await db.insert(
       'products',
@@ -78,6 +65,9 @@ class ProductRepository {
   }
 
   Future<void> deleteProduct(String id) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Webプラットフォームでは商品削除は使用できません');
+    }
     final db = await _dbHelper.database;
     await db.delete(
       'products',
@@ -94,6 +84,9 @@ class ProductRepository {
   }
 
   Future<void> setHidden(String id, bool hidden) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Webプラットフォームでは非表示設定は使用できません');
+    }
     final db = await _dbHelper.database;
     await db.insert(
       'master_hidden',
@@ -113,6 +106,9 @@ class ProductRepository {
   }
 
   Future<void> updateStockQuantities(Map<String, int> adjustments) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Webプラットフォームでは在庫更新は使用できません');
+    }
     if (adjustments.isEmpty) return;
     final db = await _dbHelper.database;
     await db.transaction((txn) async {

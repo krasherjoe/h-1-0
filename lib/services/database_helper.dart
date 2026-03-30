@@ -1,11 +1,12 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 import '../constants/warehouse_constants.dart';
 
 class DatabaseHelper {
-  static const _databaseVersion = 42;
+  static const _databaseVersion = 43;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -16,6 +17,9 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (testDatabase != null) return testDatabase!;
+    if (kIsWeb) {
+      throw UnsupportedError('WebプラットフォームではDatabaseは使用できません');
+    }
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
@@ -32,7 +36,6 @@ class DatabaseHelper {
       );
     } catch (e) {
       print('DB初期化エラー: $e');
-      // DBが破損している可能性があるため、バックアップして再作成
       try {
         final dbFile = File(path);
         if (await dbFile.exists()) {
@@ -42,7 +45,6 @@ class DatabaseHelper {
           await dbFile.delete();
           print('破損DBをバックアップしました: $backupPath');
         }
-        // 新規DBを作成
         return await openDatabase(
           path,
           version: _databaseVersion,
@@ -802,6 +804,17 @@ class DatabaseHelper {
     if (oldVersion < 42) {
       await _safeAddColumn(db, 'products', 'wholesale_price INTEGER DEFAULT 0');
     }
+
+    if (oldVersion < 43) {
+      await _safeAddColumn(db, 'invoices', "order_status TEXT DEFAULT 'draft'");
+      await _safeAddColumn(db, 'invoices', 'promised_date INTEGER');
+      await _safeAddColumn(db, 'invoices', 'fulfilled_date INTEGER');
+      await _safeAddColumn(db, 'invoices', 'source_document_id TEXT');
+      await _safeAddColumn(db, 'invoices', 'linked_delivery_id TEXT');
+      await _safeAddColumn(db, 'invoices', 'linked_invoice_id TEXT');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_order_status ON invoices(order_status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_promised_date ON invoices(promised_date)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -892,6 +905,12 @@ class DatabaseHelper {
         total_amount INTEGER,
         tax_rate REAL DEFAULT 0.10,
         document_type TEXT DEFAULT "invoice",
+        order_status TEXT DEFAULT 'draft',
+        promised_date INTEGER,
+        fulfilled_date INTEGER,
+        source_document_id TEXT,
+        linked_delivery_id TEXT,
+        linked_invoice_id TEXT,
         customer_formal_name TEXT,
         odoo_id TEXT,
         is_synced INTEGER DEFAULT 0,

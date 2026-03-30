@@ -8,13 +8,6 @@ class InventoryRepository {
 
   Future<List<Inventory>> getAllInventory() async {
     final db = await _dbHelper.database;
-    
-    // サンプルデータがなければ生成
-    final count = await db.rawQuery('SELECT COUNT(*) as count FROM inventory');
-    if ((count.first['count'] as int) == 0) {
-      await _generateSampleInventory();
-    }
-    
     final List<Map<String, dynamic>> maps = await db.query(
       'inventory',
       orderBy: 'product_name ASC',
@@ -127,57 +120,4 @@ class InventoryRepository {
     await db.delete('inventory', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<void> _generateSampleInventory() async {
-    final db = await _dbHelper.database;
-    final now = DateTime.now();
-    
-    final sampleInventory = [
-      Inventory(
-        id: const Uuid().v4(),
-        productId: 'PROD-001',
-        productName: 'サンプル商品A',
-        quantity: 100,
-        reservedQuantity: 20,
-        location: 'A-1-01',
-        warehouseId: 'WH-001',
-        warehouseName: '主倉庫',
-        unitCost: 1000.0,
-        reorderPoint: 50,
-        safetyStock: 20,
-        updatedAt: now,
-      ),
-      Inventory(
-        id: const Uuid().v4(),
-        productId: 'PROD-002',
-        productName: 'サンプル商品B',
-        quantity: 25,
-        reservedQuantity: 5,
-        location: 'A-1-02',
-        warehouseId: 'WH-001',
-        warehouseName: '主倉庫',
-        unitCost: 2000.0,
-        reorderPoint: 30,
-        safetyStock: 10,
-        updatedAt: now,
-      ),
-      Inventory(
-        id: const Uuid().v4(),
-        productId: 'PROD-003',
-        productName: 'サンプル商品C',
-        quantity: 0,
-        reservedQuantity: 0,
-        location: 'B-2-01',
-        warehouseId: 'WH-001',
-        warehouseName: '主倉庫',
-        unitCost: 500.0,
-        reorderPoint: 20,
-        safetyStock: 5,
-        updatedAt: now,
-      ),
-    ];
-
-    for (final inventory in sampleInventory) {
-      await db.insert('inventory', inventory.toMap());
-    }
-  }
 }

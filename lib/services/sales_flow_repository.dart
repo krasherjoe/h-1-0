@@ -12,6 +12,62 @@ class SalesFlowRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final Uuid _uuid = const Uuid();
   
+  // 各種ドキュメント取得
+  Future<List<Map<String, dynamic>>> getQuotes({SalesFlowStatus? status}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'quotes',
+      where: status != null ? 'status = ?' : null,
+      whereArgs: status != null ? [status.toString()] : null,
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+  
+  Future<List<Map<String, dynamic>>> getOrders({SalesFlowStatus? status}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'orders',
+      where: status != null ? 'status = ?' : null,
+      whereArgs: status != null ? [status.toString()] : null,
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+  
+  Future<List<Map<String, dynamic>>> getSales({SalesFlowStatus? status}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'sales',
+      where: status != null ? 'status = ?' : null,
+      whereArgs: status != null ? [status.toString()] : null,
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+  
+  Future<List<Map<String, dynamic>>> getDeliveries({DeliveryLinkStatus? status}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'deliveries',
+      where: status != null ? 'status = ?' : null,
+      whereArgs: status != null ? [status.toString()] : null,
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+  
+  Future<List<Map<String, dynamic>>> getInvoices({InvoiceLinkStatus? status}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: status != null ? 'status = ?' : null,
+      whereArgs: status != null ? [status.toString()] : null,
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+  
   // 見積から受注への状態遷移
   Future<String> convertQuoteToOrder({
     required String quoteId,

@@ -153,9 +153,11 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text(
-                  invoice.documentType == DocumentType.receipt
-                      ? (companyInfo.taxDisplayMode == 'hidden' ? "領収金額" : "領収金額 (税込)")
-                      : (companyInfo.taxDisplayMode == 'hidden' ? "合計金額" : "合計金額 (税込)"),
+                  () {
+                    final bool showTaxSuffix = companyInfo.taxDisplayMode != 'hidden' && invoice.tax > 0;
+                    final baseLabel = invoice.documentType == DocumentType.receipt ? "領収金額" : "合計金額";
+                    return showTaxSuffix ? "$baseLabel (税込)" : baseLabel;
+                  }(),
                   style: const pw.TextStyle(fontSize: 16),
                 ),
                 pw.Text("￥${amountFormatter.format(invoice.totalAmount)} -", style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
@@ -193,11 +195,14 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                 child: pw.Column(
                   children: [
                     pw.SizedBox(height: 10),
-                    _buildSummaryRow("小計 (税抜)", amountFormatter.format(invoice.subtotal)),
-                    if (companyInfo.taxDisplayMode == 'normal')
-                      _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
-                    if (companyInfo.taxDisplayMode == 'text_only') _buildSummaryRow("消費税", "（税別）"),
-                    pw.Divider(),
+                    if (invoice.tax > 0) ...[
+                      _buildSummaryRow("小計 (税抜)", amountFormatter.format(invoice.subtotal)),
+                      if (companyInfo.taxDisplayMode == 'normal')
+                        _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
+                      if (companyInfo.taxDisplayMode == 'text_only')
+                        _buildSummaryRow("消費税", "（税別）"),
+                      pw.Divider(),
+                    ],
                     _buildSummaryRow("合計", "￥${amountFormatter.format(invoice.totalAmount)}", isBold: true),
                   ],
                 ),

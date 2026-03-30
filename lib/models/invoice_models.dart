@@ -60,9 +60,29 @@ class InvoiceItem {
 
 enum DocumentType {
   estimation, // 見積
+  order,      // 受注
   delivery,   // 納品
   invoice,    // 請求
   receipt,    // 領収
+}
+
+enum OrderStatus {
+  draft,
+  confirmed,
+  fulfilled,
+}
+
+extension OrderStatusLabel on OrderStatus {
+  String get label {
+    switch (this) {
+      case OrderStatus.draft:
+        return '下書き';
+      case OrderStatus.confirmed:
+        return '確定';
+      case OrderStatus.fulfilled:
+        return '完了';
+    }
+  }
 }
 
 class Invoice {
@@ -78,6 +98,12 @@ class Invoice {
   final String? filePath;
   final double taxRate;
   final DocumentType documentType; // 追加
+  final OrderStatus orderStatus;
+  final DateTime? promisedDate;
+  final DateTime? fulfilledDate;
+  final String? sourceDocumentId;
+  final String? linkedDeliveryId;
+  final String? linkedInvoiceId;
   final String? customerFormalNameSnapshot;
   final String? odooId;
   final bool isSynced;
@@ -106,6 +132,12 @@ class Invoice {
     this.filePath,
     this.taxRate = 0.10,
     this.documentType = DocumentType.invoice, // デフォルト請求書
+    this.orderStatus = OrderStatus.draft,
+    this.promisedDate,
+    this.fulfilledDate,
+    this.sourceDocumentId,
+    this.linkedDeliveryId,
+    this.linkedInvoiceId,
     this.customerFormalNameSnapshot,
     this.odooId,
     this.isSynced = false,
@@ -138,6 +170,7 @@ class Invoice {
   String get documentTypeName {
     switch (documentType) {
       case DocumentType.estimation: return "見積書";
+      case DocumentType.order: return "受注伝票";
       case DocumentType.delivery: return "納品書";
       case DocumentType.invoice: return "請求書";
       case DocumentType.receipt: return "領収書";
@@ -146,6 +179,7 @@ class Invoice {
 
   static const Map<DocumentType, String> _docTypeShortLabel = {
     DocumentType.estimation: '見積',
+    DocumentType.order: '受注',
     DocumentType.delivery: '納品',
     DocumentType.invoice: '請求',
     DocumentType.receipt: '領収',
@@ -154,11 +188,18 @@ class Invoice {
   String get invoiceNumberPrefix {
     switch (documentType) {
       case DocumentType.estimation: return "EST";
+      case DocumentType.order: return "ORD";
       case DocumentType.delivery: return "DEL";
       case DocumentType.invoice: return "INV";
       case DocumentType.receipt: return "REC";
     }
   }
+
+  bool get isOrder => documentType == DocumentType.order;
+  bool get isOrderConfirmed => isOrder && orderStatus == OrderStatus.confirmed;
+
+  DateTime? _fromEpoch(int? value) =>
+      value != null ? DateTime.fromMillisecondsSinceEpoch(value) : null;
 
   String get invoiceNumber => "$invoiceNumberPrefix-$terminalId-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
 
@@ -240,6 +281,12 @@ class Invoice {
       'total_amount': totalAmount,
       'tax_rate': taxRate,
       'document_type': documentType.name, // 追加
+      'order_status': orderStatus.name,
+      'promised_date': promisedDate?.millisecondsSinceEpoch,
+      'fulfilled_date': fulfilledDate?.millisecondsSinceEpoch,
+      'source_document_id': sourceDocumentId,
+      'linked_delivery_id': linkedDeliveryId,
+      'linked_invoice_id': linkedInvoiceId,
       'customer_formal_name': customerFormalNameSnapshot ?? customer.formalName,
       'odoo_id': odooId,
       'is_synced': isSynced ? 1 : 0,
@@ -271,6 +318,12 @@ class Invoice {
     String? filePath,
     double? taxRate,
     DocumentType? documentType,
+    OrderStatus? orderStatus,
+    DateTime? promisedDate,
+    DateTime? fulfilledDate,
+    String? sourceDocumentId,
+    String? linkedDeliveryId,
+    String? linkedInvoiceId,
     String? customerFormalNameSnapshot,
     String? odooId,
     bool? isSynced,
@@ -299,6 +352,12 @@ class Invoice {
       filePath: filePath ?? this.filePath,
       taxRate: taxRate ?? this.taxRate,
       documentType: documentType ?? this.documentType,
+      orderStatus: orderStatus ?? this.orderStatus,
+      promisedDate: promisedDate ?? this.promisedDate,
+      fulfilledDate: fulfilledDate ?? this.fulfilledDate,
+      sourceDocumentId: sourceDocumentId ?? this.sourceDocumentId,
+      linkedDeliveryId: linkedDeliveryId ?? this.linkedDeliveryId,
+      linkedInvoiceId: linkedInvoiceId ?? this.linkedInvoiceId,
       customerFormalNameSnapshot: customerFormalNameSnapshot ?? this.customerFormalNameSnapshot,
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,

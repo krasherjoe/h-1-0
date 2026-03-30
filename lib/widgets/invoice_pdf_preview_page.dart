@@ -37,6 +37,31 @@ class InvoicePdfPreviewPage extends StatelessWidget {
     this.showPrint = true,
   });
 
+  bool get _canFormalIssue => allowFormalIssue && invoice.isDraft && isUnlocked && !isLocked && onFormalIssue != null;
+
+  Future<bool> _showFormalIssueWarning(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${invoice.documentTypeName}の正式発行'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(invoice.customerNameForDisplay),
+            const SizedBox(height: 8),
+            const Text('この伝票を正式発行すると、\n電子帳簿保存法により二度と編集できなくなります。\n\n確定してよろしいですか？'),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('正式発行する')),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<Uint8List> _buildPdfBytes() async {
     final doc = await buildInvoiceDocument(invoice);
     return Uint8List.fromList(await doc.save());
@@ -174,8 +199,17 @@ class InvoicePdfPreviewPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (allowFormalIssue && isDraft && isUnlocked && !isLocked && onFormalIssue != null)
+                      onPressed: _canFormalIssue
+                          ? () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('正式発行するには長押ししてください')),
+                              );
+                            }
+                          : null,
+                      onLongPress: _canFormalIssue
                           ? () async {
+                              final confirmed = await _showFormalIssueWarning(context);
+                              if (!confirmed) return;
                               final ok = await onFormalIssue!();
                               if (ok && context.mounted) Navigator.pop(context, true);
                             }

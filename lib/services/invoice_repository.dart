@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -10,13 +11,21 @@ import '../models/invoice_sync_payload.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 import 'company_repository.dart';
+import 'storage_monitor.dart';
 
 class InvoiceRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
   final CompanyRepository _companyRepo = CompanyRepository();
+  final StorageMonitor _storageMonitor = StorageMonitor();
+  final StreamController<List<Invoice>> _orderStreamController = StreamController.broadcast();
 
   Future<void> saveInvoice(Invoice invoice) async {
+    // 容量チェック
+    if (!await _storageMonitor.canWrite()) {
+      throw Exception('ストレージ容量不足のため保存できません');
+    }
+
     final db = await _dbHelper.database;
 
     // 正式発行（下書きでない）場合はロックを掛ける
@@ -63,20 +72,25 @@ class InvoiceRepository {
         updatedAt: DateTime.now(),
       );
 
-      // 在庫の調整（更新の場合、以前の数量を戻してから新しい数量を引く）
-      final List<Map<String, dynamic>> oldItems = await txn.query(
-        'invoice_items',
-        where: 'invoice_id = ?',
-        whereArgs: [invoice.id],
-      );
+      final bool adjustStockOnSave =
+          invoice.documentType != DocumentType.order || invoice.orderStatus != OrderStatus.draft;
 
-      // 旧在庫を戻す
-      for (var item in oldItems) {
-        if (item['product_id'] != null) {
-          await txn.execute(
-            'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
-            [item['quantity'], item['product_id']],
-          );
+      if (adjustStockOnSave) {
+        // 在庫の調整（更新の場合、以前の数量を戻してから新しい数量を引く）
+        final List<Map<String, dynamic>> oldItems = await txn.query(
+          'invoice_items',
+          where: 'invoice_id = ?',
+          whereArgs: [invoice.id],
+        );
+
+        // 旧在庫を戻す
+        for (var item in oldItems) {
+          if (item['product_id'] != null) {
+            await txn.execute(
+              'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
+              [item['quantity'], item['product_id']],
+            );
+          }
         }
       }
 
@@ -97,7 +111,7 @@ class InvoiceRepository {
       // 新しい明細の保存と在庫の減算
       for (var item in invoice.items) {
         await txn.insert('invoice_items', item.toMap(invoice.id));
-        if (item.productId != null) {
+        if (adjustStockOnSave && item.productId != null) {
           await txn.execute(
             'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
             [item.quantity, item.productId],
@@ -126,17 +140,127 @@ class InvoiceRepository {
     await saveInvoice(invoice);
   }
 
-  Future<List<Invoice>> getAllInvoices(List<Customer> customers) async {
-    final db = await _dbHelper.database;
-    List<Map<String, dynamic>> invoiceMaps = await db.query('invoices', orderBy: 'date DESC');
+  Future<List<Invoice>> getOrders(List<Customer> customers, {OrderStatus? status}) async {
+    final orders = await getAllInvoices(customers, documentTypeFilter: DocumentType.order);
+    if (status == null) return orders;
+    return orders.where((order) => order.orderStatus == status).toList();
+  }
 
-    // サンプル自動投入（伝票が0件なら）
-    if (invoiceMaps.isEmpty && customers.isNotEmpty) {
-      await _generateSampleInvoices(customers.take(3).toList());
-      invoiceMaps = await db.query('invoices', orderBy: 'date DESC');
-    }
+  Stream<List<Invoice>> watchOrders(List<Customer> customers, {OrderStatus? status}) {
+    _refreshOrders(customers, status: status);
+    return _orderStreamController.stream;
+  }
+
+  Future<void> _refreshOrders(List<Customer> customers, {OrderStatus? status}) async {
+    final orders = await getOrders(customers, status: status);
+    _orderStreamController.add(orders);
+  }
+
+  Future<void> updateOrderStatus(
+    String id,
+    OrderStatus status, {
+    DateTime? fulfilledDate,
+    String? linkedDeliveryId,
+    String? linkedInvoiceId,
+  }) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'invoices',
+        where: 'id = ?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        throw Exception('order_not_found');
+      }
+      final row = rows.first;
+      if (row['document_type'] != DocumentType.order.name) {
+        throw Exception('not_order_document');
+      }
+
+      OrderStatus currentStatus = OrderStatus.draft;
+      final statusRaw = row['order_status'];
+      if (statusRaw is String) {
+        currentStatus = OrderStatus.values.firstWhere(
+          (e) => e.name == statusRaw,
+          orElse: () => OrderStatus.draft,
+        );
+      }
+
+      final bool leavingDraft = currentStatus == OrderStatus.draft && status != OrderStatus.draft;
+      if (leavingDraft) {
+        final itemRows = await txn.query('invoice_items', where: 'invoice_id = ?', whereArgs: [id]);
+        for (final item in itemRows) {
+          final productId = item['product_id'] as String?;
+          if (productId == null) continue;
+          final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
+          if (quantity == 0) continue;
+          await txn.execute(
+            'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+            [quantity, productId],
+          );
+          await txn.execute('UPDATE products SET is_locked = 1 WHERE id = ?', [productId]);
+        }
+        await txn.execute('UPDATE customers SET is_locked = 1 WHERE id = ?', [row['customer_id']]);
+      }
+
+      DateTime? fulfilledAt = fulfilledDate;
+      if (status == OrderStatus.fulfilled && fulfilledAt == null) {
+        fulfilledAt = DateTime.now();
+      }
+
+      final updateValues = <String, Object?>{
+        'order_status': status.name,
+        'fulfilled_date': fulfilledAt?.millisecondsSinceEpoch,
+        'updated_at': DateTime.now().toIso8601String(),
+        'is_locked': status == OrderStatus.draft ? row['is_locked'] : 1,
+      };
+      if (linkedDeliveryId != null) {
+        updateValues['linked_delivery_id'] = linkedDeliveryId;
+      }
+      if (linkedInvoiceId != null) {
+        updateValues['linked_invoice_id'] = linkedInvoiceId;
+      }
+
+      await txn.update('invoices', updateValues, where: 'id = ?', whereArgs: [id]);
+    });
+
+    await _logRepo.logAction(
+      action: 'UPDATE_ORDER_STATUS',
+      targetType: 'INVOICE',
+      targetId: id,
+      details: '受注ステータスを ${status.label} に更新',
+    );
+  }
+
+  Future<List<Invoice>> getAllInvoices(List<Customer> customers, {DocumentType? documentTypeFilter}) async {
+    final db = await _dbHelper.database;
+    final where = documentTypeFilter != null ? 'document_type = ?' : null;
+    final whereArgs = documentTypeFilter != null ? [documentTypeFilter.name] : null;
+    final List<Map<String, dynamic>> invoiceMaps = await db.query(
+      'invoices',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'date DESC',
+    );
 
     List<Invoice> invoices = [];
+    DateTime? _mapEpoch(dynamic value) {
+      if (value == null) return null;
+      if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      if (value is String) {
+        final asInt = int.tryParse(value);
+        if (asInt != null) {
+          return DateTime.fromMillisecondsSinceEpoch(asInt);
+        }
+        return DateTime.tryParse(value);
+      }
+      return null;
+    }
+
     for (var iMap in invoiceMaps) {
       final customer = customers.firstWhere(
         (c) => c.id == iMap['customer_id'],
@@ -153,9 +277,18 @@ class InvoiceRepository {
 
       // document_typeのパース
       DocumentType docType = DocumentType.invoice;
-      if (iMap['document_type'] != null) {
+      final docTypeRaw = iMap['document_type'];
+      if (docTypeRaw is String) {
         try {
-          docType = DocumentType.values.firstWhere((e) => e.name == iMap['document_type']);
+          docType = DocumentType.values.firstWhere((e) => e.name == docTypeRaw);
+        } catch (_) {}
+      }
+
+      OrderStatus orderStatus = OrderStatus.draft;
+      final statusRaw = iMap['order_status'];
+      if (statusRaw is String) {
+        try {
+          orderStatus = OrderStatus.values.firstWhere((e) => e.name == statusRaw);
         } catch (_) {}
       }
 
@@ -168,6 +301,12 @@ class InvoiceRepository {
         filePath: iMap['file_path'],
         taxRate: iMap['tax_rate'] ?? 0.10,
         documentType: docType,
+        orderStatus: orderStatus,
+        promisedDate: _mapEpoch(iMap['promised_date']),
+        fulfilledDate: _mapEpoch(iMap['fulfilled_date']),
+        sourceDocumentId: iMap['source_document_id'],
+        linkedDeliveryId: iMap['linked_delivery_id'],
+        linkedInvoiceId: iMap['linked_invoice_id'],
         customerFormalNameSnapshot: iMap['customer_formal_name'],
         odooId: iMap['odoo_id'],
         isSynced: iMap['is_synced'] == 1,
@@ -189,29 +328,6 @@ class InvoiceRepository {
       ));
     }
     return invoices;
-  }
-
-  Future<void> _generateSampleInvoices(List<Customer> customers) async {
-    if (customers.isEmpty) return;
-    final now = DateTime.now();
-    final items = [
-      InvoiceItem(description: "商品A", quantity: 2, unitPrice: 1200),
-      InvoiceItem(description: "商品B", quantity: 1, unitPrice: 3000),
-    ];
-    final List<Invoice> samples = List.generate(
-      3,
-      (i) => Invoice(
-        customer: customers[i % customers.length],
-        date: now.subtract(Duration(days: i * 3)),
-        items: items,
-        isDraft: i == 0, // 1件だけ下書き
-        subject: "サンプル案件${i + 1}",
-      ),
-    );
-
-    for (final inv in samples) {
-      await saveInvoice(inv);
-    }
   }
 
   Future<void> deleteInvoice(String id) async {

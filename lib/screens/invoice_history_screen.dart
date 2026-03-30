@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/invoice_models.dart';
@@ -30,6 +32,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   final InvoiceRepository _invoiceRepo = InvoiceRepository();
   final CustomerRepository _customerRepo = CustomerRepository();
   final AppSettingsRepository _settingsRepo = AppSettingsRepository();
+  late final StreamSubscription<String> _homeModeSub;
   List<Invoice> _invoices = [];
   List<Invoice> _filteredInvoices = [];
   bool _isLoading = true;
@@ -48,6 +51,21 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     _loadData();
     _loadVersion();
     _loadHomeMode();
+    _homeModeSub = _settingsRepo.watchHomeMode().listen((mode) {
+      if (!mounted) return;
+      setState(() {
+        _useDashboardHome = mode == 'dashboard';
+        if (_useDashboardHome && widget.initialUnlocked) {
+          _isUnlocked = true;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _homeModeSub.cancel();
+    super.dispose();
   }
 
   Future<void> _loadHomeMode() async {

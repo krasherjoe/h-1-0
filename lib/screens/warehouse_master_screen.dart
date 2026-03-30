@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/warehouse_model.dart';
 import '../services/warehouse_repository.dart';
-import '../widgets/generic_master_edit_dialog.dart';
 import '../widgets/master_field_config.dart';
+import '../widgets/rich_master_edit_sheet.dart';
 
 class WarehouseMasterScreen extends StatefulWidget {
   final bool selectionMode;
@@ -17,6 +17,72 @@ class WarehouseMasterScreen extends StatefulWidget {
 
   @override
   State<WarehouseMasterScreen> createState() => _WarehouseMasterScreenState();
+}
+
+class WarehousePreviewCard extends StatelessWidget {
+  const WarehousePreviewCard({
+    super.key,
+    required this.name,
+    required this.location,
+    required this.notes,
+  });
+
+  final String name;
+  final String location;
+  final String notes;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.brown.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.warehouse, color: Colors.brown),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name.isEmpty ? '倉庫名未入力' : name,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        location.isEmpty ? '所在地: 未入力' : '所在地: $location',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (notes.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text('共有メモ', style: theme.textTheme.labelMedium),
+              const SizedBox(height: 4),
+              Text(notes, style: theme.textTheme.bodyMedium),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
@@ -58,39 +124,66 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
   }
 
   Future<void> _showEditDialog({Warehouse? warehouse}) async {
-    final result = await showMasterEditDialog<Warehouse>(
+    final result = await showRichMasterEditSheet<Warehouse>(
       context: context,
       titleNew: '倉庫を新規登録',
       titleEdit: '倉庫を編集',
       existing: warehouse,
-      fields: [
-        MasterFieldConfig(
-          key: 'name',
-          label: '倉庫名',
-          hint: '例: 第1倉庫',
-          required: true,
+      sections: [
+        RichMasterSection(
+          title: '基本情報',
+          description: '倉庫名や表示色を設定します',
+          fields: const [
+            MasterFieldConfig(
+              key: 'name',
+              label: '倉庫名',
+              hint: '例: 第1倉庫',
+              required: true,
+              flex: 2,
+            ),
+          ],
         ),
-        MasterFieldConfig(
-          key: 'location',
-          label: '所在地',
-          hint: '例: ○○市△△町1-2-3',
+        RichMasterSection(
+          title: '所在地・導線',
+          description: '搬入口やフロア情報などもメモできます',
+          fields: const [
+            MasterFieldConfig(
+              key: 'location',
+              label: '所在地 / アクセス経路',
+              hint: '例: ○○市△△町1-2-3 3F 西側',
+              maxLines: 3,
+              flex: 2,
+            ),
+          ],
         ),
-        MasterFieldConfig(
-          key: 'notes',
-          label: '備考',
-          maxLines: 3,
+        RichMasterSection(
+          title: '社内共有メモ',
+          description: '危険エリア・開錠ルールなどを記録',
+          fields: const [
+            MasterFieldConfig(
+              key: 'notes',
+              label: '備考 / 注意事項',
+              maxLines: 4,
+              flex: 2,
+            ),
+          ],
         ),
       ],
-      initialValues: (w) => {
+      initialValuesBuilder: (w) => {
         'name': w?.name ?? '',
         'location': w?.location ?? '',
         'notes': w?.notes ?? '',
       },
+      previewBuilder: (ctx, controller) => WarehousePreviewCard(
+        name: controller.valueOf('name'),
+        location: controller.valueOf('location'),
+        notes: controller.valueOf('notes'),
+      ),
       buildModel: (values) => Warehouse(
         id: warehouse?.id ?? const Uuid().v4(),
-        name: values['name'],
-        location: values['location']?.isEmpty ? null : values['location'],
-        notes: values['notes']?.isEmpty ? null : values['notes'],
+        name: values['name']?.trim() ?? '',
+        location: values['location']?.trim().isEmpty ?? true ? null : values['location']!.trim(),
+        notes: values['notes']?.trim().isEmpty ?? true ? null : values['notes']!.trim(),
         updatedAt: DateTime.now(),
       ),
     );
