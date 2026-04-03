@@ -1,14 +1,25 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../models/invoice_list_style.dart';
+import '../models/sync_preferences.dart';
 import '../services/app_settings_repository.dart';
+import '../services/google_account_service.dart';
 import '../services/theme_controller.dart';
-import 'company_info_screen.dart';
 import 'email_settings_screen.dart';
-import 'business_profile_screen.dart';
-import 'chat_screen.dart';
+import 'master_hub_page.dart';
+import 'company_info_screen.dart';
+import 'customer_master_screen.dart';
+import 'product_master_screen.dart';
+import 'dashboard_menu_settings_screen.dart';
+import 'mothership_discovery_settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/database_helper.dart';
+import '../services/drive_backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,571 +28,779 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-// シンプルなアイコンマップ（拡張可）
-const Map<String, IconData> kIconsMap = {
-  'list_alt': Icons.list_alt,
-  'edit_note': Icons.edit_note,
-  'history': Icons.history,
-  'settings': Icons.settings,
-  'invoice': Icons.receipt_long,
-  'dashboard': Icons.dashboard,
-  'home': Icons.home,
-  'info': Icons.info,
-  'mail': Icons.mail,
-  'shopping_cart': Icons.shopping_cart,
-};
-
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _appSettingsRepo = AppSettingsRepository();
-
-  // External sync (母艦システム「お局様」連携)
-  final _externalHostCtrl = TextEditingController();
-  final _externalPassCtrl = TextEditingController();
-
-  // Backup
-  final _backupPathCtrl = TextEditingController();
-
+  final _repo = AppSettingsRepository();
+  final GoogleAccountService _googleAccountService = GoogleAccountService.instance;
   String _theme = 'system';
+  String _summaryTheme = 'white';
+  InvoiceListStyle _invoiceListStyle = InvoiceListStyle.legacy;
+  String _homeMode = 'invoice_history';
+  final TextEditingController _statusTextController = TextEditingController();
+  bool _showCategoryDescriptions = true;
+  GmailEnvelopeEncoding _encodingMode = GmailEnvelopeEncoding.gzipBase64;
+  SyncTransportMode _transportMode = SyncTransportMode.gmailOnly;
+  GoogleSignInAccount? _googleAccount;
+  bool _linkingAccount = false;
+  StreamSubscription<GoogleSignInAccount?>? _accountSubscription;
+  bool _backingUp = false;
+  bool _restoring = false;
+  String? _lastBackupTime;
+  bool _autoBackupEnabled = false;
 
-  // Kana map (kanji -> kana head)
-  Map<String, String> _customKanaMap = {};
-  final _kanaKeyCtrl = TextEditingController();
-  final _kanaValCtrl = TextEditingController();
-
-  // Dashboard / Home
-  bool _homeDashboard = false;
-  bool _statusEnabled = true;
-  final _statusTextCtrl = TextEditingController(text: '工事中');
-  List<DashboardMenuItem> _menuItems = [];
-  bool _loadingAppSettings = true;
-
-  static const _kExternalHost = 'external_host';
-  static const _kExternalPass = 'external_pass';
-
-  static const _kBackupPath = 'backup_path';
-
-  @override
-  void dispose() {
-    _externalHostCtrl.dispose();
-    _externalPassCtrl.dispose();
-    _backupPathCtrl.dispose();
-    _kanaKeyCtrl.dispose();
-    _kanaValCtrl.dispose();
-    _statusTextCtrl.dispose();
-    super.dispose();
+  Future<void> _loadBackupSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastBackup = prefs.getString('last_backup_time');
+    final autoBackup = prefs.getBool('auto_backup_enabled') ?? false;
+    if (mounted) {
+      setState(() {
+        _lastBackupTime = lastBackup;
+        _autoBackupEnabled = autoBackup;
+      });
+    }
   }
 
-  Future<void> _loadAll() async {
-    await _loadKanaMap();
-    final externalHost = await _appSettingsRepo.getString(_kExternalHost) ?? '';
-    final externalPass = await _appSettingsRepo.getString(_kExternalPass) ?? '';
+  Future<void> _restoreFromGoogleDrive() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('データ復元確認'),
+        content: const Text(
+          '現在のデータベースをGoogle Driveの最新バックアップで上書きします。\n\n'
+          '※現在のデータは失われます。続けますか？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('復元する'),
+          ),
+        ],
+      ),
+    );
 
-    final backupPath = await _appSettingsRepo.getString(_kBackupPath) ?? '';
-    final theme = await _appSettingsRepo.getTheme();
+    if (confirmed != true) return;
 
-    setState(() {
-      _externalHostCtrl.text = externalHost;
-      _externalPassCtrl.text = externalPass;
+    setState(() => _restoring = true);
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+      
+      await db.close();
+      
+      final driveService = DriveBackupService();
+      final success = await driveService.restoreLatestBackup(dbPath);
+      
+      if (!success) {
+        throw Exception('復元可能なバックアップが見つかりません');
+      }
+      
+      if (mounted) {
+        setState(() => _restoring = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ データを復元しました。アプリを再起動してください。')),
+        );
+        
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('復元完了'),
+            content: const Text('データベースを復元しました。\nアプリを再起動してください。'),
+            actions: [
+              ElevatedButton(
+                onPressed: () => SystemNavigator.pop(),
+                child: const Text('アプリを終了'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _restoring = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ 復元失敗: $e')),
+        );
+      }
+    }
+  }
 
-      _backupPathCtrl.text = backupPath;
-      _theme = theme;
-    });
+  Future<void> _backupToGoogleDrive() async {
+    if (_backingUp) return;
+    setState(() => _backingUp = true);
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+      final dbFile = File(dbPath);
+      
+      if (!await dbFile.exists()) {
+        throw Exception('データベースファイルが見つかりません');
+      }
+      
+      final driveService = DriveBackupService();
+      await driveService.uploadDatabaseSnapshot(
+        dbFile,
+        description: 'Manual backup - ${DateTime.now().toIso8601String()}',
+      );
+      
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now().toIso8601String();
+      await prefs.setString('last_backup_time', now);
+      
+      if (mounted) {
+        setState(() => _lastBackupTime = now);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Google Driveにバックアップしました')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ バックアップ失敗: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _backingUp = false);
+      }
+    }
+  }
 
-    final homeMode = await _appSettingsRepo.getHomeMode();
-    final statusEnabled = await _appSettingsRepo.getDashboardStatusEnabled();
-    final statusText = await _appSettingsRepo.getDashboardStatusText();
-    final menu = await _appSettingsRepo.getDashboardMenu();
-    setState(() {
-      _homeDashboard = homeMode == 'dashboard';
-      _statusEnabled = statusEnabled;
-      _statusTextCtrl.text = statusText;
-      _menuItems = menu;
-      _loadingAppSettings = false;
-    });
+  Future<void> _setAutoBackup(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_backup_enabled', enabled);
+    setState(() => _autoBackupEnabled = enabled);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(enabled ? '自動バックアップを有効化しました' : '自動バックアップを無効化しました')),
+    );
+  }
+
+  String _formatBackupTime(String? isoTime) {
+    if (isoTime == null) return '未実施';
+    try {
+      final dt = DateTime.parse(isoTime);
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'たった今';
+      if (diff.inHours < 1) return '${diff.inMinutes}分前';
+      if (diff.inDays < 1) return '${diff.inHours}時間前';
+      if (diff.inDays < 7) return '${diff.inDays}日前';
+      return '${dt.year}/${dt.month}/${dt.day} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return isoTime;
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    _loadAll();
-  }
-
-  void _showSnackbar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<void> _saveAppSettings() async {
-    await _appSettingsRepo.setHomeMode(_homeDashboard ? 'dashboard' : 'invoice_history');
-    await _appSettingsRepo.setDashboardStatusEnabled(_statusEnabled);
-    await _appSettingsRepo.setDashboardStatusText(_statusTextCtrl.text.trim().isEmpty ? '工事中' : _statusTextCtrl.text.trim());
-    await _appSettingsRepo.setDashboardMenu(_menuItems);
-    _showSnackbar('ホーム/ダッシュボード設定を保存しました');
-  }
-
-  Future<void> _persistMenu() async {
-    await _appSettingsRepo.setDashboardMenu(_menuItems);
-  }
-
-  void _addMenuItem() async {
-    final titleCtrl = TextEditingController();
-    String route = 'invoice_history';
-    final iconCtrl = TextEditingController(text: 'list_alt');
-    String? customIconPath;
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('メニューを追加'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'タイトル')),
-              DropdownButtonFormField<String>(
-                initialValue: route,
-                decoration: const InputDecoration(labelText: '遷移先'),
-                items: const [
-                  DropdownMenuItem(value: 'invoice_history', child: Text('A2:伝票一覧')),
-                  DropdownMenuItem(value: 'invoice_input', child: Text('A1:伝票入力')),
-                  DropdownMenuItem(value: 'customer_master', child: Text('C1:顧客マスター')),
-                  DropdownMenuItem(value: 'product_master', child: Text('P1:商品マスター')),
-                  DropdownMenuItem(value: 'master_hub', child: Text('M1:マスター管理')),
-                  DropdownMenuItem(value: 'settings', child: Text('S1:設定')),
-                ],
-                onChanged: (v) => route = v ?? 'invoice_history',
-              ),
-              TextField(controller: iconCtrl, decoration: const InputDecoration(labelText: 'Materialアイコン名 (例: list_alt)')),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: Text(customIconPath ?? 'カスタムアイコン: 未選択', style: const TextStyle(fontSize: 12))),
-                  IconButton(
-                    icon: const Icon(Icons.image_search),
-                    tooltip: 'ギャラリーから選択',
-                    onPressed: () async {
-                      final picker = ImagePicker();
-                      final picked = await picker.pickImage(source: ImageSource.gallery);
-                      if (picked != null) {
-                        setState(() {
-                          customIconPath = picked.path;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
-          ElevatedButton(
-            onPressed: () {
-              if (titleCtrl.text.trim().isEmpty) return;
-              setState(() {
-                _menuItems = [
-                  ..._menuItems,
-                  DashboardMenuItem(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    title: titleCtrl.text.trim(),
-                    route: route,
-                    iconName: iconCtrl.text.trim().isEmpty ? 'list_alt' : iconCtrl.text.trim(),
-                    customIconPath: customIconPath,
-                  ),
-                ];
-              });
-              _persistMenu();
-              Navigator.pop(ctx);
-            },
-            child: const Text('追加'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _removeMenuItem(String id) {
-    setState(() {
-      _menuItems = _menuItems.where((e) => e.id != id).toList();
+    Future.microtask(() async {
+      final theme = await _repo.getTheme();
+      setState(() => _theme = theme);
+      final summaryTheme = await _repo.getSummaryTheme();
+      setState(() => _summaryTheme = summaryTheme);
+      final listStyle = await _repo.getInvoiceListStyle();
+      setState(() => _invoiceListStyle = listStyle);
+      final homeMode = await _repo.getHomeMode();
+      setState(() => _homeMode = homeMode);
+      final statusText = await _repo.getDashboardStatusText();
+      setState(() => _statusTextController.text = statusText);
+      final showCategoryDesc = await _repo.getDashboardShowCategoryDescriptions();
+      setState(() => _showCategoryDescriptions = showCategoryDesc);
+      final encoding = await _repo.getGmailEnvelopeEncoding();
+      setState(() => _encodingMode = encoding);
+      final transport = await _repo.getSyncTransportMode();
+      await _loadBackupSettings();
+      setState(() => _transportMode = transport);
+      final account = await _googleAccountService.recoverAccount();
+      if (!mounted) return;
+      setState(() => _googleAccount = account);
     });
-    _persistMenu();
-  }
-
-  void _reorderMenu(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
-      final item = _menuItems.removeAt(oldIndex);
-      _menuItems.insert(newIndex, item);
+    _accountSubscription = _googleAccountService.accountStream.listen((account) {
+      if (!mounted) return;
+      setState(() => _googleAccount = account);
     });
-    _persistMenu();
   }
 
-  String _routeLabel(String route) {
-    switch (route) {
-      case 'invoice_history':
-        return 'A2:伝票一覧';
-      case 'invoice_input':
-        return 'A1:伝票入力';
-      case 'customer_master':
-        return 'C1:顧客マスター';
-      case 'product_master':
-        return 'P1:商品マスター';
-      case 'master_hub':
-        return 'M1:マスター管理';
-      case 'settings':
-        return 'S1:設定';
-      default:
-        return route;
-    }
+  @override
+  void dispose() {
+    _accountSubscription?.cancel();
+    _statusTextController.dispose();
+    super.dispose();
   }
 
-  IconData _iconForName(String name) {
-    return kIconsMap[name] ?? Icons.apps;
-  }
-
-  Widget _menuLeading(DashboardMenuItem item) {
-    if (item.customIconPath != null && File(item.customIconPath!).existsSync()) {
-      return CircleAvatar(backgroundImage: FileImage(File(item.customIconPath!)));
-    }
-    return Icon(item.iconName != null ? _iconForName(item.iconName!) : Icons.apps);
-  }
-
-  Future<void> _saveExternalSync() async {
-    await _appSettingsRepo.setString(_kExternalHost, _externalHostCtrl.text);
-    await _appSettingsRepo.setString(_kExternalPass, _externalPassCtrl.text);
-    _showSnackbar('外部同期設定を保存しました');
-  }
-
-  Future<void> _saveBackup() async {
-    await _appSettingsRepo.setString(_kBackupPath, _backupPathCtrl.text);
-    _showSnackbar('バックアップ設定を保存しました');
-  }
-
-  void _pickBackupPath() => _showSnackbar('バックアップ先の選択は後で実装');
-
-  Future<void> _loadKanaMap() async {
-    final json = await _appSettingsRepo.getString('customKanaMap');
-    if (json != null && json.isNotEmpty) {
-      try {
-        final Map<String, dynamic> decoded = jsonDecode(json);
-        setState(() => _customKanaMap = decoded.map((k, v) => MapEntry(k, v.toString())));
-      } catch (_) {
-        // ignore
+  Future<void> _selectGoogleAccount() async {
+    setState(() => _linkingAccount = true);
+    try {
+      final account = await _googleAccountService.pickAccount();
+      if (account == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('アカウント選択がキャンセルされました')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google連携に失敗しました: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _linkingAccount = false);
       }
     }
   }
 
-  Future<void> _saveKanaMap() async {
-    await _appSettingsRepo.setString('customKanaMap', jsonEncode(_customKanaMap));
-    _showSnackbar('かなインデックスを保存しました');
+  Future<void> _disconnectGoogleAccount() async {
+    setState(() => _linkingAccount = true);
+    try {
+      await _googleAccountService.disconnect();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('連携解除に失敗しました: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _linkingAccount = false);
+      }
+    }
+  }
+
+  String _googleAccountSummary() {
+    if (_googleAccount == null) {
+      return '未連携（Googleアカウントを選択してください）';
+    }
+    final name = _googleAccount!.displayName;
+    final email = _googleAccount!.email;
+    return name == null || name.isEmpty ? email : '$name / $email';
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final listBottomPadding = 24 + bottomInset;
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('S1:設定'),
-        backgroundColor: Colors.indigo,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => _showSnackbar('設定はテンプレ実装です。実際の保存は未実装'),
+      ),
+      body: ListView(
+        children: [
+          const Padding(padding: EdgeInsets.all(20)),
+          ListTile(
+            leading: const Icon(Icons.dashboard_customize),
+            title: const Text('ダッシュボード設定'),
+            subtitle: const Text('表示するメニューのON/OFFと順序を管理'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DashboardMenuSettingsScreen()),
+            ),
           ),
+          const Divider(indent: 16, endIndent: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.home_outlined, color: Colors.indigo),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('ホーム画面設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment<String>(
+                      value: 'invoice_history',
+                      label: Text('伝票一覧'),
+                      icon: Icon(Icons.receipt_long),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'dashboard',
+                      label: Text('ダッシュボード'),
+                      icon: Icon(Icons.dashboard),
+                    ),
+                  ],
+                  selected: {_homeMode},
+                  onSelectionChanged: (selection) async {
+                    final mode = selection.first;
+                    await _repo.setHomeMode(mode);
+                    if (!mounted) return;
+                    setState(() => _homeMode = mode);
+                    final message = mode == 'dashboard'
+                        ? 'ホーム画面をダッシュボードに設定しました'
+                        : 'ホーム画面を伝票一覧に設定しました';
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'アプリ起動時や戻る操作で開くホーム画面を選択できます。',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.palette, color: Colors.purple),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('テーマ設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment<String>(value: 'system', label: Text('システム'), icon: Icon(Icons.settings)),
+                    ButtonSegment<String>(value: 'light', label: Text('ライト'), icon: Icon(Icons.light_mode)),
+                    ButtonSegment<String>(value: 'dark', label: Text('ダーク'), icon: Icon(Icons.dark_mode)),
+                  ],
+                  selected: {_theme},
+                  onSelectionChanged: (s) async {
+                    await AppThemeController.instance.setTheme(s.first);
+                    setState(() => _theme = s.first);
+                  },
+                ),
+                const SizedBox(height: 16),
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment<String>(value: 'white', label: Text('白'), icon: Icon(Icons.palette)),
+                    ButtonSegment<String>(value: 'gray', label: Text('グレー'), icon: Icon(Icons.color_lens)),
+                  ],
+                  selected: {_summaryTheme},
+                  onSelectionChanged: (s) async {
+                    await _repo.setSummaryTheme(s.first);
+                    setState(() => _summaryTheme = s.first);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.view_carousel, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('伝票一覧スタイル', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<InvoiceListStyle>(
+                  value: _invoiceListStyle,
+                  decoration: const InputDecoration(
+                    labelText: 'IV / Q1 一覧UI',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: InvoiceListStyle.legacy,
+                      child: Text('従来レイアウト（ステータスチップ表示）'),
+                    ),
+                    DropdownMenuItem(
+                      value: InvoiceListStyle.a2,
+                      child: Text('A2スタイル（淡色カード＋長押し確定）'),
+                    ),
+                  ],
+                  onChanged: (style) async {
+                    if (style == null) return;
+                    await _repo.setInvoiceListStyle(style);
+                    setState(() => _invoiceListStyle = style);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '※将来的にその他のスタイルを追加予定です。'
+                  '設定変更後はIV/Q1画面を再表示すると反映されます。',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('ステータス設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _statusTextController,
+                  decoration: const InputDecoration(
+                    labelText: 'ステータステキスト（例：営業中、休業中、工事中）',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (v) async {
+                    await _repo.setDashboardStatusText(v);
+                  },
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('カテゴリ説明を表示'),
+                  subtitle: const Text('ダッシュボードの見出し・各項目の説明テキストをON/OFF'),
+                  value: _showCategoryDescriptions,
+                  onChanged: (value) async {
+                    await _repo.setDashboardShowCategoryDescriptions(value);
+                    setState(() => _showCategoryDescriptions = value);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.cloud_sync, color: Colors.green),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('Googleアカウント連携', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _googleAccountSummary(),
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _linkingAccount ? null : _selectGoogleAccount,
+                        icon: const Icon(Icons.account_circle),
+                        label: Text(_googleAccount == null ? 'アカウントを選択' : '別アカウントに切替'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: (_googleAccount == null || _linkingAccount) ? null : _disconnectGoogleAccount,
+                      icon: const Icon(Icons.logout),
+                      label: const Text('連携解除'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.mail, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('メール設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('SM:メール設定'),
+                  subtitle: const Text('SMTP/BCC設定、Gmailアカウント選択'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmailSettingsScreen())),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.cloud_upload, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('データバックアップ', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '最終バックアップ: ${_formatBackupTime(_lastBackupTime)}',
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _backingUp ? null : _backupToGoogleDrive,
+                        icon: _backingUp 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.backup),
+                        label: Text(_backingUp ? 'バックアップ中...' : '今すぐバックアップ'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('自動バックアップ'),
+                  subtitle: const Text('毎日起動時に自動実行（24時間経過後）'),
+                  value: _autoBackupEnabled,
+                  onChanged: _setAutoBackup,
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _restoring ? null : _restoreFromGoogleDrive,
+                  icon: _restoring
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.restore),
+                  label: Text(_restoring ? '復元中...' : 'バックアップから復元'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Google Drive連携が必要です。上記「Googleアカウント連携」で設定してください。',
+                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.sync, color: Colors.indigo),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('同期設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<GmailEnvelopeEncoding>(
+                  initialValue: _encodingMode,
+                  decoration: const InputDecoration(
+                    labelText: 'エンベロープ圧縮モード',
+                    border: OutlineInputBorder(),
+                    helperText: '端末が送受信するメール本文の形式（gzip / Base64 / 平文）',
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: GmailEnvelopeEncoding.gzipBase64,
+                      child: Text('gzip + Base64 (推奨)'),
+                    ),
+                    DropdownMenuItem(
+                      value: GmailEnvelopeEncoding.base64Only,
+                      child: Text('Base64 のみ'),
+                    ),
+                    DropdownMenuItem(
+                      value: GmailEnvelopeEncoding.plainJson,
+                      child: Text('JSON平文'),
+                    ),
+                  ],
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    await _repo.setGmailEnvelopeEncoding(value);
+                    setState(() => _encodingMode = value);
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<SyncTransportMode>(
+                  initialValue: _transportMode,
+                  decoration: const InputDecoration(
+                    labelText: '同期トランスポート',
+                    border: OutlineInputBorder(),
+                    helperText: 'LAN/VPN直通が使える場合は直接通信を優先できます',
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: SyncTransportMode.gmailOnly,
+                      child: Text('Gmail のみ'),
+                    ),
+                    DropdownMenuItem(
+                      value: SyncTransportMode.directOnly,
+                      child: Text('直接通信のみ (母艦API)'),
+                    ),
+                    DropdownMenuItem(
+                      value: SyncTransportMode.auto,
+                      child: Text('自動切替 (LAN優先/Gmailフォールバック)'),
+                    ),
+                  ],
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    await _repo.setSyncTransportMode(value);
+                    setState(() => _transportMode = value);
+                  },
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.location_on),
+                  title: const Text('お局様検出設定'),
+                  subtitle: const Text('GPS位置ベースの自動検出と記憶された場所の管理'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MothershipDiscoverySettingsScreen()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.storage, color: Colors.brown),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('マスター管理', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.business),
+                  title: const Text('会社情報'),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CompanyInfoScreen())),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.people),
+                  title: const Text('顧客マスター'),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerMasterScreen())),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.inventory_2),
+                  title: const Text('商品マスター'),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductMasterScreen())),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.category, color: Colors.purple),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('マスター管理（統合）', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.storage),
+                  title: const Text('M1:マスター管理'),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MasterHubPage())),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        child: ListView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(bottom: listBottomPadding),
-          children: [
-            _section(
-              title: 'ホームモード / ダッシュボード',
-              subtitle: 'ダッシュボードをホームにする・ステータス表示・メニュー管理 (設定はDB保存)',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SwitchListTile(
-                    title: const Text('ホームをダッシュボードにする'),
-                    value: _homeDashboard,
-                    onChanged: _loadingAppSettings ? null : (v) => setState(() => _homeDashboard = v),
-                  ),
-                  SwitchListTile(
-                    title: const Text('ステータスを表示する'),
-                    value: _statusEnabled,
-                    onChanged: _loadingAppSettings ? null : (v) => setState(() => _statusEnabled = v),
-                  ),
-                  TextField(
-                    controller: _statusTextCtrl,
-                    enabled: !_loadingAppSettings && _statusEnabled,
-                    decoration: const InputDecoration(labelText: 'ステータス文言', hintText: '例: 工事中'),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.add),
-                        label: const Text('メニューを追加'),
-                        onPressed: _loadingAppSettings ? null : _addMenuItem,
-                      ),
-                      const SizedBox(width: 12),
-                      Text('ドラッグで並べ替え / ゴミ箱で削除', style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _loadingAppSettings
-                      ? const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
-                      : ReorderableListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _menuItems.length,
-                          onReorder: _reorderMenu,
-                          itemBuilder: (ctx, index) {
-                            final item = _menuItems[index];
-                            return ListTile(
-                              key: ValueKey(item.id),
-                              leading: _menuLeading(item),
-                              title: Text(item.title),
-                              subtitle: Text(_routeLabel(item.route)),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
-                                onPressed: () => _removeMenuItem(item.id),
-                              ),
-                            );
-                          },
-                        ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('ホーム設定を保存'),
-                      onPressed: _loadingAppSettings ? null : _saveAppSettings,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: '自社情報',
-              subtitle: '会社・担当者・振込口座・電話帳取り込み',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('自社/担当者情報、振込口座設定、メールフッタをまとめて編集できます。'),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.info_outline),
-                        label: const Text('旧画面 (税率/印影)'),
-                        onPressed: () async {
-                          await Navigator.push(context, MaterialPageRoute(builder: (context) => const CompanyInfoScreen()));
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.business),
-                          label: const Text('自社情報ページを開く'),
-                          onPressed: () async {
-                            await Navigator.push(context, MaterialPageRoute(builder: (context) => const BusinessProfileScreen()));
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: 'メール設定（SM画面へ）',
-              subtitle: 'SMTP・端末メーラー・BCC必須・ログ閲覧など',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('メール送信に関する設定は専用画面でまとめて編集できます。'),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.mail_outline),
-                      label: const Text('メール設定を開く'),
-                      onPressed: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const EmailSettingsScreen()),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: '外部同期（母艦システム「お局様」連携）',
-              subtitle: '実行ボタンなし。ホストドメインとパスワードを入力してください。',
-              child: Column(
-                children: [
-                  TextField(controller: _externalHostCtrl, decoration: const InputDecoration(labelText: 'ホストドメイン')),
-                  TextField(controller: _externalPassCtrl, decoration: const InputDecoration(labelText: 'パスワード'), obscureText: true),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('保存'),
-                        onPressed: _saveExternalSync,
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.chat_bubble_outline),
-                        label: const Text('チャットを開く'),
-                        onPressed: () async {
-                          await Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: 'バックアップドライブ',
-              subtitle: 'バックアップ先のクラウド/ローカル',
-              child: Column(
-                children: [
-                  TextField(controller: _backupPathCtrl, decoration: const InputDecoration(labelText: '保存先パス/URL')),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.folder_open),
-                        label: const Text('参照'),
-                        onPressed: _pickBackupPath,
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('保存'),
-                        onPressed: _saveBackup,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: 'テーマ選択',
-              subtitle: '配色や見た目を切り替え（テンプレ）',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: _theme,
-                    decoration: const InputDecoration(labelText: 'テーマを選択'),
-                    items: const [
-                      DropdownMenuItem(value: 'light', child: Text('ライト')),
-                      DropdownMenuItem(value: 'dark', child: Text('ダーク')),
-                      DropdownMenuItem(value: 'system', child: Text('システムに従う')),
-                    ],
-                    onChanged: (v) => setState(() => _theme = v ?? 'system'),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('保存'),
-                    onPressed: () async {
-                      await _appSettingsRepo.setTheme(_theme);
-                      await AppThemeController.instance.setTheme(_theme);
-                      if (!mounted) return;
-                      _showSnackbar('テーマ設定を保存しました');
-                    },
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: 'かなインデックス追加',
-              subtitle: '漢字→行（1文字ずつ）を追加して索引を補強',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _kanaKeyCtrl,
-                          maxLength: 1,
-                          decoration: const InputDecoration(labelText: '漢字1文字', counterText: ''),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _kanaValCtrl,
-                          maxLength: 1,
-                          decoration: const InputDecoration(labelText: '行(例: さ)', counterText: ''),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          final k = _kanaKeyCtrl.text.trim();
-                          final v = _kanaValCtrl.text.trim();
-                          if (k.isEmpty || v.isEmpty) return;
-                          setState(() {
-                            _customKanaMap[k] = v;
-                          });
-                        },
-                        child: const Text('追加'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    children: _customKanaMap.entries
-                        .map((e) => Chip(
-                              label: Text('${e.key}: ${e.value}'),
-                              onDeleted: () => setState(() => _customKanaMap.remove(e.key)),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('保存'),
-                    onPressed: _saveKanaMap,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _section({required String title, required String subtitle, required Widget child}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
       ),
     );
   }

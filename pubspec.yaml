@@ -44,6 +44,7 @@ dependencies:
   url_launcher: ^6.3.2
   open_filex: ^4.7.0
   sqflite: ^2.3.0
+  sqflite_common_ffi_web: ^0.4.2+3
   path: ^1.8.3
   geolocator: ^14.0.2
   uuid: ^4.5.1
@@ -57,6 +58,9 @@ dependencies:
   http: ^1.2.2
   shelf: ^1.4.1
   shelf_router: ^1.1.4
+  googleapis: ^13.1.0
+  googleapis_auth: ^2.0.2
+  google_sign_in: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +72,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  sqflite_common_ffi: ^2.3.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

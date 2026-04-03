@@ -2,6 +2,7 @@
 // version: 1.5.02 (Update: Date selection & Tax fix)
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -17,6 +18,7 @@ import 'services/app_settings_repository.dart';
 import 'services/chat_sync_scheduler.dart';
 import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
+import 'services/auto_backup_service.dart';
 import 'utils/build_expiry_info.dart';
 
 void main() async {
@@ -26,6 +28,11 @@ void main() async {
   if (expiryInfo.isExpired) {
     runApp(ExpiredApp(expiryInfo: expiryInfo));
     return;
+  }
+  // 起動時に自動バックアップチェック（非同期、アプリ起動を妨げない）
+  // WebプラットフォームではGoogle Driveバックアップはスキップ
+  if (!kIsWeb) {
+    AutoBackupService.checkAndBackupOnStartup();
   }
   runApp(MyApp(expiryInfo: expiryInfo));
 }
@@ -42,24 +49,70 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final TransformationController _zoomController = TransformationController();
   int _activePointers = 0;
-  final MothershipClient _mothershipClient = MothershipClient();
-  final ChatSyncScheduler _chatSyncScheduler = ChatSyncScheduler();
+  final MothershipClient? _mothershipClient = kIsWeb ? null : MothershipClient();
+  final ChatSyncScheduler? _chatSyncScheduler = kIsWeb ? null : ChatSyncScheduler();
 
   @override
   void initState() {
     super.initState();
     _sendHeartbeat();
-    _chatSyncScheduler.start();
+    _chatSyncScheduler?.start();
+    _checkFirstLaunchRestore();
+  }
+
+  void _checkFirstLaunchRestore() {
+    // Webプラットフォームでは復元機能はスキップ
+    if (kIsWeb) return;
+    Future.microtask(() async {
+      final shouldOffer = await AutoBackupService.shouldOfferRestore();
+      if (shouldOffer && mounted) {
+        _showRestoreDialog();
+      }
+    });
+  }
+
+  void _showRestoreDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('バックアップからの復元'),
+        content: const Text(
+          'Google Driveにバックアップが見つかりました。\n'
+          'データを復元しますか？\n\n'
+          '※設定画面からいつでも復元できます。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('後で'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // 設定画面へ誘導（リストア機能がある）
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('設定 > データバックアップ > バックアップから復元 で復元できます'),
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            },
+            child: const Text('設定画面を開く'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _chatSyncScheduler.dispose();
+    _chatSyncScheduler?.dispose();
     super.dispose();
   }
 
   void _sendHeartbeat() {
-    Future.microtask(() => _mothershipClient.sendHeartbeat(widget.expiryInfo));
+    if (kIsWeb) return; // Webプラットフォームではハートビートを送信しない
+    Future.microtask(() => _mothershipClient?.sendHeartbeat(widget.expiryInfo));
   }
 
   @override
@@ -112,27 +165,24 @@ class _MyAppState extends State<MyApp> {
         ),
         darkTheme: ThemeData(
           brightness: Brightness.dark,
-          colorScheme: ColorScheme(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.indigo,
             brightness: Brightness.dark,
-            primary: const Color(0xFF66D9EF),
-            onPrimary: const Color(0xFF1E1F1C),
-            secondary: const Color(0xFFF92672),
-            onSecondary: const Color(0xFF1E1F1C),
-            surface: const Color(0xFF272822),
-            onSurface: const Color(0xFFF8F8F2),
-            error: Colors.red.shade300,
-            onError: const Color(0xFF1E1F1C),
           ),
-          scaffoldBackgroundColor: const Color(0xFF272822),
+          scaffoldBackgroundColor: const Color(0xFF121212),
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF32332A),
-            foregroundColor: Color(0xFFF8F8F2),
+            backgroundColor: Color(0xFF1E1E1E),
+            foregroundColor: Colors.white,
             elevation: 0,
+          ),
+          cardTheme: const CardThemeData(
+            color: Color(0xFF1E1E1E),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF66D9EF),
-              foregroundColor: const Color(0xFF1E1F1C),
+              backgroundColor: Colors.indigo.shade400,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               textStyle: const TextStyle(fontWeight: FontWeight.bold),
@@ -141,23 +191,29 @@ class _MyAppState extends State<MyApp> {
           outlinedButtonTheme: OutlinedButtonThemeData(
             style: OutlinedButton.styleFrom(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              side: const BorderSide(color: Color(0xFF66D9EF)),
+              side: const BorderSide(color: Colors.white70),
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               textStyle: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          inputDecorationTheme: const InputDecorationTheme(
+          inputDecorationTheme: InputDecorationTheme(
             filled: true,
-            fillColor: Color(0xFF32332A),
-            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: Color(0xFF66D9EF), width: 1.4),
+            fillColor: const Color(0xFF2C2C2C),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white24),
             ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.indigoAccent, width: 1.4),
+            ),
+            labelStyle: const TextStyle(color: Colors.white70),
+            hintStyle: const TextStyle(color: Colors.white54),
           ),
           snackBarTheme: const SnackBarThemeData(
-            backgroundColor: Color(0xFF32332A),
-            contentTextStyle: TextStyle(color: Color(0xFFF8F8F2)),
+            backgroundColor: Color(0xFF2C2C2C),
+            contentTextStyle: TextStyle(color: Colors.white),
           ),
           visualDensity: VisualDensity.adaptivePlatformDensity,
           useMaterial3: true,
@@ -293,29 +349,41 @@ class _HomeDecider extends StatefulWidget {
 
 class _HomeDeciderState extends State<_HomeDecider> {
   final _settings = AppSettingsRepository();
-  late Future<String> _homeFuture;
+  StreamSubscription<String>? _homeSub;
+  String? _mode;
 
   @override
   void initState() {
     super.initState();
-    _homeFuture = _settings.getHomeMode();
+    _loadHome();
+    _homeSub = _settings.watchHomeMode().listen((mode) {
+      if (!mounted) return;
+      setState(() => _mode = mode);
+    });
+  }
+
+  Future<void> _loadHome() async {
+    final mode = await _settings.getHomeMode();
+    if (!mounted) return;
+    setState(() => _mode = mode);
+  }
+
+  @override
+  void dispose() {
+    _homeSub?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: _homeFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        final mode = snapshot.data ?? 'invoice_history';
-        if (mode == 'dashboard') {
-          return const DashboardScreen();
-        }
-        return const InvoiceHistoryScreen();
-      },
-    );
+    final mode = _mode;
+    if (mode == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (mode == 'dashboard') {
+      return const DashboardScreen();
+    }
+    return const InvoiceHistoryScreen();
   }
 }
 

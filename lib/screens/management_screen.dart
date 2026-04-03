@@ -10,6 +10,8 @@ import 'customer_master_screen.dart';
 import 'activity_log_screen.dart';
 import 'sales_report_screen.dart';
 import 'gps_history_screen.dart';
+import 'camera_delivery_photo_screen.dart';
+import 'fast_search_screen.dart';
 
 class ManagementScreen extends StatefulWidget {
   const ManagementScreen({super.key});
@@ -94,6 +96,20 @@ class _ManagementScreenState extends State<ManagementScreen> {
             "GPS座標履歴の管理",
             "過去に取得した位置情報の履歴を確認します",
             () => Navigator.push(context, MaterialPageRoute(builder: (context) => const GpsHistoryScreen())),
+          ),
+          _buildMenuTile(
+            context,
+            Icons.camera_alt,
+            "納品写真管理",
+            "カメラで撮影した納品写真を管理します",
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CameraDeliveryPhotoScreen())),
+          ),
+          _buildMenuTile(
+            context,
+            Icons.search,
+            "高速全文検索",
+            "FTSで商品・顧客データを高速検索します",
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FastSearchScreen())),
           ),
           const Divider(),
           _buildSectionHeader("外部同期 (将来のOdoo連携)"),

@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 import '../models/customer_model.dart';
 import 'database_helper.dart';
-import 'package:uuid/uuid.dart';
 import 'activity_log_repository.dart';
 import '../models/customer_contact.dart';
 
@@ -21,18 +21,6 @@ class CustomerRepository {
       $filter
       ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
     ''');
-    if (maps.isEmpty) {
-      await _generateSampleCustomers(limit: 3);
-      maps = await db.rawQuery('''
-        SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
-               COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
-        FROM customers c
-        LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
-        LEFT JOIN master_hidden mh ON mh.master_type = 'customer' AND mh.master_id = c.id
-        $filter
-        ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
-      ''');
-    }
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 
@@ -48,19 +36,6 @@ class CustomerRepository {
     try {
       await db.execute('ALTER TABLE customers ADD COLUMN head_char2 TEXT');
     } catch (_) {}
-  }
-
-  Future<void> _generateSampleCustomers({int limit = 3}) async {
-    final samples = [
-      Customer(id: const Uuid().v4(), displayName: "佐々木製作所", formalName: "株式会社 佐々木製作所", title: "御中", tel: "03-1111-2222", address: "東京都港区1-1-1"),
-      Customer(id: const Uuid().v4(), displayName: "田中商事", formalName: "田中商事 株式会社", title: "様", tel: "03-3333-4444", address: "東京都中央区2-2-2"),
-      Customer(id: const Uuid().v4(), displayName: "山田建材", formalName: "有限会社 山田建材", title: "御中", tel: "045-555-6666", address: "神奈川県横浜市3-3-3"),
-      Customer(id: const Uuid().v4(), displayName: "鈴木運送", formalName: "鈴木運送 合同会社", title: "様", tel: "052-777-8888", address: "愛知県名古屋市4-4-4"),
-      Customer(id: const Uuid().v4(), displayName: "伊藤工務店", formalName: "伊藤工務店", title: "様", tel: "06-9999-0000", address: "大阪府大阪市5-5-5"),
-    ];
-    for (var s in samples.take(limit)) {
-      await saveCustomer(s);
-    }
   }
 
   Future<void> saveCustomer(Customer customer) async {
@@ -181,6 +156,18 @@ class CustomerRepository {
     final rows = await db.query('customer_contacts', where: 'customer_id = ? AND is_active = 1', whereArgs: [customerId], limit: 1);
     if (rows.isEmpty) return null;
     return CustomerContact.fromMap(rows.first);
+  }
+
+  Future<Customer?> getById(String id) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'customers',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+    return Customer.fromMap(maps.first);
   }
 
   Future<void> setHidden(String id, bool hidden) async {

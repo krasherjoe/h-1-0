@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/chat_message.dart';
 import '../services/chat_repository.dart';
-import '../services/mothership_chat_client.dart';
+import '../services/gmail_sync_client.dart';
 import '../services/mothership_client.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ChatRepository _repository = ChatRepository();
   late final MothershipClient _mothershipClient;
-  late final MothershipChatClient _chatClient;
+  late final GmailSyncClient _chatClient;
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -27,13 +27,21 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _mothershipClient = MothershipClient();
-    _chatClient = MothershipChatClient(repository: _repository, baseClient: _mothershipClient);
+    _chatClient = GmailSyncClient(chatRepository: _repository, nodeIdProvider: _mothershipClient);
     _refreshMessages();
   }
 
   Future<void> _refreshMessages() async {
     setState(() => _syncing = true);
-    await _chatClient.sync();
+    try {
+      await _chatClient.sync();
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('同期に失敗しました: $err')),
+        );
+      }
+    }
     final list = await _repository.listMessages();
     if (!mounted) return;
     setState(() {
@@ -84,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('母艦チャット'),
+        title: const Text('CH:母艦チャット'),
         actions: [
           IconButton(
             tooltip: '再同期',

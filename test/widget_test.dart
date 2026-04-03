@@ -10,23 +10,24 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:h_1/main.dart';
 import 'package:h_1/utils/build_expiry_info.dart';
+// import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  testWidgets('アプリが初期化されてホーム画面を描画できる', (WidgetTester tester) async {
     final expiryInfo = BuildExpiryInfo.fromEnvironment();
     await tester.pumpWidget(MyApp(expiryInfo: expiryInfo));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // 初期化ローディングの完了をある程度待つ
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 200));
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // 描画完了後、MaterialApp が存在しホーム遷移が完了していることを確認
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

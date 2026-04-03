@@ -15,6 +15,412 @@
 
 ---
 
+## 開発ルール
+
+### Git コミットメッセージ
+
+**本プロジェクトでは、すべてのGitコミットメッセージを日本語で記述します。**
+
+- コミットメッセージは簡潔かつ具体的に、変更内容を日本語で説明してください
+- 1行目: 変更内容の要約（50文字以内推奨）
+- 2行目: 空行
+- 3行目以降: 必要に応じて詳細説明
+
+**良い例:**
+```
+お局様GPS検出機能を実装
+
+- MothershipDiscoveryServiceを新規作成
+- GPS位置とホストを紐づけて記録
+- 自動検出範囲を100m〜2000mで調整可能に
+```
+
+**悪い例（英語は使用しない）:**
+```
+Add mothership GPS discovery feature
+```
+
+この規則により、日本語話者である開発チーム全員がコミット履歴を容易に理解でき、プロジェクトの歴史を正確に追跡できます。
+
+
+## プロジェクト管理方針（AI向け重要指示）
+
+### ドキュメント構成
+
+本プロジェクトは以下のドキュメントで管理されています。**新規AIセッション開始時は必ず以下を読み込んでください：**
+
+#### トップレベルドキュメント
+
+1. **`README.md`** (このファイル)
+   - クイックスタート
+   - 開発ルール（Git、コーディング規約、画面ID規則）
+   - AI作業フロー
+
+2. **`TODO.md`** ← **必ず最初に確認**
+   - 現在進行中のタスク
+   - 優先度別の未着手タスク
+   - 直近7日の完了タスク
+
+3. **`HANDOFF.md`**
+   - AI引き継ぎ情報
+   - セッション開始手順
+
+4. **`ARCHITECTURE.md`** (作成予定)
+   - システム設計概要
+   - 技術スタック
+
+5. **`ROADMAP.md`** ✅ **新規作成**
+   - 開発ロードマップ
+   - フェーズ別計画
+   - マイルストーン
+
+#### docs/ ディレクトリ（詳細ドキュメント）
+
+1. **`docs/01_OVERVIEW.md`** ✅ **新規作成**
+   - プロジェクト詳細概要
+   - コアコンセプト
+   - 対象ユーザー
+
+2. **`docs/02_CURRENT_STATUS.md`** ✅ **新規作成**
+   - 実装済み機能一覧
+   - 画面一覧（40画面以上）
+   - データベーステーブル一覧
+
+3. **`docs/03_ARCHITECTURE.md`** (作成予定)
+   - 技術アーキテクチャ詳細
+   - データフロー
+   - 同期メカニズム
+
+4. **`docs/04_FEATURES.md`** (作成予定)
+   - 機能仕様詳細
+   - 画面仕様
+   - API仕様
+
+5. **`docs/05_FUTURE_PLANS.md`** (作成予定)
+   - 今後の計画詳細
+   - 業種カスタマイズ
+   - 電子帳簿保存法対応
+
+6. **`docs/setup/`**
+   - セットアップガイド
+   - `google_oauth_setup.md` - Google OAuth設定
+
+7. **`docs/design/`**
+   - 設計ドキュメント
+   - `generic_sales_system_design.md` - 汎用販売管理システム設計
+
+8. **`docs/archive/`**
+   - 古いドキュメント・仕様書
+
+### AI作業フロー
+
+#### セッション開始時
+1. `README.md` でプロジェクト概要を把握
+2. `TODO.md` で現在のタスク状況を確認
+3. ユーザーからの指示を待つ
+
+#### 作業実施時
+1. タスク開始時に `TODO.md` の該当項目を「進行中」に更新
+2. コミット時は必ず日本語メッセージ
+3. 関連ファイルをTODO.mdに記録
+
+#### 作業完了時
+1. `TODO.md` の該当タスクを「✅完了」セクションに移動
+2. 完了日とコミットハッシュを記録
+3. 新たに発見したタスクがあれば追加
+
+#### セッション終了時
+1. `TODO.md` の「進行中」タスクに現在の状況を記録
+2. 次のセッションへの引き継ぎ事項をメモ
+
+### タスク管理ルール
+
+- **優先度**: 🔴緊急 > 🟡中 > 🟢低
+- **ステータス**: 未着手 / 進行中 / ブロック中 / 完了
+- **完了タスク**: 7日経過後にCHANGELOG.mdへ移動（作成時）
+- **関連ファイル**: タスクごとに主要な関連ファイルを記録
+
+### 画面ID規則
+
+**全画面のタイトル（AppBar）には2文字の一意なIDを必須とします：**
+
+- 形式: `XX:画面名` （例: `S1:設定`, `SM:メール設定`, `P1:商品マスター`）
+- 非ホーム画面: 必ず戻るボタンを表示
+- ホーム画面: メニューボタンを表示（戻るボタンの代わり）
+
+
+## 🤖 AI向けクイックスタート
+
+### 📋 セッション開始チェックリスト
+
+```
+□ README.md（このファイル）を読んでプロジェクト概要を把握
+□ TODO.mdを開いて現在のタスク状況を確認
+□ 🔴緊急タスクがないか確認
+□ 進行中タスクの引き継ぎ事項を確認
+□ ユーザーの指示を待つ
+```
+
+### 🗺️ プロジェクト構造クイックマップ
+
+#### **主要ディレクトリ**
+```
+lib/
+├── screens/          # UI画面（画面IDルール: XX:画面名）
+├── services/         # ビジネスロジック・リポジトリ
+├── models/           # データモデル
+├── widgets/          # 再利用可能ウィジェット
+└── utils/            # ユーティリティ
+```
+
+#### **重要ファイル一覧**
+
+**📱 エントリーポイント**
+- `lib/main.dart` - アプリ起動、テーマ、自動バックアップチェック
+
+**🗄️ データ管理**
+- `lib/services/database_helper.dart` - SQLite DB初期化・スキーマ管理
+- `lib/services/app_settings_repository.dart` - アプリ設定の永続化
+
+**📄 帳票・PDF**
+- `lib/services/pdf_generator.dart` - PDF生成（見積・納品・請求・領収書）
+- `lib/widgets/invoice_pdf_preview_page.dart` - PDF プレビュー・送信
+
+**📧 メール送信**
+- `lib/screens/email_settings_screen.dart` - SMTP/BCC設定UI
+- `lib/services/email_sender.dart` - メール送信ロジック
+
+**☁️ Google連携**
+- `lib/services/google_account_service.dart` - Google Sign-In管理
+- `lib/services/drive_backup_service.dart` - Google Driveバックアップ
+- `lib/services/auto_backup_service.dart` - 自動バックアップ・リストア
+
+**⚙️ 設定画面**
+- `lib/screens/settings_screen.dart` - S1:設定（Google連携、バックアップ、同期）
+- `lib/screens/dashboard_screen.dart` - ダッシュボード
+
+### 🎯 よくある実装パターン
+
+#### **1. 新しい画面を追加する場合**
+```dart
+// 画面IDは2文字必須（例: NW:新機能）
+class NewFeatureScreen extends StatefulWidget {
+  const NewFeatureScreen({super.key});
+  
+  @override
+  State<NewFeatureScreen> createState() => _NewFeatureScreenState();
+}
+
+class _NewFeatureScreenState extends State<NewFeatureScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('NW:新機能'), // ← 画面ID必須
+      ),
+      body: // ...
+    );
+  }
+}
+```
+
+#### **2. データベース操作（リポジトリパターン）**
+```dart
+// services/配下にリポジトリクラスを作成
+class MyRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+  
+  Future<List<MyModel>> getAll() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('my_table');
+    return rows.map((r) => MyModel.fromMap(r)).toList();
+  }
+  
+  Future<void> save(MyModel model) async {
+    final db = await _dbHelper.database;
+    await db.insert('my_table', model.toMap());
+  }
+}
+```
+
+#### **3. SharedPreferencesで設定保存**
+```dart
+// AppSettingsRepository を使用
+final repo = AppSettingsRepository();
+await repo.setString('my_key', 'value');
+final value = await repo.getString('my_key');
+```
+
+#### **4. Google Drive操作**
+```dart
+// DriveBackupService を使用
+final driveService = DriveBackupService();
+final dbFile = File('/path/to/gemi_invoice.db');
+await driveService.uploadDatabaseSnapshot(dbFile);
+```
+
+### 🔧 コーディング規約
+
+#### **命名規則**
+- クラス: `PascalCase` (例: `CustomerRepository`)
+- 変数・メソッド: `camelCase` (例: `getUserName`)
+- プライベートメンバー: `_leadingUnderscore` (例: `_isLoading`)
+- 定数: `kPrefixCamelCase` (例: `kMailSendMethodSmtp`)
+
+#### **画面ID一覧（既存）**
+- `S1:設定` - 設定画面
+- `SM:メール設定` - メール設定
+- `P1:商品マスター` - 商品管理
+- `C1:得意先マスター` - 顧客管理
+- `M1:マスター管理` - マスター管理ハブ
+- `D2:ダッシュボード設定` - ダッシュボード設定
+
+**新規画面追加時は既存IDと重複しないよう注意**
+
+#### **エラーハンドリング**
+```dart
+try {
+  // 処理
+} catch (e) {
+  if (mounted) {  // ← Widget破棄後のsetState防止
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('エラー: $e')),
+    );
+  }
+}
+```
+
+### 🐛 デバッグ・トラブルシューティング
+
+#### **flutter analyze でエラーが出る場合**
+```bash
+cd /home/user/dev/h-1.flutter.0
+flutter analyze --no-fatal-infos
+```
+
+#### **よくあるエラーと対処法**
+
+**1. `use_build_context_synchronously`**
+```dart
+// NG: async後に直接context使用
+await someAsyncFunction();
+Navigator.push(context, ...);  // ← 警告
+
+// OK: mounted チェック
+await someAsyncFunction();
+if (!mounted) return;
+Navigator.push(context, ...);
+```
+
+**2. `duplicate_definition`**
+- 変数・メソッドの重複宣言
+- インポートの重複確認
+
+**3. `unused_field` / `unused_element`**
+- 未使用の変数・メソッドを削除
+- または実装を完成させる
+
+#### **データベースリセット（開発時のみ）**
+```bash
+# アプリをアンインストールしてDBクリア
+adb uninstall com.example.h_1
+```
+
+### 📝 Git運用
+
+#### **コミットメッセージテンプレート**
+```
+[1行目] 変更内容の要約（50文字以内、日本語）
+
+[3行目以降] 詳細説明
+- 変更点1
+- 変更点2
+- 変更点3
+```
+
+#### **例**
+```
+Google Drive自動バックアップ機能実装
+
+- AutoBackupService新規作成
+- 起動時24時間経過チェック
+- 初回起動時リストア提案ダイアログ
+```
+
+### ⚡ 実装時の注意点
+
+1. **非同期処理は起動をブロックしない**
+   - `main()` での重い処理は `Future.microtask()` で非同期化
+
+2. **データベース操作は必ずtry-catch**
+   - ユーザーにエラーを通知
+
+3. **画面遷移時はマウント状態確認**
+   - `if (!mounted) return;`
+
+4. **Google API呼び出しは認証チェック必須**
+   - `GoogleAccountService.instance.currentAccount`
+
+5. **ファイルパスは絶対パスで記述**
+   - TODO.md、コメント、ドキュメント全て
+
+---
+
+---
+
+---
+
+## Google Sign-In 設定手順
+
+アプリで Google アカウント連携を有効にするには、以下の設定が必要です。
+
+### 1. Google Cloud Console での設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
+2. プロジェクトを作成または選択
+3. 「APIとサービス」→「認証情報」を開く
+4. 「OAuth 2.0 クライアント ID」を作成
+   - アプリケーションの種類: **Android**
+   - パッケージ名: `com.example.h_1`
+   - SHA-1 証明書フィンガープリント: デバッグキーストアの SHA-1（下記コマンドで取得）
+
+**SHA-1 フィンガープリント取得方法:**
+```bash
+# Linux/macOS
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+
+# Windows
+keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android
+```
+
+### 2. Android 設定（オプション）
+
+`google_sign_in` パッケージは Google Play Services を使用するため、`google-services.json` は**不要**です。ただし、Firebase を併用する場合は以下の手順も実施してください。
+
+1. Google Cloud Console から `google-services.json` をダウンロード
+2. `android/app/` ディレクトリに配置
+3. `android/build.gradle.kts` に Google Services プラグインを追加
+
+### 3. 現在の状態
+
+- ✅ `google_sign_in: ^6.2.1` パッケージ導入済み
+- ✅ `GoogleAccountService` 実装済み
+- ⚠️ OAuth 2.0 クライアント ID の設定が必要（各開発者・デプロイ環境ごと）
+- ⚠️ リリースビルド用の SHA-1 フィンガープリントも別途登録が必要
+- 📄 詳細手順: [`docs/google_oauth_setup.md`](docs/google_oauth_setup.md)
+
+### トラブルシューティング
+
+**エラー: "Googleアカウントに未連携です"**
+- OAuth 2.0 クライアント ID が未設定、またはパッケージ名・SHA-1 が不一致
+- Google Cloud Console で正しい認証情報を作成してください
+
+**アカウント選択画面が表示されない**
+- デバイスに Google アカウントが登録されているか確認
+- Google Play Services が最新版か確認
+
+---
+
 ## 現状の実装状況
 
 - Flutter ベースの販売アシスト1号アプリ
@@ -43,6 +449,113 @@
    - 母艦側で受信・返信・履歴管理ができる仕組みを構築
 4. **寿命延命と母艦同期**
    - 母艦と定期同期できた端末は自動で寿命を延長（例: 半年）
+
+---
+
+## メインメニュー構成（必須機能のベースライン）
+
+実運用で必須になるメニューをツリー形式で整理し、ダッシュボード設定やモジュール化の土台とします。
+
+- ✅: 実装済み（画面・ナビゲーションあり）
+- ⚠️: 画面は未実装だがプレースホルダ／メニュー定義済み
+- ⏳: 未着手
+
+- **01. マスタ管理**
+  - 商品マスタ（P1:商品マスター） ✅
+  - 得意先マスタ（C1:得意先マスター） ✅
+  - 仕入先マスタ（SI:仕入先マスター） ✅
+  - 倉庫マスタ（WH:倉庫マスター） ✅
+  - 担当者マスタ（ST:担当者マスター） ✅
+- **02. 販売管理**
+  - 見積入力（ES:見積入力） ✅
+  - 受注入力（OR:受注入力） ✅
+  - 売上入力（レジモードの主戦場） ✅
+  - 売上返品入力 ⚠️
+  - 請求書発行 ⚠️
+- **03. 仕入管理**
+  - 発注入力 ⚠️
+  - 仕入入力（未入荷管理を含む） ✅
+  - 仕入返品入力 ⚠️
+  - 支払予定管理 ✅
+- **04. 在庫管理**
+  - 在庫照会（IQ:在庫照会） ✅
+  - 在庫移動（倉庫間） ⏳
+  - 棚卸入力 ⏳
+  - 在庫調整 ⏳
+- **05. 集計分析**
+  - 売上日報 ✅
+  - 得意先別売上推移（CS:得意先別売上推移） ✅
+  - 商品別粗利分析（PA:商品別粗利分析） ✅
+  - 在庫評価額一覧 ⚠️
+- **06. システム設定**
+  - ユーザー権限設定 ⚠️
+  - ログ管理 ⚠️
+
+上記を D2（ダッシュボード設定）画面のデフォルトメニューや並べ替え対象として順次実装していきます。
+
+---
+
+## Base System - Universal Sales Assistant
+
+クラウド連携やバックエンド処理で共通化したい基盤機能のリファレンスです。Google エコシステム連携や台帳層を切り出しておくことで、オフラインPOSと母艦クラウドのハイブリッド連携を容易にします。
+
+- **00. System Setup & Security**
+  - Google OAuth 認証管理
+  - 環境設定管理（`.env` はデフォルトでブラックリスト化）
+  - API 接続制限・クォータ管理
+  - ログ出力・エラー通知設定
+- **01. Google Ecosystem Integration**
+  - Calendar Sync Engine（イベント取得 / 解析 / 更新）
+  - Drive File Manager（バックアップディレクトリ・テンプレPDF管理）
+  - Sheets Data Provider（スプレッドシートをDBとして接続、ストリーミング書き込み）
+- **02. Data Ledger (Transaction Core)**
+  - 取引データの登録・照会・修正・削除（履歴保持）
+- **03. Calculation Engine (Common Rules)**
+  - 日時フォーマット統一
+  - 通貨・数値型キャスト処理
+  - 共通利益計算（売上 − 原価）
+- **04. Output & Notification**
+  - PDF 帳票生成エンジン（テンプレ変数差し込み）
+  - Mailer（Gmail API、BCC 自動送付制御含む）
+
+これらの層を意識しつつ Flutter アプリ／母艦サーバ双方で責務分担を進めます。
+
+---
+
+## Event Sourcing / Hash Chain 指針
+
+堅牢で監査可能なエンタープライズレベルの実装に向け、Flutter + SQLite 上でイベントソーシングを採用する際の要求事項を明文化します。
+
+### 役割と必須要件
+
+- **役割**: 「イベントソーシング・アーキテクチャ」を実装し、全操作を監査可能に保つモバイルアプリ専門エンジニア。
+- **要件**
+  1. UPDATE 禁止・INSERT のみで履歴を積むイベントソーシング方式。
+  2. 各イベントは `previous_hash` / `current_hash` を保持し、追記時にチェーンを再計算。(ハッシュチェーン)
+  3. 伝票発行時にはマスタ情報を JSON スナップショットとして非正規化して保存。
+  4. 生成するコードヘッダーに `// Version: 1.0.0` のようなバージョン表記を必須化。
+  5. 設定値は `.env` から読み込み、ソース直書きを禁止 (セキュリティ確保)。
+
+### 実装対象コンポーネント
+
+1. `EventRecord` モデル … ハッシュ計算ヘルパーとバリデーションを内包。
+2. `DatabaseHelper` … SQLite トランザクションとチェーン検証 (追記時に完全性チェック)。
+3. `SyncService` … 伝票単位で差分同期を行う骨子と再送制御ロジック。
+
+### 出力・コード品質
+
+- 可読性・保守性を重視した Dart 実装。
+- 各ファイル先頭へ `// Version: <semver>` を記載し、バージョン管理ポリシーと整合させる。
+
+### 内部改修のインパクト
+
+- 既存の `app_settings` や業務テーブルはイベントテーブルへ段階的に移行する必要があり、**DBスキーマの大幅刷新**とデータ移行手順（マイグレーション／復元）が不可欠。
+- ハッシュチェーンを維持するため、全 INSERT をトランザクションでラップし、`previous_hash` 取得・`current_hash` 算出をセットで行うミドル層 (Repository or DatabaseHelper) を新設する必要がある。
+- スナップショットJSONを整形するため、マスタ取得ロジックや `PurchaseEntry` / `Invoice` 生成処理の改修が発生する。
+- `.env` 管理を徹底するため、既存の `AppConfig` や `DatabaseHelper` の初期化フローに環境変数リーダーを導入し、公開ビルドとの整合を取る必要がある。
+- `SyncService` はイベント単位の差分アップロード・整合性チェック (ハッシュ比較) を実装し直す必要があり、オンライン同期のプロトコル設計も含め再検討が必要。
+
+上記の通り **内部的には大幅なアーキテクチャ改造が前提** となるため、段階的に (1) イベントテーブルの追加 → (2) 既存書き込みのラップ → (3) スナップショット導入 → (4) Sync/Hash 連携 というロードマップで移行する予定です。
 
 ---
 
@@ -82,6 +595,67 @@
    - スクリプト内で `APP_BUILD_TIMESTAMP` を UTC で自動付与
    - `flutter analyze` → `flutter build apk` を連続実行
 3. 実機/エミュレータで起動すると、寿命切れ時には `ExpiredApp` が自動表示されます。
+
+### Googleアカウント連携・同期フロー
+
+1. 端末内に複数Googleアカウントが存在する場合は `S1:設定` → 「Googleアカウント連携」で利用するアカウントを明示的に選択します。
+   - 連携状態は同カード内に表示され、`別アカウントに切替` / `連携解除` ボタンでいつでも再選択できます。
+   - 連携後は Gmail/Drive/Sheets/Calendar API 全てで同一トークンを共有します。
+2. `SM:メール設定` の BCC で指定したメールアドレス、または「Googleアカウント連携」カードで上書き設定したアドレスを Gmail 同期に利用します。
+3. チャット（`CH:母艦チャット`）や `ChatSyncScheduler` は Gmail API を用いて10秒間隔で同期します。
+   - 件名 `[Sync]` かつ未読・INBOX のメールのみを対象とし、受信後は専用ラベルへ自動移動します。
+   - ローカル端末が送信したメッセージはクライアントIDで判別し、再取り込みされません。
+4. Drive バックアップ (`DriveBackupService`) は `SalesAssist Backups/<clientId>` に SQLite やログをアップロードします。
+   - バックアップフォルダは存在しない場合に自動生成され、ファイル名には UTC タイムスタンプを付与します。
+   - 今後、`管理 > データベース・バックアップ` などのメニューに組み込んで自動バックアップへ発展させます。
+
+#### Gmail同期スタック v1（チャット & 伝票）
+
+- ペイロードは `lib/models/gmail_sync_envelope.dart` で定義した **GmailSyncEnvelope** 形式に統一。JSON → gzip → Base64URL の単一テキストを本文に載せ、件名は `[Sync:v1] <messageId>#<sequence>` で送受信します。
+- `X-Client-Id` / `X-Sequence` ヘッダーで端末識別と単調シーケンスを伝達。シーケンス値は `AppSettingsRepository.nextGmailSequence()` で永続化し、重複送信を防ぎます。
+- ペイロード種別 `payloadType` は現在 2 種:
+  1. `chat_message`: `ChatRepository` のレコードを JSON 化したチャット本文。ローカル自端末の `clientId` と一致する場合は自己ループを避けるため破棄。
+  2. `invoice_snapshot`: `InvoiceRepository.pendingSyncSnapshots()` が生成する伝票スナップショット。受信側では `applyInboundSnapshot()` が `updated_at` を比較して上書き/スキップを判定します。
+- 同期処理は `GmailSyncClient` が一括担当し、`_pushPendingChats` / `_pushPendingInvoices` / `_fetchInbound` の3タスクを `Future.wait` で並列実行します。未読INBOXのみを対象に取得し、処理後は専用ラベルへ移動します。
+- BCC アドレスは `設定 > メール設定` の値が優先され、未設定時は Googleアカウント連携カードで指定したアドレスを自動で流用します。BCC が空の場合は送信処理そのものをスキップするため、運用時は必ず設定してください。
+- 伝票同期を有効にする際の目安:
+  - 端末ごとに `S1:設定 > Googleアカウント連携` を実施し、`gmail_sync_label_name` で指定したラベル（初期値 `SalesAssist Sync`）を Gmail 側に作成。
+  - `InvoiceRepository` は伝票保存時に `is_synced=0` と `updated_at` を更新するため、Gmail送信に失敗しても再同期キューへ残り続けます。
+  - `applyInboundSnapshot` は older-than 判定で古い伝票を上書きしないため、時刻差が正しく付与されていること（端末の時計補正）が前提です。
+- `S1:設定 > 同期設定` から次の2項目を切り替え可能:
+  - **エンベロープ圧縮モード** … `gzip + Base64`（既定）、`Base64のみ`、`JSON平文` を選択可能。平文は Gmail 上での可読性とトレードオフで、サイズが大きくなる点に留意。
+  - **同期トランスポート** … `Gmailのみ` / `直接通信のみ (母艦API)` / `自動切替`。直接通信のみを選ぶと Gmail 同期ループを停止し、LAN/VPN 経由の `MothershipClient` で同期する前提になる。
+
+#### LAN優先モード（GPS位置ベース自動検出）
+
+`自動切替` トランスポートモードを選択すると、GPS位置を活用してお局様サーバーへの自動接続が可能になります:
+
+1. **初回セットアップ**:
+   - `S1:設定 > 同期設定 > お局様検出設定` を開く
+   - お局様サーバーがあるLAN/VPN接続環境で「この場所を記憶」ボタンをタップ
+   - 現在のGPS位置とお局様のIPアドレスが紐づけて記録される
+
+2. **自動検出の動作**:
+   - 同期実行時、現在のGPS位置から記憶された場所を検索（デフォルト500m以内）
+   - 範囲内に記憶された場所があれば、お局様への直接通信を優先的に試行
+   - 接続失敗または範囲外の場合、自動的にGmail同期へフォールバック
+
+3. **検出範囲の調整**:
+   - お局様検出設定画面で 100m〜2000m の範囲で調整可能
+   - 広い範囲を設定すると、お局様に近づく前から直接通信を試行
+
+4. **記憶された場所の管理**:
+   - 検出設定画面で記憶された場所の一覧を表示
+   - 不要な場所は個別に削除可能
+   - 最終接続時刻も記録されるため、使用状況を把握できる
+
+5. **自動検出の無効化**:
+   - GPS位置ベースの自動検出をオフにすると、設定されたホストへの接続のみ試行
+   - トランスポートモードを `Gmailのみ` に戻せば完全にGmail同期のみになる
+
+> **注意**: GPS位置情報の取得には位置情報権限が必要です。権限が未許可の場合、自動検出は動作せず、Gmail同期のみが実行されます。
+
+> 補足: 将来的には `payloadType` を増やし、Drive/S3 連携や署名検証（`signature` フィールド）を導入予定です。現状は Gmail の25MB制限内に収まるチャット・伝票スナップショットを対象としています。
 
 ---
 

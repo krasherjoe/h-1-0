@@ -80,6 +80,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     switch (type) {
       case DocumentType.estimation:
         return "見積書";
+      case DocumentType.order:
+        return "受注伝票";
       case DocumentType.delivery:
         return "納品書";
       case DocumentType.invoice:
@@ -93,6 +95,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     switch (type) {
       case DocumentType.estimation:
         return Colors.blue;
+      case DocumentType.order:
+        return Colors.orange;
       case DocumentType.delivery:
         return Colors.teal;
       case DocumentType.invoice:
@@ -431,6 +435,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final textColor = Colors.black87;
 
     final docColor = _documentTypeColor(_documentType);
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: themeColor,
@@ -481,51 +486,55 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ],
         ],
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 140),
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      body: MediaQuery.removeViewInsets(
+        context: context,
+        removeBottom: true,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardInset + 140),
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDateSection(),
+                        const SizedBox(height: 16),
+                        _buildCustomerSection(),
+                        const SizedBox(height: 16),
+                        _buildSubjectSection(textColor),
+                        const SizedBox(height: 20),
+                        _buildItemsSection(fmt),
+                        const SizedBox(height: 20),
+                        _buildSummarySection(fmt),
+                        const SizedBox(height: 12),
+                        _buildEditLogsSection(),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildBottomActionBar(),
+              ],
+            ),
+            if (_isSaving)
+              Container(
+                color: Colors.black54,
+                child: const Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildDateSection(),
-                      const SizedBox(height: 16),
-                      _buildCustomerSection(),
-                      const SizedBox(height: 16),
-                      _buildSubjectSection(textColor),
-                      const SizedBox(height: 20),
-                      _buildItemsSection(fmt),
-                      const SizedBox(height: 20),
-                      _buildSummarySection(fmt),
-                      const SizedBox(height: 12),
-                      _buildEditLogsSection(),
-                      const SizedBox(height: 20),
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(height: 16),
+                      Text("保存中...", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
               ),
-              _buildBottomActionBar(),
-            ],
-          ),
-          if (_isSaving)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 16),
-                    Text("保存中...", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -832,12 +841,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", labelColor),
             if (tax > 0) ...[
+              _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", labelColor),
               Divider(color: dividerColor),
               _buildSummaryRow("消費税", "￥${formatter.format(tax)}", labelColor),
-            ],
-            Divider(color: dividerColor),
+              Divider(color: dividerColor),
+            ] else
+              Divider(color: dividerColor),
             _buildSummaryRow(
               tax > 0 ? "合計金額 (税込)" : "合計金額",
               "￥${formatter.format(total)}",

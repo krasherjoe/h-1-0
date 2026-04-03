@@ -6,7 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
-import '../widgets/contact_picker_sheet.dart';
+import 'customer_edit_screen.dart';
+import '../widgets/custom_field_display_widget.dart';
+import '../services/custom_field_repository.dart';
+import '../services/business_profile_repository.dart';
+import '../models/custom_field_model.dart';
 
 class CustomerMasterScreen extends StatefulWidget {
   final bool selectionMode;
@@ -20,6 +24,8 @@ class CustomerMasterScreen extends StatefulWidget {
 
 class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   final CustomerRepository _customerRepo = CustomerRepository();
+  final CustomFieldRepository _customFieldRepo = CustomFieldRepository();
+  final BusinessProfileRepository _businessProfileRepo = BusinessProfileRepository();
   final TextEditingController _searchController = TextEditingController();
   List<Customer> _customers = [];
   List<Customer> _filtered = [];
@@ -27,6 +33,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   String _sortKey = 'name_asc';
   bool _ignoreCorpPrefix = true;
   Map<String, String> _userKanaMap = {};
+  List<CustomField> _customFields = [];
 
   @override
   void initState() {
@@ -35,11 +42,35 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   }
 
   Future<void> _init() async {
-    await _customerRepo.ensureCustomerColumns();
-    await _loadUserKanaMap();
-    if (!context.mounted) return;
-    _ensureKanaMapsUsed();
-    await _loadCustomers();
+    try {
+      await _customerRepo.ensureCustomerColumns();
+      await _loadUserKanaMap();
+      await _loadCustomFields();
+      if (!context.mounted) return;
+      _ensureKanaMapsUsed();
+      await _loadCustomers();
+    } catch (e, st) {
+      print('C2 _init エラー: $e');
+      print('スタックトレース: $st');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadCustomFields() async {
+    try {
+      final profile = await _businessProfileRepo.getCurrentProfile();
+      final fields = await _customFieldRepo.getActiveFieldsByBusinessProfile(profile.id);
+      setState(() {
+        _customFields = fields;
+      });
+    } catch (e) {
+      // カスタムフィールドの読み込み失敗は無視
+      setState(() {
+        _customFields = [];
+      });
+    }
   }
 
   Map<String, String> _buildDefaultKanaMap() {
@@ -222,215 +253,30 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
 
   Future<void> _addOrEditCustomer({Customer? customer}) async {
-    final isEdit = customer != null;
-    final displayNameController = TextEditingController(text: customer?.displayName ?? "");
-    final formalNameController = TextEditingController(text: customer?.formalName ?? "");
-    final departmentController = TextEditingController(text: customer?.department ?? "");
-    final addressController = TextEditingController(text: customer?.address ?? "");
-    final telController = TextEditingController(text: customer?.tel ?? "");
-    final emailController = TextEditingController(text: customer?.email ?? "");
-    String selectedTitle = customer?.title ?? "様";
-    bool isCompany = selectedTitle == '御中';
-    final head1Controller = TextEditingController(text: customer?.headChar1 ?? _headKana(displayNameController.text));
-    final head2Controller = TextEditingController(text: customer?.headChar2 ?? "");
-
-    Future<void> prefillFromPhonebook() async {
-      if (!await FlutterContacts.requestPermission(readonly: true)) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
-        return;
-      }
-      final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
-      if (!mounted) return;
-      if (contacts.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
-        return;
-      }
-      final Contact? picked = await showModalBottomSheet<Contact>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (ctx) => ContactPickerSheet(contacts: contacts, title: isEdit ? '電話帳から上書き' : '電話帳から新規入力'),
-      );
-      if (!mounted) return;
-      if (picked != null) {
-        final orgCompany = picked.organizations.isNotEmpty ? picked.organizations.first.company : '';
-        final personParts = [picked.name.last, picked.name.first].where((v) => v.isNotEmpty).toList();
-        final person = personParts.isNotEmpty ? personParts.join(' ').trim() : picked.displayName;
-        final chosen = orgCompany.isNotEmpty ? orgCompany : person;
-        displayNameController.text = chosen;
-        formalNameController.text = orgCompany.isNotEmpty ? orgCompany : person;
-        final addr = picked.addresses.isNotEmpty ? picked.addresses.first : null;
-        if (addr != null) {
-          final joined = [addr.postalCode, addr.state, addr.city, addr.street, addr.country]
-              .where((v) => v.isNotEmpty)
-              .join(' ');
-          addressController.text = joined;
-        }
-        if (picked.phones.isNotEmpty) {
-          telController.text = picked.phones.first.number;
-        }
-        if (picked.emails.isNotEmpty) {
-          emailController.text = picked.emails.first.address;
-        }
-        isCompany = orgCompany.isNotEmpty;
-        selectedTitle = isCompany ? '御中' : '様';
-        if (head1Controller.text.isEmpty) {
-          head1Controller.text = _headKana(chosen);
-        }
-        setState(() {});
-      }
-    }
-
-    final result = await showDialog<Customer>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final inset = MediaQuery.of(context).viewInsets.bottom;
-          return MediaQuery.removeViewInsets(
-            removeBottom: true,
-            context: context,
-            child: AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              title: Text(isEdit ? "顧客を編集" : "顧客を新規登録"),
-              content: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.only(bottom: inset + 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: displayNameController,
-                      decoration: const InputDecoration(labelText: "表示名（略称）", hintText: "例: 佐々木製作所"),
-                      onChanged: (v) {
-                        if (head1Controller.text.isEmpty) {
-                          head1Controller.text = _headKana(v);
-                        }
-                      },
-                    ),
-                    TextField(
-                      controller: formalNameController,
-                      decoration: const InputDecoration(labelText: "正式名称", hintText: "例: 株式会社 佐々木製作所"),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.contact_phone),
-                        label: const Text('電話帳から引用'),
-                        onPressed: prefillFromPhonebook,
-                      ),
-                    ),
-                    SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment(value: true, label: Text('会社')),
-                        ButtonSegment(value: false, label: Text('個人')),
-                      ],
-                      selected: {isCompany},
-                      onSelectionChanged: (values) {
-                        if (values.isEmpty) return;
-                        setDialogState(() {
-                          isCompany = values.first;
-                          selectedTitle = isCompany ? '御中' : '様';
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedTitle,
-                      decoration: const InputDecoration(labelText: "敬称"),
-                      items: ["様", "御中", "殿", "貴社"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                      onChanged: (val) => setDialogState(() {
-                        selectedTitle = val ?? "様";
-                        isCompany = selectedTitle == '御中' || selectedTitle == '貴社';
-                      }),
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: head1Controller,
-                            maxLength: 1,
-                            decoration: const InputDecoration(labelText: "インデックス1 (1文字)", counterText: ""),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: head2Controller,
-                            maxLength: 1,
-                            decoration: const InputDecoration(labelText: "インデックス2 (任意)", counterText: ""),
-                          ),
-                        ),
-                      ],
-                    ),
-                    TextField(
-                      controller: departmentController,
-                      decoration: const InputDecoration(labelText: "部署名", hintText: "例: 営業部"),
-                    ),
-                    TextField(
-                      controller: addressController,
-                      decoration: const InputDecoration(labelText: "住所"),
-                    ),
-                    TextField(
-                      controller: telController,
-                      decoration: const InputDecoration(labelText: "電話番号"),
-                      keyboardType: TextInputType.phone,
-                    ),
-                    TextField(
-                      controller: emailController,
-                      decoration: const InputDecoration(labelText: "メールアドレス"),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                  ],
-                ),
-              ),
-              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-                TextButton(
-                  onPressed: () {
-                    if (displayNameController.text.isEmpty || formalNameController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("表示名と正式名称は必須です")));
-                      return;
-                    }
-                    final head1 = head1Controller.text.trim();
-                    final head2 = head2Controller.text.trim();
-                    final locked = customer?.isLocked ?? false;
-                    final newId = locked ? const Uuid().v4() : (customer?.id ?? const Uuid().v4());
-                    final newCustomer = Customer(
-                      id: newId,
-                      displayName: displayNameController.text.trim(),
-                      formalName: formalNameController.text.trim(),
-                      title: selectedTitle,
-                      department: departmentController.text.trim().isEmpty ? null : departmentController.text.trim(),
-                      address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-                      tel: telController.text.trim().isEmpty ? null : telController.text.trim(),
-                      email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
-                      headChar1: head1.isEmpty ? null : head1,
-                      headChar2: head2.isEmpty ? null : head2,
-                      isLocked: false,
-                    );
-                    Navigator.pop(context, newCustomer);
-                  },
-                  child: const Text("保存"),
-                ),
-              ],
-            ),
-          );
-        },
+    final result = await Navigator.push<Customer>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CustomerEditScreen(customer: customer),
       ),
     );
 
     if (!mounted) return;
 
     if (result != null) {
-      await _customerRepo.saveCustomer(result);
-      if (widget.selectionMode) {
-        if (!mounted) return;
-        Navigator.pop(context, result);
-      } else {
-        _loadCustomers();
+      try {
+        await _customerRepo.saveCustomer(result);
+        if (widget.selectionMode) {
+          if (!mounted) return;
+          Navigator.pop(context, result);
+        } else {
+          _loadCustomers();
+        }
+      } catch (e, st) {
+        print('C2 顧客保存エラー: $e');
+        print('スタックトレース: $st');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('顧客の保存に失敗しました: $e')));
+        }
       }
     }
   }
@@ -442,21 +288,19 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   }
 
   Future<void> _showPhonebookImport() async {
-    // 端末連絡先を取得
-    if (!await FlutterContacts.requestPermission(readonly: true)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
-      return;
-    }
+    try {
+      // 端末連絡先を取得
+      final hasPermission = await FlutterContacts.requestPermission(readonly: true);
+      if (!hasPermission) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
+        return;
+      }
 
-    final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
-    // 一部端末では一覧取得で organization が空になることがあるため、詳細を再取得
-    final detailedContacts = <Contact>[];
-    for (final c in contacts) {
-      final full = await FlutterContacts.getContact(c.id, withProperties: true, withAccounts: true, withPhoto: false);
-      if (full != null) detailedContacts.add(full);
-    }
-    final sourceContacts = detailedContacts.isNotEmpty ? detailedContacts : contacts;
+      if (!mounted) return;
+      // 一覧取得のみ（個別詳細取得は時間がかかるため省略）
+      final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: false, withPhoto: false, withThumbnail: false, withGroups: false);
+      final sourceContacts = contacts;
     if (sourceContacts.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
@@ -947,6 +791,25 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               if (c.tel != null) Text("TEL: ${c.tel}") else const SizedBox.shrink(),
               if (c.email != null) Text("メール: ${c.email}") else const SizedBox.shrink(),
               Text("敬称: ${c.title}"),
+              const SizedBox(height: 12),
+              if (_customFields.isNotEmpty) ...[
+                const Divider(),
+                const SizedBox(height: 8),
+                Text(
+                  'カスタムフィールド',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                CustomFieldDisplayWidget(
+                  entityId: c.id,
+                  entityType: 'customer',
+                  fields: _customFields,
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [

@@ -6,9 +6,11 @@ import 'product_master_screen.dart';
 
 /// 商品マスターから項目を選択するためのモーダル（スタブ実装）
 class ProductPickerModal extends StatefulWidget {
-  final Function(InvoiceItem) onItemSelected;
+  final ValueChanged<InvoiceItem>? onItemSelected;
+  final ValueChanged<Product>? onProductSelected;
 
-  const ProductPickerModal({super.key, required this.onItemSelected});
+  const ProductPickerModal({super.key, this.onItemSelected, this.onProductSelected})
+      : assert(onItemSelected != null || onProductSelected != null, '少なくとも1つのコールバックを指定してください');
 
   @override
   State<ProductPickerModal> createState() => _ProductPickerModalState();
@@ -105,14 +107,18 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                             title: Text(product.name),
                             subtitle: Text("￥${product.defaultUnitPrice} (在庫: ${product.stockQuantity})"),
                             onTap: () {
-                              widget.onItemSelected(
-                                InvoiceItem(
-                                  productId: product.id,
-                                  description: product.name,
-                                  quantity: 1,
-                                  unitPrice: product.defaultUnitPrice,
-                                ),
-                              );
+                              if (widget.onProductSelected != null) {
+                                widget.onProductSelected!(product);
+                              } else if (widget.onItemSelected != null) {
+                                widget.onItemSelected!(
+                                  InvoiceItem(
+                                    productId: product.id,
+                                    description: product.name,
+                                    quantity: 1,
+                                    unitPrice: product.defaultUnitPrice,
+                                  ),
+                                );
+                              }
                               Navigator.pop(context);
                             },
                             onLongPress: () async {

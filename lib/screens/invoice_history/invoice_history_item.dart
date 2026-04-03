@@ -171,6 +171,8 @@ class InvoiceHistoryItem extends StatelessWidget {
     switch (type) {
       case DocumentType.estimation:
         return Icons.request_quote;
+      case DocumentType.order:
+        return Icons.assignment;
       case DocumentType.delivery:
         return Icons.local_shipping;
       case DocumentType.invoice:
@@ -184,6 +186,8 @@ class InvoiceHistoryItem extends StatelessWidget {
     switch (type) {
       case DocumentType.estimation:
         return Colors.blue;
+      case DocumentType.order:
+        return Colors.orange;
       case DocumentType.delivery:
         return Colors.teal;
       case DocumentType.invoice:
