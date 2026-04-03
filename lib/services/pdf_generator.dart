@@ -81,6 +81,16 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                   children: [
                     pw.Text("番号: ${invoice.invoiceNumber}"),
                     pw.Text("発行日: ${dateFormatter.format(invoice.date)}"),
+                    if (invoice.promisedDate != null && invoice.documentType == DocumentType.estimation)
+                      pw.Text("有効期限: ${dateFormatter.format(invoice.promisedDate!)}"),
+                    if (invoice.fulfilledDate != null && invoice.documentType == DocumentType.delivery)
+                      pw.Text("納品日: ${dateFormatter.format(invoice.fulfilledDate!)}"),
+                    if (invoice.linkedDeliveryId != null && invoice.documentType == DocumentType.delivery)
+                      pw.Text("追跡番号: ${invoice.linkedDeliveryId!}"),
+                    if (invoice.fulfilledDate != null && invoice.documentType == DocumentType.receipt)
+                      pw.Text("領収日: ${dateFormatter.format(invoice.fulfilledDate!)}"),
+                    if (invoice.promisedDate != null && invoice.documentType == DocumentType.invoice)
+                      pw.Text("お支払期限: ${dateFormatter.format(invoice.promisedDate!)}"),
                   ],
                 ),
               ],
@@ -107,11 +117,21 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                       pw.Text("MAIL: ${invoice.contactEmailSnapshot}", style: const pw.TextStyle(fontSize: 12)),
                     pw.SizedBox(height: 10),
                     pw.Text(
-                      invoice.documentType == DocumentType.receipt
-                          ? "上記の金額を正に領収いたしました。"
-                          : (invoice.documentType == DocumentType.estimation
-                              ? "下記の通り、お見積り申し上げます。"
-                              : "下記の通り、ご請求申し上げます。"),
+                      () {
+                        switch (invoice.documentType) {
+                          case DocumentType.receipt:
+                            return "上記の金額を正に領収いたしました。";
+                          case DocumentType.estimation:
+                            return "下記の通り、お見積り申し上げます。";
+                          case DocumentType.delivery:
+                            return "下記の通り、納品いたしました。";
+                          case DocumentType.order:
+                            return "下記の通り、受注申し上げます。";
+                          case DocumentType.invoice:
+                          default:
+                            return "下記の通り、ご請求申し上げます。";
+                        }
+                      }(),
                     ),
                   ],
                 ),
@@ -155,7 +175,25 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                 pw.Text(
                   () {
                     final bool showTaxSuffix = companyInfo.taxDisplayMode != 'hidden' && invoice.tax > 0;
-                    final baseLabel = invoice.documentType == DocumentType.receipt ? "領収金額" : "合計金額";
+                    String baseLabel;
+                    switch (invoice.documentType) {
+                      case DocumentType.receipt:
+                        baseLabel = "領収金額";
+                        break;
+                      case DocumentType.estimation:
+                        baseLabel = "お見積り金額";
+                        break;
+                      case DocumentType.delivery:
+                        baseLabel = "納品金額";
+                        break;
+                      case DocumentType.order:
+                        baseLabel = "受注金額";
+                        break;
+                      case DocumentType.invoice:
+                      default:
+                        baseLabel = "ご請求金額";
+                        break;
+                    }
                     return showTaxSuffix ? "$baseLabel (税込)" : baseLabel;
                   }(),
                   style: const pw.TextStyle(fontSize: 16),
@@ -166,7 +204,22 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
           ),
           pw.SizedBox(height: 20),
           pw.TableHelper.fromTextArray(
-            headers: const ["品名", "数量", "単価", "金額"],
+            headers: () {
+              switch (invoice.documentType) {
+                case DocumentType.estimation:
+                  return const ["品名・仕様", "数量", "単価", "金額"];
+                case DocumentType.delivery:
+                  return const ["品名", "納品数", "単価", "金額"];
+                case DocumentType.order:
+                  return const ["品名", "受注数", "単価", "金額"];
+                case DocumentType.invoice:
+                  return const ["品名", "数量", "単価", "金額"];
+                case DocumentType.receipt:
+                  return const ["品名", "数量", "単価", "領収金額"];
+                default:
+                  return const ["品名", "数量", "単価", "金額"];
+              }
+            }(),
             data: invoice.items
                 .map((item) => [
                       item.description,
@@ -203,7 +256,21 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                         _buildSummaryRow("消費税", "（税別）"),
                       pw.Divider(),
                     ],
-                    _buildSummaryRow("合計", "￥${amountFormatter.format(invoice.totalAmount)}", isBold: true),
+                    _buildSummaryRow(() {
+                      switch (invoice.documentType) {
+                        case DocumentType.estimation:
+                          return "お見積り合計";
+                        case DocumentType.delivery:
+                          return "納品合計";
+                        case DocumentType.order:
+                          return "受注合計";
+                        case DocumentType.receipt:
+                          return "領収金額合計";
+                        case DocumentType.invoice:
+                        default:
+                          return "ご請求合計";
+                      }
+                    }(), "￥${amountFormatter.format(invoice.totalAmount)}", isBold: true),
                   ],
                 ),
               ),
@@ -217,6 +284,17 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
               padding: const pw.EdgeInsets.all(8),
               decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
               child: pw.Text(invoice.notes!),
+            ),
+          ],
+          // 領収書の但し書き
+          if (invoice.documentType == DocumentType.receipt && invoice.subject != null && invoice.subject!.isNotEmpty) ...[
+            pw.SizedBox(height: 10),
+            pw.Text("但し書き:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
+              child: pw.Text(invoice.subject!),
             ),
           ],
           pw.SizedBox(height: 20),
@@ -242,10 +320,44 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
 
         return [pw.Column(children: content)];
       },
-      footer: (context) => pw.Container(
-        alignment: pw.Alignment.centerRight,
-        margin: const pw.EdgeInsets.only(top: 16),
-        child: pw.Text("Page ${context.pageNumber} / ${context.pagesCount}", style: const pw.TextStyle(color: PdfColors.grey)),
+      footer: (context) => pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          // 書類タイプ別のフッターメッセージ
+          if (invoice.documentType == DocumentType.estimation)
+            pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 4),
+              child: pw.Text(
+                "この見積書の有効期限は発行日から30日間です",
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+            ),
+          if (invoice.documentType == DocumentType.invoice && invoice.promisedDate != null)
+            pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 4),
+              child: pw.Text(
+                "お支払期限: ${DateFormat('yyyy年MM月dd日').format(invoice.promisedDate!)}までにお支払いください",
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+            ),
+          if (invoice.documentType == DocumentType.receipt)
+            pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 4),
+              child: pw.Text(
+                "領収書として正式に発行済みの書類です",
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+              ),
+            ),
+          // ページ番号
+          pw.Container(
+            alignment: pw.Alignment.centerRight,
+            child: pw.Text(
+              "Page ${context.pageNumber} / ${context.pagesCount}",
+              style: const pw.TextStyle(color: PdfColors.grey),
+            ),
+          ),
+        ],
       ),
     ),
   );
