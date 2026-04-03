@@ -12,6 +12,7 @@ import '../services/company_repository.dart';
 import '../services/business_profile_repository.dart';
 import '../widgets/contact_picker_sheet.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
+import '../widgets/seal_camera_screen.dart';
 import 'custom_field_settings_screen.dart';
 
 class BusinessProfileScreen extends StatefulWidget {
@@ -146,6 +147,21 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   }
 
   Future<void> _pickSeal(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      // サイズガイド付きカメラ画面を使用
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(builder: (context) => const SealCameraScreen()),
+      );
+      if (result != null) {
+        setState(() {
+          _sealPath = result;
+        });
+      }
+      return;
+    }
+    
+    // アルバム選択は従来通り
     final picker = ImagePicker();
     final image = await picker.pickImage(source: source, imageQuality: 85);
     if (image == null) return;
