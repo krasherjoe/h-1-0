@@ -288,21 +288,19 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   }
 
   Future<void> _showPhonebookImport() async {
-    // 端末連絡先を取得
-    if (!await FlutterContacts.requestPermission(readonly: true)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
-      return;
-    }
+    try {
+      // 端末連絡先を取得
+      final hasPermission = await FlutterContacts.requestPermission(readonly: true);
+      if (!hasPermission) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
+        return;
+      }
 
-    final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
-    // 一部端末では一覧取得で organization が空になることがあるため、詳細を再取得
-    final detailedContacts = <Contact>[];
-    for (final c in contacts) {
-      final full = await FlutterContacts.getContact(c.id, withProperties: true, withAccounts: true, withPhoto: false);
-      if (full != null) detailedContacts.add(full);
-    }
-    final sourceContacts = detailedContacts.isNotEmpty ? detailedContacts : contacts;
+      if (!mounted) return;
+      // 一覧取得のみ（個別詳細取得は時間がかかるため省略）
+      final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: false, withPhoto: false, withThumbnail: false, withGroups: false);
+      final sourceContacts = contacts;
     if (sourceContacts.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
