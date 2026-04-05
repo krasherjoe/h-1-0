@@ -1,6 +1,4 @@
 import 'dart:async';
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Googleアカウント連携とアクセストークン管理を司るサービス。
@@ -13,7 +11,8 @@ class GoogleAccountService {
   static final GoogleAccountService instance = GoogleAccountService._internal();
 
   GoogleSignIn? _googleSignIn;
-  final StreamController<GoogleSignInAccount?> _accountController = StreamController.broadcast();
+  final StreamController<GoogleSignInAccount?> _accountController =
+      StreamController.broadcast();
 
   void _init() {
     try {
