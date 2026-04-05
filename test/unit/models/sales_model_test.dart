@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:h_1/models/sales_model.dart';
 import 'package:h_1/models/customer_model.dart';
-import 'package:h_1/models/base_document.dart';
 import 'package:h_1/widgets/document_card.dart';
 
 void main() {
@@ -73,7 +72,7 @@ void main() {
 
     test('should convert to map correctly', () {
       final map = sales.toMap();
-      
+
       expect(map['id'], 'test-sales-1');
       expect(map['document_number'], 'S-2026-001');
       expect(map['customer_id'], 'test-customer-1');
@@ -96,7 +95,7 @@ void main() {
       };
 
       final fromMapSales = Sales.fromMap(map, customer);
-      
+
       expect(fromMapSales.id, 'test-sales-2');
       expect(fromMapSales.documentNumber, 'S-2026-002');
       expect(fromMapSales.status, DocumentStatus.draft);
