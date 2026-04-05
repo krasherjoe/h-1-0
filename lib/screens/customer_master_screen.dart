@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -11,12 +9,17 @@ import '../widgets/custom_field_display_widget.dart';
 import '../services/custom_field_repository.dart';
 import '../services/business_profile_repository.dart';
 import '../models/custom_field_model.dart';
+import 'phonebook_selection_screen.dart';
 
 class CustomerMasterScreen extends StatefulWidget {
   final bool selectionMode;
   final bool showHidden;
 
-  const CustomerMasterScreen({super.key, this.selectionMode = false, this.showHidden = false});
+  const CustomerMasterScreen({
+    super.key,
+    this.selectionMode = false,
+    this.showHidden = false,
+  });
 
   @override
   State<CustomerMasterScreen> createState() => _CustomerMasterScreenState();
@@ -25,7 +28,8 @@ class CustomerMasterScreen extends StatefulWidget {
 class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   final CustomerRepository _customerRepo = CustomerRepository();
   final CustomFieldRepository _customFieldRepo = CustomFieldRepository();
-  final BusinessProfileRepository _businessProfileRepo = BusinessProfileRepository();
+  final BusinessProfileRepository _businessProfileRepo =
+      BusinessProfileRepository();
   final TextEditingController _searchController = TextEditingController();
   List<Customer> _customers = [];
   List<Customer> _filtered = [];
@@ -61,7 +65,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _loadCustomFields() async {
     try {
       final profile = await _businessProfileRepo.getCurrentProfile();
-      final fields = await _customFieldRepo.getActiveFieldsByBusinessProfile(profile.id);
+      final fields = await _customFieldRepo.getActiveFieldsByBusinessProfile(
+        profile.id,
+      );
       setState(() {
         _customFields = fields;
       });
@@ -76,19 +82,85 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Map<String, String> _buildDefaultKanaMap() {
     return {
       // あ行
-      '安': 'あ', '阿': 'あ', '浅': 'あ', '麻': 'あ', '新': 'あ', '青': 'あ', '赤': 'あ', '秋': 'あ', '明': 'あ', '有': 'あ', '伊': 'あ',
+      '安': 'あ',
+      '阿': 'あ',
+      '浅': 'あ',
+      '麻': 'あ',
+      '新': 'あ',
+      '青': 'あ',
+      '赤': 'あ',
+      '秋': 'あ',
+      '明': 'あ',
+      '有': 'あ',
+      '伊': 'あ',
       // か行
-      '加': 'か', '鎌': 'か', '上': 'か', '川': 'か', '河': 'か', '北': 'か', '木': 'か', '菊': 'か', '岸': 'か',
-      '工': 'か', '古': 'か', '後': 'か', '郡': 'か', '熊': 'か', '桑': 'か', '黒': 'か', '香': 'か', '金': 'か', '兼': 'か', '小': 'か',
+      '加': 'か',
+      '鎌': 'か',
+      '上': 'か',
+      '川': 'か',
+      '河': 'か',
+      '北': 'か',
+      '木': 'か',
+      '菊': 'か',
+      '岸': 'か',
+      '工': 'か',
+      '古': 'か',
+      '後': 'か',
+      '郡': 'か',
+      '熊': 'か',
+      '桑': 'か',
+      '黒': 'か',
+      '香': 'か',
+      '金': 'か',
+      '兼': 'か',
+      '小': 'か',
       // さ行
-      '佐': 'さ', '齋': 'さ', '齊': 'さ', '斎': 'さ', '斉': 'さ', '崎': 'さ', '柴': 'さ', '沢': 'さ', '澤': 'さ', '桜': 'さ', '櫻': 'さ',
-      '酒': 'さ', '坂': 'さ', '榊': 'さ', '札': 'さ', '庄': 'し', '城': 'し', '島': 'さ', '嶋': 'さ', '鈴': 'す',
+      '佐': 'さ',
+      '齋': 'さ',
+      '齊': 'さ',
+      '斎': 'さ',
+      '斉': 'さ',
+      '崎': 'さ',
+      '柴': 'さ',
+      '沢': 'さ',
+      '澤': 'さ',
+      '桜': 'さ',
+      '櫻': 'さ',
+      '酒': 'さ',
+      '坂': 'さ',
+      '榊': 'さ',
+      '札': 'さ',
+      '庄': 'し',
+      '城': 'し',
+      '島': 'さ',
+      '嶋': 'さ',
+      '鈴': 'す',
       // た行
-      '田': 'た', '高': 'た', '竹': 'た', '滝': 'た', '瀧': 'た', '立': 'た', '達': 'た', '谷': 'た', '多': 'た', '千': 'た', '太': 'た',
+      '田': 'た',
+      '高': 'た',
+      '竹': 'た',
+      '滝': 'た',
+      '瀧': 'た',
+      '立': 'た',
+      '達': 'た',
+      '谷': 'た',
+      '多': 'た',
+      '千': 'た',
+      '太': 'た',
       // な行
       '中': 'な', '永': 'な', '長': 'な', '南': 'な', '難': 'な',
       // は行
-      '橋': 'は', '林': 'は', '原': 'は', '浜': 'は', '服': 'は', '福': 'は', '藤': 'は', '富': 'は', '保': 'は', '畠': 'は', '畑': 'は',
+      '橋': 'は',
+      '林': 'は',
+      '原': 'は',
+      '浜': 'は',
+      '服': 'は',
+      '福': 'は',
+      '藤': 'は',
+      '富': 'は',
+      '保': 'は',
+      '畠': 'は',
+      '畑': 'は',
       // ま行
       '松': 'ま', '前': 'ま', '真': 'ま', '町': 'ま', '間': 'ま', '馬': 'ま',
       // や行
@@ -98,8 +170,23 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       // わ行
       '渡': 'わ', '和': 'わ',
       // その他
-      '石': 'い', '井': 'い', '飯': 'い', '五': 'い', '吉': 'よ', '与': 'よ', '森': 'も', '守': 'も',
-      '岡': 'お', '奥': 'お', '尾': 'お', '白': 'し', '志': 'し', '広': 'ひ', '弘': 'ひ', '平': 'ひ', '日': 'ひ',
+      '石': 'い',
+      '井': 'い',
+      '飯': 'い',
+      '五': 'い',
+      '吉': 'よ',
+      '与': 'よ',
+      '森': 'も',
+      '守': 'も',
+      '岡': 'お',
+      '奥': 'お',
+      '尾': 'お',
+      '白': 'し',
+      '志': 'し',
+      '広': 'ひ',
+      '弘': 'ひ',
+      '平': 'ひ',
+      '日': 'ひ',
       '布': 'ぬ', '内': 'う', '宇': 'う', '浦': 'う', '野': 'の', '能': 'の',
       '宮': 'み', '三': 'み', '水': 'み', '溝': 'み',
     };
@@ -122,13 +209,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _showContactUpdateDialog(Customer customer) async {
     if (customer.isLocked) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロック中の顧客は連絡先を更新できません')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('ロック中の顧客は連絡先を更新できません')));
       }
       return;
     }
     final emailController = TextEditingController(text: customer.email ?? "");
     final telController = TextEditingController(text: customer.tel ?? "");
-    final addressController = TextEditingController(text: customer.address ?? "");
+    final addressController = TextEditingController(
+      text: customer.address ?? "",
+    );
 
     final updated = await showDialog<bool>(
       context: context,
@@ -137,20 +228,37 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'メール')),
-            TextField(controller: telController, decoration: const InputDecoration(labelText: '電話番号'), keyboardType: TextInputType.phone),
-            TextField(controller: addressController, decoration: const InputDecoration(labelText: '住所')),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'メール'),
+            ),
+            TextField(
+              controller: telController,
+              decoration: const InputDecoration(labelText: '電話番号'),
+              keyboardType: TextInputType.phone,
+            ),
+            TextField(
+              controller: addressController,
+              decoration: const InputDecoration(labelText: '住所'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
           ElevatedButton(
             onPressed: () async {
               await _customerRepo.updateContact(
                 customerId: customer.id,
-                email: emailController.text.isEmpty ? null : emailController.text,
+                email: emailController.text.isEmpty
+                    ? null
+                    : emailController.text,
                 tel: telController.text.isEmpty ? null : telController.text,
-                address: addressController.text.isEmpty ? null : addressController.text,
+                address: addressController.text.isEmpty
+                    ? null
+                    : addressController.text,
               );
               if (!context.mounted) return;
               Navigator.pop(context, true);
@@ -169,7 +277,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _loadCustomers() async {
     setState(() => _isLoading = true);
     try {
-      final customers = await _customerRepo.getAllCustomers(includeHidden: widget.showHidden);
+      final customers = await _customerRepo.getAllCustomers(
+        includeHidden: widget.showHidden,
+      );
       if (!mounted) return;
       setState(() {
         _customers = customers;
@@ -179,14 +289,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('顧客の読み込みに失敗しました: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('顧客の読み込みに失敗しました: $e')));
     }
   }
 
   void _applyFilter() {
     final query = _searchController.text.toLowerCase();
     List<Customer> list = _customers.where((c) {
-      return c.displayName.toLowerCase().contains(query) || c.formalName.toLowerCase().contains(query);
+      return c.displayName.toLowerCase().contains(query) ||
+          c.formalName.toLowerCase().contains(query);
     }).toList();
     if (!widget.showHidden) {
       list = list.where((c) => !c.isHidden).toList();
@@ -194,14 +307,22 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     // Kana filtering disabled temporarily for stability
     switch (_sortKey) {
       case 'name_desc':
-        list.sort((a, b) => widget.showHidden
-            ? b.id.compareTo(a.id)
-            : _normalizedName(b.displayName).compareTo(_normalizedName(a.displayName)));
+        list.sort(
+          (a, b) => widget.showHidden
+              ? b.id.compareTo(a.id)
+              : _normalizedName(
+                  b.displayName,
+                ).compareTo(_normalizedName(a.displayName)),
+        );
         break;
       default:
-        list.sort((a, b) => widget.showHidden
-            ? b.id.compareTo(a.id)
-            : _normalizedName(a.displayName).compareTo(_normalizedName(b.displayName)));
+        list.sort(
+          (a, b) => widget.showHidden
+              ? b.id.compareTo(a.id)
+              : _normalizedName(
+                  a.displayName,
+                ).compareTo(_normalizedName(b.displayName)),
+        );
     }
     _filtered = list;
   }
@@ -209,7 +330,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   String _normalizedName(String name) {
     var n = name.replaceAll(RegExp(r"\s+"), "");
     if (_ignoreCorpPrefix) {
-      for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
+      for (final token in [
+        "株式会社",
+        "（株）",
+        "(株)",
+        "有限会社",
+        "（有）",
+        "(有)",
+        "合同会社",
+        "（同）",
+        "(同)",
+      ]) {
         n = n.replaceAll(token, "");
       }
     }
@@ -218,7 +349,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   String _headKana(String name) {
     var n = name.replaceAll(RegExp(r"\s+|\u3000"), "");
-    for (final token in ["株式会社", "（株）", "(株)", "有限会社", "（有）", "(有)", "合同会社", "（同）", "(同)"]) {
+    for (final token in [
+      "株式会社",
+      "（株）",
+      "(株)",
+      "有限会社",
+      "（有）",
+      "(有)",
+      "合同会社",
+      "（同）",
+      "(同)",
+    ]) {
       if (n.startsWith(token)) n = n.substring(token.length);
     }
     if (n.isEmpty) return '他';
@@ -241,7 +382,23 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     'さ': ['さ', 'し', 'す', 'せ', 'そ', 'ざ', 'じ', 'ず', 'ぜ', 'ぞ'],
     'た': ['た', 'ち', 'つ', 'て', 'と', 'だ', 'ぢ', 'づ', 'で', 'ど'],
     'な': ['な', 'に', 'ぬ', 'ね', 'の'],
-    'は': ['は', 'ひ', 'ふ', 'へ', 'ほ', 'ば', 'び', 'ぶ', 'べ', 'ぼ', 'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'],
+    'は': [
+      'は',
+      'ひ',
+      'ふ',
+      'へ',
+      'ほ',
+      'ば',
+      'び',
+      'ぶ',
+      'べ',
+      'ぼ',
+      'ぱ',
+      'ぴ',
+      'ぷ',
+      'ぺ',
+      'ぽ',
+    ],
     'ま': ['ま', 'み', 'む', 'め', 'も'],
     'や': ['や', 'ゆ', 'よ'],
     'ら': ['ら', 'り', 'る', 'れ', 'ろ'],
@@ -251,13 +408,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   late final Map<String, String> _defaultKanaMap = _buildDefaultKanaMap();
 
-
   Future<void> _addOrEditCustomer({Customer? customer}) async {
     final result = await Navigator.push<Customer>(
       context,
-      MaterialPageRoute(
-        builder: (_) => CustomerEditScreen(customer: customer),
-      ),
+      MaterialPageRoute(builder: (_) => CustomerEditScreen(customer: customer)),
     );
 
     if (!mounted) return;
@@ -275,7 +429,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         print('C2 顧客保存エラー: $e');
         print('スタックトレース: $st');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('顧客の保存に失敗しました: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('顧客の保存に失敗しました: $e')));
         }
       }
     }
@@ -284,217 +440,38 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   // Force usage so analyzer doesn't flag as unused when kana filter is disabled
   void _ensureKanaMapsUsed() {
     // ignore: unused_local_variable
-    final _ = [_kanaBuckets.length, _defaultKanaMap.length, _userKanaMap.length];
+    final _ = [
+      _kanaBuckets.length,
+      _defaultKanaMap.length,
+      _userKanaMap.length,
+    ];
   }
 
   Future<void> _showPhonebookImport() async {
     try {
-      // 端末連絡先を取得
-      final hasPermission = await FlutterContacts.requestPermission(readonly: true);
-      if (!hasPermission) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
-        return;
+      // 新しい検索機能付き電話帳選択画面を呼び出す
+      final result = await Navigator.push<Customer>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const PhonebookSelectionScreen(),
+        ),
+      );
+
+      if (!context.mounted) return;
+
+      if (result != null) {
+        // 選択された顧客データを保存
+        await _customerRepo.saveCustomer(result);
+        _loadCustomers();
       }
-
-      if (!mounted) return;
-      // 一覧取得のみ（個別詳細取得は時間がかかるため省略）
-      final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: false, withPhoto: false, withThumbnail: false, withGroups: false);
-      final sourceContacts = contacts;
-    if (sourceContacts.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
-      return;
-    }
-
-    final phonebook = sourceContacts.map((c) {
-      final orgCompany = c.organizations.isNotEmpty ? c.organizations.first.company : '';
-      final personParts = [c.name.last, c.name.first].where((v) => v.isNotEmpty).toList();
-      final person = personParts.isNotEmpty ? personParts.join(' ').trim() : c.displayName;
-      final addresses = c.addresses
-          .map((a) => [a.postalCode, a.state, a.city, a.street, a.country]
-              .where((v) => v.isNotEmpty)
-              .join(' '))
-          .where((s) => s.trim().isNotEmpty)
-          .toList();
-      final emails = c.emails.map((e) => e.address).where((e) => e.trim().isNotEmpty).toList();
-      final tel = c.phones.isNotEmpty ? c.phones.first.number : null;
-      final chosenCompany = orgCompany; // 空なら空のまま
-      final chosenPerson = person.isNotEmpty ? person : c.displayName;
-      return {
-        'company': chosenCompany,
-        'person': chosenPerson,
-        'addresses': addresses.isNotEmpty ? addresses : [''],
-        'tel': tel,
-        'emails': emails.isNotEmpty ? emails : [''],
-      };
-    }).toList();
-
-    String selectedEntryId = '0';
-    String selectedNameSource = (phonebook.isNotEmpty && (phonebook.first['company'] as String).isNotEmpty)
-        ? 'company'
-        : ((phonebook.isNotEmpty && (phonebook.first['person'] as String).isNotEmpty) ? 'person' : 'person');
-    int selectedAddressIndex = 0;
-    int selectedEmailIndex = 0;
-
-    final displayController = TextEditingController();
-    final formalController = TextEditingController();
-    final addressController = TextEditingController();
-    final emailController = TextEditingController();
-
-    void applySelectionState() {
-      final entry = phonebook[int.parse(selectedEntryId)];
-      if ((entry['company'] as String).isNotEmpty) {
-        selectedNameSource = 'company';
-      } else if ((entry['person'] as String).isNotEmpty) {
-        selectedNameSource = 'person';
+    } catch (e, st) {
+      print('C2 _showPhonebookImport エラー：$e');
+      print('スタックトレース：$st');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('電話帳の読み込みに失敗しました：$e')));
       }
-      final addresses = (entry['addresses'] as List<String>);
-      final emails = (entry['emails'] as List<String>);
-      final displayName = selectedNameSource == 'company' ? entry['company'] as String : entry['person'] as String;
-      final formalName = selectedNameSource == 'company'
-          ? '株式会社 ${entry['company']}'
-          : '${entry['person']} 様';
-      displayController.text = displayName;
-      formalController.text = formalName;
-      addressController.text = addresses[selectedAddressIndex];
-      emailController.text = emails.isNotEmpty ? emails[selectedEmailIndex] : '';
-    }
-
-    applySelectionState();
-
-    if (!mounted) return;
-    final imported = await showDialog<Customer>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final entry = phonebook[int.parse(selectedEntryId)];
-          final addresses = (entry['addresses'] as List<String>);
-          final emails = (entry['emails'] as List<String>);
-
-          return AlertDialog(
-            title: const Text('電話帳から取り込む'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedEntryId,
-                  decoration: const InputDecoration(labelText: '電話帳エントリ'),
-                  items: phonebook
-                      .asMap()
-                      .entries
-                      .map((e) {
-                        final comp = e.value['company'] as String;
-                        final person = e.value['person'] as String;
-                        final title = comp.isNotEmpty ? comp : (person.isNotEmpty ? person : '不明');
-                        return DropdownMenuItem(value: e.key.toString(), child: Text(title));
-                      })
-                      .toList(),
-                  onChanged: (v) {
-                    setDialogState(() {
-                      selectedEntryId = v ?? '0';
-                      selectedAddressIndex = 0;
-                      selectedEmailIndex = 0;
-                      final entry = phonebook[int.parse(selectedEntryId)];
-                      selectedNameSource = (entry['company'] as String).isNotEmpty
-                          ? 'company'
-                          : ((entry['person'] as String).isNotEmpty ? 'person' : 'person');
-                      applySelectionState();
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                const Text('顧客名の取り込み元'),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'company', label: Text('会社名')),
-                    ButtonSegment(value: 'person', label: Text('氏名')),
-                  ],
-                  selected: {selectedNameSource},
-                  onSelectionChanged: (values) {
-                    if (values.isEmpty) return;
-                    setDialogState(() {
-                      selectedNameSource = values.first;
-                      applySelectionState();
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  initialValue: selectedAddressIndex,
-                  decoration: const InputDecoration(labelText: '住所を選択'),
-                  items: addresses
-                      .asMap()
-                      .entries
-                      .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                      .toList(),
-                  onChanged: (v) => setDialogState(() {
-                    selectedAddressIndex = v ?? 0;
-                    applySelectionState();
-                  }),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  initialValue: selectedEmailIndex,
-                  decoration: const InputDecoration(labelText: 'メールを選択'),
-                  items: emails
-                      .asMap()
-                      .entries
-                      .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                      .toList(),
-                  onChanged: (v) => setDialogState(() {
-                    selectedEmailIndex = v ?? 0;
-                    applySelectionState();
-                  }),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: displayController,
-                  decoration: const InputDecoration(labelText: '表示名（編集可）'),
-                ),
-                TextField(
-                  controller: formalController,
-                  decoration: const InputDecoration(labelText: '正式名称（編集可）'),
-                ),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(labelText: '住所（編集可）'),
-                ),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: 'メール（編集可）'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('キャンセル')),
-              ElevatedButton(
-                onPressed: () {
-                  final newCustomer = Customer(
-                    id: const Uuid().v4(),
-                    displayName: displayController.text,
-                    formalName: formalController.text,
-                    title: selectedNameSource == 'company' ? '御中' : '様',
-                    address: addressController.text,
-                    tel: entry['tel'] as String?,
-                    email: emailController.text.isEmpty ? null : emailController.text,
-                    isSynced: false,
-                  );
-                  Navigator.pop(context, newCustomer);
-                },
-                child: const Text('取り込む'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    if (!context.mounted) return;
-
-    if (imported != null) {
-      await _customerRepo.saveCustomer(imported);
-      _loadCustomers();
     }
   }
 
@@ -563,11 +540,16 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: widget.selectionMode ? "名前で検索して選択" : "名前で検索 (電話帳参照ボタンは詳細で)",
+                    hintText: widget.selectionMode
+                        ? "名前で検索して選択"
+                        : "名前で検索 (電話帳参照ボタンは詳細で)",
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   onChanged: (_) => setState(_applyFilter),
                 ),
@@ -606,16 +588,34 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     final c = _filtered[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: c.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
+                        backgroundColor: c.isLocked
+                            ? Colors.grey.shade300
+                            : Colors.indigo.shade100,
                         child: Stack(
                           children: [
-                            const Align(alignment: Alignment.center, child: Icon(Icons.person, color: Colors.indigo)),
+                            const Align(
+                              alignment: Alignment.center,
+                              child: Icon(Icons.person, color: Colors.indigo),
+                            ),
                             if (c.isLocked)
-                              const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                              const Align(
+                                alignment: Alignment.bottomRight,
+                                child: Icon(
+                                  Icons.lock,
+                                  size: 14,
+                                  color: Colors.redAccent,
+                                ),
+                              ),
                           ],
                         ),
                       ),
-                      title: Text(c.displayName, style: TextStyle(fontWeight: FontWeight.bold, color: c.isLocked ? Colors.grey : Colors.black87)),
+                      title: Text(
+                        c.displayName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: c.isLocked ? Colors.grey : Colors.black87,
+                        ),
+                      ),
                       subtitle: Text("${c.formalName} ${c.title}"),
                       onTap: widget.selectionMode
                           ? () {
@@ -627,7 +627,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           ? null
                           : IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: c.isLocked ? null : () => _addOrEditCustomer(customer: c),
+                              onPressed: c.isLocked
+                                  ? null
+                                  : () => _addOrEditCustomer(customer: c),
                               tooltip: c.isLocked ? "ロック中" : "編集",
                             ),
                       onLongPress: () => _showContextActions(c),
@@ -726,8 +728,14 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: const Text('削除', style: TextStyle(color: Colors.redAccent)),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: Colors.redAccent,
+              ),
+              title: const Text(
+                '削除',
+                style: TextStyle(color: Colors.redAccent),
+              ),
               enabled: !c.isLocked,
               onTap: c.isLocked
                   ? null
@@ -739,8 +747,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           title: const Text('削除確認'),
                           content: Text('「${c.displayName}」を削除しますか？'),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
-                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('削除', style: TextStyle(color: Colors.red))),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('キャンセル'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                '削除',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -773,23 +790,45 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             children: [
               Row(
                 children: [
-                  Icon(c.isLocked ? Icons.lock : Icons.person, color: c.isLocked ? Colors.redAccent : Colors.indigo),
+                  Icon(
+                    c.isLocked ? Icons.lock : Icons.person,
+                    color: c.isLocked ? Colors.redAccent : Colors.indigo,
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(c.formalName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                  Expanded(
+                    child: Text(
+                      c.formalName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.call),
                     onPressed: () {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("電話帳参照は端末連絡先連携が必要です")));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("電話帳参照は端末連絡先連携が必要です")),
+                      );
                     },
                     tooltip: "電話帳参照",
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              if (c.address != null) Text("住所: ${c.address}") else const SizedBox.shrink(),
-              if (c.tel != null) Text("TEL: ${c.tel}") else const SizedBox.shrink(),
-              if (c.email != null) Text("メール: ${c.email}") else const SizedBox.shrink(),
+              if (c.address != null)
+                Text("住所: ${c.address}")
+              else
+                const SizedBox.shrink(),
+              if (c.tel != null)
+                Text("TEL: ${c.tel}")
+              else
+                const SizedBox.shrink(),
+              if (c.email != null)
+                Text("メール: ${c.email}")
+              else
+                const SizedBox.shrink(),
               Text("敬称: ${c.title}"),
               const SizedBox(height: 12),
               if (_customFields.isNotEmpty) ...[
@@ -844,8 +883,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                             title: const Text("削除確認"),
                             content: Text("「${c.displayName}」を削除しますか？"),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("キャンセル"),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text(
+                                  "削除",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -857,13 +905,22 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           _loadCustomers();
                         }
                       },
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                      label: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
+                      label: const Text(
+                        "削除",
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
                     ),
                   if (c.isLocked)
                     Padding(
                       padding: const EdgeInsets.only(left: 8),
-                      child: Chip(label: const Text("ロック中"), avatar: const Icon(Icons.lock, size: 16)),
+                      child: Chip(
+                        label: const Text("ロック中"),
+                        avatar: const Icon(Icons.lock, size: 16),
+                      ),
                     ),
                 ],
               ),
