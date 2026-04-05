@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:h_1/widgets/document_card.dart';
-import 'package:h_1/models/base_document.dart';
 
 void main() {
   group('DocumentCard', () {
@@ -207,7 +206,7 @@ void main() {
 
     testWidgets('should display date correctly', (tester) async {
       const specificDate = '2026-12-25';
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -231,7 +230,7 @@ void main() {
 
     testWidgets('should handle long titles', (tester) async {
       const longTitle = '非常に長い顧客名です。これはテスト用の長いテキストです。';
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
