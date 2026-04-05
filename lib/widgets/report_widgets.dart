@@ -14,12 +14,7 @@ class ReportWidgets {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color,
-            color.withOpacity(0.8),
-          ],
-        ),
+        gradient: LinearGradient(colors: [color, color.withOpacity(0.8)]),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -41,10 +36,7 @@ class ReportWidgets {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ],
             ),
@@ -54,7 +46,7 @@ class ReportWidgets {
       ),
     );
   }
-  
+
   /// サマリーカード
   static Widget buildSummaryCard({
     required String title,
@@ -86,19 +78,13 @@ class ReportWidgets {
               const SizedBox(height: 4),
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  subtitle!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ],
@@ -107,7 +93,7 @@ class ReportWidgets {
       ),
     );
   }
-  
+
   /// 統計カード
   static Widget buildStatCard({
     required String label,
@@ -128,10 +114,7 @@ class ReportWidgets {
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 if (trend != null) ...[
                   const Spacer(),
@@ -146,10 +129,7 @@ class ReportWidgets {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             if (percentage != null) ...[
               const SizedBox(height: 4),
@@ -157,7 +137,7 @@ class ReportWidgets {
                 '${percentage.toStringAsFixed(1)}%',
                 style: TextStyle(
                   fontSize: 12,
-                  color: percentage! > 0 ? Colors.green : Colors.red,
+                  color: percentage > 0 ? Colors.green : Colors.red,
                 ),
               ),
             ],
@@ -166,7 +146,7 @@ class ReportWidgets {
       ),
     );
   }
-  
+
   /// チャートコンテナ
   static Widget buildChartContainer({
     required String title,
@@ -191,27 +171,19 @@ class ReportWidgets {
                   ),
                 ),
                 if (actions != null)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: actions,
-                  ),
+                  Row(mainAxisSize: MainAxisSize.min, children: actions),
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: height ?? 300,
-              child: chart,
-            ),
+            SizedBox(height: height ?? 300, child: chart),
           ],
         ),
       ),
     );
   }
-  
+
   /// フィルターセクション
-  static Widget buildFilterSection({
-    required List<Widget> filters,
-  }) {
+  static Widget buildFilterSection({required List<Widget> filters}) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -220,23 +192,16 @@ class ReportWidgets {
           children: [
             const Text(
               'フィルター',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: filters,
-            ),
+            Wrap(spacing: 8, runSpacing: 8, children: filters),
           ],
         ),
       ),
     );
   }
-  
+
   /// データテーブルコンテナ
   static Widget buildTableContainer({
     required String title,
@@ -260,10 +225,7 @@ class ReportWidgets {
                   ),
                 ),
                 if (actions != null)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: actions,
-                  ),
+                  Row(mainAxisSize: MainAxisSize.min, children: actions),
               ],
             ),
             const SizedBox(height: 16),
@@ -273,7 +235,7 @@ class ReportWidgets {
       ),
     );
   }
-  
+
   /// 進捗バー
   static Widget buildProgressBar({
     required double progress,
@@ -285,10 +247,7 @@ class ReportWidgets {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label != null) ...[
-          Text(
-            label!,
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12)),
           const SizedBox(height: 4),
         ],
         Container(
@@ -310,7 +269,7 @@ class ReportWidgets {
       ],
     );
   }
-  
+
   /// 比較カード
   static Widget buildComparisonCard({
     required String title,
@@ -319,12 +278,14 @@ class ReportWidgets {
     required IconData icon,
     required Color color,
   }) {
-    final current = double.tryParse(currentValue.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-    final previous = double.tryParse(previousValue.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+    final current =
+        double.tryParse(currentValue.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+    final previous =
+        double.tryParse(previousValue.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
     final change = current - previous;
     final changePercent = previous > 0 ? (change / previous * 100) : 0;
     final isPositive = change >= 0;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -398,7 +359,7 @@ class ReportWidgets {
       ),
     );
   }
-  
+
   /// タイムラインチャート
   static Widget buildTimelineChart({
     required List<Map<String, dynamic>> data,
@@ -415,10 +376,12 @@ class ReportWidgets {
         itemBuilder: (context, index) {
           final item = data[index];
           final value = item[valueKey] as double;
-          final maxValue = data.fold<double>(0, (max, item) => 
-              math.max(max, (item[valueKey] as double)));
+          final maxValue = data.fold<double>(
+            0,
+            (max, item) => math.max(max, (item[valueKey] as double)),
+          );
           final percentage = maxValue > 0 ? value / maxValue : 0;
-          
+
           return Container(
             width: 60,
             margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -462,25 +425,31 @@ extension ReportExtensions on List<Map<String, dynamic>> {
   double sum(String key) {
     return fold<double>(0, (sum, item) => sum + (item[key] as double? ?? 0));
   }
-  
+
   /// 平均値を計算
   double average(String key) {
     if (isEmpty) return 0;
     return sum(key) / length;
   }
-  
+
   /// 最大値を取得
   double max(String key) {
     if (isEmpty) return 0;
-    return fold<double>(0, (max, item) => math.max(max, item[key] as double? ?? 0));
+    return fold<double>(
+      0,
+      (max, item) => math.max(max, item[key] as double? ?? 0),
+    );
   }
-  
+
   /// 最小値を取得
   double min(String key) {
     if (isEmpty) return 0;
-    return fold<double>(double.infinity, (min, item) => math.min(min, item[key] as double? ?? 0));
+    return fold<double>(
+      double.infinity,
+      (min, item) => math.min(min, item[key] as double? ?? 0),
+    );
   }
-  
+
   /// 指定キーでソート
   List<Map<String, dynamic>> sortBy(String key, {bool descending = false}) {
     final sorted = List<Map<String, dynamic>>.from(this);
@@ -491,12 +460,14 @@ extension ReportExtensions on List<Map<String, dynamic>> {
     });
     return sorted;
   }
-  
+
   /// 指定条件でフィルタリング
-  List<Map<String, dynamic>> where(bool Function(Map<String, dynamic>) condition) {
+  List<Map<String, dynamic>> where(
+    bool Function(Map<String, dynamic>) condition,
+  ) {
     return where(condition).toList();
   }
-  
+
   /// 指定キーの値のリストを取得
   List<T> pluck<T>(String key) {
     return map((item) => item[key] as T).toList();
@@ -510,44 +481,44 @@ class ReportCalculations {
     if (previous == 0) return 0;
     return ((current - previous) / previous) * 100;
   }
-  
+
   /// 構成比率を計算
   static double calculatePercentage(double value, double total) {
     if (total == 0) return 0;
     return (value / total) * 100;
   }
-  
+
   /// 移動平均を計算
   static List<double> calculateMovingAverage(List<double> values, int period) {
     if (values.length < period) return [];
-    
+
     final averages = <double>[];
     for (int i = period - 1; i < values.length; i++) {
-      final sum = values
-          .sublist(i - period + 1, i + 1)
-          .reduce((a, b) => a + b);
+      final sum = values.sublist(i - period + 1, i + 1).reduce((a, b) => a + b);
       averages.add(sum / period);
     }
     return averages;
   }
-  
+
   /// 季節変動を計算
-  static Map<String, double> calculateSeasonalVariation(List<Map<String, dynamic>> data) {
+  static Map<String, double> calculateSeasonalVariation(
+    List<Map<String, dynamic>> data,
+  ) {
     final seasonalData = <String, List<double>>{
       'Q1': [],
       'Q2': [],
       'Q3': [],
       'Q4': [],
     };
-    
+
     for (final item in data) {
       final month = DateTime.parse(item['date'] as String).month;
       final quarter = ((month - 1) ~/ 3 + 1).toString();
       final value = item['value'] as double;
-      
+
       seasonalData['Q$quarter']?.add(value);
     }
-    
+
     final averages = <String, double>{};
     for (final entry in seasonalData.entries) {
       final values = entry.value;
@@ -555,32 +526,36 @@ class ReportCalculations {
         averages[entry.key] = values.reduce((a, b) => a + b) / values.length;
       }
     }
-    
+
     return averages;
   }
-  
+
   /// 標準偏差を計算
   static double calculateStandardDeviation(List<double> values) {
     if (values.length < 2) return 0;
-    
+
     final mean = values.reduce((a, b) => a + b) / values.length;
-    final variance = values
-        .map((value) => math.pow(value - mean, 2))
-        .reduce((a, b) => a + b) / values.length;
-    
+    final variance =
+        values
+            .map((value) => math.pow(value - mean, 2))
+            .reduce((a, b) => a + b) /
+        values.length;
+
     return math.sqrt(variance);
   }
-  
+
   /// トレンドラインを計算
-  static Map<String, double> calculateTrendLine(List<Map<String, dynamic>> data) {
+  static Map<String, double> calculateTrendLine(
+    List<Map<String, dynamic>> data,
+  ) {
     if (data.length < 2) return {'slope': 0, 'intercept': 0};
-    
+
     final n = data.length.toDouble();
     double sumX = 0;
     double sumY = 0;
     double sumXY = 0;
     double sumX2 = 0;
-    
+
     for (int i = 0; i < data.length; i++) {
       final x = i.toDouble();
       final y = data[i]['value'] as double;
@@ -589,10 +564,10 @@ class ReportCalculations {
       sumXY += x * y;
       sumX2 += x * x;
     }
-    
+
     final slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     final intercept = (sumY - slope * sumX) / n;
-    
+
     return {'slope': slope, 'intercept': intercept};
   }
 }
