@@ -2,7 +2,6 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import '../models/payment_model.dart';
 import '../models/supplier_model.dart';
-import '../models/base_document.dart';
 import '../services/supplier_repository.dart';
 import '../services/database_helper.dart';
 
@@ -15,11 +14,8 @@ class PaymentRepository {
   Future<List<Payment>> getAllPayments() async {
     final database = await _db.database;
     final suppliers = await _supplierRepo.getAllSuppliers();
-    
-    final maps = await database.query(
-      'payments',
-      orderBy: 'payment_date DESC',
-    );
+
+    final maps = await database.query('payments', orderBy: 'payment_date DESC');
 
     return maps.map((map) {
       final supplierId = map['supplier_id'] as String;
@@ -48,36 +44,28 @@ class PaymentRepository {
 
     // 支払・仕入紐付けを保存
     for (final purchaseId in payment.purchaseIds) {
-      await database.insert(
-        'payment_purchases',
-        {
-          'id': const Uuid().v4(),
-          'payment_id': payment.id,
-          'purchase_id': purchaseId,
-          'amount': payment.amount,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await database.insert('payment_purchases', {
+        'id': const Uuid().v4(),
+        'payment_id': payment.id,
+        'purchase_id': purchaseId,
+        'amount': payment.amount,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 
   /// 支払を削除
   Future<void> deletePayment(String id) async {
     final database = await _db.database;
-    
+
     // 支払・仕入紐付けを削除
     await database.delete(
       'payment_purchases',
       where: 'payment_id = ?',
       whereArgs: [id],
     );
-    
+
     // 支払を削除
-    await database.delete(
-      'payments',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await database.delete('payments', where: 'id = ?', whereArgs: [id]);
   }
 
   /// 特定支払を取得
@@ -89,15 +77,15 @@ class PaymentRepository {
       whereArgs: [id],
       limit: 1,
     );
-    
+
     if (maps.isEmpty) return null;
-    
+
     final map = maps.first;
     final supplierId = map['supplier_id'] as String;
     final supplier = await _supplierRepo.getSupplier(supplierId);
-    
+
     if (supplier == null) return null;
-    
+
     return Payment.fromMap(map, supplier);
   }
 
@@ -130,8 +118,9 @@ class PaymentRepository {
     final database = await _db.database;
     final now = DateTime.now();
     final startDate = DateTime(now.year, now.month - months + 1, 1);
-    
-    final maps = await database.rawQuery('''
+
+    final maps = await database.rawQuery(
+      '''
       SELECT 
         strftime('%Y-%m', payment_date) as month,
         SUM(amount) as total
@@ -139,7 +128,9 @@ class PaymentRepository {
       WHERE payment_date >= ?
       GROUP BY strftime('%Y-%m', payment_date)
       ORDER BY month
-    ''', [startDate.toIso8601String()]);
+    ''',
+      [startDate.toIso8601String()],
+    );
 
     final result = <String, int>{};
     for (final map in maps) {
@@ -167,5 +158,4 @@ class PaymentRepository {
     }
     return result;
   }
-
 }
