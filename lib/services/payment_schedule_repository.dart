@@ -2,7 +2,6 @@ import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/payment_schedule_model.dart';
 import '../models/purchase_model.dart' as purchase;
-import '../models/base_document.dart';
 import '../widgets/document_card.dart';
 import '../services/purchase_repository.dart';
 import '../services/database_helper.dart';
@@ -16,7 +15,7 @@ class PaymentScheduleRepository {
   Future<List<PaymentSchedule>> getAllSchedules() async {
     final database = await _db.database;
     final purchases = await _purchaseRepo.getAllPurchases();
-    
+
     final maps = await database.query(
       'payment_schedules',
       orderBy: 'due_date ASC',
@@ -52,7 +51,7 @@ class PaymentScheduleRepository {
     final database = await _db.database;
     final now = DateTime.now().toIso8601String();
     final purchases = await _purchaseRepo.getAllPurchases();
-    
+
     final maps = await database.query(
       'payment_schedules',
       where: 'due_date < ? AND status != ?',
@@ -91,15 +90,11 @@ class PaymentScheduleRepository {
     final now = DateTime.now();
     final futureDate = now.add(Duration(days: days));
     final purchases = await _purchaseRepo.getAllPurchases();
-    
+
     final maps = await database.query(
       'payment_schedules',
       where: 'due_date BETWEEN ? AND ? AND status != ?',
-      whereArgs: [
-        now.toIso8601String(),
-        futureDate.toIso8601String(),
-        'paid',
-      ],
+      whereArgs: [now.toIso8601String(), futureDate.toIso8601String(), 'paid'],
       orderBy: 'due_date ASC',
     );
 
@@ -139,21 +134,25 @@ class PaymentScheduleRepository {
   }
 
   /// 支払予定ステータスを更新
-  Future<void> updateScheduleStatus(String id, PaymentStatus status, {String? paymentId}) async {
+  Future<void> updateScheduleStatus(
+    String id,
+    PaymentStatus status, {
+    String? paymentId,
+  }) async {
     final database = await _db.database;
     final updateData = {
       'status': status.name,
       'updated_at': DateTime.now().toIso8601String(),
     };
-    
+
     if (paymentId != null) {
       updateData['payment_id'] = paymentId;
     }
-    
+
     if (status == PaymentStatus.paid) {
       updateData['paid_date'] = DateTime.now().toIso8601String();
     }
-    
+
     await database.update(
       'payment_schedules',
       updateData,
@@ -171,33 +170,33 @@ class PaymentScheduleRepository {
       whereArgs: [id],
       limit: 1,
     );
-    
+
     if (maps.isEmpty) return null;
-    
+
     final map = maps.first;
     final purchaseId = map['purchase_id'] as String;
     final purchaseData = await _purchaseRepo.getPurchase(purchaseId);
-    
+
     if (purchaseData == null) return null;
-    
+
     return PaymentSchedule.fromMap(map, purchaseData);
   }
 
   /// 仕入から支払予定を自動生成
   Future<void> generateScheduleFromPurchase(purchase.Purchase purchase) async {
     if (purchase.dueDate == null) return;
-    
+
     final database = await _db.database;
-    
+
     // 既存の支払予定を確認
     final existing = await database.query(
       'payment_schedules',
       where: 'purchase_id = ?',
       whereArgs: [purchase.id],
     );
-    
+
     if (existing.isNotEmpty) return; // 既存の場合は生成しない
-    
+
     final schedule = PaymentSchedule(
       id: const Uuid().v4(),
       purchase: purchase,
@@ -205,7 +204,7 @@ class PaymentScheduleRepository {
       amount: purchase.total,
       status: PaymentStatus.unpaid,
     );
-    
+
     await database.insert('payment_schedules', schedule.toMap());
   }
 
@@ -214,8 +213,9 @@ class PaymentScheduleRepository {
     final database = await _db.database;
     final now = DateTime.now();
     final startDate = DateTime(now.year, now.month - months + 1, 1);
-    
-    final maps = await database.rawQuery('''
+
+    final maps = await database.rawQuery(
+      '''
       SELECT 
         strftime('%Y-%m', due_date) as month,
         SUM(amount) as total
@@ -223,7 +223,9 @@ class PaymentScheduleRepository {
       WHERE due_date >= ? AND status != ?
       GROUP BY strftime('%Y-%m', due_date)
       ORDER BY month
-    ''', [startDate.toIso8601String(), 'paid']);
+    ''',
+      [startDate.toIso8601String(), 'paid'],
+    );
 
     final result = <String, int>{};
     for (final map in maps) {
@@ -235,7 +237,8 @@ class PaymentScheduleRepository {
   /// 仕入先別支払予定集計
   Future<Map<String, int>> getScheduleTotalsBySupplier() async {
     final database = await _db.database;
-    final maps = await database.rawQuery('''
+    final maps = await database.rawQuery(
+      '''
       SELECT 
         s.display_name as supplier_name,
         s.id as supplier_id,
@@ -245,7 +248,9 @@ class PaymentScheduleRepository {
       JOIN suppliers s ON p.supplier_id = s.id
       WHERE ps.status != ?
       GROUP BY s.id, s.display_name
-    ''', ['paid']);
+    ''',
+      ['paid'],
+    );
 
     final result = <String, int>{};
     for (final map in maps) {
@@ -258,9 +263,9 @@ class PaymentScheduleRepository {
   Future<void> _generateSampleSchedules({int limit = 5}) async {
     final database = await _db.database;
     final purchases = await _purchaseRepo.getAllPurchases();
-    
+
     if (purchases.isEmpty) return;
-    
+
     final now = DateTime.now();
     final sampleSchedules = [
       PaymentSchedule(
