@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:h_1/models/quotation_model.dart';
 import 'package:h_1/models/customer_model.dart';
-import 'package:h_1/models/base_document.dart';
 import 'package:h_1/widgets/document_card.dart';
 
 void main() {
@@ -73,7 +72,7 @@ void main() {
 
     test('should convert to map correctly', () {
       final map = quotation.toMap();
-      
+
       expect(map['id'], 'test-quotation-1');
       expect(map['document_number'], 'Q-2026-001');
       expect(map['customer_id'], 'test-customer-1');
@@ -96,7 +95,7 @@ void main() {
       };
 
       final fromMapQuotation = Quotation.fromMap(map, customer);
-      
+
       expect(fromMapQuotation.id, 'test-quotation-2');
       expect(fromMapQuotation.documentNumber, 'Q-2026-002');
       expect(fromMapQuotation.status, DocumentStatus.confirmed);
@@ -116,8 +115,12 @@ void main() {
     });
 
     test('should handle different status colors', () {
-      final confirmedQuotation = quotation.copyWith(status: DocumentStatus.confirmed);
-      final cancelledQuotation = quotation.copyWith(status: DocumentStatus.cancelled);
+      final confirmedQuotation = quotation.copyWith(
+        status: DocumentStatus.confirmed,
+      );
+      final cancelledQuotation = quotation.copyWith(
+        status: DocumentStatus.cancelled,
+      );
 
       expect(confirmedQuotation.getStatusColor(), Colors.blue);
       expect(cancelledQuotation.getStatusColor(), Colors.grey);
