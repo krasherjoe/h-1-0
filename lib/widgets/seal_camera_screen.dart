@@ -27,9 +27,9 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
     final cameras = await availableCameras();
     if (cameras.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('カメラが見つかりません')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('カメラが見つかりません')));
         Navigator.pop(context);
       }
       return;
@@ -60,7 +60,9 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
   }
 
   Future<void> _takePhoto() async {
-    if (_isCapturing || _controller == null || !_controller!.value.isInitialized) {
+    if (_isCapturing ||
+        _controller == null ||
+        !_controller!.value.isInitialized) {
       return;
     }
 
@@ -68,22 +70,22 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
 
     try {
       final photo = await _controller!.takePicture();
-      
+
       // 写真をアプリの保存領域にコピー
       final tempDir = await getTemporaryDirectory();
       final fileName = 'seal_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final savedPath = path.join(tempDir.path, fileName);
-      
+
       await File(photo.path).copy(savedPath);
-      
+
       if (mounted) {
         Navigator.pop(context, savedPath);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('撮影に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('撮影に失敗しました: $e')));
       }
     } finally {
       if (mounted) {
@@ -95,14 +97,12 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isReady || _controller == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final size = MediaQuery.of(context).size;
     final shortestSide = size.shortestSide;
-    
+
     // 1cmと2cmのガイドサイズ（画面の密度に応じて計算）
     // 標準的なスマホ画面（約400-500dp幅）を想定
     final cm1Size = shortestSide * 0.15; // 約1cm相当
@@ -116,7 +116,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
         children: [
           // カメラプレビュー
           CameraPreview(_controller!),
-          
+
           // ガイドオーバーレイ
           CustomPaint(
             size: size,
@@ -126,7 +126,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
               sealSize: sealSize,
             ),
           ),
-          
+
           // ガイド説明テキスト
           SafeArea(
             child: Column(
@@ -148,16 +148,13 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                       SizedBox(height: 8),
                       Text(
                         '・内枠 = 角印標準サイズ (約21mm)\n・中枠 = 2cmガイド\n・外枠 = 3cmガイド',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
                 const Spacer(),
-                
+
                 // 撮影ボタン
                 Container(
                   padding: const EdgeInsets.all(24),
@@ -167,10 +164,14 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                       // 閉じるボタン
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 32,
+                        ),
                       ),
                       const SizedBox(width: 40),
-                      
+
                       // シャッターボタン
                       GestureDetector(
                         onTap: _takePhoto,
@@ -180,7 +181,9 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 4),
-                            color: _isCapturing ? Colors.grey : Colors.white.withOpacity(0.3),
+                            color: _isCapturing
+                                ? Colors.grey
+                                : Colors.white.withOpacity(0.3),
                           ),
                           child: Center(
                             child: Container(
@@ -195,7 +198,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                         ),
                       ),
                       const SizedBox(width: 40),
-                      
+
                       // ダミー（バランス用）
                       const SizedBox(width: 48),
                     ],
@@ -204,7 +207,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
               ],
             ),
           ),
-          
+
           // 中央ガイドマーカー
           Center(
             child: IgnorePointer(
@@ -213,7 +216,10 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                 children: [
                   // サイズラベル
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(4),
@@ -252,25 +258,23 @@ class _GuideOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // ペイント設定
     final sealPaint = Paint()
       ..color = Colors.red.withOpacity(0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    
+
     final guide2cmPaint = Paint()
       ..color = Colors.yellow.withOpacity(0.6)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeDashPattern = [10, 5];
-    
+      ..strokeWidth = 1.5;
+
     final guide3cmPaint = Paint()
       ..color = Colors.white.withOpacity(0.4)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..strokeDashPattern = [5, 10];
-    
+      ..strokeWidth = 1;
+
     final cornerPaint = Paint()
       ..color = Colors.white.withOpacity(0.8)
       ..style = PaintingStyle.stroke
@@ -283,58 +287,145 @@ class _GuideOverlayPainter extends CustomPainter {
       height: sealSize,
     );
     canvas.drawRect(sealRect, sealPaint);
-    
+
     // 四隅のL字マーカー（角印枠）
     final cornerLength = sealSize * 0.15;
     _drawCornerMarkers(canvas, sealRect, cornerLength, cornerPaint);
 
-    // 2cmガイド枠（破線）
+    // 2cm ガイド枠（破線）
     final guide2cmRect = Rect.fromCenter(
       center: center,
       width: cm2Size,
       height: cm2Size,
     );
-    canvas.drawRect(guide2cmRect, guide2cmPaint);
+    _drawDashedRect(canvas, guide2cmRect, guide2cmPaint, dashPattern: [10, 5]);
 
-    // 3cmガイド枠（破線・薄い）
+    // 3cm ガイド枠（破線・薄い）
     final guide3cmSize = cm2Size * 1.5;
     final guide3cmRect = Rect.fromCenter(
       center: center,
       width: guide3cmSize,
       height: guide3cmSize,
     );
-    canvas.drawRect(guide3cmRect, guide3cmPaint);
+    _drawDashedRect(canvas, guide3cmRect, guide3cmPaint, dashPattern: [5, 10]);
 
     // サイズラベル描画
-    _drawSizeLabel(canvas, Offset(center.dx + sealSize / 2 + 8, center.dy), '21mm', Colors.red);
-    _drawSizeLabel(canvas, Offset(center.dx + cm2Size / 2 + 8, center.dy - cm2Size / 2 + 10), '2cm', Colors.yellow);
-    _drawSizeLabel(canvas, Offset(center.dx + guide3cmSize / 2 + 8, center.dy - guide3cmSize / 2 + 10), '3cm', Colors.white70);
+    _drawSizeLabel(
+      canvas,
+      Offset(center.dx + sealSize / 2 + 8, center.dy),
+      '21mm',
+      Colors.red,
+    );
+    _drawSizeLabel(
+      canvas,
+      Offset(center.dx + cm2Size / 2 + 8, center.dy - cm2Size / 2 + 10),
+      '2cm',
+      Colors.yellow,
+    );
+    _drawSizeLabel(
+      canvas,
+      Offset(
+        center.dx + guide3cmSize / 2 + 8,
+        center.dy - guide3cmSize / 2 + 10,
+      ),
+      '3cm',
+      Colors.white70,
+    );
   }
-  
-  void _drawCornerMarkers(Canvas canvas, Rect rect, double length, Paint paint) {
+
+  void _drawDashedRect(
+    Canvas canvas,
+    Rect rect,
+    Paint paint, {
+    List<double>? dashPattern,
+  }) {
+    dashPattern ??= [5, 5]; // デフォルト：5px 線、5px 空白
+
+    final path = Path();
     final left = rect.left;
     final top = rect.top;
     final right = rect.right;
     final bottom = rect.bottom;
-    
+
+    final lineWidth = paint.strokeWidth / 2;
+    final dashLength = dashPattern[0];
+    final gapLength = dashPattern.length > 1 ? dashPattern[1] : dashPattern[0];
+
+    // 上辺
+    double x = left + lineWidth;
+    while (x < right - lineWidth) {
+      path.lineTo(x + dashLength, top + lineWidth);
+      x += dashLength + gapLength;
+    }
+
+    // 右辺
+    double y = top + lineWidth;
+    while (y < bottom - lineWidth) {
+      path.moveTo(right - lineWidth, y + dashLength);
+      path.lineTo(right - lineWidth, y + dashLength + gapLength);
+      y += dashLength + gapLength;
+    }
+
+    // 下辺
+    x = right - lineWidth;
+    while (x > left + lineWidth) {
+      path.lineTo(x - dashLength, bottom - lineWidth);
+      x -= dashLength + gapLength;
+    }
+
+    // 左辺
+    y = bottom - lineWidth;
+    while (y > top + lineWidth) {
+      path.moveTo(left + lineWidth, y - dashLength);
+      path.lineTo(left + lineWidth, y - dashLength - gapLength);
+      y -= dashLength + gapLength;
+    }
+
+    canvas.drawPath(path, paint..style = PaintingStyle.stroke);
+  }
+
+  void _drawCornerMarkers(
+    Canvas canvas,
+    Rect rect,
+    double length,
+    Paint paint,
+  ) {
+    final left = rect.left;
+    final top = rect.top;
+    final right = rect.right;
+    final bottom = rect.bottom;
+
     // 左上
     canvas.drawLine(Offset(left, top + length), Offset(left, top), paint);
     canvas.drawLine(Offset(left, top), Offset(left + length, top), paint);
-    
+
     // 右上
     canvas.drawLine(Offset(right - length, top), Offset(right, top), paint);
     canvas.drawLine(Offset(right, top), Offset(right, top + length), paint);
-    
+
     // 左下
     canvas.drawLine(Offset(left, bottom - length), Offset(left, bottom), paint);
     canvas.drawLine(Offset(left, bottom), Offset(left + length, bottom), paint);
-    
+
     // 右下
-    canvas.drawLine(Offset(right - length, bottom), Offset(right, bottom), paint);
-    canvas.drawLine(Offset(right, bottom), Offset(right, bottom - length), paint);
+    canvas.drawLine(
+      Offset(right - length, bottom),
+      Offset(right, bottom),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(right, bottom),
+      Offset(right, bottom - length),
+      paint,
+    );
   }
-  
-  void _drawSizeLabel(Canvas canvas, Offset position, String text, Color color) {
+
+  void _drawSizeLabel(
+    Canvas canvas,
+    Offset position,
+    String text,
+    Color color,
+  ) {
     final textPainter = TextPainter(
       text: TextSpan(
         text: text,
