@@ -347,35 +347,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     return n.toLowerCase();
   }
 
-  String _headKana(String name) {
-    var n = name.replaceAll(RegExp(r"\s+|\u3000"), "");
-    for (final token in [
-      "株式会社",
-      "（株）",
-      "(株)",
-      "有限会社",
-      "（有）",
-      "(有)",
-      "合同会社",
-      "（同）",
-      "(同)",
-    ]) {
-      if (n.startsWith(token)) n = n.substring(token.length);
-    }
-    if (n.isEmpty) return '他';
-    String ch = n.substring(0, 1);
-    final code = ch.codeUnitAt(0);
-    if (code >= 0x30A1 && code <= 0x30F6) {
-      ch = String.fromCharCode(code - 0x60); // katakana -> hiragana
-    }
-    if (_userKanaMap.containsKey(ch)) return _userKanaMap[ch]!;
-    if (_defaultKanaMap.containsKey(ch)) return _defaultKanaMap[ch]!;
-    for (final entry in _kanaBuckets.entries) {
-      if (entry.value.contains(ch)) return entry.key;
-    }
-    return '他';
-  }
-
   final Map<String, List<String>> _kanaBuckets = const {
     'あ': ['あ', 'い', 'う', 'え', 'お'],
     'か': ['か', 'き', 'く', 'け', 'こ', 'が', 'ぎ', 'ぐ', 'げ', 'ご'],

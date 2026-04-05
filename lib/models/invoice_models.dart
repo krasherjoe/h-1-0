@@ -60,17 +60,13 @@ class InvoiceItem {
 
 enum DocumentType {
   estimation, // 見積
-  order,      // 受注
-  delivery,   // 納品
-  invoice,    // 請求
-  receipt,    // 領収
+  order, // 受注
+  delivery, // 納品
+  invoice, // 請求
+  receipt, // 領収
 }
 
-enum OrderStatus {
-  draft,
-  confirmed,
-  fulfilled,
-}
+enum OrderStatus { draft, confirmed, fulfilled }
 
 extension OrderStatusLabel on OrderStatus {
   String get label {
@@ -156,24 +152,30 @@ class Invoice {
     this.companySealHash,
     this.metaJson,
     this.metaHash,
-  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        terminalId = terminalId ?? "T1", // デフォルト端末ID
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       terminalId = terminalId ?? "T1", // デフォルト端末ID
+       updatedAt = updatedAt ?? DateTime.now();
 
   /// 伝票内容から決定論的なハッシュを生成する (SHA256の一部)
   String get contentHash {
-    final input = "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${subject ?? ""}|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
+    final input =
+        "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${subject ?? ""}|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
     final bytes = utf8.encode(input);
     return sha256.convert(bytes).toString().substring(0, 8).toUpperCase();
   }
 
   String get documentTypeName {
     switch (documentType) {
-      case DocumentType.estimation: return "見積書";
-      case DocumentType.order: return "受注伝票";
-      case DocumentType.delivery: return "納品書";
-      case DocumentType.invoice: return "請求書";
-      case DocumentType.receipt: return "領収書";
+      case DocumentType.estimation:
+        return "見積書";
+      case DocumentType.order:
+        return "受注伝票";
+      case DocumentType.delivery:
+        return "納品書";
+      case DocumentType.invoice:
+        return "請求書";
+      case DocumentType.receipt:
+        return "領収書";
     }
   }
 
@@ -187,21 +189,24 @@ class Invoice {
 
   String get invoiceNumberPrefix {
     switch (documentType) {
-      case DocumentType.estimation: return "EST";
-      case DocumentType.order: return "ORD";
-      case DocumentType.delivery: return "DEL";
-      case DocumentType.invoice: return "INV";
-      case DocumentType.receipt: return "REC";
+      case DocumentType.estimation:
+        return "EST";
+      case DocumentType.order:
+        return "ORD";
+      case DocumentType.delivery:
+        return "DEL";
+      case DocumentType.invoice:
+        return "INV";
+      case DocumentType.receipt:
+        return "REC";
     }
   }
 
   bool get isOrder => documentType == DocumentType.order;
   bool get isOrderConfirmed => isOrder && orderStatus == OrderStatus.confirmed;
 
-  DateTime? _fromEpoch(int? value) =>
-      value != null ? DateTime.fromMillisecondsSinceEpoch(value) : null;
-
-  String get invoiceNumber => "$invoiceNumberPrefix-$terminalId-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
+  String get invoiceNumber =>
+      "$invoiceNumberPrefix-$terminalId-${DateFormat('yyyyMMdd').format(date)}-${id.substring(id.length > 4 ? id.length - 4 : 0)}";
 
   // 表示用の宛名（スナップショットがあれば優先）。必ず敬称を付与。
   String get customerNameForDisplay {
@@ -223,8 +228,13 @@ class Invoice {
 
   String get mailTitleCore {
     final dateStr = DateFormat('yyyyMMdd').format(date);
-    final docLabel = _docTypeShortLabel[documentType] ?? documentTypeName.replaceAll('書', '');
-    final customerCompact = customerNameForDisplay.replaceAll(RegExp(r'\s+'), '');
+    final docLabel =
+        _docTypeShortLabel[documentType] ??
+        documentTypeName.replaceAll('書', '');
+    final customerCompact = customerNameForDisplay.replaceAll(
+      RegExp(r'\s+'),
+      '',
+    );
     final amountStr = NumberFormat('#,###').format(totalAmount);
     final buffer = StringBuffer()
       ..write(dateStr)
@@ -269,7 +279,8 @@ class Invoice {
 
   String get metaJsonValue => metaJson ?? jsonEncode(metaPayload());
 
-  String get metaHashValue => metaHash ?? sha256.convert(utf8.encode(metaJsonValue)).toString();
+  String get metaHashValue =>
+      metaHash ?? sha256.convert(utf8.encode(metaJsonValue)).toString();
 
   Map<String, dynamic> toMap() {
     return {
@@ -358,7 +369,8 @@ class Invoice {
       sourceDocumentId: sourceDocumentId ?? this.sourceDocumentId,
       linkedDeliveryId: linkedDeliveryId ?? this.linkedDeliveryId,
       linkedInvoiceId: linkedInvoiceId ?? this.linkedInvoiceId,
-      customerFormalNameSnapshot: customerFormalNameSnapshot ?? this.customerFormalNameSnapshot,
+      customerFormalNameSnapshot:
+          customerFormalNameSnapshot ?? this.customerFormalNameSnapshot,
       odooId: odooId ?? this.odooId,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -371,7 +383,8 @@ class Invoice {
       contactVersionId: contactVersionId ?? this.contactVersionId,
       contactEmailSnapshot: contactEmailSnapshot ?? this.contactEmailSnapshot,
       contactTelSnapshot: contactTelSnapshot ?? this.contactTelSnapshot,
-      contactAddressSnapshot: contactAddressSnapshot ?? this.contactAddressSnapshot,
+      contactAddressSnapshot:
+          contactAddressSnapshot ?? this.contactAddressSnapshot,
       companySnapshot: companySnapshot ?? this.companySnapshot,
       companySealHash: companySealHash ?? this.companySealHash,
       metaJson: metaJson ?? this.metaJson,
@@ -382,11 +395,15 @@ class Invoice {
   String toCsv() {
     final buffer = StringBuffer();
     buffer.writeln('伝票種別,伝票番号,日付,取引先,合計金額,緯度,経度');
-    buffer.writeln('$documentTypeName,$invoiceNumber,${DateFormat('yyyy/MM/dd').format(date)},$customerNameForDisplay,$totalAmount,${latitude ?? ""},${longitude ?? ""}');
+    buffer.writeln(
+      '$documentTypeName,$invoiceNumber,${DateFormat('yyyy/MM/dd').format(date)},$customerNameForDisplay,$totalAmount,${latitude ?? ""},${longitude ?? ""}',
+    );
     buffer.writeln('');
     buffer.writeln('品名,数量,単価,小計');
     for (var item in items) {
-      buffer.writeln('${item.description},${item.quantity},${item.unitPrice},${item.subtotal}');
+      buffer.writeln(
+        '${item.description},${item.quantity},${item.unitPrice},${item.subtotal}',
+      );
     }
     return buffer.toString();
   }

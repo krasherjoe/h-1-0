@@ -31,10 +31,13 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
       final paymentRepo = PaymentRepository();
       final scheduleRepo = PaymentScheduleRepository();
 
-      final payments = await paymentRepo.getAllPayments();
       final schedules = await scheduleRepo.getUpcomingSchedules(days: 90);
-      final monthlyPayments = await paymentRepo.getMonthlyPaymentTotals(months: 6);
-      final monthlySchedules = await scheduleRepo.getMonthlyScheduleTotals(months: 6);
+      final monthlyPayments = await paymentRepo.getMonthlyPaymentTotals(
+        months: 6,
+      );
+      final monthlySchedules = await scheduleRepo.getMonthlyScheduleTotals(
+        months: 6,
+      );
 
       setState(() {
         _schedules = schedules;
@@ -45,9 +48,9 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('データ読み込みに失敗しました: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('データ読み込みに失敗しました: $e')));
     }
   }
 
@@ -57,10 +60,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
       appBar: AppBar(
         title: const Text('C1:資金繰り'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
       body: _isLoading
@@ -73,19 +73,19 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                   // サマリー
                   _buildSummaryCards(),
                   const SizedBox(height: 24),
-                  
+
                   // 月次推移グラフ
                   _buildMonthlyChart(),
                   const SizedBox(height: 24),
-                  
+
                   // 支払方法別内訳
                   _buildPaymentMethodChart(),
                   const SizedBox(height: 24),
-                  
+
                   // 今後の支払予定
                   _buildUpcomingPayments(),
                   const SizedBox(height: 24),
-                  
+
                   // 延滞一覧
                   _buildOverdueList(),
                 ],
@@ -99,7 +99,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
     final thisMonth = DateFormat('yyyy-MM').format(now);
     final thisMonthPayments = _monthlyPayments[thisMonth] ?? 0;
     final thisMonthSchedules = _monthlySchedules[thisMonth] ?? 0;
-    
+
     return Row(
       children: [
         Expanded(
@@ -112,10 +112,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                   const Text('今月支払済', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 4),
                   Text(
-                    '¥${thisMonthPayments.toString().replaceAllMapped(
-                      RegExp(r'(?=(?!^)(\d{3})+$)'),
-                      (Match m) => ',',
-                    )}',
+                    '¥${thisMonthPayments.toString().replaceAllMapped(RegExp(r'(?=(?!^)(\d{3})+$)'), (Match m) => ',')}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -138,10 +135,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                   const Text('今月予定', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 4),
                   Text(
-                    '¥${thisMonthSchedules.toString().replaceAllMapped(
-                      RegExp(r'(?=(?!^)(\d{3})+$)'),
-                      (Match m) => ',',
-                    )}',
+                    '¥${thisMonthSchedules.toString().replaceAllMapped(RegExp(r'(?=(?!^)(\d{3})+$)'), (Match m) => ',')}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -166,10 +160,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
           children: [
             const Text('月次支払推移', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: _buildBarChart(),
-            ),
+            SizedBox(height: 200, child: _buildBarChart()),
           ],
         ),
       ),
@@ -181,7 +172,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
     final months = <String>[];
     final payments = <int>[];
     final schedules = <int>[];
-    
+
     for (int i = 5; i >= 0; i--) {
       final month = DateTime(now.year, now.month - i, 1);
       final monthKey = DateFormat('yyyy-MM').format(month);
@@ -195,8 +186,11 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
         final index = months.indexOf(month);
         final payment = payments[index];
         final schedule = schedules[index];
-        final maxValue = [...payments, ...schedules].reduce((a, b) => a > b ? a : b);
-        
+        final maxValue = [
+          ...payments,
+          ...schedules,
+        ].reduce((a, b) => a > b ? a : b);
+
         return Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -237,7 +231,10 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('支払方法別内訳', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              '支払方法別内訳',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             FutureBuilder<Map<PaymentMethod, int>>(
               future: PaymentRepository().getPaymentTotalsByMethod(),
@@ -245,32 +242,36 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                 if (!snapshot.hasData) {
                   return const CircularProgressIndicator();
                 }
-                
+
                 final totals = snapshot.data!;
                 if (totals.isEmpty) {
                   return const Text('データがありません');
                 }
-                
+
                 final total = totals.values.reduce((a, b) => a + b);
-                
+
                 return Column(
                   children: totals.entries.map((entry) {
                     final method = entry.key;
                     final amount = entry.value;
-                    final percentage = total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0';
-                    
+                    final percentage = total > 0
+                        ? (amount / total * 100).toStringAsFixed(1)
+                        : '0';
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
-                          Icon(_getPaymentMethodIcon(method), color: _getPaymentMethodColor(method)),
+                          Icon(
+                            _getPaymentMethodIcon(method),
+                            color: _getPaymentMethodColor(method),
+                          ),
                           const SizedBox(width: 8),
                           Text(_getPaymentMethodDisplayName(method)),
                           const Spacer(),
-                          Text('¥${amount.toString().replaceAllMapped(
-                            RegExp(r'(?=(?!^)(\d{3})+$)'),
-                            (Match m) => ',',
-                          )} ($percentage%)'),
+                          Text(
+                            '¥${amount.toString().replaceAllMapped(RegExp(r'(?=(?!^)(\d{3})+$)'), (Match m) => ',')} ($percentage%)',
+                          ),
                         ],
                       ),
                     );
@@ -285,32 +286,36 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
   }
 
   Widget _buildUpcomingPayments() {
-    final upcomingSchedules = _schedules.where((s) => !s.isOverdue).take(10).toList();
-    
+    final upcomingSchedules = _schedules
+        .where((s) => !s.isOverdue)
+        .take(10)
+        .toList();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('今後の支払予定（${upcomingSchedules.length}件）', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              '今後の支払予定（${upcomingSchedules.length}件）',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             if (upcomingSchedules.isEmpty)
               const Text('支払予定がありません')
             else
-              ...upcomingSchedules.map((schedule) => ListTile(
-                title: Text(schedule.displayTitle),
-                subtitle: Text(schedule.displaySubtitle),
-                trailing: Text(schedule.displayAmount),
-                leading: CircleAvatar(
-                  backgroundColor: schedule.getStatusColor(),
-                  child: Icon(
-                    Icons.payment,
-                    color: Colors.white,
-                    size: 20,
+              ...upcomingSchedules.map(
+                (schedule) => ListTile(
+                  title: Text(schedule.displayTitle),
+                  subtitle: Text(schedule.displaySubtitle),
+                  trailing: Text(schedule.displayAmount),
+                  leading: CircleAvatar(
+                    backgroundColor: schedule.getStatusColor(),
+                    child: Icon(Icons.payment, color: Colors.white, size: 20),
                   ),
                 ),
-              )),
+              ),
           ],
         ),
       ),
@@ -318,35 +323,39 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
   }
 
   Widget _buildOverdueList() {
-    final overdueSchedules = _schedules.where((s) => s.isOverdue).take(5).toList();
-    
+    final overdueSchedules = _schedules
+        .where((s) => s.isOverdue)
+        .take(5)
+        .toList();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('延滞中（${overdueSchedules.length}件）', style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red,
-            )),
+            Text(
+              '延滞中（${overdueSchedules.length}件）',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
             const SizedBox(height: 16),
             if (overdueSchedules.isEmpty)
               const Text('延滞はありません')
             else
-              ...overdueSchedules.map((schedule) => ListTile(
-                title: Text(schedule.displayTitle),
-                subtitle: Text('延滞日数: ${-schedule.daysUntilDue}日'),
-                trailing: Text(schedule.displayAmount),
-                leading: CircleAvatar(
-                  backgroundColor: Colors.red,
-                  child: Icon(
-                    Icons.warning,
-                    color: Colors.white,
-                    size: 20,
+              ...overdueSchedules.map(
+                (schedule) => ListTile(
+                  title: Text(schedule.displayTitle),
+                  subtitle: Text('延滞日数: ${-schedule.daysUntilDue}日'),
+                  trailing: Text(schedule.displayAmount),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.red,
+                    child: Icon(Icons.warning, color: Colors.white, size: 20),
                   ),
                 ),
-              )),
+              ),
           ],
         ),
       ),

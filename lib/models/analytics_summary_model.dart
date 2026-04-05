@@ -41,7 +41,8 @@ class AnalyticsSummary {
   }
 
   /// 売上系のハイライト指標（存在すれば）
-  AnalyticsMetric? get primarySalesMetric => metricOfType(MetricType.salesTotal);
+  AnalyticsMetric? get primarySalesMetric =>
+      metricOfType(MetricType.salesTotal);
 
   AnalyticsSummary copyWith({
     DateTime? generatedAt,
@@ -64,7 +65,14 @@ class AnalyticsSummary {
       'generated_at': generatedAt.toIso8601String(),
       'period_label': periodLabel,
       'notes': notes,
-      'theme_color': themeColor?.value,
+      'theme_color': themeColor != null
+          ? Color.fromARGB(
+              255,
+              themeColor!.r.toInt(),
+              themeColor!.g.toInt(),
+              themeColor!.b.toInt(),
+            )
+          : null,
       'metrics': metrics.map((metric) => metric.toMap()).toList(),
     };
   }
@@ -74,9 +82,13 @@ class AnalyticsSummary {
       generatedAt: DateTime.parse(map['generated_at'] as String),
       periodLabel: map['period_label'] as String,
       notes: map['notes'] as String?,
-      themeColor: map['theme_color'] != null ? Color(map['theme_color'] as int) : null,
+      themeColor: map['theme_color'] != null
+          ? Color(map['theme_color'] as int)
+          : null,
       metrics: (map['metrics'] as List<dynamic>)
-          .map((entry) => AnalyticsMetric.fromMap(entry as Map<String, dynamic>))
+          .map(
+            (entry) => AnalyticsMetric.fromMap(entry as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
