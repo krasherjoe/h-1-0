@@ -431,7 +431,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       if (!context.mounted) return;
 
       if (result != null) {
-        // 選択された顧客データを保存（重複チェック付き）
+        // Map から Customer オブジェクトを取り出す
+        final resultMap = result as Map<String, dynamic>;
+        final customer = resultMap['customer'] as Customer?;
+
+        if (customer == null) return;
+
         try {
           // ローディング表示（操作完了まで消えないようにする）
           final loadingSnackBar = SnackBar(
@@ -443,15 +448,15 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
                 const SizedBox(width: 16),
-                const Text('顧客を登録中...'),
+                Text('顧客を登録中...'),
               ],
             ),
           );
 
           ScaffoldMessenger.of(context).showSnackBar(loadingSnackBar);
 
-          // 保存処理（非同期）
-          await _customerRepo.saveCustomer(result);
+          // Customer オブジェクトを保存（重複チェック付き）
+          await _customerRepo.saveCustomer(customer);
 
           if (!mounted) return;
 
@@ -464,28 +469,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 12),
-                  Expanded(child: Text('電話帳から「${result.displayName}」を追加しました')),
-                ],
-              ),
-              backgroundColor: Colors.green.shade700,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-
-          // 完了通知を表示（3 秒後に自動消去）
-          await Future.delayed(const Duration(milliseconds: 100));
-
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-          if (!mounted) return;
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Expanded(child: Text('電話帳から「${result.displayName}」を追加しました')),
+                  Expanded(
+                    child: Text('電話帳から「${customer.displayName}」を追加しました'),
+                  ),
                 ],
               ),
               backgroundColor: Colors.green.shade700,
@@ -1158,7 +1144,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.contact_phone),
-                title: const Text('電話帳から取り込む'),
+                title: Text('電話帳から取り込む'),
                 onTap: () {
                   Navigator.pop(context);
                   _showPhonebookImport();
