@@ -14,20 +14,20 @@ class AuditLogScreen extends StatefulWidget {
 class _AuditLogScreenState extends State<AuditLogScreen> {
   final AuthRepository _authRepository = AuthRepository();
   final ScrollController _scrollController = ScrollController();
-  
+
   List<AuditLog> _auditLogs = [];
   List<User> _users = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _currentPage = 0;
   final int _pageSize = 50;
-  
+
   String _selectedUser = 'すべて';
   String _selectedResourceType = 'すべて';
   DateTime? _startDate;
   DateTime? _endDate;
   String _searchQuery = '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -35,38 +35,41 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     _loadData();
     _loadUsers();
   }
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent &&
+    if (_scrollController.position.pixels ==
+            _scrollController.position.maxScrollExtent &&
         !_isLoadingMore &&
         _auditLogs.length >= _pageSize) {
       _loadMoreLogs();
     }
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
       _currentPage = 0;
       _auditLogs.clear();
     });
-    
+
     try {
       final logs = await _authRepository.getAuditLogs(
         userId: _selectedUser == 'すべて' ? null : _selectedUser,
-        resourceType: _selectedResourceType == 'すべて' ? null : _selectedResourceType,
+        resourceType: _selectedResourceType == 'すべて'
+            ? null
+            : _selectedResourceType,
         startDate: _startDate,
         endDate: _endDate,
         limit: _pageSize,
         offset: 0,
       );
-      
+
       setState(() {
         _auditLogs = logs;
         _isLoading = false;
@@ -75,33 +78,35 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('データ読み込みに失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('データ読み込みに失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _loadMoreLogs() async {
     if (_isLoadingMore) return;
-    
+
     setState(() {
       _isLoadingMore = true;
     });
-    
+
     try {
       final nextPage = _currentPage + 1;
       final logs = await _authRepository.getAuditLogs(
         userId: _selectedUser == 'すべて' ? null : _selectedUser,
-        resourceType: _selectedResourceType == 'すべて' ? null : _selectedResourceType,
+        resourceType: _selectedResourceType == 'すべて'
+            ? null
+            : _selectedResourceType,
         startDate: _startDate,
         endDate: _endDate,
         limit: _pageSize,
         offset: nextPage * _pageSize,
       );
-      
+
       setState(() {
         _auditLogs.addAll(logs);
         _currentPage = nextPage;
@@ -111,15 +116,15 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       setState(() {
         _isLoadingMore = false;
       });
-      
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('追加データ読み込みに失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('追加データ読み込みに失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _loadUsers() async {
     try {
       final users = await _authRepository.getAllUsers();
@@ -130,16 +135,17 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       // ユーザーデータの読み込み失敗は無視
     }
   }
-  
+
   List<AuditLog> get _filteredLogs {
     return _auditLogs.where((log) {
-      final matchesSearch = _searchQuery.isEmpty ||
-                          log.action.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          log.resourceType.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          log.action.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          log.resourceType.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesSearch;
     }).toList();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -172,7 +178,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -196,17 +202,19 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedUser,
+                  initialValue: _selectedUser,
                   decoration: const InputDecoration(
                     labelText: 'ユーザー',
                     border: OutlineInputBorder(),
                   ),
                   items: [
                     const DropdownMenuItem(value: 'すべて', child: Text('すべて')),
-                    ..._users.map((user) => DropdownMenuItem(
-                      value: user.id,
-                      child: Text(user.fullName),
-                    )),
+                    ..._users.map(
+                      (user) => DropdownMenuItem(
+                        value: user.id,
+                        child: Text(user.fullName),
+                      ),
+                    ),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -219,7 +227,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedResourceType,
+                  initialValue: _selectedResourceType,
                   decoration: const InputDecoration(
                     labelText: 'リソースタイプ',
                     border: OutlineInputBorder(),
@@ -297,10 +305,10 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       ),
     );
   }
-  
+
   Widget _buildLogList() {
     final filteredLogs = _filteredLogs;
-    
+
     if (filteredLogs.isEmpty) {
       return const Center(
         child: Text(
@@ -309,7 +317,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.builder(
@@ -325,14 +333,14 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               ),
             );
           }
-          
+
           final log = filteredLogs[index];
           return _buildLogCard(log);
         },
       ),
     );
   }
-  
+
   Widget _buildLogCard(AuditLog log) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -356,19 +364,13 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
             if (log.resourceId != null) Text('ID: ${log.resourceId}'),
             Text(
               DateFormat('yyyy-MM-dd HH:mm:ss').format(log.createdAt),
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
             ),
           ],
         ),
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'details',
-              child: const Text('詳細'),
-            ),
+            PopupMenuItem(value: 'details', child: const Text('詳細')),
           ],
           onSelected: (value) {
             if (value == 'details') {
@@ -379,7 +381,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       ),
     );
   }
-  
+
   Color _getActionColor(String action) {
     if (action.contains('作成') || action.contains('追加')) {
       return Colors.green;
@@ -393,7 +395,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       return Colors.grey;
     }
   }
-  
+
   IconData _getActionIcon(String action) {
     if (action.contains('作成') || action.contains('追加')) {
       return Icons.add;
@@ -409,7 +411,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       return Icons.info;
     }
   }
-  
+
   Future<void> _selectStartDate() async {
     final date = await showDatePicker(
       context: context,
@@ -417,7 +419,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    
+
     if (date != null) {
       setState(() {
         _startDate = date;
@@ -425,7 +427,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       _loadData();
     }
   }
-  
+
   Future<void> _selectEndDate() async {
     final date = await showDatePicker(
       context: context,
@@ -433,7 +435,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    
+
     if (date != null) {
       setState(() {
         _endDate = date;
@@ -441,7 +443,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       _loadData();
     }
   }
-  
+
   void _clearFilters() {
     setState(() {
       _selectedUser = 'すべて';
@@ -452,7 +454,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     });
     _loadData();
   }
-  
+
   void _showLogDetails(AuditLog log) {
     showDialog(
       context: context,
@@ -468,15 +470,16 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               _buildDetailRow('リソースタイプ', log.resourceType),
               if (log.resourceId != null)
                 _buildDetailRow('リソースID', log.resourceId!),
-              _buildDetailRow('日時', DateFormat('yyyy-MM-dd HH:mm:ss').format(log.createdAt)),
+              _buildDetailRow(
+                '日時',
+                DateFormat('yyyy-MM-dd HH:mm:ss').format(log.createdAt),
+              ),
               if (log.ipAddress != null)
                 _buildDetailRow('IPアドレス', log.ipAddress!),
               if (log.userAgent != null)
                 _buildDetailRow('ユーザーエージェント', log.userAgent!),
-              if (log.oldValue != null)
-                _buildDetailRow('変更前', log.oldValue!),
-              if (log.newValue != null)
-                _buildDetailRow('変更後', log.newValue!),
+              if (log.oldValue != null) _buildDetailRow('変更前', log.oldValue!),
+              if (log.newValue != null) _buildDetailRow('変更後', log.newValue!),
             ],
           ),
         ),
@@ -489,7 +492,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -505,20 +508,17 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
+            child: Text(value, style: TextStyle(color: Colors.grey.shade700)),
           ),
         ],
       ),
     );
   }
-  
+
   Future<void> _exportLogs() async {
     // 実際のエクスポート処理
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('エクスポート機能は今後実装予定です')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('エクスポート機能は今後実装予定です')));
   }
 }

@@ -183,7 +183,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                             border: Border.all(color: Colors.white, width: 4),
                             color: _isCapturing
                                 ? Colors.grey
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.white.withValues(alpha: 0.3),
                           ),
                           child: Center(
                             child: Container(
@@ -261,22 +261,22 @@ class _GuideOverlayPainter extends CustomPainter {
 
     // ペイント設定
     final sealPaint = Paint()
-      ..color = Colors.red.withOpacity(0.8)
+      ..color = Colors.red.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
     final guide2cmPaint = Paint()
-      ..color = Colors.yellow.withOpacity(0.6)
+      ..color = Colors.yellow.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
     final guide3cmPaint = Paint()
-      ..color = Colors.white.withOpacity(0.4)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
     final cornerPaint = Paint()
-      ..color = Colors.white.withOpacity(0.8)
+      ..color = Colors.white.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 

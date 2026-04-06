@@ -108,7 +108,7 @@ class PaymentSchedule {
   String get displayTitle => '${purchase.documentNumber} - ${purchase.supplier?.displayName ?? '不明'}';
 
   /// 表示用サブタイトル
-  String get displaySubtitle => '期日: ${dueDate.year}/${dueDate.month}/${dueDate.day} - ${statusDisplayName}';
+  String get displaySubtitle => '期日: ${dueDate.year}/${dueDate.month}/${dueDate.day} - $statusDisplayName';
 
   /// 期日までの日数
   int get daysUntilDue {

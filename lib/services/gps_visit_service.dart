@@ -425,18 +425,19 @@ class GpsVisitService {
   }
   
   // 現在位置の取得
-  Future<Position?> getCurrentPosition() async {
+ Future<Position?> getCurrentPosition() async {
     try {
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
         ),
-        timeLimit: const Duration(seconds: 10),
       );
     } catch (e) {
-      print('現在位置取得エラー: $e');
+      print('現在位置取得エラー：$e');
       return null;
     }
+  }
   }
   
   // 位置情報精度のチェック
