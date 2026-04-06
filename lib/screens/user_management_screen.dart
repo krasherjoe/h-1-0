@@ -18,22 +18,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   String _searchQuery = '';
   String _selectedDepartment = 'すべて';
   String _selectedStatus = 'すべて';
-  
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final users = await _authRepository.getAllUsers();
       final roles = await _authRepository.getAllRoles();
-      
+
       setState(() {
         _users = users;
         _roles = roles;
@@ -43,30 +43,34 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('データ読み込みに失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('データ読み込みに失敗しました: $e')));
       }
     }
   }
-  
+
   List<User> get _filteredUsers {
     return _users.where((user) {
-      final matchesSearch = user.fullName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          user.username.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          user.email.toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      final matchesDepartment = _selectedDepartment == 'すべて' || user.department == _selectedDepartment;
-      final matchesStatus = _selectedStatus == 'すべて' ||
-                          (_selectedStatus == '有効' && user.isActive) ||
-                          (_selectedStatus == '無効' && !user.isActive);
-      
+      final matchesSearch =
+          user.fullName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          user.username.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          user.email.toLowerCase().contains(_searchQuery.toLowerCase());
+
+      final matchesDepartment =
+          _selectedDepartment == 'すべて' ||
+          user.department == _selectedDepartment;
+      final matchesStatus =
+          _selectedStatus == 'すべて' ||
+          (_selectedStatus == '有効' && user.isActive) ||
+          (_selectedStatus == '無効' && !user.isActive);
+
       return matchesSearch && matchesDepartment && matchesStatus;
     }).toList();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,14 +96,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           : Column(
               children: [
                 _buildFilterSection(),
-                Expanded(
-                  child: _buildUserList(),
-                ),
+                Expanded(child: _buildUserList()),
               ],
             ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -123,19 +125,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedDepartment,
+                  initialValue: _selectedDepartment,
                   decoration: const InputDecoration(
                     labelText: '部署',
                     border: OutlineInputBorder(),
                   ),
-                  items: [
-                    'すべて',
-                    '営業部',
-                    '経理部',
-                    '倉庫部',
-                    'システム部',
-                    '総務部',
-                  ].map((department) {
+                  items: ['すべて', '営業部', '経理部', '倉庫部', 'システム部', '総務部'].map((
+                    department,
+                  ) {
                     return DropdownMenuItem(
                       value: department,
                       child: Text(department),
@@ -151,20 +148,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedStatus,
+                  initialValue: _selectedStatus,
                   decoration: const InputDecoration(
                     labelText: 'ステータス',
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    'すべて',
-                    '有効',
-                    '無効',
-                  ].map((status) {
-                    return DropdownMenuItem(
-                      value: status,
-                      child: Text(status),
-                    );
+                  items: const ['すべて', '有効', '無効'].map((status) {
+                    return DropdownMenuItem(value: status, child: Text(status));
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
@@ -179,7 +169,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildUserList() {
     if (_filteredUsers.isEmpty) {
       return const Center(
@@ -189,7 +179,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ),
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: _filteredUsers.length,
@@ -199,7 +189,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       },
     );
   }
-  
+
   Widget _buildUserCard(User user) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -208,7 +198,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           backgroundColor: user.isActive ? Colors.green : Colors.grey,
           child: Text(
             user.fullName.isNotEmpty ? user.fullName[0] : 'U',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         title: Text(
@@ -249,7 +242,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
     );
   }
-  
+
   void _showAddUserDialog() {
     showDialog(
       context: context,
@@ -261,22 +254,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             await _loadData();
             if (context.mounted) {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ユーザーを作成しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('ユーザーを作成しました')));
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('作成に失敗しました: $e')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('作成に失敗しました: $e')));
             }
           }
         },
       ),
     );
   }
-  
+
   void _showEditUserDialog(User user) {
     showDialog(
       context: context,
@@ -289,41 +282,45 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             await _loadData();
             if (context.mounted) {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ユーザーを更新しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('ユーザーを更新しました')));
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('更新に失敗しました: $e')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('更新に失敗しました: $e')));
             }
           }
         },
       ),
     );
   }
-  
+
   Future<void> _toggleUserStatus(User user) async {
     try {
       await _authRepository.toggleUserStatus(user.id);
       await _loadData();
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${user.fullName}を${user.isActive ? '無効化' : '有効化'}しました')),
+          SnackBar(
+            content: Text(
+              '${user.fullName}を${user.isActive ? '無効化' : '有効化'}しました',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ステータス変更に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('ステータス変更に失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _deleteUser(User user) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -343,22 +340,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       try {
         await _authRepository.deleteUser(user.id);
         await _loadData();
-        
+
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${user.fullName}を削除しました')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('${user.fullName}を削除しました')));
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('削除に失敗しました: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('削除に失敗しました: $e')));
         }
       }
     }
@@ -370,14 +367,14 @@ class UserDialog extends StatefulWidget {
   final User? user;
   final List<Role> roles;
   final Function(User) onSave;
-  
+
   const UserDialog({
     super.key,
     this.user,
     required this.roles,
     required this.onSave,
   });
-  
+
   @override
   State<UserDialog> createState() => _UserDialogState();
 }
@@ -390,12 +387,12 @@ class _UserDialogState extends State<UserDialog> {
   final _phoneNumberController = TextEditingController();
   final _departmentController = TextEditingController();
   final _positionController = TextEditingController();
-  
+
   String _selectedDepartment = '営業部';
   String _selectedPosition = '一般';
   bool _isActive = true;
   List<String> _selectedRoleIds = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -410,7 +407,7 @@ class _UserDialogState extends State<UserDialog> {
       _selectedRoleIds = widget.user!.roleIds;
     }
   }
-  
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -421,11 +418,11 @@ class _UserDialogState extends State<UserDialog> {
     _positionController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.user != null;
-    
+
     return AlertDialog(
       title: Text(isEditing ? 'ユーザー編集' : 'ユーザー追加'),
       content: SingleChildScrollView(
@@ -488,18 +485,14 @@ class _UserDialogState extends State<UserDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedDepartment,
+                initialValue: _selectedDepartment,
                 decoration: const InputDecoration(
                   labelText: '部署',
                   border: OutlineInputBorder(),
                 ),
-                items: const [
-                  '営業部',
-                  '経理部',
-                  '倉庫部',
-                  'システム部',
-                  '総務部',
-                ].map((department) {
+                items: const ['営業部', '経理部', '倉庫部', 'システム部', '総務部'].map((
+                  department,
+                ) {
                   return DropdownMenuItem(
                     value: department,
                     child: Text(department),
@@ -513,19 +506,14 @@ class _UserDialogState extends State<UserDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedPosition,
+                initialValue: _selectedPosition,
                 decoration: const InputDecoration(
                   labelText: '役職',
                   border: OutlineInputBorder(),
                 ),
-                items: const [
-                  '一般',
-                  '担当',
-                  '主任',
-                  'マネージャー',
-                  '部長',
-                  '社長',
-                ].map((position) {
+                items: const ['一般', '担当', '主任', 'マネージャー', '部長', '社長'].map((
+                  position,
+                ) {
                   return DropdownMenuItem(
                     value: position,
                     child: Text(position),
@@ -581,23 +569,25 @@ class _UserDialogState extends State<UserDialog> {
       ],
     );
   }
-  
+
   void _saveUser() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final user = User(
       id: widget.user?.id ?? '',
       username: _usernameController.text,
       email: _emailController.text,
       fullName: _fullNameController.text,
-      phoneNumber: _phoneNumberController.text.isEmpty ? null : _phoneNumberController.text,
+      phoneNumber: _phoneNumberController.text.isEmpty
+          ? null
+          : _phoneNumberController.text,
       department: _selectedDepartment,
       position: _selectedPosition,
       isActive: _isActive,
       createdAt: widget.user?.createdAt ?? DateTime.now(),
       roleIds: _selectedRoleIds,
     );
-    
+
     widget.onSave(user);
   }
 }

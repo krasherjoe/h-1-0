@@ -8,12 +8,13 @@ class SalesFlowManagementScreen extends StatefulWidget {
   const SalesFlowManagementScreen({super.key});
 
   @override
-  State<SalesFlowManagementScreen> createState() => _SalesFlowManagementScreenState();
+  State<SalesFlowManagementScreen> createState() =>
+      _SalesFlowManagementScreenState();
 }
 
 class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
   final SalesFlowRepository _flowRepository = SalesFlowRepository();
-  
+
   bool _isLoading = true;
   String _selectedTab = 'quotes';
   SalesFlowStatus? _selectedStatus;
@@ -23,7 +24,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
   List<Map<String, dynamic>> _sales = [];
   List<Map<String, dynamic>> _deliveries = [];
   List<Map<String, dynamic>> _invoices = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +58,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     }
     return SalesFlowStatus.quoteDraft;
   }
-  
+
   DeliveryLinkStatus _parseDeliveryStatus(dynamic value) {
     if (value is DeliveryLinkStatus) return value;
     if (value is String) {
@@ -68,7 +69,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     }
     return DeliveryLinkStatus.notLinked;
   }
-  
+
   InvoiceLinkStatus _parseInvoiceStatus(dynamic value) {
     if (value is InvoiceLinkStatus) return value;
     if (value is String) {
@@ -79,7 +80,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     }
     return InvoiceLinkStatus.notLinked;
   }
-  
+
   String _formatCurrency(int amount) {
     final formatted = amount.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -87,7 +88,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     );
     return '¥$formatted';
   }
-  
+
   String _formatDate(dynamic value) {
     if (value == null) return '—';
     DateTime? date;
@@ -99,19 +100,19 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     if (date == null) return '—';
     return DateFormat('yyyy/MM/dd').format(date);
   }
-  
+
   int _toInt(dynamic value) {
     if (value is int) return value;
     if (value is double) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final results = await Future.wait([
         _flowRepository.getQuotes(),
@@ -120,7 +121,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
         _flowRepository.getDeliveries(),
         _flowRepository.getInvoices(),
       ]);
-      
+
       setState(() {
         _quotes = results[0];
         _orders = results[1];
@@ -133,15 +134,15 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('データ読み込みに失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('データ読み込みに失敗しました: $e')));
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,14 +164,12 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               children: [
                 _buildTabBar(),
                 _buildFilterSection(),
-                Expanded(
-                  child: _buildContent(),
-                ),
+                Expanded(child: _buildContent()),
               ],
             ),
     );
   }
-  
+
   void _showSalesDetails(Map<String, dynamic> sale) {
     showDialog(
       context: context,
@@ -185,7 +184,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               _buildDetailRow('お客様', sale['client_name']),
               _buildDetailRow('件名', sale['title']),
               _buildDetailRow('金額', _formatCurrency(_toInt(sale['total']))),
-              _buildDetailRow('ステータス', _parseSalesStatus(sale['status']).displayName),
+              _buildDetailRow(
+                'ステータス',
+                _parseSalesStatus(sale['status']).displayName,
+              ),
               _buildDetailRow('更新日', _formatDate(sale['updated_at'])),
             ],
           ),
@@ -199,7 +201,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildTabBar() {
     return Container(
       color: Colors.indigo.shade50,
@@ -214,10 +216,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildTabButton(String tab, String title) {
     final isSelected = _selectedTab == tab;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -249,7 +251,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -274,7 +276,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
           const SizedBox(width: 16),
           Expanded(
             child: DropdownButtonFormField<SalesFlowStatus>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               decoration: const InputDecoration(
                 labelText: 'ステータス',
                 border: OutlineInputBorder(),
@@ -296,7 +298,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   List<SalesFlowStatus> _getStatusOptions(String tab) {
     switch (tab) {
       case 'quotes':
@@ -324,33 +326,41 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
         ];
       case 'deliveries':
         return [
-          DeliveryLinkStatus.notLinked,
-          DeliveryLinkStatus.linked,
-          DeliveryLinkStatus.inTransit,
-          DeliveryLinkStatus.completed,
-          DeliveryLinkStatus.failed,
-          DeliveryLinkStatus.cancelled,
-        ].map((status) => SalesFlowStatus.values.firstWhere(
-          (s) => s.toString() == status.toString(),
-          orElse: () => SalesFlowStatus.deliveryPending,
-        )).toList();
+              DeliveryLinkStatus.notLinked,
+              DeliveryLinkStatus.linked,
+              DeliveryLinkStatus.inTransit,
+              DeliveryLinkStatus.completed,
+              DeliveryLinkStatus.failed,
+              DeliveryLinkStatus.cancelled,
+            ]
+            .map(
+              (status) => SalesFlowStatus.values.firstWhere(
+                (s) => s.toString() == status.toString(),
+                orElse: () => SalesFlowStatus.deliveryPending,
+              ),
+            )
+            .toList();
       case 'invoices':
         return [
-          InvoiceLinkStatus.notLinked,
-          InvoiceLinkStatus.linked,
-          InvoiceLinkStatus.issued,
-          InvoiceLinkStatus.overdue,
-          InvoiceLinkStatus.paid,
-          InvoiceLinkStatus.cancelled,
-        ].map((status) => SalesFlowStatus.values.firstWhere(
-          (s) => s.toString() == status.toString(),
-          orElse: () => SalesFlowStatus.invoiceDraft,
-        )).toList();
+              InvoiceLinkStatus.notLinked,
+              InvoiceLinkStatus.linked,
+              InvoiceLinkStatus.issued,
+              InvoiceLinkStatus.overdue,
+              InvoiceLinkStatus.paid,
+              InvoiceLinkStatus.cancelled,
+            ]
+            .map(
+              (status) => SalesFlowStatus.values.firstWhere(
+                (s) => s.toString() == status.toString(),
+                orElse: () => SalesFlowStatus.invoiceDraft,
+              ),
+            )
+            .toList();
       default:
         return [];
     }
   }
-  
+
   Widget _buildContent() {
     switch (_selectedTab) {
       case 'quotes':
@@ -367,17 +377,26 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
         return const Center(child: Text('データがありません'));
     }
   }
-  
+
   Widget _buildQuotesList() {
     var filteredQuotes = _selectedStatus != null && _selectedTab == 'quotes'
-        ? _quotes.where((quote) => _parseSalesStatus(quote['status']) == _selectedStatus).toList()
+        ? _quotes
+              .where(
+                (quote) =>
+                    _parseSalesStatus(quote['status']) == _selectedStatus,
+              )
+              .toList()
         : List<Map<String, dynamic>>.from(_quotes);
-    filteredQuotes = _filterBySearch(filteredQuotes, const ['quote_no', 'client_name', 'title']);
-    
+    filteredQuotes = _filterBySearch(filteredQuotes, const [
+      'quote_no',
+      'client_name',
+      'title',
+    ]);
+
     if (filteredQuotes.isEmpty) {
       return const Center(child: Text('見積データがありません'));
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: filteredQuotes.length,
@@ -387,20 +406,16 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       },
     );
   }
-  
+
   Widget _buildQuoteCard(Map<String, dynamic> quote) {
     final status = _parseSalesStatus(quote['status']);
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: status.color,
-          child: Icon(
-            status.icon,
-            color: Colors.white,
-            size: 20,
-          ),
+          child: Icon(status.icon, color: Colors.white, size: 20),
         ),
         title: Text(
           quote['quote_no'],
@@ -413,10 +428,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             Text(quote['title']),
             Text(
               '有効期限: ${_formatDate(quote['valid_until'])}',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
             ),
           ],
         ),
@@ -426,10 +438,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
           children: [
             Text(
               _formatCurrency(_toInt(quote['total'])),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -452,17 +461,26 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildOrdersList() {
     var filteredOrders = _selectedStatus != null && _selectedTab == 'orders'
-        ? _orders.where((order) => _parseSalesStatus(order['status']) == _selectedStatus).toList()
+        ? _orders
+              .where(
+                (order) =>
+                    _parseSalesStatus(order['status']) == _selectedStatus,
+              )
+              .toList()
         : List<Map<String, dynamic>>.from(_orders);
-    filteredOrders = _filterBySearch(filteredOrders, const ['order_no', 'client_name', 'title']);
-    
+    filteredOrders = _filterBySearch(filteredOrders, const [
+      'order_no',
+      'client_name',
+      'title',
+    ]);
+
     if (filteredOrders.isEmpty) {
       return const Center(child: Text('受注データがありません'));
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: filteredOrders.length,
@@ -472,20 +490,16 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       },
     );
   }
-  
+
   Widget _buildOrderCard(Map<String, dynamic> order) {
     final status = _parseSalesStatus(order['status']);
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: status.color,
-          child: Icon(
-            status.icon,
-            color: Colors.white,
-            size: 20,
-          ),
+          child: Icon(status.icon, color: Colors.white, size: 20),
         ),
         title: Text(
           order['order_no'],
@@ -499,10 +513,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             if (order['delivery_date'] != null)
               Text(
                 '納品予定: ${_formatDate(order['delivery_date'])}',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
           ],
         ),
@@ -512,10 +523,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
           children: [
             Text(
               _formatCurrency(_toInt(order['total'])),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -538,17 +546,25 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildSalesList() {
     var filteredSales = _selectedStatus != null && _selectedTab == 'sales'
-        ? _sales.where((sale) => _parseSalesStatus(sale['status']) == _selectedStatus).toList()
+        ? _sales
+              .where(
+                (sale) => _parseSalesStatus(sale['status']) == _selectedStatus,
+              )
+              .toList()
         : List<Map<String, dynamic>>.from(_sales);
-    filteredSales = _filterBySearch(filteredSales, const ['sales_no', 'client_name', 'title']);
-    
+    filteredSales = _filterBySearch(filteredSales, const [
+      'sales_no',
+      'client_name',
+      'title',
+    ]);
+
     if (filteredSales.isEmpty) {
       return const Center(child: Text('売上データがありません'));
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: filteredSales.length,
@@ -568,8 +584,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               children: [
                 Text(sale['client_name'] ?? '不明'),
                 Text(sale['title'] ?? ''),
-                Text('更新日: ${_formatDate(sale['updated_at'])}',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                Text(
+                  '更新日: ${_formatDate(sale['updated_at'])}',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
               ],
             ),
             trailing: Column(
@@ -578,17 +596,27 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               children: [
                 Text(
                   _formatCurrency(_toInt(sale['total'])),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: status.color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status.displayName,
-                    style: TextStyle(fontSize: 12, color: status.color, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: status.color,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -599,14 +627,17 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       },
     );
   }
-  
+
   Widget _buildDeliveriesList() {
     var filteredDeliveries = List<Map<String, dynamic>>.from(_deliveries);
-    filteredDeliveries = _filterBySearch(filteredDeliveries, const ['delivery_no', 'client_name']);
+    filteredDeliveries = _filterBySearch(filteredDeliveries, const [
+      'delivery_no',
+      'client_name',
+    ]);
     if (filteredDeliveries.isEmpty) {
       return const Center(child: Text('配送データがありません'));
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: filteredDeliveries.length,
@@ -622,20 +653,30 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             ),
             title: Text(delivery['delivery_no'] ?? '配送'),
             subtitle: Text('更新日: ${_formatDate(delivery['updated_at'])}'),
-            trailing: Text(status.displayName, style: TextStyle(color: status.color, fontWeight: FontWeight.bold)),
+            trailing: Text(
+              status.displayName,
+              style: TextStyle(
+                color: status.color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         );
       },
     );
   }
-  
+
   Widget _buildInvoicesList() {
     var filteredInvoices = List<Map<String, dynamic>>.from(_invoices);
-    filteredInvoices = _filterBySearch(filteredInvoices, const ['invoice_no', 'client_name', 'title']);
+    filteredInvoices = _filterBySearch(filteredInvoices, const [
+      'invoice_no',
+      'client_name',
+      'title',
+    ]);
     if (filteredInvoices.isEmpty) {
       return const Center(child: Text('請求データがありません'));
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: filteredInvoices.length,
@@ -654,8 +695,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(invoice['client_name'] ?? '不明'),
-                Text('期限: ${_formatDate(invoice['due_date'])}',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                Text(
+                  '期限: ${_formatDate(invoice['due_date'])}',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
               ],
             ),
             trailing: Column(
@@ -664,7 +707,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               children: [
                 Text(
                   _formatCurrency(_toInt(invoice['total'])),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(status.displayName, style: TextStyle(color: status.color)),
               ],
@@ -674,7 +720,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       },
     );
   }
-  
+
   void _showQuoteDetails(Map<String, dynamic> quote) {
     showDialog(
       context: context,
@@ -689,7 +735,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               _buildDetailRow('お客様', quote['client_name']),
               _buildDetailRow('件名', quote['title']),
               _buildDetailRow('金額', _formatCurrency(_toInt(quote['total']))),
-              _buildDetailRow('ステータス', _parseSalesStatus(quote['status']).displayName),
+              _buildDetailRow(
+                'ステータス',
+                _parseSalesStatus(quote['status']).displayName,
+              ),
               _buildDetailRow('発行日', _formatDate(quote['created_at'])),
               _buildDetailRow('有効期限', _formatDate(quote['valid_until'])),
             ],
@@ -700,7 +749,8 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('閉じる'),
           ),
-          if (_parseSalesStatus(quote['status']) == SalesFlowStatus.quoteApproved)
+          if (_parseSalesStatus(quote['status']) ==
+              SalesFlowStatus.quoteApproved)
             ElevatedButton(
               onPressed: () => _convertQuoteToOrder(quote),
               child: const Text('受注に変換'),
@@ -713,7 +763,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   void _showOrderDetails(Map<String, dynamic> order) {
     showDialog(
       context: context,
@@ -728,7 +778,10 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
               _buildDetailRow('お客様', order['client_name']),
               _buildDetailRow('件名', order['title']),
               _buildDetailRow('金額', _formatCurrency(_toInt(order['total']))),
-              _buildDetailRow('ステータス', _parseSalesStatus(order['status']).displayName),
+              _buildDetailRow(
+                'ステータス',
+                _parseSalesStatus(order['status']).displayName,
+              ),
               _buildDetailRow('受注日', _formatDate(order['created_at'])),
               if (order['delivery_date'] != null)
                 _buildDetailRow('納品予定日', _formatDate(order['delivery_date'])),
@@ -740,7 +793,8 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('閉じる'),
           ),
-          if (_parseSalesStatus(order['status']) == SalesFlowStatus.orderConfirmed)
+          if (_parseSalesStatus(order['status']) ==
+              SalesFlowStatus.orderConfirmed)
             ElevatedButton(
               onPressed: () => _convertOrderToSales(order),
               child: const Text('売上に変換'),
@@ -753,7 +807,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, dynamic value) {
     final displayValue = value?.toString() ?? '—';
     return Padding(
@@ -769,86 +823,84 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(
-            child: Text(displayValue),
-          ),
+          Expanded(child: Text(displayValue)),
         ],
       ),
     );
   }
-  
+
   Future<void> _convertQuoteToOrder(Map<String, dynamic> quote) async {
     try {
       final orderId = await _flowRepository.convertQuoteToOrder(
         quoteId: quote['id'],
         userId: 'current_user', // 実際にはログインユーザーID
       );
-      
+
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('受注に変換しました: $orderId')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('受注に変換しました: $orderId')));
         _loadData();
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('変換に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('変換に失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _convertOrderToSales(Map<String, dynamic> order) async {
     try {
       final salesId = await _flowRepository.convertOrderToSales(
         orderId: order['id'],
         userId: 'current_user', // 実際にはログインユーザーID
       );
-      
+
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('売上に変換しました: $salesId')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('売上に変換しました: $salesId')));
         _loadData();
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('変換に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('変換に失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _exportQuotePdf(Map<String, dynamic> quote) async {
     try {
       // PDF生成処理
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF出力機能は今後実装予定です')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('PDF出力機能は今後実装予定です')));
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF出力に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('PDF出力に失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _exportOrderPdf(Map<String, dynamic> order) async {
     try {
       // PDF生成処理
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF出力機能は今後実装予定です')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('PDF出力機能は今後実装予定です')));
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF出力に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('PDF出力に失敗しました: $e')));
       }
     }
   }

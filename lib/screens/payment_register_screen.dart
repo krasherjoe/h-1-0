@@ -20,7 +20,7 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
   final _amountController = TextEditingController();
   final _bankAccountController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   Supplier? _selectedSupplier;
   PaymentMethod _selectedPaymentMethod = PaymentMethod.bankTransfer;
   List<PaymentSchedule> _selectedSchedules = [];
@@ -39,15 +39,17 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
       final repo = PaymentScheduleRepository();
       final schedules = await repo.getUpcomingSchedules(days: 90);
       setState(() {
-        _availableSchedules = schedules.where((s) => s.status == PaymentStatus.unpaid).toList();
+        _availableSchedules = schedules
+            .where((s) => s.status == PaymentStatus.unpaid)
+            .toList();
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('支払予定の読み込みに失敗しました: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('支払予定の読み込みに失敗しました: $e')));
     }
   }
 
@@ -58,9 +60,7 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('P2:支払登録'),
-      ),
+      appBar: AppBar(title: const Text('P2:支払登録')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Form(
@@ -75,7 +75,10 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('仕入先', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            '仕入先',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 8),
                           FutureBuilder<List<Supplier>>(
                             future: SupplierRepository().getAllSuppliers(),
@@ -84,7 +87,7 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                                 return const CircularProgressIndicator();
                               }
                               return DropdownButtonFormField<Supplier>(
-                                value: _selectedSupplier,
+                                initialValue: _selectedSupplier,
                                 decoration: const InputDecoration(
                                   hintText: '仕入先を選択',
                                 ),
@@ -120,11 +123,13 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('支払対象', style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('合計: ¥${_totalSelectedAmount.toString().replaceAllMapped(
-                                RegExp(r'(?=(?!^)(\d{3})+$)'),
-                                (Match m) => ',',
-                              )}'),
+                              const Text(
+                                '支払対象',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '合計: ¥${_totalSelectedAmount.toString().replaceAllMapped(RegExp(r'(?=(?!^)(\d{3})+$)'), (Match m) => ',')}',
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -132,10 +137,14 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                             const Text('支払予定がありません')
                           else
                             ..._availableSchedules.map((schedule) {
-                              final isSelected = _selectedSchedules.contains(schedule);
+                              final isSelected = _selectedSchedules.contains(
+                                schedule,
+                              );
                               return CheckboxListTile(
                                 title: Text(schedule.displayTitle),
-                                subtitle: Text('${schedule.displayAmount} - ${schedule.displaySubtitle}'),
+                                subtitle: Text(
+                                  '${schedule.displayAmount} - ${schedule.displaySubtitle}',
+                                ),
                                 value: isSelected,
                                 onChanged: (value) {
                                   setState(() {
@@ -146,7 +155,8 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                                     }
                                     // 金額を自動更新
                                     if (_selectedSchedules.isNotEmpty) {
-                                      _amountController.text = _totalSelectedAmount.toString();
+                                      _amountController.text =
+                                          _totalSelectedAmount.toString();
                                     }
                                   });
                                 },
@@ -166,7 +176,10 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('支払情報', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            '支払情報',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _amountController,
@@ -188,14 +201,16 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                           ),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<PaymentMethod>(
-                            value: _selectedPaymentMethod,
+                            initialValue: _selectedPaymentMethod,
                             decoration: const InputDecoration(
                               labelText: '支払方法',
                             ),
                             items: PaymentMethod.values.map((method) {
                               return DropdownMenuItem(
                                 value: method,
-                                child: Text(_getPaymentMethodDisplayName(method)),
+                                child: Text(
+                                  _getPaymentMethodDisplayName(method),
+                                ),
                               );
                             }).toList(),
                             onChanged: (method) {
@@ -204,7 +219,8 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                               });
                             },
                           ),
-                          if (_selectedPaymentMethod == PaymentMethod.bankTransfer) ...[
+                          if (_selectedPaymentMethod ==
+                              PaymentMethod.bankTransfer) ...[
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _bankAccountController,
@@ -263,9 +279,9 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
     }
 
     if (_selectedSupplier == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('仕入先を選択してください')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('仕入先を選択してください')));
       return;
     }
 
@@ -281,7 +297,9 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
         supplier: _selectedSupplier!,
         amount: int.parse(_amountController.text),
         paymentMethod: _selectedPaymentMethod,
-        bankAccount: _bankAccountController.text.isEmpty ? null : _bankAccountController.text,
+        bankAccount: _bankAccountController.text.isEmpty
+            ? null
+            : _bankAccountController.text,
         purchaseIds: _selectedSchedules.map((s) => s.purchase.id).toList(),
         notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
@@ -298,16 +316,16 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('支払を登録しました')),
-      );
-      
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('支払を登録しました')));
+
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('登録に失敗しました: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('登録に失敗しました: $e')));
     }
   }
 

@@ -6,23 +6,65 @@ class InventoryValueReportScreen extends StatefulWidget {
   const InventoryValueReportScreen({super.key});
 
   @override
-  State<InventoryValueReportScreen> createState() => _InventoryValueReportScreenState();
+  State<InventoryValueReportScreen> createState() =>
+      _InventoryValueReportScreenState();
 }
 
-class _InventoryValueReportScreenState extends State<InventoryValueReportScreen> {
+class _InventoryValueReportScreenState
+    extends State<InventoryValueReportScreen> {
   bool _isLoading = true;
   String _selectedWarehouse = 'all';
   String _selectedPeriod = 'current';
-  
+
   // サンプルデータ（実際にはデータベースから取得）
   final List<Map<String, dynamic>> _inventories = [
-    {'productName': '製品A', 'warehouseName': '主倉庫', 'currentStock': 120.5, 'unit': '個', 'averageCost': 1500, 'totalValue': 180750, 'status': 'normal'},
-    {'productName': '製品B', 'warehouseName': '主倉庫', 'currentStock': 85.0, 'unit': '個', 'averageCost': 2000, 'totalValue': 170000, 'status': 'normal'},
-    {'productName': '製品C', 'warehouseName': '主倉庫', 'currentStock': 15.0, 'unit': '個', 'averageCost': 800, 'totalValue': 12000, 'status': 'low_stock'},
-    {'productName': '製品D', 'warehouseName': '倉庫B', 'currentStock': 0.0, 'unit': '個', 'averageCost': 1200, 'totalValue': 0, 'status': 'out_of_stock'},
-    {'productName': '製品E', 'warehouseName': '倉庫B', 'currentStock': 250.0, 'unit': '個', 'averageCost': 500, 'totalValue': 125000, 'status': 'overstock'},
+    {
+      'productName': '製品A',
+      'warehouseName': '主倉庫',
+      'currentStock': 120.5,
+      'unit': '個',
+      'averageCost': 1500,
+      'totalValue': 180750,
+      'status': 'normal',
+    },
+    {
+      'productName': '製品B',
+      'warehouseName': '主倉庫',
+      'currentStock': 85.0,
+      'unit': '個',
+      'averageCost': 2000,
+      'totalValue': 170000,
+      'status': 'normal',
+    },
+    {
+      'productName': '製品C',
+      'warehouseName': '主倉庫',
+      'currentStock': 15.0,
+      'unit': '個',
+      'averageCost': 800,
+      'totalValue': 12000,
+      'status': 'low_stock',
+    },
+    {
+      'productName': '製品D',
+      'warehouseName': '倉庫B',
+      'currentStock': 0.0,
+      'unit': '個',
+      'averageCost': 1200,
+      'totalValue': 0,
+      'status': 'out_of_stock',
+    },
+    {
+      'productName': '製品E',
+      'warehouseName': '倉庫B',
+      'currentStock': 250.0,
+      'unit': '個',
+      'averageCost': 500,
+      'totalValue': 125000,
+      'status': 'overstock',
+    },
   ];
-  
+
   final Map<String, dynamic> _statistics = {
     'totalValue': 487750,
     'totalProducts': 5,
@@ -33,26 +75,26 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
     'warehouseCount': {'主倉庫': 2, '倉庫B': 3},
     'warehouseValue': {'主倉庫': 350750, '倉庫B': 137000},
   };
-  
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     // 実際のデータ読み込み処理
     await Future.delayed(const Duration(seconds: 1));
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,7 +138,7 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
             ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Card(
       child: Padding(
@@ -105,16 +147,17 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedWarehouse,
+                initialValue: _selectedWarehouse,
                 decoration: const InputDecoration(
                   labelText: '倉庫',
                   border: OutlineInputBorder(),
                 ),
                 items: [
                   const DropdownMenuItem(value: 'all', child: Text('すべて')),
-                  ...(_statistics['warehouseCount'] as Map<String, int>).keys.map((key) {
-                    return DropdownMenuItem(value: key, child: Text(key));
-                }),
+                  ...(_statistics['warehouseCount'] as Map<String, int>).keys
+                      .map((key) {
+                        return DropdownMenuItem(value: key, child: Text(key));
+                      }),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -127,7 +170,7 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
             const SizedBox(width: 16),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedPeriod,
+                initialValue: _selectedPeriod,
                 decoration: const InputDecoration(
                   labelText: '表示期間',
                   border: OutlineInputBorder(),
@@ -150,12 +193,14 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
       ),
     );
   }
-  
+
   Widget _buildValueSummary() {
     final totalValue = _statistics['totalValue'] as double? ?? 0;
     final totalProducts = _statistics['totalProducts'] as int? ?? 0;
-    final avgValuePerProduct = totalProducts > 0 ? totalValue / totalProducts : 0;
-    
+    final avgValuePerProduct = totalProducts > 0
+        ? totalValue / totalProducts
+        : 0;
+
     return Row(
       children: [
         Expanded(
@@ -196,8 +241,13 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
       ],
     );
   }
-  
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -207,24 +257,18 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildValueChart() {
     return Card(
       child: Padding(
@@ -237,36 +281,46 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 300,
-              child: _buildPieChart(),
-            ),
+            SizedBox(height: 300, child: _buildPieChart()),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildPieChart() {
     final statusData = [
-      {'status': '正常', 'count': _statistics['normalStock'] as int? ?? 0, 'color': Colors.green},
-      {'status': '低在庫', 'count': _statistics['lowStock'] as int? ?? 0, 'color': Colors.orange},
-      {'status': '欠品', 'count': _statistics['outOfStock'] as int? ?? 0, 'color': Colors.red},
-      {'status': '過剰在庫', 'count': _statistics['overstock'] as int? ?? 0, 'color': Colors.purple},
+      {
+        'status': '正常',
+        'count': _statistics['normalStock'] as int? ?? 0,
+        'color': Colors.green,
+      },
+      {
+        'status': '低在庫',
+        'count': _statistics['lowStock'] as int? ?? 0,
+        'color': Colors.orange,
+      },
+      {
+        'status': '欠品',
+        'count': _statistics['outOfStock'] as int? ?? 0,
+        'color': Colors.red,
+      },
+      {
+        'status': '過剰在庫',
+        'count': _statistics['overstock'] as int? ?? 0,
+        'color': Colors.purple,
+      },
     ];
-    
+
     return CustomPaint(
-      painter: PieChartPainter(
-        data: statusData,
-        size: const Size(250, 250),
-      ),
+      painter: PieChartPainter(data: statusData, size: const Size(250, 250)),
       child: Container(),
     );
   }
-  
+
   Widget _buildWarehouseAnalysis() {
     final warehouseData = _statistics['warehouseValue'] as Map<String, double>;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -287,22 +341,24 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
       ),
     );
   }
-  
+
   Widget _buildWarehouseBarChart(Map<String, double> warehouseData) {
     final data = warehouseData.values.map((value) => value / 1000000).toList();
     final labels = warehouseData.keys.toList();
-    
+
     return CustomPaint(
       painter: BarChartPainter(
         data: data,
         color: Colors.purple,
-        maxValue: data.isNotEmpty ? data.reduce((a, b) => a > b ? a : b) * 1.2 : 1.0,
+        maxValue: data.isNotEmpty
+            ? data.reduce((a, b) => a > b ? a : b) * 1.2
+            : 1.0,
         labels: labels,
       ),
       child: Container(),
     );
   }
-  
+
   Widget _buildInventoryStatusAnalysis() {
     return Card(
       child: Padding(
@@ -359,7 +415,7 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
       ),
     );
   }
-  
+
   Widget _buildStatusCard(String title, int count, Color color, IconData icon) {
     return Card(
       color: color.withValues(alpha: 0.1),
@@ -390,7 +446,7 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
       ),
     );
   }
-  
+
   Widget _buildDetailedTable() {
     return Card(
       child: Padding(
@@ -418,17 +474,32 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
                   final status = inventory['status'] as String;
                   final statusColor = _getStatusColor(status);
                   final statusDisplayName = _getStatusDisplayName(status);
-                  
+
                   return DataRow(
                     cells: [
                       DataCell(Text(inventory['productName'] as String)),
                       DataCell(Text(inventory['warehouseName'] as String)),
-                      DataCell(Text('${(inventory['currentStock'] as double).toStringAsFixed(2)} ${inventory['unit'] as String}')),
-                      DataCell(Text('¥${(inventory['averageCost'] as double).toStringAsFixed(2)}')),
-                      DataCell(Text('¥${(inventory['totalValue'] as double).toStringAsFixed(2)}')),
+                      DataCell(
+                        Text(
+                          '${(inventory['currentStock'] as double).toStringAsFixed(2)} ${inventory['unit'] as String}',
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          '¥${(inventory['averageCost'] as double).toStringAsFixed(2)}',
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          '¥${(inventory['totalValue'] as double).toStringAsFixed(2)}',
+                        ),
+                      ),
                       DataCell(
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
@@ -453,7 +524,7 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
       ),
     );
   }
-  
+
   Color _getStatusColor(String status) {
     switch (status) {
       case 'normal':
@@ -468,7 +539,7 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
         return Colors.grey;
     }
   }
-  
+
   String _getStatusDisplayName(String status) {
     switch (status) {
       case 'normal':
@@ -483,12 +554,12 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
         return status;
     }
   }
-  
+
   void _exportReport() {
     // レポート出力処理
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('レポート出力機能は今後実装予定です')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('レポート出力機能は今後実装予定です')));
   }
 }
 
@@ -496,34 +567,34 @@ class _InventoryValueReportScreenState extends State<InventoryValueReportScreen>
 class PieChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
   final Size size;
-  
-  PieChartPainter({
-    required this.data,
-    required this.size,
-  });
-  
+
+  PieChartPainter({required this.data, required this.size});
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 20;
-    
-    final total = data.fold<int>(0, (sum, item) => sum + (item['count'] as int));
+
+    final total = data.fold<int>(
+      0,
+      (sum, item) => sum + (item['count'] as int),
+    );
     if (total == 0) return;
-    
+
     double startAngle = -math.pi / 2;
-    
+
     for (final item in data) {
       final count = item['count'] as int;
       final color = item['color'] as Color;
       final sweepAngle = (count / total) * 2 * math.pi;
-      
+
       final paint = Paint()
         ..color = color
         ..style = PaintingStyle.fill;
-      
+
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,
@@ -531,7 +602,7 @@ class PieChartPainter extends CustomPainter {
         true,
         paint,
       );
-      
+
       startAngle += sweepAngle;
     }
   }
@@ -543,37 +614,34 @@ class BarChartPainter extends CustomPainter {
   final Color color;
   final double maxValue;
   final List<String> labels;
-  
+
   BarChartPainter({
     required this.data,
     required this.color,
     required this.maxValue,
     required this.labels,
   });
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-    
+
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    
+
     final barWidth = size.width / (data.length * 2);
     final spacing = barWidth;
-    
+
     for (int i = 0; i < data.length; i++) {
       final barHeight = (data[i] / maxValue) * size.height;
       final x = i * (barWidth + spacing) + spacing;
       final y = size.height - barHeight;
-      
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, barWidth, barHeight),
-        paint,
-      );
+
+      canvas.drawRect(Rect.fromLTWH(x, y, barWidth, barHeight), paint);
     }
   }
 }

@@ -13,25 +13,97 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
   String _selectedPeriod = 'month';
   String _selectedView = 'gross';
   bool _isLoading = false;
-  
+
   // サンプルデータ（実際にはデータベースから取得）
   final List<Map<String, dynamic>> _profitData = [
-    {'month': '1月', 'revenue': 1200000, 'cost': 960000, 'grossProfit': 240000, 'operatingCost': 180000, 'netProfit': 60000},
-    {'month': '2月', 'revenue': 1500000, 'cost': 1180000, 'grossProfit': 320000, 'operatingCost': 220000, 'netProfit': 100000},
-    {'month': '3月', 'revenue': 1800000, 'cost': 1390000, 'grossProfit': 410000, 'operatingCost': 280000, 'netProfit': 130000},
-    {'month': '4月', 'revenue': 1600000, 'cost': 1250000, 'grossProfit': 350000, 'operatingCost': 250000, 'netProfit': 100000},
-    {'month': '5月', 'revenue': 2100000, 'cost': 1580000, 'grossProfit': 520000, 'operatingCost': 320000, 'netProfit': 200000},
-    {'month': '6月', 'revenue': 2300000, 'cost': 1720000, 'grossProfit': 580000, 'operatingCost': 350000, 'netProfit': 230000},
+    {
+      'month': '1月',
+      'revenue': 1200000,
+      'cost': 960000,
+      'grossProfit': 240000,
+      'operatingCost': 180000,
+      'netProfit': 60000,
+    },
+    {
+      'month': '2月',
+      'revenue': 1500000,
+      'cost': 1180000,
+      'grossProfit': 320000,
+      'operatingCost': 220000,
+      'netProfit': 100000,
+    },
+    {
+      'month': '3月',
+      'revenue': 1800000,
+      'cost': 1390000,
+      'grossProfit': 410000,
+      'operatingCost': 280000,
+      'netProfit': 130000,
+    },
+    {
+      'month': '4月',
+      'revenue': 1600000,
+      'cost': 1250000,
+      'grossProfit': 350000,
+      'operatingCost': 250000,
+      'netProfit': 100000,
+    },
+    {
+      'month': '5月',
+      'revenue': 2100000,
+      'cost': 1580000,
+      'grossProfit': 520000,
+      'operatingCost': 320000,
+      'netProfit': 200000,
+    },
+    {
+      'month': '6月',
+      'revenue': 2300000,
+      'cost': 1720000,
+      'grossProfit': 580000,
+      'operatingCost': 350000,
+      'netProfit': 230000,
+    },
   ];
-  
+
   final List<Map<String, dynamic>> _productProfitData = [
-    {'product': '製品A', 'revenue': 3500000, 'cost': 2610000, 'profit': 890000, 'margin': 25.4},
-    {'product': '製品B', 'revenue': 2800000, 'cost': 2180000, 'profit': 620000, 'margin': 22.1},
-    {'product': '製品C', 'revenue': 1900000, 'cost': 1520000, 'profit': 380000, 'margin': 20.0},
-    {'product': '製品D', 'revenue': 1200000, 'cost': 1020000, 'profit': 180000, 'margin': 15.0},
-    {'product': '製品E', 'revenue': 800000, 'cost': 720000, 'profit': 80000, 'margin': 10.0},
+    {
+      'product': '製品A',
+      'revenue': 3500000,
+      'cost': 2610000,
+      'profit': 890000,
+      'margin': 25.4,
+    },
+    {
+      'product': '製品B',
+      'revenue': 2800000,
+      'cost': 2180000,
+      'profit': 620000,
+      'margin': 22.1,
+    },
+    {
+      'product': '製品C',
+      'revenue': 1900000,
+      'cost': 1520000,
+      'profit': 380000,
+      'margin': 20.0,
+    },
+    {
+      'product': '製品D',
+      'revenue': 1200000,
+      'cost': 1020000,
+      'profit': 180000,
+      'margin': 15.0,
+    },
+    {
+      'product': '製品E',
+      'revenue': 800000,
+      'cost': 720000,
+      'profit': 80000,
+      'margin': 10.0,
+    },
   ];
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,7 +145,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
             ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Card(
       child: Padding(
@@ -82,7 +154,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedPeriod,
+                initialValue: _selectedPeriod,
                 decoration: const InputDecoration(
                   labelText: '集計期間',
                   border: OutlineInputBorder(),
@@ -105,7 +177,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedView,
+                initialValue: _selectedView,
                 decoration: const InputDecoration(
                   labelText: '表示タイプ',
                   border: OutlineInputBorder(),
@@ -128,17 +200,36 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
       ),
     );
   }
-  
+
   Widget _buildProfitSummary() {
-    final totalRevenue = _profitData.fold<double>(0, (sum, item) => sum + (item['revenue'] as double));
-    final totalCost = _profitData.fold<double>(0, (sum, item) => sum + (item['cost'] as double));
-    final totalGrossProfit = _profitData.fold<double>(0, (sum, item) => sum + (item['grossProfit'] as double));
-    final totalOperatingCost = _profitData.fold<double>(0, (sum, item) => sum + (item['operatingCost'] as double));
-    final totalNetProfit = _profitData.fold<double>(0, (sum, item) => sum + (item['netProfit'] as double));
-    
-    final grossMargin = totalRevenue > 0 ? (totalGrossProfit / totalRevenue * 100) : 0;
-    final operatingMargin = totalRevenue > 0 ? (totalNetProfit / totalRevenue * 100) : 0;
-    
+    final totalRevenue = _profitData.fold<double>(
+      0,
+      (sum, item) => sum + (item['revenue'] as double),
+    );
+    final totalCost = _profitData.fold<double>(
+      0,
+      (sum, item) => sum + (item['cost'] as double),
+    );
+    final totalGrossProfit = _profitData.fold<double>(
+      0,
+      (sum, item) => sum + (item['grossProfit'] as double),
+    );
+    final totalOperatingCost = _profitData.fold<double>(
+      0,
+      (sum, item) => sum + (item['operatingCost'] as double),
+    );
+    final totalNetProfit = _profitData.fold<double>(
+      0,
+      (sum, item) => sum + (item['netProfit'] as double),
+    );
+
+    final grossMargin = totalRevenue > 0
+        ? (totalGrossProfit / totalRevenue * 100)
+        : 0;
+    final operatingMargin = totalRevenue > 0
+        ? (totalNetProfit / totalRevenue * 100)
+        : 0;
+
     return Column(
       children: [
         Row(
@@ -210,16 +301,19 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Container(),
-            ),
+            Expanded(child: Container()),
           ],
         ),
       ],
     );
   }
-  
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -229,24 +323,18 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildProfitChart() {
     return Card(
       child: Padding(
@@ -259,44 +347,40 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 300,
-              child: _buildSimpleLineChart(),
-            ),
+            SizedBox(height: 300, child: _buildSimpleLineChart()),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSimpleLineChart() {
-    final data = _profitData.map((item) {
-      switch (_selectedView) {
-        case 'gross':
-          return (item['grossProfit'] as double) / 1000000;
-        case 'operating':
-          return (item['netProfit'] as double) / 1000000;
-        case 'net':
-          return (item['netProfit'] as double) / 1000000;
-        case 'margin':
-          final revenue = item['revenue'] as double;
-          final profit = item['grossProfit'] as double;
-          return revenue > 0 ? (profit / revenue * 100) : 0;
-        default:
-          return 0.0;
-      }
-    }).cast<double>().toList();
-    
+    final data = _profitData
+        .map((item) {
+          switch (_selectedView) {
+            case 'gross':
+              return (item['grossProfit'] as double) / 1000000;
+            case 'operating':
+              return (item['netProfit'] as double) / 1000000;
+            case 'net':
+              return (item['netProfit'] as double) / 1000000;
+            case 'margin':
+              final revenue = item['revenue'] as double;
+              final profit = item['grossProfit'] as double;
+              return revenue > 0 ? (profit / revenue * 100) : 0;
+            default:
+              return 0.0;
+          }
+        })
+        .cast<double>()
+        .toList();
+
     return CustomPaint(
-      painter: LineChartPainter(
-        data: data,
-        color: Colors.green,
-        maxValue: 0.6,
-      ),
+      painter: LineChartPainter(data: data, color: Colors.green, maxValue: 0.6),
       child: Container(),
     );
   }
-  
+
   String _getViewTitle() {
     switch (_selectedView) {
       case 'gross':
@@ -311,7 +395,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
         return '利益';
     }
   }
-  
+
   Widget _buildProductAnalysis() {
     return Card(
       child: Padding(
@@ -324,32 +408,31 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: _buildProductChart(),
-            ),
+            SizedBox(height: 250, child: _buildProductChart()),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildProductChart() {
     final data = _productProfitData.map((item) {
       return (item['profit'] as double) / 1000000;
     }).toList();
-    
+
     return CustomPaint(
       painter: BarChartPainter(
         data: data,
         color: Colors.green,
         maxValue: 1.0,
-        labels: _productProfitData.map((item) => item['product'] as String).toList(),
+        labels: _productProfitData
+            .map((item) => item['product'] as String)
+            .toList(),
       ),
       child: Container(),
     );
   }
-  
+
   Widget _buildProfitTable() {
     return Card(
       child: Padding(
@@ -379,8 +462,10 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                   final cost = data['cost'] as double;
                   final grossProfit = data['grossProfit'] as double;
                   final netProfit = data['netProfit'] as double;
-                  final grossMargin = revenue > 0 ? (grossProfit / revenue * 100) : 0;
-                  
+                  final grossMargin = revenue > 0
+                      ? (grossProfit / revenue * 100)
+                      : 0;
+
                   return DataRow(
                     cells: [
                       DataCell(Text(data['month'] as String)),
@@ -388,7 +473,11 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                       DataCell(Text('¥${cost.toStringAsFixed(0)}')),
                       DataCell(Text('¥${grossProfit.toStringAsFixed(0)}')),
                       DataCell(Text('${grossMargin.toStringAsFixed(1)}%')),
-                      DataCell(Text('¥${(grossProfit - (data['operatingCost'] as double)).toStringAsFixed(0)}')),
+                      DataCell(
+                        Text(
+                          '¥${(grossProfit - (data['operatingCost'] as double)).toStringAsFixed(0)}',
+                        ),
+                      ),
                       DataCell(Text('¥${netProfit.toStringAsFixed(0)}')),
                     ],
                   );
@@ -400,25 +489,25 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
       ),
     );
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     // 実際のデータ読み込み処理
     await Future.delayed(const Duration(seconds: 1));
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   void _exportData() {
     // データエクスポート処理
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('データエクスポート機能は今後実装予定です')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('データエクスポート機能は今後実装予定です')));
   }
 }
 
@@ -427,47 +516,47 @@ class LineChartPainter extends CustomPainter {
   final List<double> data;
   final Color color;
   final double maxValue;
-  
+
   LineChartPainter({
     required this.data,
     required this.color,
     required this.maxValue,
   });
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-    
+
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
-    
+
     final pointWidth = size.width / (data.length - 1);
-    
+
     final path = ui.Path();
     for (int i = 0; i < data.length; i++) {
       final x = i * pointWidth;
       final y = size.height - (data[i] / maxValue * size.height);
-      
+
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         path.lineTo(x, y);
       }
     }
-    
+
     // データポイント
     for (int i = 0; i < data.length; i++) {
       final x = i * pointWidth;
       final y = size.height - (data[i] / maxValue * size.height);
-      
+
       canvas.drawCircle(Offset(x, y), 4, paint);
     }
-    
+
     canvas.drawPath(path, paint);
   }
 }
@@ -478,37 +567,34 @@ class BarChartPainter extends CustomPainter {
   final Color color;
   final double maxValue;
   final List<String> labels;
-  
+
   BarChartPainter({
     required this.data,
     required this.color,
     required this.maxValue,
     required this.labels,
   });
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-    
+
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    
+
     final barWidth = size.width / (data.length * 2);
     final spacing = barWidth;
-    
+
     for (int i = 0; i < data.length; i++) {
       final barHeight = (data[i] / maxValue) * size.height;
       final x = i * (barWidth + spacing) + spacing;
       final y = size.height - barHeight;
-      
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, barWidth, barHeight),
-        paint,
-      );
+
+      canvas.drawRect(Rect.fromLTWH(x, y, barWidth, barHeight), paint);
     }
   }
 }

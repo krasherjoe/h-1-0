@@ -16,21 +16,21 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedStatus = 'すべて';
-  
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final roles = await _authRepository.getAllRoles();
-      
+
       setState(() {
         _roles = roles;
         _isLoading = false;
@@ -39,28 +39,30 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('データ読み込みに失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('データ読み込みに失敗しました: $e')));
       }
     }
   }
-  
+
   List<Role> get _filteredRoles {
     return _roles.where((role) {
-      final matchesSearch = role.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          role.description.toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      final matchesStatus = _selectedStatus == 'すべて' ||
-                          (_selectedStatus == '有効' && role.isActive) ||
-                          (_selectedStatus == '無効' && !role.isActive);
-      
+      final matchesSearch =
+          role.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          role.description.toLowerCase().contains(_searchQuery.toLowerCase());
+
+      final matchesStatus =
+          _selectedStatus == 'すべて' ||
+          (_selectedStatus == '有効' && role.isActive) ||
+          (_selectedStatus == '無効' && !role.isActive);
+
       return matchesSearch && matchesStatus;
     }).toList();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,14 +88,12 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
           : Column(
               children: [
                 _buildFilterSection(),
-                Expanded(
-                  child: _buildRoleList(),
-                ),
+                Expanded(child: _buildRoleList()),
               ],
             ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -114,20 +114,13 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedStatus,
+            initialValue: _selectedStatus,
             decoration: const InputDecoration(
               labelText: 'ステータス',
               border: OutlineInputBorder(),
             ),
-            items: const [
-              'すべて',
-              '有効',
-              '無効',
-            ].map((status) {
-              return DropdownMenuItem(
-                value: status,
-                child: Text(status),
-              );
+            items: const ['すべて', '有効', '無効'].map((status) {
+              return DropdownMenuItem(value: status, child: Text(status));
             }).toList(),
             onChanged: (value) {
               setState(() {
@@ -139,7 +132,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
       ),
     );
   }
-  
+
   Widget _buildRoleList() {
     if (_filteredRoles.isEmpty) {
       return const Center(
@@ -149,7 +142,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
         ),
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: _filteredRoles.length,
@@ -159,7 +152,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
       },
     );
   }
-  
+
   Widget _buildRoleCard(Role role) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -168,7 +161,10 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
           backgroundColor: role.isActive ? Colors.purple : Colors.grey,
           child: Text(
             role.name.isNotEmpty ? role.name[0] : 'R',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         title: Text(
@@ -214,10 +210,12 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: role.permissions
-                      .map((permission) => Chip(
-                            label: Text(permission.displayName),
-                            backgroundColor: Colors.blue.shade100,
-                          ))
+                      .map(
+                        (permission) => Chip(
+                          label: Text(permission.displayName),
+                          backgroundColor: Colors.blue.shade100,
+                        ),
+                      )
                       .toList(),
                 ),
               ],
@@ -227,7 +225,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
       ),
     );
   }
-  
+
   void _showAddRoleDialog() {
     showDialog(
       context: context,
@@ -238,22 +236,22 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
             await _loadData();
             if (context.mounted) {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ロールを作成しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('ロールを作成しました')));
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('作成に失敗しました: $e')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('作成に失敗しました: $e')));
             }
           }
         },
       ),
     );
   }
-  
+
   void _showEditRoleDialog(Role role) {
     showDialog(
       context: context,
@@ -265,41 +263,43 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
             await _loadData();
             if (context.mounted) {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ロールを更新しました')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('ロールを更新しました')));
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('更新に失敗しました: $e')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('更新に失敗しました: $e')));
             }
           }
         },
       ),
     );
   }
-  
+
   Future<void> _toggleRoleStatus(Role role) async {
     try {
       await _authRepository.toggleRoleStatus(role.id);
       await _loadData();
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${role.name}を${role.isActive ? '無効化' : '有効化'}しました')),
+          SnackBar(
+            content: Text('${role.name}を${role.isActive ? '無効化' : '有効化'}しました'),
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ステータス変更に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('ステータス変更に失敗しました: $e')));
       }
     }
   }
-  
+
   Future<void> _deleteRole(Role role) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -319,22 +319,22 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       try {
         await _authRepository.deleteRole(role.id);
         await _loadData();
-        
+
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${role.name}を削除しました')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('${role.name}を削除しました')));
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('削除に失敗しました: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('削除に失敗しました: $e')));
         }
       }
     }
@@ -345,13 +345,9 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
 class RoleDialog extends StatefulWidget {
   final Role? role;
   final Function(Role) onSave;
-  
-  const RoleDialog({
-    super.key,
-    this.role,
-    required this.onSave,
-  });
-  
+
+  const RoleDialog({super.key, this.role, required this.onSave});
+
   @override
   State<RoleDialog> createState() => _RoleDialogState();
 }
@@ -360,10 +356,10 @@ class _RoleDialogState extends State<RoleDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   bool _isActive = true;
   List<Permission> _selectedPermissions = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -374,18 +370,18 @@ class _RoleDialogState extends State<RoleDialog> {
       _selectedPermissions = widget.role!.permissions;
     }
   }
-  
+
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.role != null;
-    
+
     return AlertDialog(
       title: Text(isEditing ? 'ロール編集' : 'ロール追加'),
       content: SingleChildScrollView(
@@ -467,10 +463,10 @@ class _RoleDialogState extends State<RoleDialog> {
       ],
     );
   }
-  
+
   void _saveRole() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final role = Role(
       id: widget.role?.id ?? '',
       name: _nameController.text,
@@ -479,7 +475,7 @@ class _RoleDialogState extends State<RoleDialog> {
       isActive: _isActive,
       createdAt: widget.role?.createdAt ?? DateTime.now(),
     );
-    
+
     widget.onSave(role);
   }
 }

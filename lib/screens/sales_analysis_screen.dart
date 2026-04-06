@@ -12,7 +12,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
   String _selectedPeriod = 'month';
   String _selectedChartType = 'revenue';
   bool _isLoading = false;
-  
+
   // サンプルデータ（実際にはデータベースから取得）
   final List<Map<String, dynamic>> _monthlyData = [
     {'month': '1月', 'revenue': 1200000, 'profit': 240000, 'orders': 45},
@@ -22,14 +22,14 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
     {'month': '5月', 'revenue': 2100000, 'profit': 520000, 'orders': 73},
     {'month': '6月', 'revenue': 2300000, 'profit': 580000, 'orders': 81},
   ];
-  
+
   final List<Map<String, dynamic>> _categoryData = [
     {'category': '製品A', 'revenue': 3500000, 'profit': 890000, 'quantity': 120},
     {'category': '製品B', 'revenue': 2800000, 'profit': 620000, 'quantity': 95},
     {'category': '製品C', 'revenue': 1900000, 'profit': 380000, 'quantity': 67},
     {'category': '製品D', 'revenue': 1200000, 'profit': 180000, 'quantity': 43},
   ];
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +71,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             ),
     );
   }
-  
+
   Widget _buildFilterSection() {
     return Card(
       child: Padding(
@@ -80,7 +80,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedPeriod,
+                initialValue: _selectedPeriod,
                 decoration: const InputDecoration(
                   labelText: '集計期間',
                   border: OutlineInputBorder(),
@@ -103,7 +103,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedChartType,
+                initialValue: _selectedChartType,
                 decoration: const InputDecoration(
                   labelText: 'チャートタイプ',
                   border: OutlineInputBorder(),
@@ -125,13 +125,22 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
       ),
     );
   }
-  
+
   Widget _buildSummaryCards() {
-    final totalRevenue = _monthlyData.fold<double>(0, (sum, item) => sum + (item['revenue'] as double));
-    final totalProfit = _monthlyData.fold<double>(0, (sum, item) => sum + (item['profit'] as double));
-    final totalOrders = _monthlyData.fold<int>(0, (sum, item) => sum + (item['orders'] as int));
+    final totalRevenue = _monthlyData.fold<double>(
+      0,
+      (sum, item) => sum + (item['revenue'] as double),
+    );
+    final totalProfit = _monthlyData.fold<double>(
+      0,
+      (sum, item) => sum + (item['profit'] as double),
+    );
+    final totalOrders = _monthlyData.fold<int>(
+      0,
+      (sum, item) => sum + (item['orders'] as int),
+    );
     final avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    
+
     return Row(
       children: [
         Expanded(
@@ -172,8 +181,13 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
       ],
     );
   }
-  
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -183,24 +197,18 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSimpleChartSection() {
     return Card(
       child: Padding(
@@ -213,16 +221,13 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: _buildSimpleLineChart(),
-            ),
+            SizedBox(height: 200, child: _buildSimpleLineChart()),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSimpleLineChart() {
     final data = _monthlyData.map((item) {
       switch (_selectedChartType) {
@@ -236,17 +241,13 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
           return 0.0;
       }
     }).toList();
-    
+
     return CustomPaint(
-      painter: LineChartPainter(
-        data: data,
-        color: Colors.blue,
-        maxValue: 3.0,
-      ),
+      painter: LineChartPainter(data: data, color: Colors.blue, maxValue: 3.0),
       child: Container(),
     );
   }
-  
+
   Widget _buildCategoryAnalysis() {
     return Card(
       child: Padding(
@@ -259,32 +260,31 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: _buildSimpleBarChart(),
-            ),
+            SizedBox(height: 200, child: _buildSimpleBarChart()),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSimpleBarChart() {
     final data = _categoryData.map((item) {
       return (item['revenue'] as double) / 1000000;
     }).toList();
-    
+
     return CustomPaint(
       painter: BarChartPainter(
         data: data,
         color: Colors.blue,
         maxValue: 4.0,
-        labels: _categoryData.map((item) => item['category'] as String).toList(),
+        labels: _categoryData
+            .map((item) => item['category'] as String)
+            .toList(),
       ),
       child: Container(),
     );
   }
-  
+
   Widget _buildDetailedTable() {
     return Card(
       child: Padding(
@@ -314,7 +314,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
                   final orders = data['orders'] as int;
                   final profitRate = revenue > 0 ? (profit / revenue * 100) : 0;
                   final avgOrderValue = orders > 0 ? revenue / orders : 0;
-                  
+
                   return DataRow(
                     cells: [
                       DataCell(Text(data['month'] as String)),
@@ -333,7 +333,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
       ),
     );
   }
-  
+
   String _getChartTitle() {
     switch (_selectedChartType) {
       case 'revenue':
@@ -346,25 +346,25 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
         return 'データ';
     }
   }
-  
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     // 実際のデータ読み込み処理
     await Future.delayed(const Duration(seconds: 1));
-    
+
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   void _exportData() {
     // データエクスポート処理
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('データエクスポート機能は今後実装予定です')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('データエクスポート機能は今後実装予定です')));
   }
 }
 
@@ -373,47 +373,47 @@ class LineChartPainter extends CustomPainter {
   final List<double> data;
   final Color color;
   final double maxValue;
-  
+
   LineChartPainter({
     required this.data,
     required this.color,
     required this.maxValue,
   });
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-    
+
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
-    
+
     final pointWidth = size.width / (data.length - 1);
-    
+
     final path = Path();
     for (int i = 0; i < data.length; i++) {
       final x = i * pointWidth;
       final y = size.height - (data[i] / maxValue * size.height);
-      
+
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         path.lineTo(x, y);
       }
     }
-    
+
     // データポイント
     for (int i = 0; i < data.length; i++) {
       final x = i * pointWidth;
       final y = size.height - (data[i] / maxValue * size.height);
-      
+
       canvas.drawCircle(Offset(x, y), 4, paint);
     }
-    
+
     canvas.drawPath(path, paint);
   }
 }
@@ -424,37 +424,34 @@ class BarChartPainter extends CustomPainter {
   final Color color;
   final double maxValue;
   final List<String> labels;
-  
+
   BarChartPainter({
     required this.data,
     required this.color,
     required this.maxValue,
     required this.labels,
   });
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-    
+
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    
+
     final barWidth = size.width / (data.length * 2);
     final spacing = barWidth;
-    
+
     for (int i = 0; i < data.length; i++) {
       final barHeight = (data[i] / maxValue) * size.height;
       final x = i * (barWidth + spacing) + spacing;
       final y = size.height - barHeight;
-      
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, barWidth, barHeight),
-        paint,
-      );
+
+      canvas.drawRect(Rect.fromLTWH(x, y, barWidth, barHeight), paint);
     }
   }
 }

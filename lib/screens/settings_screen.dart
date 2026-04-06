@@ -30,7 +30,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _repo = AppSettingsRepository();
-  final GoogleAccountService _googleAccountService = GoogleAccountService.instance;
+  final GoogleAccountService _googleAccountService =
+      GoogleAccountService.instance;
   String _theme = 'system';
   String _summaryTheme = 'white';
   InvoiceListStyle _invoiceListStyle = InvoiceListStyle.legacy;
@@ -89,22 +90,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
       final dbPath = db.path;
-      
+
       await db.close();
-      
+
       final driveService = DriveBackupService();
       final success = await driveService.restoreLatestBackup(dbPath);
-      
+
       if (!success) {
         throw Exception('復元可能なバックアップが見つかりません');
       }
-      
+
       if (mounted) {
         setState(() => _restoring = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ データを復元しました。アプリを再起動してください。')),
         );
-        
+
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -123,9 +124,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _restoring = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ 復元失敗: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ 復元失敗: $e')));
       }
     }
   }
@@ -138,21 +139,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final db = await dbHelper.database;
       final dbPath = db.path;
       final dbFile = File(dbPath);
-      
+
       if (!await dbFile.exists()) {
         throw Exception('データベースファイルが見つかりません');
       }
-      
+
       final driveService = DriveBackupService();
       await driveService.uploadDatabaseSnapshot(
         dbFile,
         description: 'Manual backup - ${DateTime.now().toIso8601String()}',
       );
-      
+
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now().toIso8601String();
       await prefs.setString('last_backup_time', now);
-      
+
       if (mounted) {
         setState(() => _lastBackupTime = now);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,9 +162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ バックアップ失敗: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ バックアップ失敗: $e')));
       }
     } finally {
       if (mounted) {
@@ -178,7 +179,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _autoBackupEnabled = enabled);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(enabled ? '自動バックアップを有効化しました' : '自動バックアップを無効化しました')),
+      SnackBar(
+        content: Text(enabled ? '自動バックアップを有効化しました' : '自動バックアップを無効化しました'),
+      ),
     );
   }
 
@@ -211,7 +214,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _homeMode = homeMode);
       final statusText = await _repo.getDashboardStatusText();
       setState(() => _statusTextController.text = statusText);
-      final showCategoryDesc = await _repo.getDashboardShowCategoryDescriptions();
+      final showCategoryDesc = await _repo
+          .getDashboardShowCategoryDescriptions();
       setState(() => _showCategoryDescriptions = showCategoryDesc);
       final encoding = await _repo.getGmailEnvelopeEncoding();
       setState(() => _encodingMode = encoding);
@@ -222,7 +226,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() => _googleAccount = account);
     });
-    _accountSubscription = _googleAccountService.accountStream.listen((account) {
+    _accountSubscription = _googleAccountService.accountStream.listen((
+      account,
+    ) {
       if (!mounted) return;
       setState(() => _googleAccount = account);
     });
@@ -240,15 +246,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final account = await _googleAccountService.pickAccount();
       if (account == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('アカウント選択がキャンセルされました')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('アカウント選択がキャンセルされました')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google連携に失敗しました: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google連携に失敗しました: $e')));
     } finally {
       if (mounted) {
         setState(() => _linkingAccount = false);
@@ -262,9 +268,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _googleAccountService.disconnect();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('連携解除に失敗しました: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('連携解除に失敗しました: $e')));
     } finally {
       if (mounted) {
         setState(() => _linkingAccount = false);
@@ -284,9 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('S1:設定'),
-      ),
+      appBar: AppBar(title: const Text('S1:設定')),
       body: ListView(
         children: [
           const Padding(padding: EdgeInsets.all(20)),
@@ -297,7 +301,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const DashboardMenuSettingsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const DashboardMenuSettingsScreen(),
+              ),
             ),
           ),
           const Divider(indent: 16, endIndent: 16),
@@ -314,7 +320,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: const [
                     Icon(Icons.home_outlined, color: Colors.indigo),
                     SizedBox(width: 8),
-                    Expanded(child: Text('ホーム画面設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                    Expanded(
+                      child: Text(
+                        'ホーム画面設定',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -340,7 +351,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     final message = mode == 'dashboard'
                         ? 'ホーム画面をダッシュボードに設定しました'
                         : 'ホーム画面を伝票一覧に設定しました';
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
                   },
                 ),
                 const SizedBox(height: 8),
@@ -365,15 +378,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.palette, color: Colors.purple),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('テーマ設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'テーマ設定',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 SegmentedButton<String>(
                   segments: [
-                    ButtonSegment<String>(value: 'system', label: Text('システム'), icon: Icon(Icons.settings)),
-                    ButtonSegment<String>(value: 'light', label: Text('ライト'), icon: Icon(Icons.light_mode)),
-                    ButtonSegment<String>(value: 'dark', label: Text('ダーク'), icon: Icon(Icons.dark_mode)),
+                    ButtonSegment<String>(
+                      value: 'system',
+                      label: Text('システム'),
+                      icon: Icon(Icons.settings),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'light',
+                      label: Text('ライト'),
+                      icon: Icon(Icons.light_mode),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'dark',
+                      label: Text('ダーク'),
+                      icon: Icon(Icons.dark_mode),
+                    ),
                   ],
                   selected: {_theme},
                   onSelectionChanged: (s) async {
@@ -384,8 +414,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 16),
                 SegmentedButton<String>(
                   segments: [
-                    ButtonSegment<String>(value: 'white', label: Text('白'), icon: Icon(Icons.palette)),
-                    ButtonSegment<String>(value: 'gray', label: Text('グレー'), icon: Icon(Icons.color_lens)),
+                    ButtonSegment<String>(
+                      value: 'white',
+                      label: Text('白'),
+                      icon: Icon(Icons.palette),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'gray',
+                      label: Text('グレー'),
+                      icon: Icon(Icons.color_lens),
+                    ),
                   ],
                   selected: {_summaryTheme},
                   onSelectionChanged: (s) async {
@@ -410,12 +448,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: const [
                     Icon(Icons.view_carousel, color: Colors.blue),
                     SizedBox(width: 8),
-                    Expanded(child: Text('伝票一覧スタイル', style: TextStyle(fontWeight: FontWeight.bold))),
+                    Expanded(
+                      child: Text(
+                        '伝票一覧スタイル',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<InvoiceListStyle>(
-                  value: _invoiceListStyle,
+                  initialValue: _invoiceListStyle,
                   decoration: const InputDecoration(
                     labelText: 'IV / Q1 一覧UI',
                     border: OutlineInputBorder(),
@@ -459,7 +502,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.info_outline, color: Colors.orange),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('ステータス設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'ステータス設定',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -501,7 +549,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.cloud_sync, color: Colors.green),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('Googleアカウント連携', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'Googleアカウント連携',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -514,14 +567,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: _linkingAccount ? null : _selectGoogleAccount,
+                        onPressed: _linkingAccount
+                            ? null
+                            : _selectGoogleAccount,
                         icon: const Icon(Icons.account_circle),
-                        label: Text(_googleAccount == null ? 'アカウントを選択' : '別アカウントに切替'),
+                        label: Text(
+                          _googleAccount == null ? 'アカウントを選択' : '別アカウントに切替',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     OutlinedButton.icon(
-                      onPressed: (_googleAccount == null || _linkingAccount) ? null : _disconnectGoogleAccount,
+                      onPressed: (_googleAccount == null || _linkingAccount)
+                          ? null
+                          : _disconnectGoogleAccount,
                       icon: const Icon(Icons.logout),
                       label: const Text('連携解除'),
                     ),
@@ -544,7 +603,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.mail, color: Colors.blue),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('メール設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'メール設定',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -553,7 +617,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('SM:メール設定'),
                   subtitle: const Text('SMTP/BCC設定、Gmailアカウント選択'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmailSettingsScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EmailSettingsScreen(),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -572,7 +641,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.cloud_upload, color: Colors.deepPurple),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('データバックアップ', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'データバックアップ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -586,13 +660,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _backingUp ? null : _backupToGoogleDrive,
-                        icon: _backingUp 
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.backup),
+                        icon: _backingUp
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.backup),
                         label: Text(_backingUp ? 'バックアップ中...' : '今すぐバックアップ'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
@@ -614,12 +691,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 OutlinedButton.icon(
                   onPressed: _restoring ? null : _restoreFromGoogleDrive,
                   icon: _restoring
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.restore),
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.restore),
                   label: Text(_restoring ? '復元中...' : 'バックアップから復元'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.orange,
@@ -663,7 +740,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.sync, color: Colors.indigo),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('同期設定', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        '同期設定',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -731,7 +813,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const MothershipDiscoverySettingsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const MothershipDiscoverySettingsScreen(),
+                    ),
                   ),
                 ),
               ],
@@ -751,24 +835,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.storage, color: Colors.brown),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('マスター管理', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'マスター管理',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.business),
                   title: const Text('会社情報'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CompanyInfoScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CompanyInfoScreen()),
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.people),
                   title: const Text('顧客マスター'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerMasterScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CustomerMasterScreen()),
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.inventory_2),
                   title: const Text('商品マスター'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductMasterScreen())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ProductMasterScreen()),
+                  ),
                 ),
               ],
             ),
@@ -787,14 +885,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     const Icon(Icons.category, color: Colors.purple),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('マスター管理（統合）', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(
+                      child: Text(
+                        'マスター管理（統合）',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.storage),
                   title: const Text('M1:マスター管理'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MasterHubPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => MasterHubPage()),
+                  ),
                 ),
               ],
             ),
