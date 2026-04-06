@@ -433,24 +433,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       if (result != null) {
         // 選択された顧客データを保存（重複チェック付き）
         try {
-          // ローディング表示
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 16),
-                  Text('顧客を登録中...'),
-                ],
-              ),
-              duration: Duration(seconds: 3),
-            ),
-          );
-
           // ローディング表示（操作完了まで消えないようにする）
           final loadingSnackBar = SnackBar(
             content: Row(
@@ -490,12 +472,34 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ),
           );
 
-          // データ再読み込み
-          _loadCustomers();
+          // 完了通知を表示（3 秒後に自動消去）
+          await Future.delayed(const Duration(milliseconds: 100));
+
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('電話帳から「${result.displayName}」を追加しました')),
+                ],
+              ),
+              backgroundColor: Colors.green.shade700,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // データ再読み込み（非同期）
+          await _loadCustomers();
         } on DuplicateCustomerException catch (e) {
           if (!mounted) return;
 
           // ローディングを消して重複確認ダイアログを表示
+          await Future.delayed(const Duration(milliseconds: 100));
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
           // 重複検出時の警告ダイアログ表示
@@ -605,6 +609,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           if (!mounted) return;
 
           // ローディングを消してエラー通知を表示
+          await Future.delayed(const Duration(milliseconds: 100));
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
           // エラー通知（詳細メッセージ付き）
