@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
-import '../models/customer_model.dart';
+import '../models/customer_model.dart'
+    show Customer, DuplicateCustomerException;
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 import '../models/customer_contact.dart';
@@ -11,7 +12,9 @@ class CustomerRepository {
 
   Future<List<Customer>> getAllCustomers({bool includeHidden = false}) async {
     final db = await _dbHelper.database;
-    final filter = includeHidden ? '' : 'WHERE COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
+    final filter = includeHidden
+        ? ''
+        : 'WHERE COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
     List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
              COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
@@ -28,7 +31,9 @@ class CustomerRepository {
     final db = await _dbHelper.database;
     // best-effort, ignore errors if columns already exist
     try {
-      await db.execute('ALTER TABLE customers ADD COLUMN contact_version_id INTEGER');
+      await db.execute(
+        'ALTER TABLE customers ADD COLUMN contact_version_id INTEGER',
+      );
     } catch (_) {}
     try {
       await db.execute('ALTER TABLE customers ADD COLUMN head_char1 TEXT');
@@ -38,8 +43,63 @@ class CustomerRepository {
     } catch (_) {}
   }
 
-  Future<void> saveCustomer(Customer customer) async {
+  /// 重複チェック（電話番号・メール・社名）
+  Future<bool> checkDuplicate({
+    String? tel,
+    String? email,
+    String? name,
+  }) async {
     final db = await _dbHelper.database;
+
+    // 電話番号で検索
+    if (tel != null && tel.isNotEmpty) {
+      final result = await db.query(
+        'customers',
+        where: 'COALESCE(tel, contact_tel) = ?',
+        whereArgs: [tel],
+      );
+      if (result.isNotEmpty) return true;
+    }
+
+    // メールで検索
+    if (email != null && email.isNotEmpty) {
+      final result = await db.query(
+        'customers',
+        where: 'COALESCE(email, contact_email) = ?',
+        whereArgs: [email],
+      );
+      if (result.isNotEmpty) return true;
+    }
+
+    // 社名（表示名・正式名称）で検索
+    if (name != null && name.isNotEmpty) {
+      final result = await db.query(
+        'customers',
+        where: '(display_name LIKE ? OR formal_name LIKE ?)',
+        whereArgs: ['%$name%', '%$name%'],
+      );
+      if (result.isNotEmpty) return true;
+    }
+
+    return false;
+  }
+
+  Future<void> saveCustomer(Customer customer, {bool force = false}) async {
+    final db = await _dbHelper.database;
+
+    // 重複チェック（force=false の場合）
+    if (!force) {
+      final isDuplicate = await checkDuplicate(
+        tel: customer.tel,
+        email: customer.email,
+        name: customer.displayName,
+      );
+
+      if (isDuplicate) {
+        throw DuplicateCustomerException(customer);
+      }
+    }
+
     await db.transaction((txn) async {
       await txn.insert(
         'customers',
@@ -53,17 +113,13 @@ class CustomerRepository {
       action: "SAVE_CUSTOMER",
       targetType: "CUSTOMER",
       targetId: customer.id,
-      details: "名称: ${customer.formalName}, 敬称: ${customer.title}",
+      details: "名称：${customer.formalName}, 敬称：${customer.title}",
     );
   }
 
   Future<void> deleteCustomer(String id) async {
     final db = await _dbHelper.database;
-    await db.delete(
-      'customers',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('customers', where: 'id = ?', whereArgs: [id]);
 
     await _logRepo.logAction(
       action: "DELETE_CUSTOMER",
@@ -74,7 +130,11 @@ class CustomerRepository {
   }
 
   // GPS履歴の保存 (直近10件を自動管理)
-  Future<void> addGpsHistory(String customerId, double latitude, double longitude) async {
+  Future<void> addGpsHistory(
+    String customerId,
+    double latitude,
+    double longitude,
+  ) async {
     final db = await _dbHelper.database;
     final now = DateTime.now().toIso8601String();
 
@@ -88,7 +148,8 @@ class CustomerRepository {
       });
 
       // 10件を超えた古い履歴を削除
-      await txn.execute('''
+      await txn.execute(
+        '''
         DELETE FROM customer_gps_history 
         WHERE id IN (
           SELECT id FROM customer_gps_history 
@@ -96,7 +157,9 @@ class CustomerRepository {
           ORDER BY timestamp DESC 
           LIMIT -1 OFFSET 10
         )
-      ''', [customerId]);
+      ''',
+        [customerId],
+      );
     });
   }
 
@@ -110,10 +173,16 @@ class CustomerRepository {
     );
   }
 
-  Future<List<Customer>> searchCustomers(String query, {bool includeHidden = false}) async {
+  Future<List<Customer>> searchCustomers(
+    String query, {
+    bool includeHidden = false,
+  }) async {
     final db = await _dbHelper.database;
-    final where = includeHidden ? '' : 'AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final where = includeHidden
+        ? ''
+        : 'AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
              COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
       FROM customers c
@@ -122,15 +191,27 @@ class CustomerRepository {
       WHERE (c.display_name LIKE ? OR c.formal_name LIKE ?) $where
       ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
       LIMIT 50
-    ''', ['%$query%', '%$query%']);
+    ''',
+      ['%$query%', '%$query%'],
+    );
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 
-  Future<void> updateContact({required String customerId, String? email, String? tel, String? address}) async {
+  Future<void> updateContact({
+    required String customerId,
+    String? email,
+    String? tel,
+    String? address,
+  }) async {
     final db = await _dbHelper.database;
     await db.transaction((txn) async {
       final nextVersion = await _nextContactVersion(txn, customerId);
-      await txn.update('customer_contacts', {'is_active': 0}, where: 'customer_id = ?', whereArgs: [customerId]);
+      await txn.update(
+        'customer_contacts',
+        {'is_active': 0},
+        where: 'customer_id = ?',
+        whereArgs: [customerId],
+      );
       await txn.insert('customer_contacts', {
         'id': const Uuid().v4(),
         'customer_id': customerId,
@@ -153,7 +234,12 @@ class CustomerRepository {
 
   Future<CustomerContact?> getActiveContact(String customerId) async {
     final db = await _dbHelper.database;
-    final rows = await db.query('customer_contacts', where: 'customer_id = ? AND is_active = 1', whereArgs: [customerId], limit: 1);
+    final rows = await db.query(
+      'customer_contacts',
+      where: 'customer_id = ? AND is_active = 1',
+      whereArgs: [customerId],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return CustomerContact.fromMap(rows.first);
   }
@@ -172,15 +258,11 @@ class CustomerRepository {
 
   Future<void> setHidden(String id, bool hidden) async {
     final db = await _dbHelper.database;
-    await db.insert(
-      'master_hidden',
-      {
-        'master_type': 'customer',
-        'master_id': id,
-        'is_hidden': hidden ? 1 : 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('master_hidden', {
+      'master_type': 'customer',
+      'master_id': id,
+      'is_hidden': hidden ? 1 : 0,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
     await _logRepo.logAction(
       action: hidden ? "HIDE_CUSTOMER" : "UNHIDE_CUSTOMER",
       targetType: "CUSTOMER",
@@ -189,15 +271,29 @@ class CustomerRepository {
     );
   }
 
-  Future<int> _nextContactVersion(DatabaseExecutor txn, String customerId) async {
-    final res = await txn.rawQuery('SELECT MAX(version) as v FROM customer_contacts WHERE customer_id = ?', [customerId]);
+  Future<int> _nextContactVersion(
+    DatabaseExecutor txn,
+    String customerId,
+  ) async {
+    final res = await txn.rawQuery(
+      'SELECT MAX(version) as v FROM customer_contacts WHERE customer_id = ?',
+      [customerId],
+    );
     final current = res.first['v'] as int?;
     return (current ?? 0) + 1;
   }
 
-  Future<void> _upsertActiveContact(DatabaseExecutor txn, Customer customer) async {
+  Future<void> _upsertActiveContact(
+    DatabaseExecutor txn,
+    Customer customer,
+  ) async {
     final nextVersion = await _nextContactVersion(txn, customer.id);
-    await txn.update('customer_contacts', {'is_active': 0}, where: 'customer_id = ?', whereArgs: [customer.id]);
+    await txn.update(
+      'customer_contacts',
+      {'is_active': 0},
+      where: 'customer_id = ?',
+      whereArgs: [customer.id],
+    );
     await txn.insert('customer_contacts', {
       'id': const Uuid().v4(),
       'customer_id': customer.id,

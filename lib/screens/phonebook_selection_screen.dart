@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import '../models/customer_model.dart';
 
 /// 電話帳から顧客を選択するための検索機能付き画面
 class PhonebookSelectionScreen extends StatefulWidget {
@@ -108,7 +109,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     });
   }
 
-  Future<Contact?> _showContactDetail(Contact contact) async {
+  Future<Customer?> _showContactDetail(Contact contact) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -238,8 +239,19 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
+                  // Customer オブジェクトに変換して返す
+                  final customer = _convertToCustomer(
+                    contact,
+                    selectedNameSource,
+                    orgCompany,
+                    person,
+                    addresses.firstOrNull,
+                    emails.firstOrNull,
+                    tel,
+                  );
+
                   Navigator.pop(dialogContext, {
-                    'contact': contact,
+                    'customer': customer,
                     'company': orgCompany,
                     'person': person,
                     'addresses': addresses,
@@ -257,9 +269,45 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     );
 
     if (result != null) {
-      return contact; // 選択された連絡先を返す
+      return result['customer'] as Customer?; // Customer オブジェクトを返す
     }
     return null;
+  }
+
+  /// Contact を Customer モデルに変換
+  Customer _convertToCustomer(
+    Contact contact,
+    String selectedNameSource,
+    String orgCompany,
+    String person,
+    String? address,
+    String? email,
+    String? tel,
+  ) {
+    final displayName = selectedNameSource == 'company' && orgCompany.isNotEmpty
+        ? orgCompany
+        : person;
+
+    final formalName = selectedNameSource == 'company' && orgCompany.isNotEmpty
+        ? '株式会社 ${orgCompany}'
+        : '${person} 様';
+
+    return Customer(
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // 一時的 ID
+      displayName: displayName,
+      formalName: formalName,
+      title: selectedNameSource == 'company' ? '' : '様',
+      department: null,
+      address: address,
+      tel: tel,
+      email: email,
+      contactVersionId: null,
+      odooId: null,
+      isSynced: false,
+      updatedAt: DateTime.now(),
+      isLocked: false,
+      isHidden: false,
+    );
   }
 
   @override
