@@ -433,17 +433,46 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       if (result != null) {
         // 選択された顧客データを保存（重複チェック付き）
         try {
+          // ローディング表示
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 16),
+                  Text('顧客を登録中...'),
+                ],
+              ),
+              duration: Duration(seconds: 3),
+            ),
+          );
+
+          // 保存処理（非同期）
           await _customerRepo.saveCustomer(result);
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('電話帳から顧客を追加しました'),
-                backgroundColor: Colors.green,
+          if (!mounted) return;
+
+          // インポート完了通知
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('電話帳から「${result.displayName}」を追加しました')),
+                ],
               ),
-            );
-            _loadCustomers();
-          }
+              backgroundColor: Colors.green.shade700,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // データ再読み込み
+          _loadCustomers();
         } on DuplicateCustomerException catch (e) {
           if (!mounted) return;
 
@@ -451,41 +480,58 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           final shouldContinue = await showDialog<bool>(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              title: const Text('顧客が重複しています'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              title: const Row(
                 children: [
-                  Text(
-                    '以下の顧客と重複している可能性があります：',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '表示名：${e.customer.displayName}',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  if (e.customer.tel != null && e.customer.tel!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text('電話番号：${e.customer.tel}'),
-                  ],
-                  if (e.customer.email != null &&
-                      e.customer.email!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text('メール：${e.customer.email}'),
-                  ],
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('顧客が重複しています'),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('キャンセル'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '以下の顧客と重複している可能性があります：',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDuplicateInfoRow(
+                      '表示名:',
+                      Text(e.customer.displayName),
+                    ),
+                    if (e.customer.tel != null &&
+                        e.customer.tel!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _buildDuplicateInfoRow(
+                        '電話番号:',
+                        Text(
+                          e.customer.tel!,
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                      ),
+                    ],
+                    if (e.customer.email != null &&
+                        e.customer.email!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _buildDuplicateInfoRow('メール:', Text(e.customer.email!)),
+                    ],
+                  ],
                 ),
-                ElevatedButton(
+              ),
+              actions: [
+                TextButton.icon(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  icon: const Icon(Icons.close),
+                  label: const Text('キャンセル'),
+                ),
+                ElevatedButton.icon(
                   onPressed: () => Navigator.pop(dialogContext, true),
-                  child: const Text('上書き登録'),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('上書き登録'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: Colors.orange.shade700,
                   ),
                 ),
               ],
@@ -496,22 +542,89 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             // 強制的に保存（重複チェック無視）
             await _customerRepo.saveCustomer(result, force: true);
 
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.info_outline),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text('顧客を登録しました（重複許容）：${result.displayName}'),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.orange.shade700,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+
+            _loadCustomers();
+          } else {
+            // キャンセル時の通知
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('顧客を登録しました（重複許容）'),
-                  backgroundColor: Colors.orange,
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.cancel, color: Colors.white),
+                      SizedBox(width: 12),
+                      Text('登録をキャンセルしました：${result.displayName}'),
+                    ],
+                  ),
+                  backgroundColor: Colors.grey.shade700,
+                  duration: const Duration(seconds: 2),
                 ),
               );
-              _loadCustomers();
             }
           }
         } catch (e) {
           if (!mounted) return;
 
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('顧客登録中にエラーが発生しました：$e')));
+          // エラー通知（詳細メッセージ付き）
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white),
+                      SizedBox(width: 12),
+                      Expanded(child: Text('顧客登録中にエラーが発生しました')),
+                    ],
+                  ),
+                  if (e.toString().isNotEmpty) ...[
+                    const Divider(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 4),
+                      child: Text(
+                        e.toString(),
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+
+          print('C2 インポートエラー：$e');
+        }
+      } else {
+        // キャンセル時の通知（画面から戻る場合）
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('電話帳選択をキャンセルしました'),
+              backgroundColor: Colors.grey,
+              duration: Duration(seconds: 2),
+            ),
+          );
         }
       }
     } catch (e, st) {
@@ -523,6 +636,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         ).showSnackBar(SnackBar(content: Text('電話帳の読み込みに失敗しました：$e')));
       }
     }
+  }
+
+  /// 重複情報行を構築するヘルパーメソッド
+  Widget _buildDuplicateInfoRow(String label, Widget content) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 80, child: Text(label)),
+        Expanded(child: content),
+      ],
+    );
   }
 
   @override
