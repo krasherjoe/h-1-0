@@ -237,9 +237,9 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                 onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('キャンセル'),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
-                  // Customer オブジェクトに変換して返す
+                  // Customer オブジェクトに変換して返す（非同期処理）
                   final customer = _convertToCustomer(
                     contact,
                     selectedNameSource,
@@ -260,7 +260,12 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                     'selectedNameSource': selectedNameSource,
                   });
                 },
-                child: const Text('選択'),
+                icon: const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                label: const Text('選択'),
               ),
             ],
           );
