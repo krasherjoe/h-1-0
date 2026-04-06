@@ -421,7 +421,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _showPhonebookImport() async {
     try {
       // 新しい検索機能付き電話帳選択画面を呼び出す
-      final result = await Navigator.push<Customer>(
+      final result = await Navigator.push<Map<String, dynamic>?>(
         context,
         MaterialPageRoute(
           builder: (context) => const PhonebookSelectionScreen(),
@@ -432,37 +432,27 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
       if (result != null) {
         // Map から Customer オブジェクトを取り出す
-        final resultMap = result as Map<String, dynamic>;
-        final customer = resultMap['customer'] as Customer?;
+        final customer = result['customer'] as Customer?;
 
-        if (customer == null) return;
-
-        try {
-          // ローディング表示（操作完了まで消えないようにする）
-          final loadingSnackBar = SnackBar(
-            content: Row(
-              children: [
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(width: 16),
-                Text('顧客を登録中...'),
-              ],
+        if (customer == null) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('顧客データを取得できませんでした'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
             ),
           );
+          return;
+        }
 
-          ScaffoldMessenger.of(context).showSnackBar(loadingSnackBar);
-
+        try {
           // Customer オブジェクトを保存（重複チェック付き）
           await _customerRepo.saveCustomer(customer);
 
           if (!mounted) return;
 
-          // ローディングを消して完了通知を表示
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
+          // 完了通知を表示
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -552,7 +542,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
           if (shouldContinue == true) {
             // 強制的に保存（重複チェック無視）
-            await _customerRepo.saveCustomer(result, force: true);
+            await _customerRepo.saveCustomer(customer, force: true);
 
             if (!mounted) return;
 
@@ -563,7 +553,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     const Icon(Icons.info_outline),
                     SizedBox(width: 12),
                     Expanded(
-                      child: Text('顧客を登録しました（重複許容）：${result.displayName}'),
+                      child: Text('顧客を登録しました（重複許容）：${customer.displayName}'),
                     ),
                   ],
                 ),
@@ -572,7 +562,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               ),
             );
 
-            _loadCustomers();
+            await _loadCustomers();
           } else {
             // キャンセル時の通知
             if (mounted) {
@@ -582,7 +572,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     children: [
                       const Icon(Icons.cancel, color: Colors.white),
                       SizedBox(width: 12),
-                      Text('登録をキャンセルしました：${result.displayName}'),
+                      Text('登録をキャンセルしました：${customer.displayName}'),
                     ],
                   ),
                   backgroundColor: Colors.grey.shade700,

@@ -274,8 +274,8 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     );
 
     if (result != null && mounted) {
-      // ダイアログを閉じた後、この画面自体も閉じて Customer を返す
-      Navigator.pop(context, result['customer'] as Customer?);
+      // ダイアログを閉じた後、この画面自体も閉じて Map を返す
+      Navigator.pop(context, result);
     }
     return null;
   }
