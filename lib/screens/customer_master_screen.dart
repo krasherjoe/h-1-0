@@ -451,12 +451,31 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ),
           );
 
+          // ローディング表示（操作完了まで消えないようにする）
+          final loadingSnackBar = SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 16),
+                const Text('顧客を登録中...'),
+              ],
+            ),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(loadingSnackBar);
+
           // 保存処理（非同期）
           await _customerRepo.saveCustomer(result);
 
           if (!mounted) return;
 
-          // インポート完了通知
+          // ローディングを消して完了通知を表示
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -475,6 +494,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           _loadCustomers();
         } on DuplicateCustomerException catch (e) {
           if (!mounted) return;
+
+          // ローディングを消して重複確認ダイアログを表示
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
           // 重複検出時の警告ダイアログ表示
           final shouldContinue = await showDialog<bool>(
@@ -581,6 +603,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           }
         } catch (e) {
           if (!mounted) return;
+
+          // ローディングを消してエラー通知を表示
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
           // エラー通知（詳細メッセージ付き）
           ScaffoldMessenger.of(context).showSnackBar(
