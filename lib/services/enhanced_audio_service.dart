@@ -476,7 +476,7 @@ class AudioProcessingService {
       await inputFile.copy(outputPath);
     }
     
-    debugPrint('音声トリミング: $inputPath -> $outputPath (${startTime}-${endTime})');
+    debugPrint('音声トリミング: $inputPath -> $outputPath ${startTime}-${endTime}');
     return outputPath;
   }
   
