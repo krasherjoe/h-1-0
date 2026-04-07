@@ -46,3 +46,4 @@ app.*.map.json
 
 # Local SQLite snapshots
 app.db
+auto-accept-agent-antigravity-free/
