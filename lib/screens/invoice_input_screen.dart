@@ -674,27 +674,54 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 _buildBottomActionBar(),
               ],
             ),
-            if (_savingNotifier.value)
-              Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(color: Colors.white),
-                      SizedBox(height: 16),
-                      Text(
-                        "保存中...",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+            ValueListenableBuilder<bool>(
+              valueListenable: _savingNotifier,
+              builder: (context, saving, child) => AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: saving
+                    ? Container(
+                        key: const ValueKey('saving'),
+                        color: Colors.black45,
+                        child: Center(
+                          child: Card(
+                            elevation: 8,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 40,
+                                vertical: 32,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 20),
+                                  Text(
+                                    '保存中...',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    'PDF を生成しています',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('idle')),
               ),
+            ),
           ],
         ),
       ),
