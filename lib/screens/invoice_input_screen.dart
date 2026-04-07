@@ -365,6 +365,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       return;
     }
 
+    _savingNotifier.value = true;
+
     // GPS情報の取得
     final gpsService = GpsService();
     final pos = await gpsService.getCurrentLocation();
@@ -390,8 +392,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
     );
-
-    _savingNotifier.value = true;
     try {
       // PDF生成有無に関わらず、まずは保存
       if (generatePdf) {
