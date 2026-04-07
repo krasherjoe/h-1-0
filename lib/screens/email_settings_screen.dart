@@ -2,14 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../constants/mail_send_method.dart';
-import '../constants/mail_templates.dart';
 import '../services/app_settings_repository.dart';
-import '../services/email_sender.dart';
-import '../services/google_account_service.dart';
+import '../constants/mail_templates.dart';
 
 class EmailSettingsScreen extends StatefulWidget {
   const EmailSettingsScreen({super.key});
@@ -21,32 +17,18 @@ class EmailSettingsScreen extends StatefulWidget {
 class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
   final _appSettingsRepo = AppSettingsRepository();
 
-  final _smtpHostCtrl = TextEditingController();
-  final _smtpPortCtrl = TextEditingController(text: '587');
-  final _smtpUserCtrl = TextEditingController();
-  final _smtpPassCtrl = TextEditingController();
   final _smtpBccCtrl = TextEditingController();
   final _mailHeaderCtrl = TextEditingController();
   final _mailFooterCtrl = TextEditingController();
 
-  bool _smtpTls = true;
-  bool _smtpIgnoreBadCert = false;
   bool _loadingLogs = false;
   bool _selectingBccFromDevice = false;
-  String _mailSendMethod = kMailSendMethodSmtp;
-  List<String> _smtpLogs = [];
   String _mailHeaderTemplateId = kMailTemplateIdDefault;
   String _mailFooterTemplateId = kMailTemplateIdDefault;
   String? _selectedDeviceBcc;
 
-  static const _kSmtpHost = 'smtp_host';
-  static const _kSmtpPort = 'smtp_port';
-  static const _kSmtpUser = 'smtp_user';
-  static const _kSmtpPass = 'smtp_pass';
-  static const _kSmtpTls = 'smtp_tls';
   static const _kSmtpBcc = 'smtp_bcc';
-  static const _kSmtpIgnoreBadCert = 'smtp_ignore_bad_cert';
-  static const _kMailSendMethod = kMailSendMethodPrefKey;
+  static const _kMailSendMethodPrefKey = 'mail_send_method';
   static const _kMailHeaderTemplate = kMailHeaderTemplateKey;
   static const _kMailFooterTemplate = kMailFooterTemplateKey;
   static const _kMailHeaderText = kMailHeaderTextKey;
@@ -61,10 +43,6 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
 
   @override
   void dispose() {
-    _smtpHostCtrl.dispose();
-    _smtpPortCtrl.dispose();
-    _smtpUserCtrl.dispose();
-    _smtpPassCtrl.dispose();
     _smtpBccCtrl.dispose();
     _mailHeaderCtrl.dispose();
     _mailFooterCtrl.dispose();
@@ -73,210 +51,50 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
 
   Future<void> _loadAll() async {
     final prefs = await SharedPreferences.getInstance();
-    final hostPref = prefs.getString(_kSmtpHost);
-    final smtpHost =
-        hostPref ?? await _appSettingsRepo.getString(_kSmtpHost) ?? '';
-    final portPref = prefs.getString(_kSmtpPort);
-    final smtpPort =
-        (portPref ?? await _appSettingsRepo.getString(_kSmtpPort) ?? '587')
-            .trim()
-            .isEmpty
-        ? '587'
-        : (portPref ?? await _appSettingsRepo.getString(_kSmtpPort) ?? '587');
-    final userPref = prefs.getString(_kSmtpUser);
-    final smtpUser =
-        userPref ?? await _appSettingsRepo.getString(_kSmtpUser) ?? '';
-    final passPref = prefs.getString(_kSmtpPass);
-    final smtpPassEncrypted =
-        passPref ?? await _appSettingsRepo.getString(_kSmtpPass) ?? '';
-    final smtpPass = _decryptWithFallback(smtpPassEncrypted);
-    final tlsPrefExists = prefs.containsKey(_kSmtpTls);
-    final smtpTls = tlsPrefExists
-        ? (prefs.getBool(_kSmtpTls) ?? true)
-        : await _appSettingsRepo.getBool(_kSmtpTls, defaultValue: true);
+
+    // BCC 設定の読み込み
     final bccPref = prefs.getString(_kSmtpBcc);
     final smtpBcc =
         bccPref ?? await _appSettingsRepo.getString(_kSmtpBcc) ?? '';
-    final ignorePrefExists = prefs.containsKey(_kSmtpIgnoreBadCert);
-    final smtpIgnoreBadCert = ignorePrefExists
-        ? (prefs.getBool(_kSmtpIgnoreBadCert) ?? false)
-        : await _appSettingsRepo.getBool(
-            _kSmtpIgnoreBadCert,
-            defaultValue: false,
-          );
+    setState(() {
+      _smtpBccCtrl.text = smtpBcc;
+    });
 
-    final mailSendMethodPref = prefs.getString(_kMailSendMethod);
-    final mailSendMethodDb =
-        await _appSettingsRepo.getString(_kMailSendMethod) ??
-        kMailSendMethodSmtp;
-    final resolvedMailSendMethod = normalizeMailSendMethod(
-      mailSendMethodPref ?? mailSendMethodDb,
-    );
-
-    final headerTemplatePref = prefs.getString(_kMailHeaderTemplate);
-    final headerTemplateDb =
+    // メールテンプレートの読み込み
+    final headerTemplateId =
+        prefs.getString(_kMailHeaderTemplate) ??
         await _appSettingsRepo.getString(_kMailHeaderTemplate) ??
         kMailTemplateIdDefault;
-    final resolvedHeaderTemplate = headerTemplatePref ?? headerTemplateDb;
-    final headerTextPref = prefs.getString(_kMailHeaderText);
-    final headerTextDb =
-        await _appSettingsRepo.getString(_kMailHeaderText) ??
-        kMailHeaderTemplateDefault;
-    final resolvedHeaderText = headerTextPref ?? headerTextDb;
-
-    final footerTemplatePref = prefs.getString(_kMailFooterTemplate);
-    final footerTemplateDb =
+    final footerTemplateId =
+        prefs.getString(_kMailFooterTemplate) ??
         await _appSettingsRepo.getString(_kMailFooterTemplate) ??
         kMailTemplateIdDefault;
-    final resolvedFooterTemplate = footerTemplatePref ?? footerTemplateDb;
-    final footerTextPref = prefs.getString(_kMailFooterText);
-    final footerTextDb =
+
+    setState(() {
+      _mailHeaderTemplateId = headerTemplateId;
+      _mailFooterTemplateId = footerTemplateId;
+    });
+
+    // メールヘッダー/フッター本文の読み込み
+    final headerText =
+        prefs.getString(_kMailHeaderText) ??
+        await _appSettingsRepo.getString(_kMailHeaderText) ??
+        '';
+    final footerText =
+        prefs.getString(_kMailFooterText) ??
         await _appSettingsRepo.getString(_kMailFooterText) ??
-        kMailFooterTemplateDefault;
-    final resolvedFooterText = footerTextPref ?? footerTextDb;
-
-    final needsPrefSync =
-        hostPref == null ||
-        portPref == null ||
-        userPref == null ||
-        passPref == null ||
-        bccPref == null ||
-        !tlsPrefExists ||
-        !ignorePrefExists ||
-        mailSendMethodPref == null ||
-        headerTemplatePref == null ||
-        headerTextPref == null ||
-        footerTemplatePref == null ||
-        footerTextPref == null;
-    if (needsPrefSync) {
-      await _saveSmtpPrefs(
-        host: smtpHost,
-        port: smtpPort,
-        user: smtpUser,
-        encryptedPass: smtpPassEncrypted,
-        tls: smtpTls,
-        bcc: smtpBcc,
-        ignoreBadCert: smtpIgnoreBadCert,
-        mailSendMethod: resolvedMailSendMethod,
-        headerTemplate: resolvedHeaderTemplate,
-        headerText: resolvedHeaderText,
-        footerTemplate: resolvedFooterTemplate,
-        footerText: resolvedFooterText,
-      );
-    }
+        '';
 
     setState(() {
-      _smtpHostCtrl.text = smtpHost;
-      _smtpPortCtrl.text = smtpPort;
-      _smtpUserCtrl.text = smtpUser;
-      _smtpPassCtrl.text = smtpPass;
-      _smtpBccCtrl.text = smtpBcc;
-      _smtpTls = smtpTls;
-      _smtpIgnoreBadCert = smtpIgnoreBadCert;
-      _mailSendMethod = resolvedMailSendMethod;
-      _mailHeaderTemplateId = resolvedHeaderTemplate;
-      _mailFooterTemplateId = resolvedFooterTemplate;
-      _mailHeaderCtrl.text = resolvedHeaderText;
-      _mailFooterCtrl.text = resolvedFooterText;
-    });
-
-    await _loadSmtpLogs();
-  }
-
-  Future<void> _pickBccFromDeviceAccount() async {
-    if (_selectingBccFromDevice) return;
-    setState(() => _selectingBccFromDevice = true);
-    try {
-      final googleService = GoogleAccountService.instance;
-      GoogleSignInAccount? account =
-          googleService.currentAccount ?? await googleService.recoverAccount();
-      account ??= await googleService.pickAccount();
-      if (!mounted) return;
-      if (account == null) {
-        _showSnackbar('アカウントが選択されませんでした');
-        return;
-      }
-      final email = account.email;
-      final controller = _smtpBccCtrl;
-      final currentText = controller.text;
-      final entries = currentText
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-      if (entries.contains(email)) {
-        _showSnackbar('既に $email が含まれています');
-        return;
-      }
-      String newText;
-      if (currentText.trim().isEmpty) {
-        newText = email;
-      } else {
-        final needsComma = !currentText.trim().endsWith(',');
-        newText = needsComma ? '$currentText, $email' : '$currentText$email';
-      }
-      controller.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length),
-      );
-      setState(() {
-        _selectedDeviceBcc = email;
-      });
-      _showSnackbar('BCCに $email を追加しました');
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackbar('Gmailアカウントの取得に失敗しました: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _selectingBccFromDevice = false);
-      }
-    }
-  }
-
-  Future<void> _loadSmtpLogs() async {
-    setState(() => _loadingLogs = true);
-    final logs = await EmailSender.loadLogs();
-    if (!mounted) return;
-    setState(() {
-      _smtpLogs = logs;
-      _loadingLogs = false;
+      _mailHeaderCtrl.text = headerText;
+      _mailFooterCtrl.text = footerText;
     });
   }
 
-  Future<void> _clearSmtpLogs() async {
-    await EmailSender.clearLogs();
-    await _loadSmtpLogs();
-  }
-
-  Future<void> _copySmtpLogs() async {
-    if (_smtpLogs.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: _smtpLogs.join('\n')));
-    _showSnackbar('ログをクリップボードにコピーしました');
-  }
-
-  Future<void> _saveSmtp() async {
-    final host = _smtpHostCtrl.text.trim();
-    final port = _smtpPortCtrl.text.trim().isEmpty
-        ? '587'
-        : _smtpPortCtrl.text.trim();
-    final user = _smtpUserCtrl.text.trim();
-    final passPlain = _smtpPassCtrl.text;
-    final passEncrypted = _encrypt(passPlain);
+  Future<void> _saveAll() async {
     final bcc = _smtpBccCtrl.text.trim();
 
-    if (bcc.isEmpty) {
-      _showSnackbar('BCCは必須項目です');
-      return;
-    }
-
-    await _appSettingsRepo.setString(_kSmtpHost, host);
-    await _appSettingsRepo.setString(_kSmtpPort, port);
-    await _appSettingsRepo.setString(_kSmtpUser, user);
-    await _appSettingsRepo.setString(_kSmtpPass, passEncrypted);
-    await _appSettingsRepo.setBool(_kSmtpTls, _smtpTls);
     await _appSettingsRepo.setString(_kSmtpBcc, bcc);
-    await _appSettingsRepo.setBool(_kSmtpIgnoreBadCert, _smtpIgnoreBadCert);
-    await _appSettingsRepo.setString(_kMailSendMethod, _mailSendMethod);
     await _appSettingsRepo.setString(
       _kMailHeaderTemplate,
       _mailHeaderTemplateId,
@@ -288,210 +106,86 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     await _appSettingsRepo.setString(_kMailHeaderText, _mailHeaderCtrl.text);
     await _appSettingsRepo.setString(_kMailFooterText, _mailFooterCtrl.text);
 
-    await _saveSmtpPrefs(
-      host: host,
-      port: port,
-      user: user,
-      encryptedPass: passEncrypted,
-      tls: _smtpTls,
-      bcc: bcc,
-      ignoreBadCert: _smtpIgnoreBadCert,
-      mailSendMethod: _mailSendMethod,
-      headerTemplate: _mailHeaderTemplateId,
-      headerText: _mailHeaderCtrl.text,
-      footerTemplate: _mailFooterTemplateId,
-      footerText: _mailFooterCtrl.text,
-    );
-    _showSnackbar('メール設定を保存しました');
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('設定を保存しました')));
+    }
   }
 
-  Future<void> _saveSmtpPrefs({
-    required String host,
-    required String port,
-    required String user,
-    required String encryptedPass,
-    required bool tls,
-    required String bcc,
-    required bool ignoreBadCert,
-    required String mailSendMethod,
-    required String headerTemplate,
-    required String headerText,
-    required String footerTemplate,
-    required String footerText,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kSmtpHost, host);
-    await prefs.setString(_kSmtpPort, port);
-    await prefs.setString(_kSmtpUser, user);
-    await prefs.setString(_kSmtpPass, encryptedPass);
-    await prefs.setBool(_kSmtpTls, tls);
-    await prefs.setString(_kSmtpBcc, bcc);
-    await prefs.setBool(_kSmtpIgnoreBadCert, ignoreBadCert);
-    await prefs.setString(_kMailSendMethod, mailSendMethod);
-    await prefs.setString(_kMailHeaderTemplate, headerTemplate);
-    await prefs.setString(_kMailHeaderText, headerText);
-    await prefs.setString(_kMailFooterTemplate, footerTemplate);
-    await prefs.setString(_kMailFooterText, footerText);
-  }
+  Future<void> _pickBccFromDeviceAccount() async {
+    setState(() {
+      _selectingBccFromDevice = true;
+    });
 
-  Future<void> _testSmtp() async {
     try {
-      if (_mailSendMethod != kMailSendMethodSmtp) {
-        _showSnackbar('SMTPテストは送信方法を「SMTP」に設定した時のみ利用できます');
-        return;
+      // 端末のメールアカウントから BCC 用メールアドレスを選択
+      final result = await _showDeviceAccountPicker();
+      if (result != null && mounted) {
+        setState(() {
+          _selectedDeviceBcc = result;
+          _smtpBccCtrl.text = result;
+        });
       }
-      await _saveSmtp();
-      final config = await EmailSender.loadConfigFromPrefs();
-      if (config == null || config.bcc.isEmpty) {
-        _showSnackbar('ホスト/ユーザー/パスワード/BCCを入力してください');
-        return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _selectingBccFromDevice = false;
+        });
       }
-
-      await EmailSender.sendTest(config: config);
-      _showSnackbar('テスト送信に成功しました');
-    } catch (e) {
-      _showSnackbar('テスト送信に失敗しました: $e');
-    }
-    await _loadSmtpLogs();
-  }
-
-  Future<void> _updateMailSendMethod(String method) async {
-    final normalized = normalizeMailSendMethod(method);
-    setState(() => _mailSendMethod = normalized);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kMailSendMethod, normalized);
-    await _appSettingsRepo.setString(_kMailSendMethod, normalized);
-  }
-
-  void _applyHeaderTemplate(String templateId) {
-    setState(() => _mailHeaderTemplateId = templateId);
-    if (templateId == kMailTemplateIdDefault) {
-      _mailHeaderCtrl.text = kMailHeaderTemplateDefault;
-    } else if (templateId == kMailTemplateIdNone) {
-      _mailHeaderCtrl.clear();
     }
   }
 
-  void _applyFooterTemplate(String templateId) {
-    setState(() => _mailFooterTemplateId = templateId);
-    if (templateId == kMailTemplateIdDefault) {
-      _mailFooterCtrl.text = kMailFooterTemplateDefault;
-    } else if (templateId == kMailTemplateIdNone) {
-      _mailFooterCtrl.clear();
-    }
-  }
-
-  String _encrypt(String plain) {
-    if (plain.isEmpty) return '';
-    final pb = utf8.encode(plain);
-    final kb = utf8.encode(_kCryptKey);
-    final ob = List<int>.generate(pb.length, (i) => pb[i] ^ kb[i % kb.length]);
-    return base64Encode(ob);
-  }
-
-  String _decryptWithFallback(String cipher) {
-    if (cipher.isEmpty) return '';
-    try {
-      final ob = base64Decode(cipher);
-      final kb = utf8.encode(_kCryptKey);
-      final pb = List<int>.generate(
-        ob.length,
-        (i) => ob[i] ^ kb[i % kb.length],
-      );
-      return utf8.decode(pb);
-    } catch (_) {
-      return cipher;
-    }
+  Future<String?> _showDeviceAccountPicker() async {
+    // メール共有機能では端末標準メールアプリを使用するため、BCC アドレスは手動入力してください
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('BCC アドレスは入力フィールドから設定してください')));
+    return null;
   }
 
   void _showBccHelpDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('BCC設定ガイド'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '📧 Gmail推奨設定',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              const Text('1. Googleアカウントで2段階認証を有効化'),
-              const SizedBox(height: 4),
-              const Text('2. アプリパスワードを発行（16桁）', style: TextStyle(fontSize: 13)),
-              const SizedBox(height: 4),
-              const Text(
-                '   https://myaccount.google.com/apppasswords',
-                style: TextStyle(fontSize: 11, color: Colors.blue),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '⚙️ SMTP設定例（Gmail）',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '• SMTPホスト: smtp.gmail.com',
-                      style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    ),
-                    Text(
-                      '• SMTPポート: 587',
-                      style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    ),
-                    Text(
-                      '• ユーザー名: your-email@gmail.com',
-                      style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    ),
-                    Text(
-                      '• パスワード: 16桁のアプリパスワード',
-                      style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    ),
-                    Text(
-                      '• STARTTLS: ON',
-                      style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '✉️ BCCについて',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '送信控えを残すため、BCCに自分のメールアドレスを設定してください。',
+        title: const Text('BCC 設定ガイド'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'BCC（Blind Carbon Copy）は、送信控えを自分宛てに自動で保存するための機能です。',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '【なぜ必要？】',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                '• 取引先にメールを送信した際、自分宛てにもコピーが送られる\n'
+                '• 後から「いつ誰に何を送ったか」を確認できる\n'
+                '• 紛争時の証拠として残せる',
                 style: TextStyle(fontSize: 13),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                '複数設定する場合はカンマ区切りで入力できます。',
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '【設定方法】',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                '• 自分のメールアドレスを入力\n'
+                '• 複数のアドレスをカンマ区切りで入力可能\n'
+                '• 例：me@gmail.com,backup@company.com',
                 style: TextStyle(fontSize: 13),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                '🔒 セキュリティ',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'アプリパスワードは端末の暗号化ストレージに保存され、画面ロックで保護されます。',
-                style: TextStyle(fontSize: 13),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -503,79 +197,56 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     );
   }
 
-  void _showSmtpHelpDialog() {
+  void _showMailTemplateHelpDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('SMTP設定ヘルプ'),
+        title: const Text('メールテンプレート設定'),
         content: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '📧 Gmail（推奨）',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                '請求書を送信する際に、自動的に本文に追加されるテキストを設定します。',
+                style: TextStyle(fontSize: 14),
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SMTPホスト: smtp.gmail.com',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    Text('SMTPポート: 587', style: TextStyle(fontSize: 12)),
-                    Text('STARTTLS: ON', style: TextStyle(fontSize: 12)),
-                  ],
+              const SizedBox(height: 16),
+              const Text(
+                '【ヘッダー】',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 8),
+                child: Text(
+                  'メールの件名・本文の冒頭に表示されます。',
+                  style: TextStyle(fontSize: 13),
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                '📧 Outlook/Hotmail',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.blue.shade200),
+              TextField(
+                controller: _mailHeaderCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'ヘッダーテキスト',
+                  border: OutlineInputBorder(),
                 ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SMTPホスト: smtp-mail.outlook.com',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    Text('SMTPポート: 587', style: TextStyle(fontSize: 12)),
-                    Text('STARTTLS: ON', style: TextStyle(fontSize: 12)),
-                  ],
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '【フッター】',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 8),
+                child: Text('メールの末尾に表示されます。', style: TextStyle(fontSize: 13)),
+              ),
+              TextField(
+                controller: _mailFooterCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'フッターテキスト',
+                  border: OutlineInputBorder(),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '⚠️ 注意事項',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '• Gmailの場合、通常のパスワードではなくアプリパスワード（16桁）が必要です',
-                style: TextStyle(fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '• アプリパスワードの発行には2段階認証の有効化が必要です',
-                style: TextStyle(fontSize: 13),
+                maxLines: 3,
               ),
             ],
           ),
@@ -588,359 +259,151 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
         ],
       ),
     );
-  }
-
-  void _showSnackbar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final listBottomPadding = 24 + bottomInset;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SM:メール設定'),
-        backgroundColor: Colors.indigo,
+        title: const Text('メール設定'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveAll,
+            tooltip: '保存',
+          ),
+        ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: ListView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.only(bottom: listBottomPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _section(
-              title: '送信設定',
-              subtitle: 'SMTP / 端末メーラー切り替えやBCC必須設定',
+            // BCC 設定セクション
+            _buildSectionHeader('BCC 設定（必須）'),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'メール送信時の控え用メールアドレス',
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ),
+            TextField(
+              controller: _smtpBccCtrl,
+              decoration: InputDecoration(
+                labelText: 'BCC *必須',
+                hintText: 'your-email@gmail.com',
+                helperText: '自分のメールアドレスを入力。カンマ区切りで複数指定可能',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.help_outline, size: 20),
+                  onPressed: _showBccHelpDialog,
+                  tooltip: 'BCC 設定ガイドを表示',
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 18.0,
+                ),
+              ),
+              textAlignVertical: TextAlignVertical.center,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _selectingBccFromDevice
+                        ? null
+                        : _pickBccFromDeviceAccount,
+                    icon: const Icon(Icons.account_circle_outlined),
+                    label: Text(
+                      _selectingBccFromDevice ? '取得中...' : '📧 端末のメールアカウントから選択',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_selectedDeviceBcc != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '選択済み：$_selectedDeviceBcc',
+                  style: const TextStyle(color: Colors.green, fontSize: 12),
+                ),
+              ),
+            const Divider(height: 32),
+
+            // メールテンプレート設定セクション
+            _buildSectionHeader('メールテンプレート設定'),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                '請求書送信時に自動で追加される本文',
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _showMailTemplateHelpDialog,
+                    icon: const Icon(Icons.info_outline),
+                    label: const Text('ヘルプ・設定ガイド'),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            const Text(
+              'ヘッダー（冒頭）',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextField(
+              controller: _mailHeaderCtrl,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(12),
+              ),
+              maxLines: 4,
+            ),
+
+            const SizedBox(height: 16),
+            const Text(
+              'フッター（末尾）',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextField(
+              controller: _mailFooterCtrl,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(12),
+              ),
+              maxLines: 4,
+            ),
+
+            const SizedBox(height: 32),
+
+            // 注意事項
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: '送信方法'),
-                    initialValue: _mailSendMethod,
-                    items: const [
-                      DropdownMenuItem(
-                        value: kMailSendMethodSmtp,
-                        child: Text('SMTPサーバー経由'),
-                      ),
-                      DropdownMenuItem(
-                        value: kMailSendMethodDeviceMailer,
-                        child: Text('端末メーラーで送信'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        _updateMailSendMethod(value);
-                      }
-                    },
+                  const Text(
+                    '📱 送信方法について',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
-                  if (_mailSendMethod == kMailSendMethodDeviceMailer)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        border: Border.all(color: Colors.orange.shade200),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        '端末メーラーで送信する場合もBCCは必須です。SMTP設定は保持されますが、送信時は端末のメールアプリが起動します。',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _smtpHostCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'SMTPホスト名',
-                      hintText: 'smtp.gmail.com',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.help_outline, size: 20),
-                        onPressed: _showSmtpHelpDialog,
-                        tooltip: 'SMTP設定例を表示',
-                      ),
-                    ),
-                    enabled: _mailSendMethod == kMailSendMethodSmtp,
+                  const Text(
+                    '請求書詳細画面の「メールで共有」ボタンを押すと、\n'
+                    'スマホ標準のメールアプリが起動し、PDF を添付した状態で\n'
+                    'BCC に設定したメールアドレスにも自動で送信されます。',
+                    style: TextStyle(fontSize: 13),
                   ),
-                  TextField(
-                    controller: _smtpPortCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'SMTPポート番号',
-                      hintText: '587',
-                    ),
-                    keyboardType: TextInputType.number,
-                    enabled: _mailSendMethod == kMailSendMethodSmtp,
-                  ),
-                  TextField(
-                    controller: _smtpUserCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'SMTPユーザー名',
-                      hintText: 'your-email@gmail.com',
-                    ),
-                    enabled: _mailSendMethod == kMailSendMethodSmtp,
-                  ),
-                  TextField(
-                    controller: _smtpPassCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'SMTPパスワード',
-                      helperText: 'Gmailの場合はアプリパスワード（16桁）を入力',
-                    ),
-                    obscureText: true,
-                    enabled: _mailSendMethod == kMailSendMethodSmtp,
-                  ),
-                  TextField(
-                    controller: _smtpBccCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'BCC (カンマ区切り可) *必須',
-                      hintText: 'your-email@gmail.com',
-                      helperText: '送信控えを残すため必須です',
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.help_outline, size: 20),
-                        onPressed: _showBccHelpDialog,
-                        tooltip: 'BCC 設定ガイドを表示',
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 18.0,
-                      ),
-                    ),
-                    textAlignVertical: TextAlignVertical.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed:
-                              _mailSendMethod == kMailSendMethodDeviceMailer &&
-                                  _selectingBccFromDevice
-                              ? null
-                              : (_selectingBccFromDevice
-                                    ? null
-                                    : _pickBccFromDeviceAccount),
-                          icon: const Icon(Icons.account_circle_outlined),
-                          label: Text(
-                            _selectingBccFromDevice
-                                ? '取得中...'
-                                : '📧 端末のGmailから選択',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_selectedDeviceBcc != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '選択中: $_selectedDeviceBcc',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ),
-                  SwitchListTile(
-                    title: const Text('STARTTLS を使用'),
-                    value: _smtpTls,
-                    onChanged: _mailSendMethod == kMailSendMethodSmtp
-                        ? (v) => setState(() => _smtpTls = v)
-                        : null,
-                  ),
-                  SwitchListTile(
-                    title: const Text('証明書検証をスキップ（開発用）'),
-                    subtitle: const Text('自己署名/ホスト名不一致を許可します'),
-                    value: _smtpIgnoreBadCert,
-                    onChanged: _mailSendMethod == kMailSendMethodSmtp
-                        ? (v) => setState(() => _smtpIgnoreBadCert = v)
-                        : null,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.save),
-                          label: const Text('保存'),
-                          onPressed: _saveSmtp,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.send),
-                          label: const Text('BCC宛にテスト送信'),
-                          onPressed: _mailSendMethod == kMailSendMethodSmtp
-                              ? _testSmtp
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: '通信ログ',
-              subtitle: '最大1000行まで保持されます（SMTP/端末メーラー共通）',
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'ログ一覧',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: '再読込',
-                        icon: const Icon(Icons.refresh),
-                        onPressed: _loadingLogs ? null : _loadSmtpLogs,
-                      ),
-                      IconButton(
-                        tooltip: 'コピー',
-                        icon: const Icon(Icons.copy),
-                        onPressed: _smtpLogs.isEmpty ? null : _copySmtpLogs,
-                      ),
-                      IconButton(
-                        tooltip: 'クリア',
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: _smtpLogs.isEmpty ? null : _clearSmtpLogs,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 220,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: _loadingLogs
-                        ? const Center(child: CircularProgressIndicator())
-                        : _smtpLogs.isEmpty
-                        ? const Center(child: Text('ログなし'))
-                        : Scrollbar(
-                            child: SelectionArea(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(8),
-                                itemCount: _smtpLogs.length,
-                                itemBuilder: (context, index) => Text(
-                                  _smtpLogs[index],
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            _section(
-              title: 'メール本文ヘッダ/フッタ',
-              subtitle:
-                  'テンプレを選択して編集するか、自由にテキストを入力できます（{{FILENAME}}, {{HASH}} が利用可）',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ヘッダテンプレ',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _mailHeaderTemplateId,
-                          items: const [
-                            DropdownMenuItem(
-                              value: kMailTemplateIdDefault,
-                              child: Text('デフォルト'),
-                            ),
-                            DropdownMenuItem(
-                              value: kMailTemplateIdNone,
-                              child: Text('なし / 空テンプレ'),
-                            ),
-                          ],
-                          onChanged: (v) {
-                            if (v != null) {
-                              _applyHeaderTemplate(v);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: () =>
-                            _applyHeaderTemplate(_mailHeaderTemplateId),
-                        child: const Text('テンプレ適用'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _mailHeaderCtrl,
-                    keyboardType: TextInputType.multiline,
-                    maxLines: null,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'メールヘッダ文…',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'フッタテンプレ',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _mailFooterTemplateId,
-                          items: const [
-                            DropdownMenuItem(
-                              value: kMailTemplateIdDefault,
-                              child: Text('デフォルト'),
-                            ),
-                            DropdownMenuItem(
-                              value: kMailTemplateIdNone,
-                              child: Text('なし / 空テンプレ'),
-                            ),
-                          ],
-                          onChanged: (v) {
-                            if (v != null) {
-                              _applyFooterTemplate(v);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: () =>
-                            _applyFooterTemplate(_mailFooterTemplateId),
-                        child: const Text('テンプレ適用'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _mailFooterCtrl,
-                    keyboardType: TextInputType.multiline,
-                    maxLines: null,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'メールフッタ文…',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('※ {{FILENAME}} と {{HASH}} は送信時に自動置換されます。'),
                 ],
               ),
             ),
@@ -950,29 +413,12 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     );
   }
 
-  Widget _section({
-    required String title,
-    required String subtitle,
-    required Widget child,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
