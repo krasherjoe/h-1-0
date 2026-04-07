@@ -23,7 +23,7 @@ import 'bcc_email_service.dart';
 /// - 共有（share_plus を使用した端末標準アプリ共有）
 /// - メール送信（share_plus を使用した端末メールアプリ起動）
 /// - 印刷（printing パッケージを使用）
-class InvoicePdfPreviewPage extends StatelessWidget {
+class InvoicePdfPreviewPage extends StatefulWidget {
   final Invoice invoice;
   final bool allowFormalIssue;
   final bool isUnlocked;
@@ -45,23 +45,31 @@ class InvoicePdfPreviewPage extends StatelessWidget {
     this.showPrint = true,
   });
 
+  @override
+  State<InvoicePdfPreviewPage> createState() => _InvoicePdfPreviewPageState();
+}
+
+class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
+  bool _issued = false;
+
   bool get _canFormalIssue =>
-      allowFormalIssue &&
-      invoice.isDraft &&
-      isUnlocked &&
-      !isLocked &&
-      onFormalIssue != null;
+      widget.allowFormalIssue &&
+      widget.invoice.isDraft &&
+      widget.isUnlocked &&
+      !widget.isLocked &&
+      !_issued &&
+      widget.onFormalIssue != null;
 
   Future<bool> _showFormalIssueWarning(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${invoice.documentTypeName}の正式発行'),
+        title: Text('${widget.invoice.documentTypeName}の正式発行'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(invoice.customerNameForDisplay),
+            Text(widget.invoice.customerNameForDisplay),
             const SizedBox(height: 8),
             const Text(
               'この伝票を正式発行すると、\n電子帳簿保存法により二度と編集できなくなります。\n\n確定してよろしいですか？',
@@ -84,7 +92,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
   }
 
   Future<Uint8List> _buildPdfBytes() async {
-    final doc = await buildInvoiceDocument(invoice);
+    final doc = await buildInvoiceDocument(widget.invoice);
     return Uint8List.fromList(await doc.save());
   }
 
@@ -95,7 +103,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
   Future<void> _shareMail(BuildContext context) async {
     try {
       final pdfBytes = await _buildPdfBytes();
-      final fileName = invoice.mailAttachmentFileName;
+      final fileName = widget.invoice.mailAttachmentFileName;
 
       // PDF ファイルを一時的に保存
       final tempDir = await getTemporaryDirectory();
@@ -111,7 +119,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
       final bccAddresses = EmailSender.parseBcc(bccRaw);
 
       // 宛先メールアドレス（顧客のメール）
-      final toEmail = invoice.customer.email ?? '';
+      final toEmail = widget.invoice.customer.email ?? '';
 
       if (toEmail.isEmpty) {
         if (context.mounted) {
@@ -124,7 +132,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
 
       // 件名：伝票種別 + 伝票番号
       final subject =
-          '${invoice.documentTypeName}送付のご案内（${invoice.invoiceNumber}）';
+          '${widget.invoice.documentTypeName}送付のご案内（${widget.invoice.invoiceNumber}）';
 
       // Gmail（端末の既定メールアプリ）を起動
       await BccEmailService.sendWithBcc(
@@ -135,7 +143,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
         hash: hash,
         attachmentFileName: fileName,
         subject: subject,
-        documentTypeName: invoice.documentTypeName,
+        documentTypeName: widget.invoice.documentTypeName,
       );
 
       if (context.mounted) {
@@ -157,7 +165,8 @@ class InvoicePdfPreviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDraft = invoice.isDraft;
+    final effectiveIsLocked = widget.isLocked || _issued;
+    final isDraft = widget.invoice.isDraft && !_issued;
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -207,9 +216,16 @@ class InvoicePdfPreviewPage extends StatelessWidget {
                                 context,
                               );
                               if (!confirmed) return;
-                              final ok = await onFormalIssue!();
-                              if (ok && context.mounted) {
-                                Navigator.pop(context, true);
+                              final ok = await widget.onFormalIssue!();
+                              if (ok && mounted) {
+                                setState(() => _issued = true);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('正式発行が完了しました'),
+                                    ),
+                                  );
+                                }
                               }
                             }
                           : null,
@@ -218,7 +234,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
                         alignment: Alignment.center,
                         children: [
                           const Text("正式発行"),
-                          if (!isDraft || isLocked)
+                          if (!isDraft || effectiveIsLocked)
                             const Positioned(
                               right: 0,
                               child: Icon(
@@ -238,10 +254,10 @@ class InvoicePdfPreviewPage extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (showShare && (!isDraft || isLocked))
+                      onPressed: (widget.showShare && (!isDraft || effectiveIsLocked))
                           ? () async {
                               final bytes = await _buildPdfBytes();
-                              final fileName = invoice.mailAttachmentFileName;
+                              final fileName = widget.invoice.mailAttachmentFileName;
                               await Printing.sharePdf(
                                 bytes: bytes,
                                 filename: fileName,
@@ -255,7 +271,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (showEmail && (!isDraft || isLocked))
+                      onPressed: (widget.showEmail && (!isDraft || effectiveIsLocked))
                           ? () async {
                               await _shareMail(context);
                             }
@@ -267,7 +283,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: showPrint
+                      onPressed: widget.showPrint
                           ? () async {
                               await Printing.layoutPdf(
                                 onLayout: (format) async =>
@@ -288,3 +304,4 @@ class InvoicePdfPreviewPage extends StatelessWidget {
     );
   }
 }
+
