@@ -1,10 +1,10 @@
 // This is a generated file; do not edit or check into version control.
 FLUTTER_ROOT=/home/user/development/flutter
-FLUTTER_APPLICATION_PATH=/home/user/dev/h-1.flutter.0
+FLUTTER_APPLICATION_PATH=/home/user/code/h-1.flutter.0
 COCOAPODS_PARALLEL_CODE_SIGN=true
 FLUTTER_BUILD_DIR=build
-FLUTTER_BUILD_NAME=1.5.06
-FLUTTER_BUILD_NUMBER=151
+FLUTTER_BUILD_NAME=1.5.09
+FLUTTER_BUILD_NUMBER=154
 DART_OBFUSCATION=false
 TRACK_WIDGET_CREATION=true
 TREE_SHAKE_ICONS=false

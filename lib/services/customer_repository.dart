@@ -27,20 +27,29 @@ class CustomerRepository {
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 
+  /// カラムの存在をチェックして安全に追加するヘルパーメソッド
+  Future<void> _safeAddColumn(
+    Database db,
+    String table,
+    String columnDefinition,
+  ) async {
+    try {
+      // カラムが既に存在するか確認
+      final columns = await db.query(table, limit: 1);
+      final columnName = columnDefinition.split(' ')[0];
+      if (!columns.first.containsKey(columnName)) {
+        await db.execute('ALTER TABLE $table ADD COLUMN $columnDefinition');
+      }
+    } catch (_) {
+      // カラムが存在する場合は何もしない
+    }
+  }
+
   Future<void> ensureCustomerColumns() async {
     final db = await _dbHelper.database;
-    // best-effort, ignore errors if columns already exist
-    try {
-      await db.execute(
-        'ALTER TABLE customers ADD COLUMN contact_version_id INTEGER',
-      );
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE customers ADD COLUMN head_char1 TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE customers ADD COLUMN head_char2 TEXT');
-    } catch (_) {}
+    await _safeAddColumn(db, 'customers', 'contact_version_id INTEGER');
+    await _safeAddColumn(db, 'customers', 'head_char1 TEXT');
+    await _safeAddColumn(db, 'customers', 'head_char2 TEXT');
   }
 
   /// 重複チェック（電話番号・メール・社名）
@@ -51,21 +60,21 @@ class CustomerRepository {
   }) async {
     final db = await _dbHelper.database;
 
-    // 電話番号で検索
+    // 電話番号で検索（customers テーブルの tel のみ参照）
     if (tel != null && tel.isNotEmpty) {
       final result = await db.query(
         'customers',
-        where: 'COALESCE(tel, contact_tel) = ?',
+        where: 'tel = ?',
         whereArgs: [tel],
       );
       if (result.isNotEmpty) return true;
     }
 
-    // メールで検索
+    // メールで検索（customers テーブルの email のみ参照）
     if (email != null && email.isNotEmpty) {
       final result = await db.query(
         'customers',
-        where: 'COALESCE(email, contact_email) = ?',
+        where: 'email = ?',
         whereArgs: [email],
       );
       if (result.isNotEmpty) return true;

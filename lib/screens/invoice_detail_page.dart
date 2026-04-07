@@ -941,7 +941,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     if (_currentInvoice.isLocked || !_currentInvoice.isDraft) return;
 
     final currentType = _currentInvoice.documentType;
-    String? newTypeLabel;
 
     // 変換可能なタイプを決定
     List<String> options = [];
@@ -962,34 +961,40 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         return; // 他のタイプは変換不可
     }
 
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showDialog<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'ドキュメントタイプを変更',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      builder: (context) => AlertDialog(
+        title: const Text('ドキュメントタイプを変更'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '現在のタイプ：${_documentTypeLabel(currentType)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-            ),
-            const Divider(),
-            ...options.map(
-              (label) => ListTile(
-                leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
-                title: Text(label),
-                onTap: () {
-                  Navigator.pop(context, label);
-                },
+              const SizedBox(height: 16),
+              Text('変更先を選択してください'),
+              const SizedBox(height: 12),
+              ...options.map(
+                (label) => ListTile(
+                  leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+                  title: Text(label),
+                  onTap: () {
+                    Navigator.pop(context, label);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+        ],
       ),
     );
 

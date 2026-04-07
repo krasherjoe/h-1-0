@@ -35,15 +35,20 @@ class InvoiceInputForm extends StatefulWidget {
   State<InvoiceInputForm> createState() => _InvoiceInputFormState();
 }
 
-List<InvoiceItem> _cloneItems(List<InvoiceItem> source, {bool resetIds = false}) {
+List<InvoiceItem> _cloneItems(
+  List<InvoiceItem> source, {
+  bool resetIds = false,
+}) {
   return source
-      .map((e) => InvoiceItem(
-            id: resetIds ? null : e.id,
-            productId: e.productId,
-            description: e.description,
-            quantity: e.quantity,
-            unitPrice: e.unitPrice,
-          ))
+      .map(
+        (e) => InvoiceItem(
+          id: resetIds ? null : e.id,
+          productId: e.productId,
+          description: e.description,
+          quantity: e.quantity,
+          unitPrice: e.unitPrice,
+        ),
+      )
       .toList(growable: true);
 }
 
@@ -57,8 +62,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   DocumentType _documentType = DocumentType.invoice; // 追加
   DateTime _selectedDate = DateTime.now(); // 追加: 伝票日付
   bool _isDraft = true; // デフォルトは下書き
-  final TextEditingController _subjectController = TextEditingController(); // 追加
-  bool _isSaving = false; // 保存中フラグ
+  final TextEditingController _subjectController =
+      TextEditingController(); // 追加
+  final _savingNotifier = ValueNotifier<bool>(
+    false,
+  ); // 保存中フラグ（ValueNotifier 使用）
   String? _currentId; // 保存対象のID（コピー時に新規になる）
   bool _isLocked = false;
   final List<_InvoiceSnapshot> _undoStack = [];
@@ -117,9 +125,105 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     return _currentId!;
   }
 
-  void _copyAsNew() {
+  void _showDocumentTypeChangeDialog() async {
+    if (_isLocked || !_isDraft) return;
+
+    final currentType = _documentType;
+    String? newTypeLabel;
+
+    // 変換可能なタイプを決定
+    List<String> options = [];
+    switch (currentType) {
+      case DocumentType.estimation:
+        // 見積 → 納品または請求
+        options = ['納品書', '請求書'];
+        break;
+      case DocumentType.delivery:
+        // 納品 → 請求
+        options = ['請求書'];
+        break;
+      case DocumentType.invoice:
+        // 請求 → 領収
+        options = ['領収書'];
+        break;
+      default:
+        return; // 他のタイプは変換不可
+    }
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'ドキュメントタイプを変更',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(),
+            ...options.map(
+              (label) => ListTile(
+                leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+                title: Text(label),
+                onTap: () {
+                  Navigator.pop(context, label);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected == null) return;
+
+    // タイプ変換
+    DocumentType newType;
+    switch (selected) {
+      case '納品書':
+        newType = DocumentType.delivery;
+        break;
+      case '請求書':
+        newType = DocumentType.invoice;
+        break;
+      case '領収書':
+        newType = DocumentType.receipt;
+        break;
+      default:
+        return;
+    }
+
+    setState(() {
+      _documentType = newType;
+    });
+
+    // 編集ログに記録
+    await _editLogRepo.addLog(
+      _currentId!,
+      'ドキュメントタイプを「${_documentTypeLabel(newType)}」に変更しました',
+    );
+  }
+
+  void _copyAsNew() async {
     if (widget.existingInvoice == null && _currentId == null) return;
+
+    // 複製元の編集ログに記録
+    final originalId = _currentId;
+    if (originalId != null) {
+      await _editLogRepo.addLog(originalId, "伝票をコピーしました");
+    }
+
     final clonedItems = _cloneItems(_items, resetIds: true);
+    // 案件名に「複写」接頭辞を追加
+    final originalSubject = _subjectController.text;
+    final newSubject = originalSubject.isNotEmpty ? '【複写】$originalSubject' : '';
+
     setState(() {
       _currentId = DateTime.now().millisecondsSinceEpoch.toString();
       _isDraft = true;
@@ -128,12 +232,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       _items
         ..clear()
         ..addAll(clonedItems);
+      _subjectController.text = newSubject;
       _isViewMode = false;
       _showCopyBadge = true;
       _showNewBadge = false;
       _pushHistory(clearRedo: true);
       _editLogs.clear();
     });
+
+    // 複製先の編集ログに記録
+    if (_currentId != null) {
+      await _editLogRepo.addLog(_currentId!, "伝票をコピーして新規作成しました");
+    }
   }
 
   @override
@@ -217,16 +327,20 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   void _addItem() {
     Navigator.push<Product>(
       context,
-      MaterialPageRoute(builder: (_) => const ProductMasterScreen(selectionMode: true)),
+      MaterialPageRoute(
+        builder: (_) => const ProductMasterScreen(selectionMode: true),
+      ),
     ).then((product) {
       if (product == null) return;
       setState(() {
-        _items.add(InvoiceItem(
-          productId: product.id,
-          description: product.name,
-          quantity: 1,
-          unitPrice: product.defaultUnitPrice,
-        ));
+        _items.add(
+          InvoiceItem(
+            productId: product.id,
+            description: product.name,
+            quantity: 1,
+            unitPrice: product.defaultUnitPrice,
+          ),
+        );
       });
       _pushHistory();
       final id = _ensureCurrentId();
@@ -235,14 +349,19 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     });
   }
 
-  int get _subTotal => _items.fold(0, (sum, item) => sum + (item.unitPrice * item.quantity));
+  int get _subTotal =>
+      _items.fold(0, (sum, item) => sum + (item.unitPrice * item.quantity));
   Future<void> _saveInvoice({bool generatePdf = true}) async {
     if (_selectedCustomer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("取引先を選択してください")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("取引先を選択してください")));
       return;
     }
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("明細を1件以上入力してください")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("明細を1件以上入力してください")));
       return;
     }
 
@@ -263,14 +382,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
-      subject: _subjectController.text.isNotEmpty ? _subjectController.text : null, // 追加
+      subject: _subjectController.text.isNotEmpty
+          ? _subjectController.text
+          : null, // 追加
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : null,
       latitude: pos?.latitude,
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
     );
 
-    setState(() => _isSaving = true);
+    _savingNotifier.value = true;
     try {
       // PDF生成有無に関わらず、まずは保存
       if (generatePdf) {
@@ -280,24 +401,35 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           await _repository.saveInvoice(updatedInvoice);
           _currentId = updatedInvoice.id;
           if (mounted) widget.onInvoiceGenerated(updatedInvoice, path);
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
+          if (mounted)
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text("伝票を保存し、PDFを生成しました")));
         } else {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("PDF生成に失敗しました")));
+          if (mounted)
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text("PDF生成に失敗しました")));
         }
       } else {
         await _repository.saveInvoice(invoice);
         _currentId = invoice.id;
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
+        if (mounted)
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("伝票を保存しました（PDF未生成）")));
       }
       await _editLogRepo.addLog(_currentId!, "伝票を保存しました");
       await _loadEditLogs();
       if (mounted) setState(() => _isViewMode = true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) _savingNotifier.value = false;
     }
   }
 
@@ -328,10 +460,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           allowFormalIssue: invoice.isDraft && !_isLocked,
           onFormalIssue: invoice.isDraft
               ? () async {
-                  final promoted = invoice.copyWith(id: id, isDraft: false, isLocked: true);
+                  final promoted = invoice.copyWith(
+                    id: id,
+                    isDraft: false,
+                    isLocked: true,
+                  );
                   await _invoiceRepo.saveInvoice(promoted);
                   final newPath = await generateInvoicePdf(promoted);
-                  final saved = newPath != null ? promoted.copyWith(filePath: newPath) : promoted;
+                  final saved = newPath != null
+                      ? promoted.copyWith(filePath: newPath)
+                      : promoted;
                   await _invoiceRepo.saveInvoice(saved);
                   await _editLogRepo.addLog(_ensureCurrentId(), "正式発行しました");
                   if (!context.mounted) return false;
@@ -353,16 +491,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   void _pushHistory({bool clearRedo = false}) {
     setState(() {
       if (_undoStack.length >= 30) _undoStack.removeAt(0);
-      _undoStack.add(_InvoiceSnapshot(
-        customer: _selectedCustomer,
-        items: _cloneItems(_items),
-        taxRate: _taxRate,
-        includeTax: _includeTax,
-        documentType: _documentType,
-        date: _selectedDate,
-        isDraft: _isDraft,
-        subject: _subjectController.text,
-      ));
+      _undoStack.add(
+        _InvoiceSnapshot(
+          customer: _selectedCustomer,
+          items: _cloneItems(_items),
+          taxRate: _taxRate,
+          includeTax: _includeTax,
+          documentType: _documentType,
+          date: _selectedDate,
+          isDraft: _isDraft,
+          subject: _subjectController.text,
+        ),
+      );
       if (clearRedo) _redoStack.clear();
     });
   }
@@ -371,16 +511,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (_undoStack.length <= 1) return; // 直前状態がない
     setState(() {
       // 現在の状態をredoへ積む
-      _redoStack.add(_InvoiceSnapshot(
-        customer: _selectedCustomer,
-        items: _cloneItems(_items),
-        taxRate: _taxRate,
-        includeTax: _includeTax,
-        documentType: _documentType,
-        date: _selectedDate,
-        isDraft: _isDraft,
-        subject: _subjectController.text,
-      ));
+      _redoStack.add(
+        _InvoiceSnapshot(
+          customer: _selectedCustomer,
+          items: _cloneItems(_items),
+          taxRate: _taxRate,
+          includeTax: _includeTax,
+          documentType: _documentType,
+          date: _selectedDate,
+          isDraft: _isDraft,
+          subject: _subjectController.text,
+        ),
+      );
       // 一番新しい履歴を捨て、直前のスナップショットを適用
       _undoStack.removeLast();
       final snapshot = _undoStack.last;
@@ -402,16 +544,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   void _redo() {
     if (_redoStack.isEmpty) return;
     setState(() {
-      _undoStack.add(_InvoiceSnapshot(
-        customer: _selectedCustomer,
-        items: _cloneItems(_items),
-        taxRate: _taxRate,
-        includeTax: _includeTax,
-        documentType: _documentType,
-        date: _selectedDate,
-        isDraft: _isDraft,
-        subject: _subjectController.text,
-      ));
+      _undoStack.add(
+        _InvoiceSnapshot(
+          customer: _selectedCustomer,
+          items: _cloneItems(_items),
+          taxRate: _taxRate,
+          includeTax: _includeTax,
+          documentType: _documentType,
+          date: _selectedDate,
+          isDraft: _isDraft,
+          subject: _subjectController.text,
+        ),
+      );
       final snapshot = _redoStack.removeLast();
       _isApplyingSnapshot = true;
       _selectedCustomer = snapshot.customer;
@@ -443,7 +587,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       appBar: AppBar(
         backgroundColor: docColor,
         leading: const BackButton(),
-        title: Text("A1:${_documentTypeLabel(_documentType)}"),
+        title: GestureDetector(
+          onTap: _isDraft && !_isLocked ? _showDocumentTypeChangeDialog : null,
+          child: Text("A1:${_documentTypeLabel(_documentType)}"),
+        ),
         actions: [
           if (_isDraft)
             Padding(
@@ -481,7 +628,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               IconButton(
                 icon: const Icon(Icons.save),
                 tooltip: "保存",
-                onPressed: _isSaving ? null : () => _saveInvoice(generatePdf: false),
+                onPressed: _savingNotifier.value
+                    ? null
+                    : () => _saveInvoice(generatePdf: false),
               ),
           ],
         ],
@@ -495,8 +644,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardInset + 140),
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      keyboardInset + 140,
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -519,7 +674,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 _buildBottomActionBar(),
               ],
             ),
-            if (_isSaving)
+            if (_savingNotifier.value)
               Container(
                 color: Colors.black54,
                 child: const Center(
@@ -528,7 +683,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     children: [
                       CircularProgressIndicator(color: Colors.white),
                       SizedBox(height: 16),
-                      Text("保存中...", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(
+                        "保存中...",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -563,33 +725,62 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
               const SizedBox(width: 8),
-              Text("伝票日付: ${fmt.format(_selectedDate)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                "伝票日付: ${fmt.format(_selectedDate)}",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               if (_showNewBadge)
                 Container(
                   margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade100,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text("新規", style: TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "新規",
+                    style: TextStyle(
+                      color: Colors.deepOrange,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               if (_showCopyBadge)
                 Container(
                   margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade100,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text("複写", style: TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "複写",
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               if (!_isViewMode && !_isLocked) ...[
                 const SizedBox(width: 8),
@@ -607,15 +798,29 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: ListTile(
         leading: const Icon(Icons.business, color: Colors.blueGrey),
         title: Text(
-            _selectedCustomer != null ? _customerNameWithHonorific(_selectedCustomer!) : "取引先を選択してください",
-            style: TextStyle(color: _selectedCustomer == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.bold)),
+          _selectedCustomer != null
+              ? _customerNameWithHonorific(_selectedCustomer!)
+              : "取引先を選択してください",
+          style: TextStyle(
+            color: _selectedCustomer == null ? Colors.grey : Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         subtitle: _isViewMode ? null : const Text("顧客マスターから選択"),
-        trailing: (_isViewMode || _isLocked) ? null : const Icon(Icons.chevron_right),
+        trailing: (_isViewMode || _isLocked)
+            ? null
+            : const Icon(Icons.chevron_right),
         onTap: (_isViewMode || _isLocked)
             ? null
             : () async {
@@ -642,33 +847,56 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("明細項目", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "明細項目",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             if (!_isViewMode && !_isLocked)
-              TextButton.icon(onPressed: _addItem, icon: const Icon(Icons.add), label: const Text("追加")),
+              TextButton.icon(
+                onPressed: _addItem,
+                icon: const Icon(Icons.add),
+                label: const Text("追加"),
+              ),
           ],
         ),
         if (_items.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: Text("商品が追加されていません", style: TextStyle(color: Colors.grey))),
+            child: Center(
+              child: Text("商品が追加されていません", style: TextStyle(color: Colors.grey)),
+            ),
           )
         else if (_isViewMode)
           Column(
             children: _items
-                .map((item) => Card(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      elevation: 0.5,
-                      child: ListTile(
-                        dense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        title: Text(item.description, style: const TextStyle(fontSize: 13.5)),
-                        subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}", style: const TextStyle(fontSize: 12.5)),
-                        trailing: Text(
-                          "￥${fmt.format(item.unitPrice * item.quantity)}",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                .map(
+                  (item) => Card(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    elevation: 0.5,
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      title: Text(
+                        item.description,
+                        style: const TextStyle(fontSize: 13.5),
+                      ),
+                      subtitle: Text(
+                        "￥${fmt.format(item.unitPrice)} x ${item.quantity}",
+                        style: const TextStyle(fontSize: 12.5),
+                      ),
+                      trailing: Text(
+                        "￥${fmt.format(item.unitPrice * item.quantity)}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13.5,
                         ),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           )
         else
@@ -686,7 +914,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               _pushHistory();
               final id = _ensureCurrentId();
               final item = _items[targetIndex];
-              final msg = "明細を並べ替えました: ${item.description} を ${oldIndex + 1} → ${targetIndex + 1}";
+              final msg =
+                  "明細を並べ替えました: ${item.description} を ${oldIndex + 1} → ${targetIndex + 1}";
               await _editLogRepo.addLog(id, msg);
               await _loadEditLogs();
             },
@@ -701,9 +930,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   elevation: 0.5,
                   child: ListTile(
                     dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    title: Text(item.description, style: const TextStyle(fontSize: 13.5)),
-                    subtitle: Text("￥${fmt.format(item.unitPrice)} x ${item.quantity}", style: const TextStyle(fontSize: 12.5)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    title: Text(
+                      item.description,
+                      style: const TextStyle(fontSize: 13.5),
+                    ),
+                    subtitle: Text(
+                      "￥${fmt.format(item.unitPrice)} x ${item.quantity}",
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -712,35 +950,64 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             icon: const Icon(Icons.remove, size: 18),
                             onPressed: () async {
                               if (item.quantity <= 1) return;
-                              setState(() => _items[idx] = item.copyWith(quantity: item.quantity - 1));
+                              setState(
+                                () => _items[idx] = item.copyWith(
+                                  quantity: item.quantity - 1,
+                                ),
+                              );
                               _pushHistory();
                               final id = _ensureCurrentId();
-                              final msg = "${item.description} の数量を ${item.quantity - 1} に変更しました";
+                              final msg =
+                                  "${item.description} の数量を ${item.quantity - 1} に変更しました";
                               await _editLogRepo.addLog(id, msg);
                               await _loadEditLogs();
                             },
-                            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                            constraints: const BoxConstraints.tightFor(
+                              width: 28,
+                              height: 28,
+                            ),
                             padding: EdgeInsets.zero,
                           ),
-                          Text('${item.quantity}', style: const TextStyle(fontSize: 12.5)),
+                          Text(
+                            '${item.quantity}',
+                            style: const TextStyle(fontSize: 12.5),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.add, size: 18),
                             onPressed: () async {
-                              setState(() => _items[idx] = item.copyWith(quantity: item.quantity + 1));
+                              setState(
+                                () => _items[idx] = item.copyWith(
+                                  quantity: item.quantity + 1,
+                                ),
+                              );
                               _pushHistory();
                               final id = _ensureCurrentId();
-                              final msg = "${item.description} の数量を ${item.quantity + 1} に変更しました";
+                              final msg =
+                                  "${item.description} の数量を ${item.quantity + 1} に変更しました";
                               await _editLogRepo.addLog(id, msg);
                               await _loadEditLogs();
                             },
-                            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+                            constraints: const BoxConstraints.tightFor(
+                              width: 28,
+                              height: 28,
+                            ),
                             padding: EdgeInsets.zero,
                           ),
                         ],
-                        Text("￥${fmt.format(item.unitPrice * item.quantity)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                        Text(
+                          "￥${fmt.format(item.unitPrice * item.quantity)}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5,
+                          ),
+                        ),
                         const SizedBox(width: 6),
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                          icon: const Icon(
+                            Icons.remove_circle_outline,
+                            color: Colors.redAccent,
+                            size: 18,
+                          ),
                           onPressed: () async {
                             final removed = _items[idx];
                             setState(() => _items.removeAt(idx));
@@ -751,7 +1018,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             await _loadEditLogs();
                           },
                           tooltip: "削除",
-                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                          constraints: const BoxConstraints.tightFor(
+                            width: 32,
+                            height: 32,
+                          ),
                           padding: EdgeInsets.zero,
                         ),
                       ],
@@ -761,7 +1031,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       final messenger = ScaffoldMessenger.of(context);
                       final product = await Navigator.push<Product>(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProductMasterScreen(selectionMode: true)),
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const ProductMasterScreen(selectionMode: true),
+                        ),
                       );
                       if (product != null) {
                         if (!mounted) return;
@@ -807,7 +1080,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       onLongPress: () async {
         final selected = await showModalBottomSheet<String>(
           context: context,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
           builder: (context) => SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -842,7 +1117,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (tax > 0) ...[
-              _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", labelColor),
+              _buildSummaryRow(
+                "小計",
+                "￥${formatter.format(subtotal)}",
+                labelColor,
+              ),
               Divider(color: dividerColor),
               _buildSummaryRow("消費税", "￥${formatter.format(tax)}", labelColor),
               Divider(color: dividerColor),
@@ -860,7 +1139,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, Color textColor, {bool isTotal = false}) {
+  Widget _buildSummaryRow(
+    String label,
+    String value,
+    Color textColor, {
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -892,7 +1176,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Column(
@@ -920,26 +1210,32 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           label: const Text("ロック中"),
                         )
                       : (_isViewMode
-                          ? ElevatedButton.icon(
-                              onPressed: () => setState(() => _isViewMode = false),
-                              icon: const Icon(Icons.edit),
-                              label: const Text("編集"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.indigo,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                            )
-                          : ElevatedButton.icon(
-                              onPressed: () => _saveInvoice(generatePdf: false),
-                              icon: const Icon(Icons.save),
-                              label: const Text("保存"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.indigo,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                            )),
+                            ? ElevatedButton.icon(
+                                onPressed: () =>
+                                    setState(() => _isViewMode = false),
+                                icon: const Icon(Icons.edit),
+                                label: const Text("編集"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                              )
+                            : ElevatedButton.icon(
+                                onPressed: () =>
+                                    _saveInvoice(generatePdf: false),
+                                icon: const Icon(Icons.save),
+                                label: const Text("保存"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                              )),
                 ),
               ],
             ),
@@ -953,7 +1249,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("案件名 / 件名", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+        Text(
+          "案件名 / 件名",
+          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+        ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
@@ -961,7 +1260,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: TextField(
             focusNode: _subjectFocusNode,
@@ -971,10 +1276,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             enableInteractiveSelection: !(_isViewMode || _isLocked),
             decoration: InputDecoration(
               hintText: "例：事務所改修工事 / 〇〇月分リース料",
-              hintStyle: TextStyle(color: textColor.withAlpha((0.5 * 255).round())),
+              hintStyle: TextStyle(
+                color: textColor.withAlpha((0.5 * 255).round()),
+              ),
               border: InputBorder.none,
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 4,
+              ),
             ),
           ),
         ),
@@ -990,7 +1300,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 0.5,
           child: Container(
             decoration: BoxDecoration(
@@ -1010,36 +1322,49 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("編集ログ (直近1週間)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text(
+                  "編集ログ (直近1週間)",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
                 const SizedBox(height: 8),
                 if (_editLogs.isEmpty)
-                  const Text("編集ログはありません", style: TextStyle(color: Colors.grey, fontSize: 12))
+                  const Text(
+                    "編集ログはありません",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  )
                 else
-                  ..._editLogs.map((e) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.circle, size: 6, color: Colors.grey),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    DateFormat('yyyy/MM/dd HH:mm').format(e.createdAt),
-                                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  ..._editLogs.map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.circle, size: 6, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  DateFormat(
+                                    'yyyy/MM/dd HH:mm',
+                                  ).format(e.createdAt),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
                                   ),
-                                  Text(
-                                    e.message,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                Text(
+                                  e.message,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1062,7 +1387,11 @@ class _DraftBadge extends StatelessWidget {
       ),
       child: const Text(
         '下書き',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.orange,
+        ),
       ),
     );
   }
