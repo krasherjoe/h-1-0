@@ -9,6 +9,7 @@ import '../models/invoice_sync_payload.dart';
 import '../models/sync_preferences.dart';
 import 'app_settings_repository.dart';
 import 'chat_repository.dart';
+import 'google_account_service.dart';
 import 'google_api_service_base.dart';
 import 'invoice_repository.dart';
 import 'mothership_client.dart';
@@ -39,6 +40,7 @@ class GmailSyncClient extends GoogleApiServiceBase {
 
   Future<void> sync({bool chats = true, bool invoices = true}) async {
     if (!chats && !invoices) return;
+    if (GoogleAccountService.instance.currentAccount == null) return;
     try {
       await withClient((client) async {
         final transport = await _settingsRepository.getSyncTransportMode();
@@ -68,6 +70,7 @@ class GmailSyncClient extends GoogleApiServiceBase {
         await Future.wait(tasks);
       });
     } catch (err, stack) {
+      if (err is StateError && err.message.contains('未連携')) return;
       debugPrint('[GmailSync] sync failed: $err');
       debugPrint('$stack');
     }
