@@ -1,19 +1,20 @@
 import 'package:flutter/services.dart';
 
-/// Android AccountManager 経由でデバイスに登録済みの
-/// Google アカウント一覧を取得するサービス。
-/// OAuth 不要でローカルの com.google アカウントを列挙する。
+/// Android OS 標準アカウントピッカーを呼び出すサービス。
+/// AccountManager.newChooseAccountIntent を使い、
+/// OAuth 不要・権限不要で全 Google アカウントを表示して選択させる。
 class DeviceAccountService {
   static const _channel = MethodChannel('com.example.h_1/device_accounts');
 
-  /// デバイスに登録されている Google アカウントのメールアドレス一覧を返す。
-  /// 取得できない場合は空リストを返す。
-  static Future<List<String>> getGoogleAccounts() async {
+  /// OS 標準の Google アカウント選択 UI を起動し、
+  /// ユーザーが選択したメールアドレスを返す。
+  /// キャンセル時は null を返す。
+  static Future<String?> pickGoogleAccount() async {
     try {
-      final result = await _channel.invokeMethod<List<dynamic>>('getGoogleAccounts');
-      return result?.cast<String>() ?? [];
+      final email = await _channel.invokeMethod<String>('pickGoogleAccount');
+      return email;
     } catch (e) {
-      return [];
+      return null;
     }
   }
 }

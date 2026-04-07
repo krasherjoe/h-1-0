@@ -122,43 +122,7 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
   }
 
   Future<String?> _showDeviceAccountPicker() async {
-    final accounts = await DeviceAccountService.getGoogleAccounts();
-
-    if (!mounted) return null;
-
-    if (accounts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('端末に Google アカウントが登録されていません')),
-      );
-      return null;
-    }
-
-    if (accounts.length == 1) {
-      return accounts.first;
-    }
-
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('BCC に設定するアカウントを選択'),
-        children: accounts
-            .map(
-              (email) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, email),
-                child: Row(
-                  children: [
-                    const Icon(Icons.account_circle_outlined, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(email, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
+    return DeviceAccountService.pickGoogleAccount();
   }
 
   void _showBccHelpDialog() {
