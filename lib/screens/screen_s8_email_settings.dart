@@ -90,6 +90,7 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
     await _appSettingsRepo.setString(_kMailFooterText, _mailFooterCtrl.text);
 
     if (mounted) {
+      FocusScope.of(context).unfocus();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('設定を保存しました')));
