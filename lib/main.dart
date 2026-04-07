@@ -19,6 +19,8 @@ import 'services/chat_sync_scheduler.dart';
 import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
 import 'services/auto_backup_service.dart';
+import 'services/google_account_service.dart';
+import 'screens/settings_screen.dart';
 import 'utils/build_expiry_info.dart';
 
 void main() async {
@@ -360,6 +362,35 @@ class _HomeDeciderState extends State<_HomeDecider> {
       if (!mounted) return;
       setState(() => _mode = mode);
     });
+    if (!kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkGoogleAccountSetup());
+    }
+  }
+
+  Future<void> _checkGoogleAccountSetup() async {
+    final dismissed = await _settings.getString('google_setup_dismissed') == 'true';
+    if (dismissed) return;
+    final account = await GoogleAccountService.instance.recoverAccount();
+    if (account != null) return;
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _GoogleSetupGuideDialog(
+        onSetup: () {
+          Navigator.pop(ctx);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          );
+        },
+        onLater: () => Navigator.pop(ctx),
+        onDismissForever: () async {
+          await _settings.setString('google_setup_dismissed', 'true');
+          if (ctx.mounted) Navigator.pop(ctx);
+        },
+      ),
+    );
   }
 
   Future<void> _loadHome() async {
@@ -384,6 +415,90 @@ class _HomeDeciderState extends State<_HomeDecider> {
       return const DashboardScreen();
     }
     return const InvoiceHistoryScreen();
+  }
+}
+
+class _GoogleSetupGuideDialog extends StatelessWidget {
+  final VoidCallback onSetup;
+  final VoidCallback onLater;
+  final VoidCallback onDismissForever;
+
+  const _GoogleSetupGuideDialog({
+    required this.onSetup,
+    required this.onLater,
+    required this.onDismissForever,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      icon: const Icon(Icons.cloud_sync, size: 48, color: Colors.indigo),
+      title: const Text(
+        'Googleアカウントを連携しますか？',
+        textAlign: TextAlign.center,
+      ),
+      content: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('連携すると以下の機能が使えます：'),
+          SizedBox(height: 12),
+          _FeatureRow(icon: Icons.backup, text: 'Google Drive へ自動バックアップ'),
+          _FeatureRow(icon: Icons.sync, text: 'Gmail でチャット同期'),
+          _FeatureRow(icon: Icons.restore, text: '機種変更時にデータを復元'),
+          SizedBox(height: 8),
+          Text(
+            '設定は後からでも変更できます',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              onPressed: onSetup,
+              icon: const Icon(Icons.account_circle),
+              label: const Text('今すぐ設定する'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: onLater,
+              child: const Text('後で'),
+            ),
+            TextButton(
+              onPressed: onDismissForever,
+              child: const Text(
+                '今後は表示しない',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _FeatureRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.indigo),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text)),
+        ],
+      ),
+    );
   }
 }
 
