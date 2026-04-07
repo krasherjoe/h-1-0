@@ -55,6 +55,7 @@ class BccEmailService {
     required String filename,
     required String hash,
     required String attachmentFileName,
+    String? subject,
   }) async {
     try {
       final mailBody = await generateMailBody(filename: filename, hash: hash);
@@ -66,8 +67,8 @@ class BccEmailService {
 
       final email = Email(
         body: mailBody,
-        subject: '請求書 $filename',
-        recipients: [toEmail],
+        subject: subject ?? '書類送付のご案内（$filename）',
+        recipients: toEmail.isNotEmpty ? [toEmail] : [],
         bcc: bccAddresses,
         attachmentPaths: [tempFile.path],
         isHTML: false,

@@ -6,7 +6,6 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/invoice_models.dart';
@@ -89,9 +88,10 @@ class InvoicePdfPreviewPage extends StatelessWidget {
     return Uint8List.fromList(await doc.save());
   }
 
-  /// メール送信（BCC 自動追加付き）
+  /// メール送信（Gmail 起動・BCC 自動追加付き）
   ///
-  /// flutter_email_sender を使用して、設定された BCC アドレスに自動送信する。
+  /// FlutterEmailSender を使用して Gmail（端末の既定メールアプリ）を起動する。
+  /// 宛先：顧客メール、BCC：S8 設定値、件名：伝票種別＋番号
   Future<void> _shareMail(BuildContext context) async {
     try {
       final pdfBytes = await _buildPdfBytes();
@@ -105,7 +105,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
       // 請求書のハッシュを生成
       final hash = sha256.convert(pdfBytes).toString();
 
-      // BCC アドレスを取得
+      // BCC アドレスを取得（S8 設定）
       final prefs = await SharedPreferences.getInstance();
       final bccRaw = prefs.getString('smtp_bcc') ?? '';
       final bccAddresses = EmailSender.parseBcc(bccRaw);
@@ -115,56 +115,41 @@ class InvoicePdfPreviewPage extends StatelessWidget {
 
       if (toEmail.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('顧客のメールアドレスが設定されていません')));
-        }
-        return;
-      }
-
-      // BCC アドレスがない場合は一般共有モードで動作
-      if (bccAddresses.isEmpty) {
-        await share_plus.Share.shareXFiles(
-          [share_plus.XFile(pdfFile.path)],
-          subject: '請求書 ${invoice.invoiceNumber}',
-          text: '請求書の PDF を添付します。',
-        );
-
-        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('メールアプリが起動しました（BCC 未設定）')),
+            const SnackBar(content: Text('顧客のメールアドレスが設定されていません')),
           );
         }
         return;
       }
 
-      // BCC 自動送信サービスを使用
-      final success = await BccEmailService.sendWithBcc(
+      // 件名：伝票種別 + 伝票番号
+      final subject =
+          '${invoice.documentTypeName}送付のご案内（${invoice.invoiceNumber}）';
+
+      // Gmail（端末の既定メールアプリ）を起動
+      await BccEmailService.sendWithBcc(
         pdfFile: pdfFile,
         toEmail: toEmail,
         bccAddresses: bccAddresses,
         filename: fileName,
         hash: hash,
         attachmentFileName: fileName,
+        subject: subject,
       );
 
       if (context.mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('BCC 送信完了：${bccAddresses.length}件')),
-          );
-        } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('メール送信に失敗しました')));
-        }
+        final bccMsg =
+            bccAddresses.isNotEmpty ? '（BCC：${bccAddresses.length}件）' : '';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('メールアプリを起動しました$bccMsg')),
+        );
       }
     } catch (e) {
       debugPrint('_shareMail エラー：$e');
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('メール送信に失敗しました：$e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('メール起動に失敗しました：$e')),
+        );
       }
     }
   }
