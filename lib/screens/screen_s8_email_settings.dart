@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/app_settings_repository.dart';
+import '../services/google_account_service.dart';
 import '../constants/mail_templates.dart';
 
 class ScreenS8EmailSettings extends StatefulWidget {
@@ -119,11 +120,18 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
   }
 
   Future<String?> _showDeviceAccountPicker() async {
-    // メール共有機能では端末標準メールアプリを使用するため、BCC アドレスは手動入力してください
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('BCC アドレスは入力フィールドから設定してください')));
-    return null;
+    final service = GoogleAccountService.instance;
+
+    // 既存セッションを優先して取得（ユーザー操作なし）
+    var account = service.currentAccount ?? await service.recoverAccount();
+    if (account != null) {
+      return account.email;
+    }
+
+    // セッションがなければアカウント選択 UI を表示
+    if (!mounted) return null;
+    account = await service.pickAccount();
+    return account?.email;
   }
 
   void _showBccHelpDialog() {
@@ -274,7 +282,7 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
               controller: _smtpBccCtrl,
               decoration: InputDecoration(
                 labelText: 'BCC *必須',
-                hintText: 'your-email@gmail.com',
+                hintText: '未設定',
                 helperText: '自分のメールアドレスを入力。カンマ区切りで複数指定可能',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.help_outline, size: 20),
