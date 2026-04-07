@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import '../models/invoice_models.dart';
 import '../services/app_settings_repository.dart';
@@ -50,6 +51,13 @@ class InvoicePdfPreviewPage extends StatefulWidget {
 
 class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
   bool _issued = false;
+  late final Future<Uint8List> Function(PdfPageFormat) _stablePdfBuilder;
+
+  @override
+  void initState() {
+    super.initState();
+    _stablePdfBuilder = (_) => _buildPdfBytes();
+  }
 
   bool get _canFormalIssue =>
       widget.allowFormalIssue &&
@@ -182,7 +190,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
         children: [
           Expanded(
             child: PdfPreview(
-              build: (format) async => await _buildPdfBytes(),
+              build: _stablePdfBuilder,
               allowPrinting: false,
               allowSharing: false,
               canChangePageFormat: false,
