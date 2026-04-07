@@ -93,6 +93,7 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('設定を保存しました')));
+      Navigator.pop(context);
     }
   }
 
