@@ -186,9 +186,8 @@ lib/
 - `lib/services/pdf_generator.dart` - PDF生成（見積・納品・請求・領収書）
 - `lib/widgets/invoice_pdf_preview_page.dart` - PDF プレビュー・送信
 
-**📧 メール送信**
-- `lib/screens/email_settings_screen.dart` - SMTP/BCC設定UI
-- `lib/services/email_sender.dart` - メール送信ロジック
+**📧 メール共有**
+- `lib/screens/email_settings_screen.dart` - BCC 設定・メールテンプレート（スマホ標準メーラー委ね）
 
 **☁️ Google連携**
 - `lib/services/google_account_service.dart` - Google Sign-In管理
@@ -516,7 +515,7 @@ keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androidd
   - 共通利益計算（売上 − 原価）
 - **04. Output & Notification**
   - PDF 帳票生成エンジン（テンプレ変数差し込み）
-  - Mailer（Gmail API、BCC 自動送付制御含む）
+  - スマホ標準メーラーによる PDF 共有（BCC は設定画面で指定）
 
 これらの層を意識しつつ Flutter アプリ／母艦サーバ双方で責務分担を進めます。
 
@@ -601,7 +600,7 @@ keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androidd
 1. 端末内に複数Googleアカウントが存在する場合は `S1:設定` → 「Googleアカウント連携」で利用するアカウントを明示的に選択します。
    - 連携状態は同カード内に表示され、`別アカウントに切替` / `連携解除` ボタンでいつでも再選択できます。
    - 連携後は Gmail/Drive/Sheets/Calendar API 全てで同一トークンを共有します。
-2. `SM:メール設定` の BCC で指定したメールアドレス、または「Googleアカウント連携」カードで上書き設定したアドレスを Gmail 同期に利用します。
+2. BCC（送信控え用）は `S1:設定 > メール設定` で管理します。Gmail 同期機能はオプションとして維持しますが、基本はスマホ標準のメールアプリを使用します。
 3. チャット（`CH:母艦チャット`）や `ChatSyncScheduler` は Gmail API を用いて10秒間隔で同期します。
    - 件名 `[Sync]` かつ未読・INBOX のメールのみを対象とし、受信後は専用ラベルへ自動移動します。
    - ローカル端末が送信したメッセージはクライアントIDで判別し、再取り込みされません。
@@ -617,7 +616,7 @@ keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androidd
   1. `chat_message`: `ChatRepository` のレコードを JSON 化したチャット本文。ローカル自端末の `clientId` と一致する場合は自己ループを避けるため破棄。
   2. `invoice_snapshot`: `InvoiceRepository.pendingSyncSnapshots()` が生成する伝票スナップショット。受信側では `applyInboundSnapshot()` が `updated_at` を比較して上書き/スキップを判定します。
 - 同期処理は `GmailSyncClient` が一括担当し、`_pushPendingChats` / `_pushPendingInvoices` / `_fetchInbound` の3タスクを `Future.wait` で並列実行します。未読INBOXのみを対象に取得し、処理後は専用ラベルへ移動します。
-- BCC アドレスは `設定 > メール設定` の値が優先され、未設定時は Googleアカウント連携カードで指定したアドレスを自動で流用します。BCC が空の場合は送信処理そのものをスキップするため、運用時は必ず設定してください。
+- BCC（送信控え用）は `S1:設定 > メール設定` で管理し、常に設定が必要です。Gmail 同期機能を使用する場合のみ、連携アカウントのアドレスを流用できます。
 - 伝票同期を有効にする際の目安:
   - 端末ごとに `S1:設定 > Googleアカウント連携` を実施し、`gmail_sync_label_name` で指定したラベル（初期値 `SalesAssist Sync`）を Gmail 側に作成。
   - `InvoiceRepository` は伝票保存時に `is_synced=0` と `updated_at` を更新するため、Gmail送信に失敗しても再同期キューへ残り続けます。
