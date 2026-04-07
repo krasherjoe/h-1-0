@@ -700,6 +700,10 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
                         onPressed: _showBccHelpDialog,
                         tooltip: 'BCC 設定ガイドを表示',
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 18.0,
+                      ),
                     ),
                     textAlignVertical: TextAlignVertical.center,
                   ),
