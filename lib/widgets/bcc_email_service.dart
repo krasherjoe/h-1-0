@@ -24,6 +24,7 @@ class BccEmailService {
   static Future<String> generateMailBody({
     required String filename,
     required String hash,
+    String documentTypeName = '書類',
   }) async {
     final profileService = CompanyProfileService();
     final placeholderMap = await profileService.buildMailPlaceholderMap(
@@ -31,16 +32,22 @@ class BccEmailService {
       hash: hash,
     );
 
-    // ヘッダーテンプレートの適用（デフォルト）
+    // 伝票種別プレースホルダーを追加
+    final allPlaceholders = {
+      ...placeholderMap,
+      kMailPlaceholderDocumentTypeName: documentTypeName,
+    };
+
+    // ヘッダーテンプレートの適用
     String body = kMailHeaderTemplateDefault;
-    for (var entry in placeholderMap.entries) {
+    for (var entry in allPlaceholders.entries) {
       body = body.replaceAll(entry.key, entry.value);
     }
 
     // フッターを追加
     body += '\n\n---\n';
     body += kMailFooterTemplateDefault;
-    for (var entry in placeholderMap.entries) {
+    for (var entry in allPlaceholders.entries) {
       body = body.replaceAll(entry.key, entry.value);
     }
 
@@ -56,9 +63,14 @@ class BccEmailService {
     required String hash,
     required String attachmentFileName,
     String? subject,
+    String documentTypeName = '書類',
   }) async {
     try {
-      final mailBody = await generateMailBody(filename: filename, hash: hash);
+      final mailBody = await generateMailBody(
+        filename: filename,
+        hash: hash,
+        documentTypeName: documentTypeName,
+      );
 
       // 添付ファイルを一時的に保存
       final tempDir = await getTemporaryDirectory();

@@ -135,6 +135,7 @@ class InvoicePdfPreviewPage extends StatelessWidget {
         hash: hash,
         attachmentFileName: fileName,
         subject: subject,
+        documentTypeName: invoice.documentTypeName,
       );
 
       if (context.mounted) {
