@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/app_settings_repository.dart';
-import '../services/google_account_service.dart';
+import '../services/device_account_service.dart';
 import '../constants/mail_templates.dart';
 
 class ScreenS8EmailSettings extends StatefulWidget {
@@ -122,18 +122,43 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
   }
 
   Future<String?> _showDeviceAccountPicker() async {
-    final service = GoogleAccountService.instance;
+    final accounts = await DeviceAccountService.getGoogleAccounts();
 
-    // 既存セッションを優先して取得（ユーザー操作なし）
-    var account = service.currentAccount ?? await service.recoverAccount();
-    if (account != null) {
-      return account.email;
+    if (!mounted) return null;
+
+    if (accounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('端末に Google アカウントが登録されていません')),
+      );
+      return null;
     }
 
-    // セッションがなければアカウント選択 UI を表示
-    if (!mounted) return null;
-    account = await service.pickAccount();
-    return account?.email;
+    if (accounts.length == 1) {
+      return accounts.first;
+    }
+
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('BCC に設定するアカウントを選択'),
+        children: accounts
+            .map(
+              (email) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, email),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_circle_outlined, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(email, overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
   }
 
   void _showBccHelpDialog() {
