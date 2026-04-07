@@ -253,7 +253,9 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('S8: メール設定'),
         actions: [
@@ -265,7 +267,7 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
