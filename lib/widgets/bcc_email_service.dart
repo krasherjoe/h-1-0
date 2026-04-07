@@ -1,19 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'dart:typed_data';
-
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 
 import '../constants/mail_templates.dart';
-import '../models/invoice_models.dart';
 import '../services/company_profile_service.dart';
-import '../services/pdf_generator.dart';
 
 /// BCC 自動送信用サービス
 ///
@@ -74,7 +66,7 @@ class BccEmailService {
 
       final email = Email(
         body: mailBody,
-        subject: '請求書 ${filename}',
+        subject: '請求書 $filename',
         recipients: [toEmail],
         bcc: bccAddresses,
         attachmentPaths: [tempFile.path],

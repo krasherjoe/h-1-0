@@ -1,8 +1,4 @@
-/// S8: メール設定画面
-///
-/// BCC アドレス、メールテンプレート（ヘッダー/フッター）の設定を行う画面
-///
-/// ファイル：lib/screens/screen_s8_email_settings.dart
+// ignore_for_file: dangling_library_doc_comments
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,19 +19,16 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
   final _mailHeaderCtrl = TextEditingController();
   final _mailFooterCtrl = TextEditingController();
 
-  bool _loadingLogs = false;
   bool _selectingBccFromDevice = false;
   String _mailHeaderTemplateId = kMailTemplateIdDefault;
   String _mailFooterTemplateId = kMailTemplateIdDefault;
   String? _selectedDeviceBcc;
 
   static const _kSmtpBcc = 'smtp_bcc';
-  static const _kMailSendMethodPrefKey = 'mail_send_method';
   static const _kMailHeaderTemplate = kMailHeaderTemplateKey;
   static const _kMailFooterTemplate = kMailFooterTemplateKey;
   static const _kMailHeaderText = kMailHeaderTextKey;
   static const _kMailFooterText = kMailFooterTextKey;
-  static const _kCryptKey = 'test';
 
   @override
   void initState() {
