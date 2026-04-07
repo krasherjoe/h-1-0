@@ -9,6 +9,7 @@ import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../services/company_repository.dart';
+import '../services/edit_log_repository.dart';
 import 'product_picker_modal.dart';
 import '../models/company_model.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
@@ -45,7 +46,11 @@ class _DraftBadge extends StatelessWidget {
       ),
       child: const Text(
         '下書き',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.orange,
+        ),
       ),
     );
   }
@@ -53,13 +58,15 @@ class _DraftBadge extends StatelessWidget {
 
 List<InvoiceItem> _cloneItemsDetail(List<InvoiceItem> source) {
   return source
-      .map((e) => InvoiceItem(
-            id: e.id,
-            productId: e.productId,
-            description: e.description,
-            quantity: e.quantity,
-            unitPrice: e.unitPrice,
-          ))
+      .map(
+        (e) => InvoiceItem(
+          id: e.id,
+          productId: e.productId,
+          description: e.description,
+          quantity: e.quantity,
+          unitPrice: e.unitPrice,
+        ),
+      )
       .toList(growable: true);
 }
 
@@ -68,7 +75,12 @@ class InvoiceDetailPage extends StatefulWidget {
   final bool editable;
   final bool isUnlocked;
 
-  const InvoiceDetailPage({super.key, required this.invoice, this.editable = true, this.isUnlocked = true});
+  const InvoiceDetailPage({
+    super.key,
+    required this.invoice,
+    this.editable = true,
+    this.isUnlocked = true,
+  });
 
   @override
   State<InvoiceDetailPage> createState() => _InvoiceDetailPageState();
@@ -93,13 +105,31 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final List<_DetailSnapshot> _redoStack = [];
   bool _isApplyingSnapshot = false;
   bool _summaryIsBlue = false; // デフォルトは白
+  final EditLogRepository _editLogRepo = EditLogRepository();
+
+  String _documentTypeLabel(DocumentType type) {
+    switch (type) {
+      case DocumentType.estimation:
+        return "見積書";
+      case DocumentType.order:
+        return "受注伝票";
+      case DocumentType.delivery:
+        return "納品書";
+      case DocumentType.invoice:
+        return "請求書";
+      case DocumentType.receipt:
+        return "領収書";
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _currentInvoice = widget.invoice;
     _currentFilePath = widget.invoice.filePath;
-    _formalNameController = TextEditingController(text: _currentInvoice.customer.formalName);
+    _formalNameController = TextEditingController(
+      text: _currentInvoice.customer.formalName,
+    );
     _notesController = TextEditingController(text: _currentInvoice.notes ?? "");
     _items = List.from(_currentInvoice.items);
     _taxRate = _currentInvoice.taxRate; // 初期化
@@ -163,9 +193,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Future<void> _saveChanges() async {
     final String formalName = _formalNameController.text.trim();
     if (formalName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('取引先の正式名称を入力してください')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('取引先の正式名称を入力してください')));
       return;
     }
 
@@ -183,7 +213,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
     // データベースに保存
     await _invoiceRepo.saveInvoice(updatedInvoice);
-    
+
     // 顧客の正式名称が変更されている可能性があるため、マスターも更新
     if (updatedCustomer.formalName != widget.invoice.customer.formalName) {
       await _customerRepo.saveCustomer(updatedCustomer);
@@ -204,9 +234,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         _currentFilePath = newPath;
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('データベースとPDFを更新しました')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('データベースとPDFを更新しました')));
     }
   }
 
@@ -218,7 +248,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Future<void> _pickSummaryColor() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -257,31 +289,59 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(), // 常に表示
-        title: const Text("A3:伝票詳細"),
+        title: GestureDetector(
+          onTap: _showDocumentTypeChangeDialog,
+          child: Text(
+            "A3: ${_documentTypeLabel(_currentInvoice.documentType)}",
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
         backgroundColor: Colors.indigo.shade700,
         actions: [
           if (locked)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               child: Chip(
-                label: const Text("確定済み", style: TextStyle(color: Colors.white)),
+                label: const Text(
+                  "編集不可",
+                  style: TextStyle(color: Colors.white),
+                ),
                 avatar: const Icon(Icons.lock, size: 16, color: Colors.white),
                 backgroundColor: Colors.redAccent,
               ),
             ),
           if (!_isEditing) ...[
-            IconButton(icon: const Icon(Icons.grid_on), onPressed: _exportCsv, tooltip: "CSV出力"),
+            IconButton(
+              icon: const Icon(Icons.grid_on),
+              onPressed: _exportCsv,
+              tooltip: "CSV出力",
+            ),
             if (widget.isUnlocked && !locked)
               IconButton(
                 icon: const Icon(Icons.copy),
                 tooltip: "コピーして新規作成",
                 onPressed: () async {
-                  final newId = DateTime.now().millisecondsSinceEpoch.toString();
+                  // 複製元の伝票にも編集ログを記録
+                  final editLogRepo = EditLogRepository();
+                  await editLogRepo.addLog(_currentInvoice.id!, "伝票をコピーしました");
+
+                  final newId = DateTime.now().millisecondsSinceEpoch
+                      .toString();
+
+                  // 案件名（subject）に「複写」接頭辞を追加
+                  String? newSubject;
+                  if (_currentInvoice.subject != null &&
+                      _currentInvoice.subject!.isNotEmpty) {
+                    newSubject = '【複写】${_currentInvoice.subject}';
+                  }
+
                   final duplicateInvoice = _currentInvoice.copyWith(
                     id: newId,
                     date: DateTime.now(),
                     isDraft: true,
+                    subject: newSubject,
                   );
+
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -291,12 +351,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                       ),
                     ),
                   );
+
+                  // 複製先にも初期編集ログを追加
+                  await editLogRepo.addLog(newId, "伝票をコピーして新規作成しました");
                 },
               ),
             IconButton(
               icon: const Icon(Icons.edit_note, color: Colors.white),
               tooltip: locked
-                  ? "ロック中"
+                  ? "編集不可"
                   : (widget.isUnlocked ? "詳細編集" : "アンロックして編集"),
               onPressed: (locked || !widget.isUnlocked)
                   ? null
@@ -314,7 +377,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                       final repo = InvoiceRepository();
                       final customerRepo = CustomerRepository();
                       final customers = await customerRepo.getAllCustomers();
-                      final updated = (await repo.getAllInvoices(customers)).firstWhere((i) => i.id == _currentInvoice.id, orElse: () => _currentInvoice);
+                      final updated = (await repo.getAllInvoices(customers))
+                          .firstWhere(
+                            (i) => i.id == _currentInvoice.id,
+                            orElse: () => _currentInvoice,
+                          );
                       setState(() => _currentInvoice = updated);
                     },
             ),
@@ -330,8 +397,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               tooltip: "やり直す",
             ),
             IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
-            IconButton(icon: const Icon(Icons.cancel), onPressed: () => setState(() => _isEditing = false)),
-          ]
+            IconButton(
+              icon: const Icon(Icons.cancel),
+              onPressed: () => setState(() => _isEditing = false),
+            ),
+          ],
         ],
       ),
       body: KeyboardInsetWrapper(
@@ -364,14 +434,21 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.shade600,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           "下書$docTypeName",
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -385,7 +462,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 _buildExperimentalSection(isDraft),
               ],
               Divider(height: 32, color: Colors.grey.shade400),
-              Text("明細一覧", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+              Text(
+                "明細一覧",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
               const SizedBox(height: 8),
               _buildItemTable(fmt, textColor, isDraft),
               if (_isEditing)
@@ -431,7 +515,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           TextField(
             controller: _formalNameController,
             onChanged: (_) => _pushHistory(),
-            decoration: const InputDecoration(labelText: "取引先 正式名称", border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: "取引先 正式名称",
+              border: OutlineInputBorder(),
+            ),
             style: TextStyle(color: textColor),
           ),
           const SizedBox(height: 12),
@@ -439,16 +526,57 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             controller: _notesController,
             onChanged: (_) => _pushHistory(),
             maxLines: 2,
-            decoration: const InputDecoration(labelText: "備考", border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: "備考",
+              border: OutlineInputBorder(),
+            ),
             style: TextStyle(color: textColor),
           ),
         ] else ...[
+          GestureDetector(
+            onTap: _showDocumentTypeChangeDialog,
+            child: Row(
+              children: [
+                Text(
+                  "伝票番号：${_currentInvoice.invoiceNumber}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _documentTypeLabel(_currentInvoice.documentType),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.indigo,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 "伝票番号: ${_currentInvoice.invoiceNumber}",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
               ),
             ],
           ),
@@ -475,17 +603,40 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("取引先", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                Text(
+                  "取引先",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text("${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+                Text(
+                  "${_currentInvoice.customerNameForDisplay} ${_currentInvoice.customer.title}",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
                 if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
                   const SizedBox(height: 8),
-                  const Text("件名", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                  const Text(
+                    "件名",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     _currentInvoice.subject!,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 6),
@@ -494,15 +645,26 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_currentInvoice.customer.department != null && _currentInvoice.customer.department!.isNotEmpty)
-                        Text(_currentInvoice.customer.department!, style: TextStyle(fontSize: 14, color: textColor)),
-                      if ((_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email) != null)
-                        Text("メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}", style: TextStyle(color: textColor)),
+                      if (_currentInvoice.customer.department != null &&
+                          _currentInvoice.customer.department!.isNotEmpty)
+                        Text(
+                          _currentInvoice.customer.department!,
+                          style: TextStyle(fontSize: 14, color: textColor),
+                        ),
+                      if ((_currentInvoice.contactEmailSnapshot ??
+                              _currentInvoice.customer.email) !=
+                          null)
+                        Text(
+                          "メール: ${_currentInvoice.contactEmailSnapshot ?? _currentInvoice.customer.email}",
+                          style: TextStyle(color: textColor),
+                        ),
                       if (_currentInvoice.notes?.isNotEmpty ?? false) ...[
                         const SizedBox(height: 6),
                         Text(
                           "備考: ${_currentInvoice.notes}",
-                          style: TextStyle(color: textColor.withAlpha((0.9 * 255).round())),
+                          style: TextStyle(
+                            color: textColor.withAlpha((0.9 * 255).round()),
+                          ),
                         ),
                       ],
                     ],
@@ -516,9 +678,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     );
   }
 
-  Widget _buildItemTable(NumberFormat formatter, Color textColor, bool isDraft) {
+  Widget _buildItemTable(
+    NumberFormat formatter,
+    Color textColor,
+    bool isDraft,
+  ) {
     return Table(
-      border: TableBorder.all(color: isDraft ? Colors.white24 : Colors.grey.shade300),
+      border: TableBorder.all(
+        color: isDraft ? Colors.white24 : Colors.grey.shade300,
+      ),
       columnWidths: const {
         0: FlexColumnWidth(4),
         1: FixedColumnWidth(50),
@@ -529,7 +697,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
         TableRow(
-          decoration: BoxDecoration(color: isDraft ? Colors.black26 : Colors.grey.shade100),
+          decoration: BoxDecoration(
+            color: isDraft ? Colors.black26 : Colors.grey.shade100,
+          ),
           children: [
             _TableCell("品名", textColor: textColor),
             _TableCell("数量", textColor: textColor),
@@ -542,59 +712,85 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           int idx = entry.key;
           InvoiceItem item = entry.value;
           if (_isEditing) {
-            return TableRow(children: [
-              _EditableCell(
-                initialValue: item.description,
-                textColor: textColor,
-                onChanged: (val) {
-                  setState(() => item.description = val);
-                  _pushHistory();
-                },
-              ),
-              _EditableCell(
-                initialValue: item.quantity.toString(),
-                textColor: textColor,
-                keyboardType: TextInputType.number,
-                onChanged: (val) {
-                  setState(() => item.quantity = int.tryParse(val) ?? 0);
-                  _pushHistory();
-                },
-              ),
-              _EditableCell(
-                initialValue: item.unitPrice.toString(),
-                textColor: textColor,
-                keyboardType: TextInputType.number,
-                onChanged: (val) {
-                  setState(() => item.unitPrice = int.tryParse(val) ?? 0);
-                  _pushHistory();
-                },
-              ),
-              _TableCell(formatter.format(item.subtotal), textColor: textColor),
-              IconButton(icon: const Icon(Icons.delete, size: 20, color: Colors.red), onPressed: () => _removeItem(idx)),
-            ]);
+            return TableRow(
+              children: [
+                _EditableCell(
+                  initialValue: item.description,
+                  textColor: textColor,
+                  onChanged: (val) {
+                    setState(() => item.description = val);
+                    _pushHistory();
+                  },
+                ),
+                _EditableCell(
+                  initialValue: item.quantity.toString(),
+                  textColor: textColor,
+                  keyboardType: TextInputType.number,
+                  onChanged: (val) {
+                    setState(() => item.quantity = int.tryParse(val) ?? 0);
+                    _pushHistory();
+                  },
+                ),
+                _EditableCell(
+                  initialValue: item.unitPrice.toString(),
+                  textColor: textColor,
+                  keyboardType: TextInputType.number,
+                  onChanged: (val) {
+                    setState(() => item.unitPrice = int.tryParse(val) ?? 0);
+                    _pushHistory();
+                  },
+                ),
+                _TableCell(
+                  formatter.format(item.subtotal),
+                  textColor: textColor,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                  onPressed: () => _removeItem(idx),
+                ),
+              ],
+            );
           } else {
-            return TableRow(children: [
-              _TableCell(item.description, textColor: textColor),
-              _TableCell(item.quantity.toString(), textColor: textColor),
-              _TableCell(formatter.format(item.unitPrice), textColor: textColor),
-              _TableCell(formatter.format(item.subtotal), textColor: textColor),
-              const SizedBox(),
-            ]);
+            return TableRow(
+              children: [
+                _TableCell(item.description, textColor: textColor),
+                _TableCell(item.quantity.toString(), textColor: textColor),
+                _TableCell(
+                  formatter.format(item.unitPrice),
+                  textColor: textColor,
+                ),
+                _TableCell(
+                  formatter.format(item.subtotal),
+                  textColor: textColor,
+                ),
+                const SizedBox(),
+              ],
+            );
           }
         }),
       ],
     );
   }
 
-  Widget _buildSummarySection(NumberFormat formatter, Color textColor, bool isDraft) {
-    final double currentTaxRate = _isEditing ? (_includeTax ? _taxRate : 0.0) : _currentInvoice.taxRate;
-    final int subtotal = _isEditing ? _calculateCurrentSubtotal() : _currentInvoice.subtotal;
+  Widget _buildSummarySection(
+    NumberFormat formatter,
+    Color textColor,
+    bool isDraft,
+  ) {
+    final double currentTaxRate = _isEditing
+        ? (_includeTax ? _taxRate : 0.0)
+        : _currentInvoice.taxRate;
+    final int subtotal = _isEditing
+        ? _calculateCurrentSubtotal()
+        : _currentInvoice.subtotal;
     final int tax = (subtotal * currentTaxRate).floor();
     final int total = subtotal + tax;
 
     final bool useBlue = _summaryIsBlue;
     final Color bgColor = useBlue ? Colors.indigo : Colors.white;
-    final Color borderColor = useBlue ? Colors.transparent : Colors.grey.shade300;
+    final Color borderColor = useBlue
+        ? Colors.transparent
+        : Colors.grey.shade300;
     final Color labelColor = useBlue ? Colors.white70 : Colors.black87;
     final Color totalColor = useBlue ? Colors.white : Colors.black87;
     final Color dividerColor = useBlue ? Colors.white24 : Colors.grey.shade300;
@@ -612,11 +808,19 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSummaryRow("小計", "￥${formatter.format(subtotal)}", labelColor),
+            _buildSummaryRow(
+              "小計",
+              "￥${formatter.format(subtotal)}",
+              labelColor,
+            ),
             if (currentTaxRate > 0) ...[
               Divider(color: dividerColor),
               if (_companyInfo?.taxDisplayMode == 'normal')
-                _buildSummaryRow("消費税 (${(currentTaxRate * 100).toInt()}%)", "￥${formatter.format(tax)}", labelColor),
+                _buildSummaryRow(
+                  "消費税 (${(currentTaxRate * 100).toInt()}%)",
+                  "￥${formatter.format(tax)}",
+                  labelColor,
+                ),
               if (_companyInfo?.taxDisplayMode == 'text_only')
                 _buildSummaryRow("消費税", "（税別）", labelColor),
             ],
@@ -633,7 +837,12 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, Color textColor, {bool isTotal = false}) {
+  Widget _buildSummaryRow(
+    String label,
+    String value,
+    Color textColor, {
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -661,20 +870,25 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 
   int _calculateCurrentSubtotal() {
-    return _items.fold(0, (sum, item) => sum + (item.quantity * item.unitPrice));
+    return _items.fold(
+      0,
+      (sum, item) => sum + (item.quantity * item.unitPrice),
+    );
   }
 
   void _pushHistory({bool clearRedo = false}) {
     if (!_isEditing || _isApplyingSnapshot) return;
     if (_undoStack.length >= 30) _undoStack.removeAt(0);
-    _undoStack.add(_DetailSnapshot(
-      formalName: _formalNameController.text,
-      notes: _notesController.text,
-      items: _cloneItemsDetail(_items),
-      taxRate: _taxRate,
-      includeTax: _includeTax,
-      isDraft: _currentInvoice.isDraft,
-    ));
+    _undoStack.add(
+      _DetailSnapshot(
+        formalName: _formalNameController.text,
+        notes: _notesController.text,
+        items: _cloneItemsDetail(_items),
+        taxRate: _taxRate,
+        includeTax: _includeTax,
+        isDraft: _currentInvoice.isDraft,
+      ),
+    );
     if (clearRedo) _redoStack.clear();
     setState(() {});
   }
@@ -682,28 +896,32 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   void _undo() {
     if (_undoStack.isEmpty) return;
     final snapshot = _undoStack.removeLast();
-    _redoStack.add(_DetailSnapshot(
-      formalName: _formalNameController.text,
-      notes: _notesController.text,
-      items: _cloneItemsDetail(_items),
-      taxRate: _taxRate,
-      includeTax: _includeTax,
-      isDraft: _currentInvoice.isDraft,
-    ));
+    _redoStack.add(
+      _DetailSnapshot(
+        formalName: _formalNameController.text,
+        notes: _notesController.text,
+        items: _cloneItemsDetail(_items),
+        taxRate: _taxRate,
+        includeTax: _includeTax,
+        isDraft: _currentInvoice.isDraft,
+      ),
+    );
     _applySnapshot(snapshot);
   }
 
   void _redo() {
     if (_redoStack.isEmpty) return;
     final snapshot = _redoStack.removeLast();
-    _undoStack.add(_DetailSnapshot(
-      formalName: _formalNameController.text,
-      notes: _notesController.text,
-      items: _cloneItemsDetail(_items),
-      taxRate: _taxRate,
-      includeTax: _includeTax,
-      isDraft: _currentInvoice.isDraft,
-    ));
+    _undoStack.add(
+      _DetailSnapshot(
+        formalName: _formalNameController.text,
+        notes: _notesController.text,
+        items: _cloneItemsDetail(_items),
+        taxRate: _taxRate,
+        includeTax: _includeTax,
+        isDraft: _currentInvoice.isDraft,
+      ),
+    );
     _applySnapshot(snapshot);
   }
 
@@ -719,6 +937,96 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     _isApplyingSnapshot = false;
   }
 
+  Future<void> _showDocumentTypeChangeDialog() async {
+    if (_currentInvoice.isLocked || !_currentInvoice.isDraft) return;
+
+    final currentType = _currentInvoice.documentType;
+    String? newTypeLabel;
+
+    // 変換可能なタイプを決定
+    List<String> options = [];
+    switch (currentType) {
+      case DocumentType.estimation:
+        // 見積 → 納品または請求
+        options = ['納品書', '請求書'];
+        break;
+      case DocumentType.delivery:
+        // 納品 → 請求
+        options = ['請求書'];
+        break;
+      case DocumentType.invoice:
+        // 請求 → 領収
+        options = ['領収書'];
+        break;
+      default:
+        return; // 他のタイプは変換不可
+    }
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'ドキュメントタイプを変更',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(),
+            ...options.map(
+              (label) => ListTile(
+                leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+                title: Text(label),
+                onTap: () {
+                  Navigator.pop(context, label);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected == null) return;
+
+    // タイプ変換
+    DocumentType newType;
+    switch (selected) {
+      case '納品書':
+        newType = DocumentType.delivery;
+        break;
+      case '請求書':
+        newType = DocumentType.invoice;
+        break;
+      case '領収書':
+        newType = DocumentType.receipt;
+        break;
+      default:
+        return;
+    }
+
+    final updatedInvoice = _currentInvoice.copyWith(documentType: newType);
+
+    // データベースに保存
+    await _invoiceRepo.saveInvoice(updatedInvoice);
+
+    setState(() {
+      _currentInvoice = updatedInvoice;
+    });
+
+    // 編集ログに記録
+    await _editLogRepo.addLog(
+      _currentInvoice.id!,
+      'ドキュメントタイプを「${_documentTypeLabel(newType)}」に変更しました',
+    );
+  }
+
   Widget _buildExperimentalSection(bool isDraft) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -730,11 +1038,19 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("税率設定 (編集用)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+          const Text(
+            "税率設定 (編集用)",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Text("消費税: ", style: TextStyle(color: isDraft ? Colors.white70 : Colors.black87)),
+              Text(
+                "消費税: ",
+                style: TextStyle(
+                  color: isDraft ? Colors.white70 : Colors.black87,
+                ),
+              ),
               ChoiceChip(
                 label: const Text("10%"),
                 selected: _taxRate == 0.10,
@@ -776,7 +1092,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             onPressed: _currentFilePath != null ? _openPdf : null,
             icon: const Icon(Icons.launch),
             label: const Text("PDFを開く"),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -785,7 +1104,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             onPressed: _currentFilePath != null ? _sharePdf : null,
             icon: const Icon(Icons.share),
             label: const Text("共有"),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
           ),
         ),
       ],
@@ -822,7 +1144,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     ),
                     child: const Text(
                       "確定すると暗号チェーンシステムに組み込まれ、二度と編集できません。内容を最終確認のうえ実行してください。",
-                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 8),
@@ -838,7 +1163,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("キャンセル"),
+              ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
@@ -857,7 +1185,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         _currentInvoice = promoted;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("伝票を正式発行しました")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("伝票を正式発行しました")));
       }
     }
   }
@@ -899,7 +1229,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   Future<void> _openPdf() async => await OpenFilex.open(_currentFilePath!);
   Future<void> _sharePdf() async {
     if (_currentFilePath != null) {
-      await SharePlus.instance.share(ShareParams(files: [XFile(_currentFilePath!)], text: '請求書送付'));
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(_currentFilePath!)], text: '請求書送付'),
+      );
     }
   }
 
@@ -934,7 +1266,11 @@ class _TableCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Text(text, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: textColor)),
+      child: Text(
+        text,
+        textAlign: TextAlign.right,
+        style: TextStyle(fontSize: 12, color: textColor),
+      ),
     );
   }
 }
@@ -961,9 +1297,11 @@ class _EditableCell extends StatelessWidget {
         keyboardType: keyboardType,
         style: TextStyle(fontSize: 14, color: textColor),
         onChanged: onChanged,
-        decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.all(8)),
+        decoration: const InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.all(8),
+        ),
       ),
     );
   }
 }
-
