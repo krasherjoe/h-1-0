@@ -10,7 +10,7 @@ import '../models/sync_preferences.dart';
 import '../services/app_settings_repository.dart';
 import '../services/google_account_service.dart';
 import '../services/theme_controller.dart';
-import 'email_settings_screen.dart';
+import 'screen_s8_email_settings.dart';
 import 'master_hub_page.dart';
 import 'company_info_screen.dart';
 import 'customer_master_screen.dart';
@@ -620,7 +620,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const EmailSettingsScreen(),
+                      builder: (_) => const ScreenS8EmailSettings(),
                     ),
                   ),
                 ),
