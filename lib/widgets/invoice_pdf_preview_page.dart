@@ -6,9 +6,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/invoice_models.dart';
+import '../services/app_settings_repository.dart';
 import '../services/pdf_generator.dart';
 import '../services/email_sender.dart';
 import 'bcc_email_service.dart';
@@ -113,9 +112,8 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
       // 請求書のハッシュを生成
       final hash = sha256.convert(pdfBytes).toString();
 
-      // BCC アドレスを取得（S8 設定）
-      final prefs = await SharedPreferences.getInstance();
-      final bccRaw = prefs.getString('smtp_bcc') ?? '';
+      // BCC アドレスを取得（S8 設定 → SQLite）
+      final bccRaw = await AppSettingsRepository().getString('smtp_bcc') ?? '';
       final bccAddresses = EmailSender.parseBcc(bccRaw);
 
       // 宛先メールアドレス（顧客のメール）
