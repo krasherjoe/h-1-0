@@ -1,6 +1,5 @@
 // ignore_for_file: dangling_library_doc_comments
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/app_settings_repository.dart';
 import '../constants/mail_templates.dart';
@@ -45,23 +44,17 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
   }
 
   Future<void> _loadAll() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // BCC 設定の読み込み
-    final bccPref = prefs.getString(_kSmtpBcc);
-    final smtpBcc =
-        bccPref ?? await _appSettingsRepo.getString(_kSmtpBcc) ?? '';
+    // BCC 設定の読み込み（AppSettingsRepository を使用）
+    final smtpBcc = await _appSettingsRepo.getString(_kSmtpBcc) ?? '';
     setState(() {
       _smtpBccCtrl.text = smtpBcc;
     });
 
-    // メールテンプレートの読み込み
+    // メールテンプレートの読み込み（AppSettingsRepository を使用）
     final headerTemplateId =
-        prefs.getString(_kMailHeaderTemplate) ??
         await _appSettingsRepo.getString(_kMailHeaderTemplate) ??
         kMailTemplateIdDefault;
     final footerTemplateId =
-        prefs.getString(_kMailFooterTemplate) ??
         await _appSettingsRepo.getString(_kMailFooterTemplate) ??
         kMailTemplateIdDefault;
 
@@ -70,15 +63,9 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
       _mailFooterTemplateId = footerTemplateId;
     });
 
-    // メールヘッダー/フッター本文の読み込み
-    final headerText =
-        prefs.getString(_kMailHeaderText) ??
-        await _appSettingsRepo.getString(_kMailHeaderText) ??
-        '';
-    final footerText =
-        prefs.getString(_kMailFooterText) ??
-        await _appSettingsRepo.getString(_kMailFooterText) ??
-        '';
+    // メールヘッダー/フッター本文の読み込み（AppSettingsRepository を使用）
+    final headerText = await _appSettingsRepo.getString(_kMailHeaderText) ?? '';
+    final footerText = await _appSettingsRepo.getString(_kMailFooterText) ?? '';
 
     setState(() {
       _mailHeaderCtrl.text = headerText;
