@@ -7,14 +7,33 @@ import '../models/company_model.dart';
 /// 会社情報のエクスポート・インポート機能
 class CompanyInfoExportImport {
   /// システムのダウンロードフォルダを取得
-  /// Android: /storage/emulated/0/Download
+  /// Android: /storage/emulated/0/Download（システムのダウンロードフォルダ）
   /// iOS: Documents フォルダ（iOS にはシステムダウンロードフォルダがない）
   static Future<Directory> _getDownloadDirectory() async {
     try {
-      final dir = await getDownloadsDirectory();
-      if (dir != null) {
-        debugPrint('[CompanyExport] ダウンロードフォルダ: ${dir.path}');
-        return dir;
+      if (Platform.isAndroid) {
+        // Android: システムのダウンロードフォルダ
+        final dir = Directory('/storage/emulated/0/Download');
+        if (await dir.exists()) {
+          debugPrint('[CompanyExport] システムダウンロードフォルダ: ${dir.path}');
+          return dir;
+        }
+        
+        // フォールバック: 外部ストレージのダウンロード
+        final externalDir = await getExternalStorageDirectory();
+        if (externalDir != null) {
+          final downloadDir = Directory('${externalDir.path}/Download');
+          if (!await downloadDir.exists()) {
+            await downloadDir.create(recursive: true);
+          }
+          debugPrint('[CompanyExport] 外部ストレージダウンロード: ${downloadDir.path}');
+          return downloadDir;
+        }
+      } else if (Platform.isIOS) {
+        // iOS: Documents フォルダ
+        final docDir = await getApplicationDocumentsDirectory();
+        debugPrint('[CompanyExport] iOS Documents フォルダ: ${docDir.path}');
+        return docDir;
       }
     } catch (e) {
       debugPrint('[CompanyExport] ダウンロードフォルダ取得エラー: $e');
@@ -22,7 +41,7 @@ class CompanyInfoExportImport {
     
     // フォールバック: Documents フォルダ
     final docDir = await getApplicationDocumentsDirectory();
-    debugPrint('[CompanyExport] Documents フォルダを使用: ${docDir.path}');
+    debugPrint('[CompanyExport] Documents フォルダを使用（フォールバック）: ${docDir.path}');
     return docDir;
   }
 
