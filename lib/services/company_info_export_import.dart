@@ -5,9 +5,9 @@ import '../models/company_model.dart';
 
 /// 会社情報のエクスポート・インポート機能
 class CompanyInfoExportImport {
-  /// 会社情報を JSON ファイルにエクスポート
+  /// 会社情報を JSON ファイルにエクスポート（ダウンロードフォルダに保存）
   static Future<File> exportToJson(CompanyInfo info) async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
     final fileName = 'company_info_${DateTime.now().millisecondsSinceEpoch}.json';
     final file = File('${dir.path}/$fileName');
 
@@ -28,9 +28,9 @@ class CompanyInfoExportImport {
     return file;
   }
 
-  /// 会社情報を CSV ファイルにエクスポート
+  /// 会社情報を CSV ファイルにエクスポート（ダウンロードフォルダに保存）
   static Future<File> exportToCsv(CompanyInfo info) async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
     final fileName = 'company_info_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File('${dir.path}/$fileName');
 

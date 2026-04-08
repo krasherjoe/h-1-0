@@ -406,30 +406,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: _info.sealPath != null
-                          ? Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
-                                ),
-                                // 再編集アイコン
-                                Positioned(
-                                  bottom: 4,
-                                  right: 4,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.indigo,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    padding: const EdgeInsets.all(4),
-                                    child: const Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
                             )
                           : const Center(
                               child: Column(
