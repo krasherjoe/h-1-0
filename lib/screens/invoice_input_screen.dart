@@ -1103,6 +1103,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final totalColor = useBlue ? Colors.white : Colors.black87;
     final dividerColor = useBlue ? Colors.white24 : Colors.grey.shade300;
 
+    // 数値をフォーマット（0 の場合も "0" として表示）
+    String formatAmount(int amount) {
+      final formatted = formatter.format(amount);
+      return formatted.isEmpty ? "0" : formatted;
+    }
+
     return GestureDetector(
       onLongPress: () async {
         final selected = await showModalBottomSheet<String>(
@@ -1146,17 +1152,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             if (tax > 0) ...[
               _buildSummaryRow(
                 "小計",
-                "￥${formatter.format(subtotal)}",
+                "￥${formatAmount(subtotal)}",
                 labelColor,
               ),
               Divider(color: dividerColor),
-              _buildSummaryRow("消費税", "￥${formatter.format(tax)}", labelColor),
+              _buildSummaryRow("消費税", "￥${formatAmount(tax)}", labelColor),
               Divider(color: dividerColor),
             ] else
               Divider(color: dividerColor),
             _buildSummaryRow(
               tax > 0 ? "合計金額 (税込)" : "合計金額",
-              "￥${formatter.format(total)}",
+              "￥${formatAmount(total)}",
               totalColor,
               isTotal: true,
             ),
