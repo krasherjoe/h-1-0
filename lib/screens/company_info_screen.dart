@@ -40,17 +40,28 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   }
 
   Future<void> _loadInfo() async {
-    _info = await _companyRepo.getCompanyInfo();
-    _nameController.text = _info.name;
-    _zipController.text = _info.zipCode ?? "";
-    _addressController.text = _info.address ?? "";
-    _telController.text = _info.tel ?? "";
-    _emailController.text = _info.email ?? "";
-    _faxController.text = _info.fax ?? "";
-    _urlController.text = _info.url ?? "";
-    _taxRate = _info.defaultTaxRate;
-    _taxDisplayMode = _info.taxDisplayMode;
-    setState(() => _isLoading = false);
+    try {
+      _info = await _companyRepo.getCompanyInfo();
+      if (!mounted) return;
+      
+      _nameController.text = _info.name;
+      _zipController.text = _info.zipCode ?? "";
+      _addressController.text = _info.address ?? "";
+      _telController.text = _info.tel ?? "";
+      _emailController.text = _info.email ?? "";
+      _faxController.text = _info.fax ?? "";
+      _urlController.text = _info.url ?? "";
+      _taxRate = _info.defaultTaxRate;
+      _taxDisplayMode = _info.taxDisplayMode;
+      setState(() => _isLoading = false);
+    } catch (e) {
+      print('F1 会社情報読み込みエラー: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Future<void> _showSealPicker({bool isReEdit = false}) async {
