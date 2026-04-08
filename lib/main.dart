@@ -21,6 +21,8 @@ import 'services/theme_controller.dart';
 import 'services/auto_backup_service.dart';
 import 'services/backup_progress_notifier.dart';
 import 'services/google_account_service.dart';
+import 'services/database_helper.dart';
+import 'services/drive_backup_service.dart';
 import 'screens/settings_screen.dart';
 import 'utils/build_expiry_info.dart';
 
@@ -121,34 +123,104 @@ class _MyAppState extends State<MyApp> {
   void _showRestoreDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('バックアップからの復元'),
         content: const Text(
           'Google Driveにバックアップが見つかりました。\n'
           'データを復元しますか？\n\n'
-          '※設定画面からいつでも復元できます。',
+          '※現在のデータは失われます。',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('後で'),
+            child: const Text('スキップ'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // 設定画面へ誘導（リストア機能がある）
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('設定 > データバックアップ > バックアップから復元 で復元できます'),
-                  duration: Duration(seconds: 5),
-                ),
-              );
+              _performImmediateRestore();
             },
-            child: const Text('設定画面を開く'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('今すぐ復元'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _performImmediateRestore() async {
+    try {
+      if (!mounted) return;
+      
+      // プログレスダイアログを表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('復元中...'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text('Google Driveからデータを復元しています...'),
+            ],
+          ),
+        ),
+      );
+
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+
+      await db.close();
+
+      final driveService = DriveBackupService();
+      final success = await driveService.restoreLatestBackup(dbPath);
+
+      if (!mounted) return;
+      Navigator.pop(context); // プログレスダイアログを閉じる
+
+      if (!success) {
+        throw Exception('復元に失敗しました');
+      }
+
+      // 復元完了ダイアログ
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('復元完了'),
+          content: const Text('データベースを復元しました。\nアプリを再起動してください。'),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                SystemNavigator.pop();
+              },
+              child: const Text('アプリを終了'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // プログレスダイアログを閉じる
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('復元失敗'),
+          content: Text('復元に失敗しました：\n$e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
