@@ -815,6 +815,207 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     }
   }
 
+  /// 敬称スクリーニング：formalName/displayName に含まれる敬称を検出・修正
+  Future<void> _showHonorificsScreening() async {
+    if (_isLoading) return;
+
+    final issues = CustomerDataCleaner.screenAll(_customers);
+
+    if (!mounted) return;
+
+    if (issues.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('敬称の問題は見つかりませんでした'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return;
+    }
+
+    // 選択状態を管理
+    final selected = {for (final i in issues) i.original.id: true};
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final checkedIssues = issues.where((i) => selected[i.original.id] == true).toList();
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.manage_search, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                const Text('敬称スクリーニング'),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${issues.length}件の問題を検出',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => setDialogState(() {
+                            for (final i in issues) selected[i.original.id] = true;
+                          }),
+                          child: const Text('全選択'),
+                        ),
+                        TextButton(
+                          onPressed: () => setDialogState(() {
+                            for (final i in issues) selected[i.original.id] = false;
+                          }),
+                          child: const Text('解除'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(ctx).size.height * 0.45,
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: issues.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, i) {
+                        final issue = issues[i];
+                        final isChecked = selected[issue.original.id] ?? true;
+                        return CheckboxListTile(
+                          value: isChecked,
+                          onChanged: (v) => setDialogState(() =>
+                              selected[issue.original.id] = v ?? false),
+                          dense: true,
+                          title: Text(
+                            issue.original.displayName,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (issue.fixedFormalName != issue.original.formalName)
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(fontSize: 11, color: Colors.black87),
+                                    children: [
+                                      const TextSpan(text: '正式: ', style: TextStyle(color: Colors.grey)),
+                                      TextSpan(
+                                        text: issue.original.formalName,
+                                        style: const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough),
+                                      ),
+                                      const TextSpan(text: ' → '),
+                                      TextSpan(
+                                        text: issue.fixedFormalName,
+                                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (issue.fixedDisplayName != issue.original.displayName)
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(fontSize: 11, color: Colors.black87),
+                                    children: [
+                                      const TextSpan(text: '表示: ', style: TextStyle(color: Colors.grey)),
+                                      TextSpan(
+                                        text: issue.original.displayName,
+                                        style: const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough),
+                                      ),
+                                      const TextSpan(text: ' → '),
+                                      TextSpan(
+                                        text: issue.fixedDisplayName,
+                                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              Text(
+                                '敬称: ${issue.original.title}',
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (checkedIssues.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        '${checkedIssues.length}件を修正します',
+                        style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('キャンセル'),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.auto_fix_high, size: 18),
+                label: Text('${checkedIssues.length}件を修正'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade700),
+                onPressed: checkedIssues.isEmpty
+                    ? null
+                    : () async {
+                        Navigator.pop(ctx);
+                        await _applyHonorificsScreening(checkedIssues);
+                      },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _applyHonorificsScreening(List<HonorificsIssue> issues) async {
+    try {
+      for (final issue in issues) {
+        await _customerRepo.saveCustomer(issue.fixed, force: true);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${issues.length}件の敬称を修正しました'),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+      await _loadCustomers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -864,13 +1065,26 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           if (!widget.selectionMode) ...[
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'clean_duplicate') {
+                if (value == 'honor_screening') {
+                  _showHonorificsScreening();
+                } else if (value == 'clean_duplicate') {
                   _cleanDuplicateHonorific();
                 } else if (value == 'clean_name') {
                   _cleanHonorificFromName();
                 }
               },
               itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(
+                  value: 'honor_screening',
+                  child: Row(
+                    children: [
+                      Icon(Icons.manage_search, size: 18, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text('敬称スクリーニング'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'clean_duplicate',
                   child: Row(

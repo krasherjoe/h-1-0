@@ -1,86 +1,115 @@
 import '../models/customer_model.dart';
 
+/// 敬称スクリーニング結果
+class HonorificsIssue {
+  final Customer original;
+  final String fixedFormalName;
+  final String fixedDisplayName;
+  final List<String> reasons;
+
+  HonorificsIssue({
+    required this.original,
+    required this.fixedFormalName,
+    required this.fixedDisplayName,
+    required this.reasons,
+  });
+
+  Customer get fixed => original.copyWith(
+        formalName: fixedFormalName,
+        displayName: fixedDisplayName,
+      );
+
+  bool get hasChange =>
+      fixedFormalName != original.formalName ||
+      fixedDisplayName != original.displayName;
+}
+
 /// 顧客データのクリーニング機能
 class CustomerDataCleaner {
-  /// 敬称の重複をチェックして削除
-  static String cleanTitle(String formalName, String title) {
-    // 正式名称の末尾に敬称が既に含まれているかチェック
-    final honorifics = ['様', '御中', '殿', '貴社'];
-    
-    for (final honorific in honorifics) {
-      if (formalName.endsWith(honorific)) {
-        // 正式名称に敬称が含まれている場合、title から同じ敬称を削除
-        if (title == honorific) {
-          return '様'; // デフォルトに戻す
-        }
-        return title;
-      }
+  /// 末尾の敬称を検出する正規表現（半角・全角スペース対応）
+  static final _honorificRegex = RegExp(r'[\s\u3000]*(様|御中|殿|先生)$');
+
+  /// 文字列末尾の敬称を除去
+  static String removeTitleFromName(String name) {
+    return name.replaceAll(_honorificRegex, '').trim();
+  }
+
+  /// 文字列が末尾に敬称を持つか
+  static bool hasTrailingHonorific(String name) {
+    return _honorificRegex.hasMatch(name);
+  }
+
+  /// 顧客の敬称問題を分析して返す（問題なければ null）
+  static HonorificsIssue? analyzeCustomer(Customer customer) {
+    final reasons = <String>[];
+    var fixedFormal = customer.formalName;
+    var fixedDisplay = customer.displayName;
+
+    // formalName の末尾に敬称がある → invoiceName で二重になる
+    if (hasTrailingHonorific(customer.formalName)) {
+      fixedFormal = removeTitleFromName(customer.formalName);
+      reasons.add('正式名称末尾「${customer.formalName}」に敬称あり');
     }
-    
+
+    // displayName の末尾に敬称がある
+    if (hasTrailingHonorific(customer.displayName)) {
+      fixedDisplay = removeTitleFromName(customer.displayName);
+      reasons.add('表示名末尾「${customer.displayName}」に敬称あり');
+    }
+
+    if (reasons.isEmpty) return null;
+    return HonorificsIssue(
+      original: customer,
+      fixedFormalName: fixedFormal,
+      fixedDisplayName: fixedDisplay,
+      reasons: reasons,
+    );
+  }
+
+  /// 全顧客をスキャンして問題リストを返す
+  static List<HonorificsIssue> screenAll(List<Customer> customers) {
+    return customers
+        .map(analyzeCustomer)
+        .whereType<HonorificsIssue>()
+        .toList();
+  }
+
+  // ─── 後方互換メソッド（既存コードから呼ばれる） ──────────────────────
+
+  static String cleanTitle(String formalName, String title) {
+    for (final h in ['様', '御中', '殿', '貴社']) {
+      if (formalName.endsWith(h) && title == h) return '様';
+    }
     return title;
   }
 
-  /// 顧客データから無駄な敬称を削除
   static Customer cleanCustomer(Customer customer) {
     final cleanedTitle = cleanTitle(customer.formalName, customer.title);
-    
-    if (cleanedTitle != customer.title) {
-      return customer.copyWith(title: cleanedTitle);
-    }
-    
-    return customer;
+    return cleanedTitle != customer.title
+        ? customer.copyWith(title: cleanedTitle)
+        : customer;
   }
 
-  /// 複数の顧客データをクリーニング
-  static List<Customer> cleanCustomers(List<Customer> customers) {
-    return customers.map((c) => cleanCustomer(c)).toList();
-  }
+  static List<Customer> cleanCustomers(List<Customer> customers) =>
+      customers.map(cleanCustomer).toList();
 
-  /// 敬称の重複を検出
   static bool hasDuplicateHonorific(String formalName, String title) {
-    final honorifics = ['様', '御中', '殿', '貴社'];
-    
-    for (final honorific in honorifics) {
-      if (formalName.endsWith(honorific) && title == honorific) {
-        return true;
-      }
+    for (final h in ['様', '御中', '殿', '貴社']) {
+      if (formalName.endsWith(h) && title == h) return true;
     }
-    
     return false;
   }
 
-  /// 敬称の重複がある顧客をフィルタ
-  static List<Customer> filterDuplicateHonorific(List<Customer> customers) {
-    return customers.where((c) => hasDuplicateHonorific(c.formalName, c.title)).toList();
-  }
+  static List<Customer> filterDuplicateHonorific(List<Customer> customers) =>
+      customers.where((c) => hasDuplicateHonorific(c.formalName, c.title)).toList();
 
-  /// 正式名称から敬称を削除
-  static String removeTitleFromName(String formalName) {
-    final honorifics = ['様', '御中', '殿', '貴社'];
-    
-    String cleaned = formalName;
-    for (final honorific in honorifics) {
-      if (cleaned.endsWith(honorific)) {
-        cleaned = cleaned.substring(0, cleaned.length - honorific.length).trim();
-      }
-    }
-    
-    return cleaned;
-  }
-
-  /// 正式名称から敬称を削除した顧客を返す
   static Customer removeHonorificFromName(Customer customer) {
-    final cleanedName = removeTitleFromName(customer.formalName);
-    
-    if (cleanedName != customer.formalName) {
-      return customer.copyWith(formalName: cleanedName);
-    }
-    
-    return customer;
+    final cleaned = removeTitleFromName(customer.formalName);
+    return cleaned != customer.formalName
+        ? customer.copyWith(formalName: cleaned)
+        : customer;
   }
 
-  /// 複数の顧客から敬称を削除
-  static List<Customer> removeHonorificFromNames(List<Customer> customers) {
-    return customers.map((c) => removeHonorificFromName(c)).toList();
-  }
+  static List<Customer> removeHonorificFromNames(List<Customer> customers) =>
+      customers.map(removeHonorificFromName).toList();
 }
