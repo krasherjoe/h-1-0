@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,13 +46,22 @@ class AppSettingsRepository {
 
   Future<void> _ensureTable() async {
     if (kIsWeb) return; // Webでは不要
-    final db = await _dbHelper.database;
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS app_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT
-      )
-    ''');
+    try {
+      final db = await _dbHelper.database;
+      if (!db.isOpen) {
+        debugPrint('[AppSettings] DB がクローズされています');
+        return;
+      }
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT
+        )
+      ''');
+    } catch (e) {
+      debugPrint('[AppSettings] _ensureTable エラー: $e');
+      // エラーは無視（SharedPreferences にフォールバック）
+    }
   }
 
   Future<String> getHomeMode() async {

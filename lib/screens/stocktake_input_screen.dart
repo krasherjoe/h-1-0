@@ -65,10 +65,10 @@ class _StocktakeInputScreenState extends State<StocktakeInputScreen> {
 
       switch (_sortMode) {
         case 'stock_desc':
-          _filtered.sort((a, b) => b.stockQuantity.compareTo(a.stockQuantity));
+          _filtered.sort((a, b) => (b.stockQuantity ?? 0).compareTo(a.stockQuantity ?? 0));
           break;
         case 'stock_asc':
-          _filtered.sort((a, b) => a.stockQuantity.compareTo(b.stockQuantity));
+          _filtered.sort((a, b) => (a.stockQuantity ?? 0).compareTo(b.stockQuantity ?? 0));
           break;
         case 'name_desc':
           _filtered.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
@@ -88,8 +88,8 @@ class _StocktakeInputScreenState extends State<StocktakeInputScreen> {
       for (final product in _products) {
         final controller = _stockControllers[product.id];
         if (controller == null) continue;
-        final parsed = int.tryParse(controller.text) ?? product.stockQuantity;
-        if (parsed != product.stockQuantity) {
+        final parsed = int.tryParse(controller.text) ?? (product.stockQuantity ?? 0);
+        if (parsed != (product.stockQuantity ?? 0)) {
           updates[product.id] = parsed;
         }
       }
