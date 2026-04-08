@@ -275,116 +275,177 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('角印の調整（コントラスト・トリミング・リサイズ）'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // プレビュー
-            RepaintBoundary(
-              key: _repaintKey,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
+    return Dialog(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // タイトル
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '角印の調整',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                child: GestureDetector(
-                  onPanUpdate: (details) {
-                    setState(() {
-                      _offset += details.delta;
-                    });
-                  },
-                  child: ColorFiltered(
-                    colorFilter: ColorFilter.matrix(_contrastMatrix(_contrast)),
-                    child: Transform.translate(
-                      offset: _offset,
-                      child: Transform.scale(
-                        scale: _scale,
-                        child: Image.file(
-                          File(widget.imagePath),
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.contain,
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          Divider(color: Colors.grey.shade300),
+          
+          // 拡大プレビュー
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    RepaintBoundary(
+                      key: _repaintKey,
+                      child: Container(
+                        width: 350,
+                        height: 350,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white,
+                        ),
+                        child: GestureDetector(
+                          onPanUpdate: (details) {
+                            setState(() {
+                              _offset += details.delta;
+                            });
+                          },
+                          child: ColorFiltered(
+                            colorFilter: ColorFilter.matrix(_contrastMatrix(_contrast)),
+                            child: Transform.translate(
+                              offset: _offset,
+                              child: Transform.scale(
+                                scale: _scale,
+                                child: Image.file(
+                                  File(widget.imagePath),
+                                  width: 350,
+                                  height: 350,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    
+                    // コントラスト調整
+                    const Text('コントラスト', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Row(
+                      children: [
+                        const Icon(Icons.brightness_low, size: 20, color: Colors.grey),
+                        Expanded(
+                          child: Slider(
+                            value: _contrast,
+                            min: 0.5,
+                            max: 3.0,
+                            divisions: 25,
+                            onChanged: (v) => setState(() => _contrast = v),
+                          ),
+                        ),
+                        const Icon(Icons.brightness_high, size: 20, color: Colors.grey),
+                      ],
+                    ),
+                    Text(
+                      _contrast.toStringAsFixed(1),
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // リサイズ調整
+                    const Text('サイズ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Row(
+                      children: [
+                        const Icon(Icons.zoom_out, size: 20, color: Colors.grey),
+                        Expanded(
+                          child: Slider(
+                            value: _scale,
+                            min: 0.5,
+                            max: 3.0,
+                            divisions: 25,
+                            onChanged: (v) => setState(() => _scale = v),
+                          ),
+                        ),
+                        const Icon(Icons.zoom_in, size: 20, color: Colors.grey),
+                      ],
+                    ),
+                    Text(
+                      '${(_scale * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // リセットボタン
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _contrast = 1.0;
+                              _scale = 1.0;
+                              _offset = Offset.zero;
+                            });
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('リセット'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'ドラッグで位置調整 | スライダーで数値調整',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
-            // コントラスト調整
-            const Text('コントラスト', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            Row(
+          ),
+          
+          Divider(color: Colors.grey.shade300),
+          
+          // アクションボタン
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Icon(Icons.brightness_low, size: 18, color: Colors.grey),
-                Expanded(
-                  child: Slider(
-                    value: _contrast,
-                    min: 0.5,
-                    max: 3.0,
-                    divisions: 25,
-                    onChanged: (v) => setState(() => _contrast = v),
-                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('キャンセル'),
                 ),
-                const Icon(Icons.brightness_high, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('保存'),
+                ),
               ],
             ),
-            Text(
-              _contrast.toStringAsFixed(1),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            
-            // リサイズ調整
-            const Text('サイズ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            Row(
-              children: [
-                const Icon(Icons.zoom_out, size: 18, color: Colors.grey),
-                Expanded(
-                  child: Slider(
-                    value: _scale,
-                    min: 0.5,
-                    max: 2.0,
-                    divisions: 15,
-                    onChanged: (v) => setState(() => _scale = v),
-                  ),
-                ),
-                const Icon(Icons.zoom_in, size: 18, color: Colors.grey),
-              ],
-            ),
-            Text(
-              '${(_scale * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'ドラッグで位置調整',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('保存'),
-        ),
-      ],
     );
   }
 }
