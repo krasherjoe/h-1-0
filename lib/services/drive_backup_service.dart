@@ -138,20 +138,35 @@ class DriveBackupService extends GoogleApiServiceBase {
 
   /// Google Driveから最新のバックアップファイル一覧を取得
   Future<List<drive.File>> listBackupFiles() async {
-    return withClient((client) async {
-      final api = drive.DriveApi(client);
-      final folderId = await _ensureNodeFolder(api);
-      
-      final response = await api.files.list(
-        q: "'$folderId' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'",
-        spaces: 'drive',
-        orderBy: 'modifiedTime desc',
-        $fields: 'files(id,name,modifiedTime,size,description)',
-        pageSize: 50,
-      );
-      
-      return response.files ?? [];
-    });
+    try {
+      return await withClient((client) async {
+        final api = drive.DriveApi(client);
+        debugPrint('[DriveBackup] ノードフォルダを確認中...');
+        final folderId = await _ensureNodeFolder(api);
+        debugPrint('[DriveBackup] フォルダID: $folderId');
+        
+        debugPrint('[DriveBackup] バックアップファイルを検索中...');
+        final response = await api.files.list(
+          q: "'$folderId' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'",
+          spaces: 'drive',
+          orderBy: 'modifiedTime desc',
+          $fields: 'files(id,name,modifiedTime,size,description)',
+          pageSize: 50,
+        );
+        
+        final files = response.files ?? [];
+        debugPrint('[DriveBackup] バックアップファイル数: ${files.length}');
+        for (final file in files) {
+          debugPrint('[DriveBackup] - ${file.name} (${file.size} bytes)');
+        }
+        
+        return files;
+      });
+    } catch (e, st) {
+      debugPrint('[DriveBackup] ❌ バックアップファイル一覧取得エラー: $e');
+      debugPrint('[DriveBackup] スタックトレース: $st');
+      rethrow;
+    }
   }
 
   /// 指定されたファイルIDのバックアップを取得してローカルに保存
@@ -179,8 +194,12 @@ class DriveBackupService extends GoogleApiServiceBase {
   /// 最新のバックアップをダウンロードしてDBを復元
   Future<bool> restoreLatestBackup(String targetDbPath) async {
     try {
+      debugPrint('[DriveBackup] 復元開始: $targetDbPath');
       final backups = await listBackupFiles();
+      debugPrint('[DriveBackup] バックアップファイル数: ${backups.length}');
+      
       if (backups.isEmpty) {
+        debugPrint('[DriveBackup] バックアップが見つかりません');
         return false;
       }
       
@@ -191,33 +210,45 @@ class DriveBackupService extends GoogleApiServiceBase {
       );
       
       if (dbBackup.id == null) {
+        debugPrint('[DriveBackup] DB ファイルが見つかりません');
         return false;
       }
       
+      debugPrint('[DriveBackup] DB バックアップを選択: ${dbBackup.name} (ID: ${dbBackup.id})');
+      
       // 一時ファイルにダウンロード
       final tempPath = '$targetDbPath.tmp';
+      debugPrint('[DriveBackup] ダウンロード中: $tempPath');
       await downloadBackup(dbBackup.id!, tempPath);
+      debugPrint('[DriveBackup] ダウンロード完了');
       
       // 既存DBをバックアップ
       final targetFile = File(targetDbPath);
       if (await targetFile.exists()) {
+        debugPrint('[DriveBackup] 既存 DB をバックアップ: $targetDbPath.old');
         await targetFile.rename('$targetDbPath.old');
       }
       
       // 復元
+      debugPrint('[DriveBackup] DB を復元中...');
       await File(tempPath).rename(targetDbPath);
+      debugPrint('[DriveBackup] DB 復元完了');
       
       // 古いバックアップを削除
       final oldBackup = File('$targetDbPath.old');
       if (await oldBackup.exists()) {
+        debugPrint('[DriveBackup] 古いバックアップを削除');
         await oldBackup.delete();
       }
       
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[DriveBackup] ❌ 復元エラー: $e');
+      debugPrint('[DriveBackup] スタックトレース: $st');
       // エラー時は元に戻す
       final oldBackup = File('$targetDbPath.old');
       if (await oldBackup.exists()) {
+        debugPrint('[DriveBackup] 既存 DB を復元');
         await oldBackup.rename(targetDbPath);
       }
       rethrow;
