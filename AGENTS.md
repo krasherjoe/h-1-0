@@ -84,6 +84,40 @@ Future<void> loadData() async {
 }
 ```
 
+### 5. ファイルアクセスのデフォルトはシステムダウンロードフォルダ
+- **内部 DB ファイル以外**のファイルアクセスは、システムダウンロードフォルダを使用
+- **Android**: `/storage/emulated/0/Download`
+- **iOS**: `Documents` フォルダ（iOS にはシステムダウンロードフォルダがない）
+- **エクスポート・インポート**: 同じフォルダを参照して、ユーザーが直感的に操作できるように
+
+**実装パターン**
+```dart
+// ダウンロードフォルダを取得
+static Future<Directory> _getDownloadDirectory() async {
+  try {
+    if (Platform.isAndroid) {
+      final dir = Directory('/storage/emulated/0/Download');
+      if (await dir.exists()) {
+        return dir;
+      }
+    } else if (Platform.isIOS) {
+      return await getApplicationDocumentsDirectory();
+    }
+  } catch (e) {
+    debugPrint('Error: $e');
+  }
+  // フォールバック
+  return await getApplicationDocumentsDirectory();
+}
+
+// ファイルピッカーの初期ディレクトリ
+final result = await FilePicker.platform.pickFiles(
+  initialDirectory: Platform.isAndroid 
+    ? '/storage/emulated/0/Download'
+    : (await getApplicationDocumentsDirectory()).path,
+);
+```
+
 ---
 
 ## ディレクトリ構造
@@ -360,6 +394,8 @@ flutter analyze --no-fatal-infos
 - [ ] TODO.md に絶対パスでタスク記録したか
 - [ ] コミットメッセージは日本語のみか
 - [ ] `flutter analyze --no-fatal-infos` がエラーなしか
+- [ ] ファイルアクセスはシステムダウンロードフォルダを使用しているか（内部 DB 以外）
+- [ ] エクスポート・インポートが同じフォルダを参照しているか
 
 ---
 
