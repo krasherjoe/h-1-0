@@ -50,9 +50,15 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final TransformationController _zoomController = TransformationController();
-  int _activePointers = 0;
-  final MothershipClient? _mothershipClient = kIsWeb ? null : MothershipClient();
-  final ChatSyncScheduler? _chatSyncScheduler = kIsWeb ? null : ChatSyncScheduler();
+  // NOTE: このフィールドは元 InteractiveViewer 用だったが、現在は未使用
+  // キーボード競合問題解決のため削除済み
+  // int _activePointers = 0;
+  final MothershipClient? _mothershipClient = kIsWeb
+      ? null
+      : MothershipClient();
+  final ChatSyncScheduler? _chatSyncScheduler = kIsWeb
+      ? null
+      : ChatSyncScheduler();
 
   @override
   void initState() {
@@ -123,16 +129,15 @@ class _MyAppState extends State<MyApp> {
       valueListenable: AppThemeController.instance.notifier,
       builder: (context, mode, _) => MaterialApp(
         title: '販売アシスト1号',
-        navigatorObservers: [
-          _ZoomResetObserver(_zoomController),
-        ],
+        navigatorObservers: [_ZoomResetObserver(_zoomController)],
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700).copyWith(
-            primary: Colors.indigo.shade700,
-            secondary: Colors.deepOrange.shade400,
-            surface: Colors.grey.shade100,
-            onSurface: Colors.blueGrey.shade900,
-          ),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700)
+              .copyWith(
+                primary: Colors.indigo.shade700,
+                secondary: Colors.deepOrange.shade400,
+                surface: Colors.grey.shade100,
+                onSurface: Colors.blueGrey.shade900,
+              ),
           scaffoldBackgroundColor: Colors.grey.shade100,
           appBarTheme: AppBarTheme(
             backgroundColor: Colors.indigo.shade700,
@@ -141,14 +146,18 @@ class _MyAppState extends State<MyApp> {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               textStyle: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           outlinedButtonTheme: OutlinedButtonThemeData(
             style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               side: BorderSide(color: Colors.indigo.shade700),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               textStyle: const TextStyle(fontWeight: FontWeight.bold),
@@ -179,20 +188,26 @@ class _MyAppState extends State<MyApp> {
           ),
           cardTheme: const CardThemeData(
             color: Color(0xFF1E1E1E),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo.shade400,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               textStyle: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           outlinedButtonTheme: OutlinedButtonThemeData(
             style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               side: const BorderSide(color: Colors.white70),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -208,7 +223,10 @@ class _MyAppState extends State<MyApp> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.indigoAccent, width: 1.4),
+              borderSide: const BorderSide(
+                color: Colors.indigoAccent,
+                width: 1.4,
+              ),
             ),
             labelStyle: const TextStyle(color: Colors.white70),
             hintStyle: const TextStyle(color: Colors.white54),
@@ -223,25 +241,12 @@ class _MyAppState extends State<MyApp> {
         ),
         themeMode: mode,
         builder: (context, child) {
-          return Listener(
-            onPointerDown: (_) => setState(() => _activePointers++),
-            onPointerUp: (_) => setState(() => _activePointers = (_activePointers - 1).clamp(0, 10)),
-            onPointerCancel: (_) => setState(() => _activePointers = (_activePointers - 1).clamp(0, 10)),
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: InteractiveViewer(
-                panEnabled: false,
-                scaleEnabled: true,
-                minScale: 0.8,
-                maxScale: 4.0,
-                transformationController: _zoomController,
-                child: IgnorePointer(
-                  ignoring: _activePointers > 1,
-                  child: child ?? const SizedBox.shrink(),
-                ),
-              ),
-            ),
+          // キーボード表示時のせり上がり問題を回避するため、InteractiveViewer は削除
+          // ズーム機能が必要な画面のみに個別に適用する（必要に応じて）
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: child ?? const SizedBox.shrink(),
           );
         },
         home: const _HomeDecider(),
@@ -280,13 +285,23 @@ class ExpiredApp extends StatelessWidget {
                 const SizedBox(height: 24),
                 const Text(
                   'このビルドは有効期限を過ぎています',
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Text('ビルド日時: $buildText', style: const TextStyle(color: Colors.white70)),
+                Text(
+                  'ビルド日時: $buildText',
+                  style: const TextStyle(color: Colors.white70),
+                ),
                 const SizedBox(height: 4),
-                Text('有効期限: $expiryText', style: const TextStyle(color: Colors.white70)),
+                Text(
+                  '有効期限: $expiryText',
+                  style: const TextStyle(color: Colors.white70),
+                ),
                 const SizedBox(height: 24),
                 const Text(
                   '最新版を取得してインストールしてください。',
@@ -295,7 +310,10 @@ class ExpiredApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black87),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                  ),
                   onPressed: () => SystemNavigator.pop(),
                   icon: const Icon(Icons.exit_to_app),
                   label: const Text('アプリを終了する'),
@@ -357,12 +375,15 @@ class _HomeDeciderState extends State<_HomeDecider> {
       setState(() => _mode = mode);
     });
     if (!kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _checkGoogleAccountSetup());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _checkGoogleAccountSetup(),
+      );
     }
   }
 
   Future<void> _checkGoogleAccountSetup() async {
-    final dismissed = await _settings.getString('google_setup_dismissed') == 'true';
+    final dismissed =
+        await _settings.getString('google_setup_dismissed') == 'true';
     if (dismissed) return;
     final account = await GoogleAccountService.instance.recoverAccount();
     if (account != null) return;
@@ -427,10 +448,7 @@ class _GoogleSetupGuideDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       icon: const Icon(Icons.cloud_sync, size: 48, color: Colors.indigo),
-      title: const Text(
-        'Googleアカウントを連携しますか？',
-        textAlign: TextAlign.center,
-      ),
+      title: const Text('Googleアカウントを連携しますか？', textAlign: TextAlign.center),
       content: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -457,10 +475,7 @@ class _GoogleSetupGuideDialog extends StatelessWidget {
               label: const Text('今すぐ設定する'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: onLater,
-              child: const Text('後で'),
-            ),
+            OutlinedButton(onPressed: onLater, child: const Text('後で')),
             TextButton(
               onPressed: onDismissForever,
               child: const Text(
@@ -527,7 +542,11 @@ class _InvoiceFlowScreenState extends State<InvoiceFlowScreen> {
         final position = await locationService.getCurrentLocation();
         if (position != null) {
           final customerRepo = CustomerRepository();
-          await customerRepo.addGpsHistory(invoice.customer.id, position.latitude, position.longitude);
+          await customerRepo.addGpsHistory(
+            invoice.customer.id,
+            position.latitude,
+            position.longitude,
+          );
           debugPrint("GPS recorded for customer ${invoice.customer.id}");
         }
         _handleInvoiceGenerated(invoice, path);
