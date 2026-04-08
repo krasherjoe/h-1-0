@@ -658,7 +658,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: const BackButton(),
         title: Text(widget.selectionMode ? "C2:顧客選択" : "C1:顧客一覧"),
