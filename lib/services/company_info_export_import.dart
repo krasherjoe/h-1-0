@@ -1,13 +1,34 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path_provider/path_provider.dart';
 import '../models/company_model.dart';
 
 /// 会社情報のエクスポート・インポート機能
 class CompanyInfoExportImport {
-  /// 会社情報を JSON ファイルにエクスポート（ダウンロードフォルダに保存）
+  /// システムのダウンロードフォルダを取得
+  /// Android: /storage/emulated/0/Download
+  /// iOS: Documents フォルダ（iOS にはシステムダウンロードフォルダがない）
+  static Future<Directory> _getDownloadDirectory() async {
+    try {
+      final dir = await getDownloadsDirectory();
+      if (dir != null) {
+        debugPrint('[CompanyExport] ダウンロードフォルダ: ${dir.path}');
+        return dir;
+      }
+    } catch (e) {
+      debugPrint('[CompanyExport] ダウンロードフォルダ取得エラー: $e');
+    }
+    
+    // フォールバック: Documents フォルダ
+    final docDir = await getApplicationDocumentsDirectory();
+    debugPrint('[CompanyExport] Documents フォルダを使用: ${docDir.path}');
+    return docDir;
+  }
+
+  /// 会社情報を JSON ファイルにエクスポート（システムのダウンロードフォルダに保存）
   static Future<File> exportToJson(CompanyInfo info) async {
-    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+    final dir = await _getDownloadDirectory();
     final fileName = 'company_info_${DateTime.now().millisecondsSinceEpoch}.json';
     final file = File('${dir.path}/$fileName');
 
@@ -28,9 +49,9 @@ class CompanyInfoExportImport {
     return file;
   }
 
-  /// 会社情報を CSV ファイルにエクスポート（ダウンロードフォルダに保存）
+  /// 会社情報を CSV ファイルにエクスポート（システムのダウンロードフォルダに保存）
   static Future<File> exportToCsv(CompanyInfo info) async {
-    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+    final dir = await _getDownloadDirectory();
     final fileName = 'company_info_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File('${dir.path}/$fileName');
 
