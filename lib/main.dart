@@ -49,10 +49,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final TransformationController _zoomController = TransformationController();
-  // NOTE: このフィールドは元 InteractiveViewer 用だったが、現在は未使用
-  // キーボード競合問題解決のため削除済み
-  // int _activePointers = 0;
   final MothershipClient? _mothershipClient = kIsWeb
       ? null
       : MothershipClient();
@@ -128,8 +124,9 @@ class _MyAppState extends State<MyApp> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: AppThemeController.instance.notifier,
       builder: (context, mode, _) => MaterialApp(
-        title: '販売アシスト1号',
-        navigatorObservers: [_ZoomResetObserver(_zoomController)],
+        title: '販売アシスト 1 号',
+        // NOTE: InteractiveViewer 削除に伴い、ズームリセット Observer は不要
+        // navigatorObservers: [_ZoomResetObserver(_zoomController)],
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700)
               .copyWith(
@@ -324,33 +321,6 @@ class ExpiredApp extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _ZoomResetObserver extends NavigatorObserver {
-  final TransformationController controller;
-  _ZoomResetObserver(this.controller);
-
-  void _reset() {
-    controller.value = Matrix4.identity();
-  }
-
-  @override
-  void didPush(Route route, Route? previousRoute) {
-    super.didPush(route, previousRoute);
-    _reset();
-  }
-
-  @override
-  void didPop(Route route, Route? previousRoute) {
-    super.didPop(route, previousRoute);
-    _reset();
-  }
-
-  @override
-  void didReplace({Route? newRoute, Route? oldRoute}) {
-    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    _reset();
   }
 }
 
