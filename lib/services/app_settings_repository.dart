@@ -121,7 +121,7 @@ class AppSettingsRepository {
   Future<bool> getDashboardHistoryUnlocked() async => getBool(_kDashboardHistoryUnlocked, defaultValue: false);
   Future<void> setDashboardHistoryUnlocked(bool unlocked) async => setBool(_kDashboardHistoryUnlocked, unlocked);
 
-  Future<String> getTheme() async => await getString(_kTheme) ?? 'system';
+  Future<String> getTheme() async => await getString(_kTheme) ?? 'light';
   Future<void> setTheme(String theme) async => setString(_kTheme, theme);
 
   Future<String> getSummaryTheme() async => await getString(_kSummaryTheme) ?? 'white';

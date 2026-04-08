@@ -222,6 +222,20 @@ class DriveBackupService extends GoogleApiServiceBase {
       await downloadBackup(dbBackup.id!, tempPath);
       debugPrint('[DriveBackup] ダウンロード完了');
       
+      // ダウンロードしたファイルの検証
+      final tempFile = File(tempPath);
+      if (!await tempFile.exists()) {
+        throw Exception('ダウンロードしたファイルが見つかりません');
+      }
+      
+      final fileSize = await tempFile.length();
+      debugPrint('[DriveBackup] ダウンロードファイルサイズ: $fileSize bytes');
+      
+      if (fileSize < 10000) {
+        // 10KB未満は破損ファイルの可能性
+        debugPrint('[DriveBackup] ⚠️ ファイルサイズが小さい（破損の可能性）: $fileSize bytes');
+      }
+      
       // 既存DBをバックアップ
       final targetFile = File(targetDbPath);
       if (await targetFile.exists()) {
