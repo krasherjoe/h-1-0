@@ -133,85 +133,154 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTextField("自社名", _nameController),
-              const SizedBox(height: 12),
-              _buildTextField("郵便番号", _zipController),
-              const SizedBox(height: 12),
-              _buildTextField("住所", _addressController),
-              const SizedBox(height: 12),
-              _buildTextField("電話番号", _telController),
-              const SizedBox(height: 12),
-              _buildTextField("メールアドレス", _emailController),
-              const SizedBox(height: 12),
-              _buildTextField("FAX", _faxController),
-              const SizedBox(height: 12),
-              _buildTextField("ウェブサイト URL", _urlController),
-              const SizedBox(height: 20),
-              const Text("デフォルト消費税率", style: TextStyle(fontWeight: FontWeight.bold)),
-              Row(
+              // スロット1: 基本情報
+              _buildSlot(
+                title: '基本情報',
+                icon: Icons.business,
                 children: [
-                  ChoiceChip(label: const Text("10%"), selected: _taxRate == 0.10, onSelected: (_) => setState(() => _taxRate = 0.10)),
-                  const SizedBox(width: 8),
-                  ChoiceChip(label: const Text("8%"), selected: _taxRate == 0.08, onSelected: (_) => setState(() => _taxRate = 0.08)),
+                  _buildTextField("自社名", _nameController),
+                  const SizedBox(height: 12),
+                  _buildTextField("郵便番号", _zipController),
+                  const SizedBox(height: 12),
+                  _buildTextField("住所", _addressController),
+                  const SizedBox(height: 12),
+                  _buildTextField("電話番号", _telController),
+                  const SizedBox(height: 12),
+                  _buildTextField("メールアドレス", _emailController),
+                  const SizedBox(height: 12),
+                  _buildTextField("FAX", _faxController),
+                  const SizedBox(height: 12),
+                  _buildTextField("ウェブサイト URL", _urlController),
                 ],
               ),
               const SizedBox(height: 20),
-              const Text("消費税の表示設定（T番号非取得時など）", style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
+              
+              // スロット2: 税設定
+              _buildSlot(
+                title: '税設定',
+                icon: Icons.percent,
                 children: [
-                  ChoiceChip(
-                    label: const Text("通常表示"),
-                    selected: _taxDisplayMode == 'normal',
-                    onSelected: (_) => setState(() => _taxDisplayMode = 'normal'),
+                  const Text("デフォルト消費税率", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ChoiceChip(label: const Text("10%"), selected: _taxRate == 0.10, onSelected: (_) => setState(() => _taxRate = 0.10)),
+                      const SizedBox(width: 8),
+                      ChoiceChip(label: const Text("8%"), selected: _taxRate == 0.08, onSelected: (_) => setState(() => _taxRate = 0.08)),
+                    ],
                   ),
-                  ChoiceChip(
-                    label: const Text("表示しない"),
-                    selected: _taxDisplayMode == 'hidden',
-                    onSelected: (_) => setState(() => _taxDisplayMode = 'hidden'),
+                  const SizedBox(height: 20),
+                  const Text("消費税の表示設定", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text("通常表示"),
+                        selected: _taxDisplayMode == 'normal',
+                        onSelected: (_) => setState(() => _taxDisplayMode = 'normal'),
+                      ),
+                      ChoiceChip(
+                        label: const Text("表示しない"),
+                        selected: _taxDisplayMode == 'hidden',
+                        onSelected: (_) => setState(() => _taxDisplayMode = 'hidden'),
+                      ),
+                      ChoiceChip(
+                        label: const Text("「税別」と表示"),
+                        selected: _taxDisplayMode == 'text_only',
+                        onSelected: (_) => setState(() => _taxDisplayMode = 'text_only'),
+                      ),
+                    ],
                   ),
-                  ChoiceChip(
-                    label: const Text("「税別」と表示"),
-                    selected: _taxDisplayMode == 'text_only',
-                    onSelected: (_) => setState(() => _taxDisplayMode = 'text_only'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "※ T番号非取得時などの表示方法を選択",
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              const Text("印影（角印）", style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _showSealPicker,
-                child: Container(
-                  height: 150,
-                  width: 150,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 20),
+              
+              // スロット3: 角印
+              _buildSlot(
+                title: '印影（角印）',
+                icon: Icons.image,
+                children: [
+                  GestureDetector(
+                    onTap: _showSealPicker,
+                    child: Container(
+                      height: 150,
+                      width: 150,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: _info.sealPath != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
+                            )
+                          : const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey),
+                                  SizedBox(height: 8),
+                                  Text('タップして取り込む', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                    ),
                   ),
-                  child: _info.sealPath != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
-                        )
-                      : const Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text('タップして取り込む', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            ],
-                          ),
-                        ),
-                ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "ギャラリーから読み込むか、カメラで撮影してください",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              const Text("ギャラリーから読み込むか、カメラで撮影してください", style: TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSlot({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.indigo.shade200),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.indigo.shade50,
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // スロットヘッダー
+          Row(
+            children: [
+              Icon(icon, color: Colors.indigo, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.indigo,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // スロットコンテンツ
+          ...children,
+        ],
       ),
     );
   }
