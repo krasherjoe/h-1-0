@@ -179,9 +179,19 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
 
   Future<void> _importFromFile() async {
     try {
+      // ダウンロードフォルダを初期ディレクトリとして設定
+      String? initialDirectory;
+      if (Platform.isAndroid) {
+        initialDirectory = '/storage/emulated/0/Download';
+      } else if (Platform.isIOS) {
+        final docDir = await getApplicationDocumentsDirectory();
+        initialDirectory = docDir.path;
+      }
+
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json', 'csv'],
+        initialDirectory: initialDirectory,
       );
 
       if (result == null || !mounted) return;
