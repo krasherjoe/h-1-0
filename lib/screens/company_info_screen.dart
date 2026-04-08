@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/company_model.dart';
 import '../services/company_repository.dart';
+import '../services/company_info_export_import.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
 class CompanyInfoScreen extends StatefulWidget {
@@ -134,6 +136,115 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     Navigator.pop(context);
   }
 
+  Future<void> _exportToJson() async {
+    try {
+      final file = await CompanyInfoExportImport.exportToJson(_info);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("JSON でエクスポートしました: ${file.path}")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("エクスポート失敗: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _exportToCsv() async {
+    try {
+      final file = await CompanyInfoExportImport.exportToCsv(_info);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("CSV でエクスポートしました: ${file.path}")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("エクスポート失敗: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _importFromFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json', 'csv'],
+      );
+
+      if (result == null || !mounted) return;
+
+      final file = File(result.files.single.path!);
+      final ext = file.path.split('.').last.toLowerCase();
+
+      CompanyInfo imported;
+      if (ext == 'json') {
+        imported = await CompanyInfoExportImport.importFromJson(file);
+      } else if (ext == 'csv') {
+        imported = await CompanyInfoExportImport.importFromCsv(file);
+      } else {
+        throw Exception('サポートされていないファイル形式です');
+      }
+
+      if (!mounted) return;
+
+      // 確認ダイアログを表示
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('インポート確認'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('以下の情報をインポートしますか？'),
+              const SizedBox(height: 16),
+              Text('自社名: ${imported.name}'),
+              Text('住所: ${imported.address ?? '未設定'}'),
+              Text('電話: ${imported.tel ?? '未設定'}'),
+              Text('メール: ${imported.email ?? '未設定'}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('インポート'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+
+      // フォームに反映
+      setState(() {
+        _nameController.text = imported.name;
+        _zipController.text = imported.zipCode ?? '';
+        _addressController.text = imported.address ?? '';
+        _telController.text = imported.tel ?? '';
+        _emailController.text = imported.email ?? '';
+        _faxController.text = imported.fax ?? '';
+        _urlController.text = imported.url ?? '';
+        _taxRate = imported.defaultTaxRate;
+        _taxDisplayMode = imported.taxDisplayMode;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("インポートしました。保存ボタンで確定してください。")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("インポート失敗: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -144,6 +255,49 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         title: const Text("F1:自社情報"),
         backgroundColor: Colors.indigo,
         actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'export_json') {
+                _exportToJson();
+              } else if (value == 'export_csv') {
+                _exportToCsv();
+              } else if (value == 'import') {
+                _importFromFile();
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'export_json',
+                child: Row(
+                  children: [
+                    Icon(Icons.download, size: 18),
+                    SizedBox(width: 8),
+                    Text('JSON でエクスポート'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export_csv',
+                child: Row(
+                  children: [
+                    Icon(Icons.download, size: 18),
+                    SizedBox(width: 8),
+                    Text('CSV でエクスポート'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import',
+                child: Row(
+                  children: [
+                    Icon(Icons.upload, size: 18),
+                    SizedBox(width: 8),
+                    Text('インポート'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(icon: const Icon(Icons.check), onPressed: _save),
         ],
       ),
