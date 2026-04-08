@@ -91,14 +91,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final db = await dbHelper.database;
       final dbPath = db.path;
 
+      print('[Restore] DB パス: $dbPath');
       await db.close();
+      print('[Restore] DB をクローズしました');
 
       final driveService = DriveBackupService();
+      print('[Restore] バックアップファイル一覧を取得中...');
+      final backups = await driveService.listBackupFiles();
+      print('[Restore] バックアップファイル数: ${backups.length}');
+      
+      if (backups.isEmpty) {
+        throw Exception('復元可能なバックアップが見つかりません');
+      }
+
+      // DB ファイルを探す
+      final dbBackup = backups.firstWhere(
+        (f) => f.name?.endsWith('.db') ?? false,
+        orElse: () => throw Exception('DB ファイルが見つかりません'),
+      );
+      
+      print('[Restore] DB バックアップ: ${dbBackup.name} (ID: ${dbBackup.id})');
+      
       final success = await driveService.restoreLatestBackup(dbPath);
 
       if (!success) {
-        throw Exception('復元可能なバックアップが見つかりません');
+        throw Exception('復元に失敗しました');
       }
+
+      print('[Restore] 復元完了');
 
       if (mounted) {
         setState(() => _restoring = false);
@@ -121,7 +141,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      print('[Restore] エラー: $e');
+      print('[Restore] スタックトレース: $st');
       if (mounted) {
         setState(() => _restoring = false);
         ScaffoldMessenger.of(
@@ -891,26 +913,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.business),
                   title: const Text('会社情報'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CompanyInfoScreen()),
-                  ),
+                  onTap: () {
+                    try {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CompanyInfoScreen()),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+                      );
+                    }
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.people),
                   title: const Text('顧客マスター'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CustomerMasterScreen()),
-                  ),
+                  onTap: () {
+                    try {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CustomerMasterScreen()),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+                      );
+                    }
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.inventory_2),
                   title: const Text('商品マスター'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => ProductMasterScreen()),
-                  ),
+                  onTap: () {
+                    try {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+                      );
+                    }
+                  },
                 ),
               ],
             ),
