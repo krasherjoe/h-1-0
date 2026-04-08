@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "344812781289",
+    "project_id": "hanai-1",
+    "storage_bucket": "hanai-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:344812781289:android:d02a81c5a9f3afcf21ba78",
+        "android_client_info": {
+          "package_name": "com.example.h_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAF76k3dGjhe38UT4ab4Ykmow_SMmO2L64"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
