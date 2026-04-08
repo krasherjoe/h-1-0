@@ -51,22 +51,28 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _showSealPicker() async {
-    final source = await showModalBottomSheet<ImageSource>(
+  Future<void> _showSealPicker({bool isReEdit = false}) async {
+    final source = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isReEdit && _info.sealPath != null)
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text('現在の角印を再編集', style: TextStyle(color: Colors.blue)),
+                onTap: () => Navigator.pop(ctx, 'reedit'),
+              ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: const Text('ギャラリーから選択'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: const Text('カメラで撮影'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             if (_info.sealPath != null)
               ListTile(
@@ -82,8 +88,24 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       ),
     );
     if (source == null) return;
+
+    // 再編集の場合
+    if (source == 'reedit') {
+      if (!mounted) return;
+      final saved = await showDialog<String>(
+        context: context,
+        builder: (ctx) => _SealContrastDialog(imagePath: _info.sealPath!),
+      );
+      if (saved != null && mounted) {
+        setState(() => _info = _info.copyWith(sealPath: saved));
+      }
+      return;
+    }
+
+    // 新規取得の場合
+    final imageSource = source == 'gallery' ? ImageSource.gallery : ImageSource.camera;
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: source);
+    final image = await picker.pickImage(source: imageSource);
     if (image == null || !mounted) return;
     final saved = await showDialog<String>(
       context: context,
@@ -207,18 +229,42 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 icon: Icons.image,
                 children: [
                   GestureDetector(
-                    onTap: _showSealPicker,
+                    onTap: () => _showSealPicker(isReEdit: true),
                     child: Container(
                       height: 150,
                       width: 150,
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
+                        border: Border.all(
+                          color: _info.sealPath != null ? Colors.indigo : Colors.grey,
+                          width: _info.sealPath != null ? 2 : 1,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: _info.sealPath != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
+                          ? Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
+                                ),
+                                // 再編集アイコン
+                                Positioned(
+                                  bottom: 4,
+                                  right: 4,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.indigo,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    padding: const EdgeInsets.all(4),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             )
                           : const Center(
                               child: Column(
@@ -233,9 +279,11 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    "ギャラリーから読み込むか、カメラで撮影してください",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  Text(
+                    _info.sealPath != null
+                        ? "タップして再編集 | 長押しで削除・変更"
+                        : "ギャラリーから読み込むか、カメラで撮影してください",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ),
