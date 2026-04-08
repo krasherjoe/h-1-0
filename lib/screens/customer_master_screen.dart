@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/customer_model.dart';
 import '../services/customer_repository.dart';
+import '../services/customer_data_cleaner.dart';
 import 'customer_edit_screen.dart';
 import '../widgets/custom_field_display_widget.dart';
 import '../services/custom_field_repository.dart';
@@ -655,6 +656,165 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     );
   }
 
+  /// 敬称の重複を削除
+  Future<void> _cleanDuplicateHonorific() async {
+    try {
+      final duplicates = CustomerDataCleaner.filterDuplicateHonorific(_customers);
+      
+      if (duplicates.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('敬称の重複がある顧客はいません')),
+        );
+        return;
+      }
+
+      // 確認ダイアログを表示
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('敬称の重複を削除'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${duplicates.length}件の顧客の敬称の重複を削除します。'),
+              const SizedBox(height: 12),
+              const Text('例：「株式会社 ABC 御中」の敬称を「様」に変更'),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: duplicates.length,
+                  itemBuilder: (ctx, i) => Text(
+                    '${duplicates[i].formalName} (${duplicates[i].title})',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('削除'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+
+      // クリーニング実行
+      for (final customer in duplicates) {
+        final cleaned = CustomerDataCleaner.cleanCustomer(customer);
+        await _customerRepo.saveCustomer(cleaned, force: true);
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${duplicates.length}件の敬称の重複を削除しました')),
+      );
+
+      // リロード
+      _loadCustomers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  /// 名前から敬称を削除
+  Future<void> _cleanHonorificFromName() async {
+    try {
+      final toClean = _customers
+          .where((c) => CustomerDataCleaner.removeTitleFromName(c.formalName) != c.formalName)
+          .toList();
+
+      if (toClean.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('名前から削除する敬称がありません')),
+        );
+        return;
+      }
+
+      // 確認ダイアログを表示
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('名前から敬称を削除'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${toClean.length}件の顧客の名前から敬称を削除します。'),
+              const SizedBox(height: 12),
+              const Text('例：「株式会社 ABC 様」→「株式会社 ABC」'),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: toClean.length,
+                  itemBuilder: (ctx, i) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${toClean[i].formalName}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '↓ ${CustomerDataCleaner.removeTitleFromName(toClean[i].formalName)}',
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('削除'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+
+      // クリーニング実行
+      for (final customer in toClean) {
+        final cleaned = CustomerDataCleaner.removeHonorificFromName(customer);
+        await _customerRepo.saveCustomer(cleaned, force: true);
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${toClean.length}件の名前から敬称を削除しました')),
+      );
+
+      // リロード
+      _loadCustomers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -701,11 +861,43 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               },
             ),
           ),
-          if (!widget.selectionMode)
+          if (!widget.selectionMode) ...[
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'clean_duplicate') {
+                  _cleanDuplicateHonorific();
+                } else if (value == 'clean_name') {
+                  _cleanHonorificFromName();
+                }
+              },
+              itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(
+                  value: 'clean_duplicate',
+                  child: Row(
+                    children: [
+                      Icon(Icons.cleaning_services, size: 18),
+                      SizedBox(width: 8),
+                      Text('敬称の重複を削除'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'clean_name',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 18),
+                      SizedBox(width: 8),
+                      Text('名前から敬称を削除'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadCustomers,
             ),
+          ],
         ],
       ),
       body: Padding(
