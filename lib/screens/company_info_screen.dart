@@ -1,6 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/company_model.dart';
 import '../services/company_repository.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
@@ -41,13 +45,46 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _showSealPicker() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('ギャラリーから選択'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('カメラで撮影'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            if (_info.sealPath != null)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('削除', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  setState(() => _info = _info.copyWith(sealPath: null));
+                  Navigator.pop(ctx);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-      setState(() {
-        _info = _info.copyWith(sealPath: image.path);
-      });
+    final image = await picker.pickImage(source: source);
+    if (image == null || !mounted) return;
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _SealContrastDialog(imagePath: image.path),
+    );
+    if (saved != null && mounted) {
+      setState(() => _info = _info.copyWith(sealPath: saved));
     }
   }
 
@@ -127,10 +164,10 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text("印影（角印）撮影", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text("印影（角印）", style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               GestureDetector(
-                onTap: _pickImage,
+                onTap: _showSealPicker,
                 child: Container(
                   height: 150,
                   width: 150,
@@ -139,12 +176,24 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: _info.sealPath != null
-                      ? Image.file(File(_info.sealPath!), fit: BoxFit.contain)
-                      : const Center(child: Icon(Icons.camera_alt, size: 50, color: Colors.grey)),
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
+                        )
+                      : const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('タップして取り込む', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            ],
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text("白い紙に押した判子を真上から撮影してください", style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const Text("ギャラリーから読み込むか、カメラで撮影してください", style: TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
         ),
@@ -156,6 +205,114 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     return TextField(
       controller: controller,
       decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+    );
+  }
+}
+
+class _SealContrastDialog extends StatefulWidget {
+  final String imagePath;
+  const _SealContrastDialog({required this.imagePath});
+
+  @override
+  State<_SealContrastDialog> createState() => _SealContrastDialogState();
+}
+
+class _SealContrastDialogState extends State<_SealContrastDialog> {
+  double _contrast = 1.0;
+  final _repaintKey = GlobalKey();
+  bool _saving = false;
+
+  List<double> _contrastMatrix(double c) {
+    final t = 128 * (1 - c);
+    return [
+      c, 0, 0, 0, t,
+      0, c, 0, 0, t,
+      0, 0, c, 0, t,
+      0, 0, 0, 1, 0,
+    ];
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final boundary =
+          _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final ui.Image img = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData =
+          await img.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('変換失敗');
+      final pngBytes = byteData.buffer.asUint8List();
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File(
+          '${dir.path}/seal_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(pngBytes);
+      if (mounted) Navigator.pop(context, file.path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('角印のコントラスト調整'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RepaintBoundary(
+            key: _repaintKey,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.matrix(_contrastMatrix(_contrast)),
+              child: Image.file(
+                File(widget.imagePath),
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.brightness_low, size: 18, color: Colors.grey),
+              Expanded(
+                child: Slider(
+                  value: _contrast,
+                  min: 0.5,
+                  max: 3.0,
+                  divisions: 25,
+                  onChanged: (v) => setState(() => _contrast = v),
+                ),
+              ),
+              const Icon(Icons.brightness_high, size: 18, color: Colors.grey),
+            ],
+          ),
+          Text(
+            'コントラスト: ${_contrast.toStringAsFixed(1)}',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('保存'),
+        ),
+      ],
     );
   }
 }
