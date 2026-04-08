@@ -47,10 +47,10 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
 
       switch (_sortMode) {
         case 'stock_asc':
-          _filtered.sort((a, b) => a.stockQuantity.compareTo(b.stockQuantity));
+          _filtered.sort((a, b) => (a.stockQuantity ?? 0).compareTo(b.stockQuantity ?? 0));
           break;
         case 'stock_desc':
-          _filtered.sort((a, b) => b.stockQuantity.compareTo(a.stockQuantity));
+          _filtered.sort((a, b) => (b.stockQuantity ?? 0).compareTo(a.stockQuantity ?? 0));
           break;
         case 'name_desc':
           _filtered.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
@@ -63,8 +63,8 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
     });
   }
 
-  int get _totalStock => _filtered.fold(0, (sum, p) => sum + p.stockQuantity);
-  int get _lowStockCount => _filtered.where((p) => p.stockQuantity < 10).length;
+  int get _totalStock => _filtered.fold(0, (sum, p) => sum + (p.stockQuantity ?? 0));
+  int get _lowStockCount => _filtered.where((p) => (p.stockQuantity ?? 0) < 10).length;
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +174,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                         itemCount: _filtered.length,
                         itemBuilder: (context, index) {
                           final p = _filtered[index];
-                          final isLowStock = p.stockQuantity < 10;
+                          final isLowStock = (p.stockQuantity ?? 0) < 10;
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             child: ListTile(

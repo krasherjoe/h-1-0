@@ -32,6 +32,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   final _urlController = TextEditingController();
   double _taxRate = 0.10;
   String _taxDisplayMode = 'normal';
+  bool _hasRegistrationNumber = false;
+  final _regNumberController = TextEditingController();
 
   @override
   void initState() {
@@ -53,6 +55,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       _urlController.text = _info.url ?? "";
       _taxRate = _info.defaultTaxRate;
       _taxDisplayMode = _info.taxDisplayMode;
+      _hasRegistrationNumber = _info.registrationNumber != null && _info.registrationNumber!.isNotEmpty;
+      _regNumberController.text = _info.registrationNumber ?? '';
       setState(() => _isLoading = false);
     } catch (e) {
       print('F1 会社情報読み込みエラー: $e');
@@ -140,6 +144,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       url: _urlController.text,
       defaultTaxRate: _taxRate,
       taxDisplayMode: _taxDisplayMode,
+      registrationNumber: _hasRegistrationNumber ? _regNumberController.text.trim() : null,
     );
     await _companyRepo.saveCompanyInfo(updated);
     if (!mounted) return;
@@ -397,8 +402,40 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              
-              // スロット3: 角印
+
+              // スロット3: インボイス登録番号
+              _buildSlot(
+                title: 'インボイス登録番号',
+                icon: Icons.receipt_long,
+                children: [
+                  SwitchListTile(
+                    title: const Text('適格請求書発行事業者'),
+                    subtitle: const Text('T番号取得済みの場合はオン'),
+                    value: _hasRegistrationNumber,
+                    onChanged: (v) => setState(() => _hasRegistrationNumber = v),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (_hasRegistrationNumber) ...
+                    [
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _regNumberController,
+                        decoration: const InputDecoration(
+                          labelText: '登録番号',
+                          hintText: 'T1234567890123',
+                          prefixText: 'T',
+                          border: OutlineInputBorder(),
+                          helperText: '半角数字13桁（T番号）',
+                        ),
+                        keyboardType: TextInputType.number,
+                        maxLength: 13,
+                      ),
+                    ],
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // スロット4: 角印
               _buildSlot(
                 title: '印影（角印）',
                 icon: Icons.image,

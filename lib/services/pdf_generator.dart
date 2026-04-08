@@ -48,6 +48,21 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
           italic: ipaex,
           boldItalic: ipaex,
         ).copyWith(defaultTextStyle: pw.TextStyle(fontFallback: [ipaex])),
+        buildForeground: (context) {
+          if (sealImage == null) return pw.SizedBox();
+          return pw.Stack(
+            children: [
+              pw.Positioned(
+                right: 40,
+                top: 96,
+                child: pw.Opacity(
+                  opacity: 0.85,
+                  child: pw.Image(sealImage!, width: 80, height: 80),
+                ),
+              ),
+            ],
+          );
+        },
         buildBackground: (context) {
           if (!invoice.isDraft) return pw.SizedBox();
           return pw.Center(
@@ -137,29 +152,18 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                 ),
               ),
               pw.Expanded(
-                child: pw.Stack(
-                  alignment: pw.Alignment.topRight,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
-                      children: [
-                        pw.Text(companyInfo.name, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                        if (companyInfo.zipCode != null) pw.Text("〒${companyInfo.zipCode}"),
-                        if (companyInfo.address != null) pw.Text(companyInfo.address!),
-                        if (companyInfo.tel != null) pw.Text("TEL: ${companyInfo.tel}"),
-                        if (companyInfo.fax != null && companyInfo.fax!.isNotEmpty) pw.Text("FAX: ${companyInfo.fax}"),
-                        if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text("MAIL: ${companyInfo.email}"),
-                        if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text("URL: ${companyInfo.url}"),
-                        if (companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty)
-                          pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
-                      ],
-                    ),
-                    if (sealImage != null)
-                      pw.Positioned(
-                        right: 10,
-                        top: 0,
-                        child: pw.Opacity(opacity: 0.8, child: pw.Image(sealImage, width: 40, height: 40)),
-                      ),
+                    pw.Text(companyInfo.name, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    if (companyInfo.zipCode != null) pw.Text("〒${companyInfo.zipCode}"),
+                    if (companyInfo.address != null) pw.Text(companyInfo.address!),
+                    if (companyInfo.tel != null) pw.Text("TEL: ${companyInfo.tel}"),
+                    if (companyInfo.fax != null && companyInfo.fax!.isNotEmpty) pw.Text("FAX: ${companyInfo.fax}"),
+                    if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text("MAIL: ${companyInfo.email}"),
+                    if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text("URL: ${companyInfo.url}"),
+                    if (companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty)
+                      pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ),

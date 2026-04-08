@@ -203,8 +203,8 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                       text:
                           selectedNameSource == 'company' &&
                               orgCompany.isNotEmpty
-                          ? '株式会社 ${orgCompany}'
-                          : '${person} 様',
+                          ? orgCompany
+                          : '${_stripHonorific(person)} 様',
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -280,6 +280,11 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     return null;
   }
 
+  /// 電話帳の生データから末尾の敬称を除去（様・御中・殿・先生・スペース区切り対応）
+  static String _stripHonorific(String name) {
+    return name.replaceAll(RegExp(r'[\s\u3000]*(様|御中|殿|先生)$'), '').trim();
+  }
+
   /// Contact を Customer モデルに変換
   Customer _convertToCustomer(
     Contact contact,
@@ -290,15 +295,17 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     String? email,
     String? tel,
   ) {
-    final displayName = selectedNameSource == 'company' && orgCompany.isNotEmpty
-        ? orgCompany
-        : person;
+    // 電話帳の生データに敬称が含まれる場合があるため除去
+    final cleanPerson = _stripHonorific(person);
+    final cleanOrg = _stripHonorific(orgCompany);
 
-    // 「様」が既に含まれている場合は削除してから追加
-    final personWithoutSuffix = person.endsWith('様') ? person.substring(0, person.length - 1) : person;
-    final formalName = selectedNameSource == 'company' && orgCompany.isNotEmpty
-        ? '株式会社 ${orgCompany}'
-        : '${personWithoutSuffix} 様';
+    final displayName = selectedNameSource == 'company' && cleanOrg.isNotEmpty
+        ? cleanOrg
+        : cleanPerson;
+
+    final formalName = selectedNameSource == 'company' && cleanOrg.isNotEmpty
+        ? cleanOrg
+        : '$cleanPerson 様';
 
     return Customer(
       id: DateTime.now().millisecondsSinceEpoch.toString(), // 一時的 ID

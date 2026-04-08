@@ -988,7 +988,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           color: c.isLocked ? Colors.grey : Colors.black87,
                         ),
                       ),
-                      subtitle: Text("${c.formalName} ${c.title}"),
+                      subtitle: Text(c.formalName),
                       onTap: widget.selectionMode
                           ? () {
                               if (c.isHidden) return; // do not select hidden

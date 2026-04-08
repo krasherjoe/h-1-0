@@ -59,6 +59,11 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     super.dispose();
   }
 
+  /// 電話帳の生データから末尾の敬称を除去（様・御中・殿・先生・スペース区切り対応）
+  String _stripHonorific(String name) {
+    return name.replaceAll(RegExp(r'[\s\u3000]*(様|御中|殿|先生)$'), '').trim();
+  }
+
   String _headKana(String name) {
     var n = name.replaceAll(RegExp(r'\s+|\u3000'), '');
     for (final token in ['株式会社', '（株）', '(株)', '有限会社', '（有）', '(有)', '合同会社', '（同）', '(同)']) {
@@ -93,9 +98,12 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     );
     if (!mounted || picked == null) return;
 
-    final orgCompany = picked.organizations.isNotEmpty ? picked.organizations.first.company : '';
+    final orgCompanyRaw = picked.organizations.isNotEmpty ? picked.organizations.first.company : '';
     final personParts = [picked.name.last, picked.name.first].where((v) => v.isNotEmpty).toList();
-    final person = personParts.isNotEmpty ? personParts.join(' ').trim() : picked.displayName;
+    final personRaw = personParts.isNotEmpty ? personParts.join(' ').trim() : picked.displayName;
+    // 電話帳の生データに敬称が含まれる場合があるため除去
+    final orgCompany = _stripHonorific(orgCompanyRaw);
+    final person = _stripHonorific(personRaw);
     final chosen = orgCompany.isNotEmpty ? orgCompany : person;
 
     setState(() {
