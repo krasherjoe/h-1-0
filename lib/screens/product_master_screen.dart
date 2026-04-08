@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
+import '../models/product_category_model.dart';
 import '../services/product_repository.dart';
+import '../services/product_category_repository.dart';
 import '../widgets/master_field_config.dart';
 import '../widgets/rich_master_edit_sheet.dart';
 import 'barcode_scanner_screen.dart';
@@ -116,10 +118,12 @@ class _ProductInfoChip extends StatelessWidget {
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductRepository _productRepo = ProductRepository();
+  final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
   final TextEditingController _searchController = TextEditingController();
 
   List<Product> _products = [];
   List<Product> _filteredProducts = [];
+  List<ProductCategory> _categories = [];
   bool _isLoading = true;
   String _searchQuery = "";
 
@@ -132,9 +136,11 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
     final products = await _productRepo.getAllProducts(includeHidden: widget.showHidden);
+    final categories = await _categoryRepo.getAllCategories();
     if (!mounted) return;
     setState(() {
       _products = products;
+      _categories = categories;
       _isLoading = false;
       _applyFilter();
     });
@@ -175,10 +181,52 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               required: true,
               flex: 2,
             ),
-            const MasterFieldConfig(
+            MasterFieldConfig(
               key: 'category',
               label: 'カテゴリ',
               hint: '例: 周辺機器',
+              suffixBuilder: (controller, setDialogState, updateValue) {
+                return IconButton(
+                  icon: const Icon(Icons.category),
+                  onPressed: () async {
+                    final selected = await showDialog<ProductCategory>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('カテゴリを選択'),
+                        content: SizedBox(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _categories.length + 1,
+                            itemBuilder: (ctx, i) {
+                              if (i == 0) {
+                                return ListTile(
+                                  title: const Text('未分類'),
+                                  onTap: () => Navigator.pop(ctx),
+                                );
+                              }
+                              final cat = _categories[i - 1];
+                              return ListTile(
+                                title: Text(cat.name),
+                                onTap: () => Navigator.pop(ctx, cat),
+                              );
+                            },
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('キャンセル'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (selected != null) {
+                      updateValue(selected.name);
+                    }
+                  },
+                );
+              },
             ),
             MasterFieldConfig(
               key: 'barcode',
@@ -238,9 +286,15 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         final locked = product?.isLocked ?? false;
         final newId = locked ? const Uuid().v4() : (product?.id ?? const Uuid().v4());
         final defaultUnitPrice = int.tryParse(values['defaultUnitPrice'] ?? '') ?? 0;
-        final stockQuantity = int.tryParse(values['stockQuantity'] ?? '') ?? 0;
+        final stockQuantityStr = values['stockQuantity']?.trim();
         final barcode = values['barcode']?.trim();
         final category = values['category']?.trim();
+
+        // 在庫数：空文字列の場合は null（在庫管理なし）、それ以外は数値
+        int? stockQuantity;
+        if (stockQuantityStr != null && stockQuantityStr.isNotEmpty) {
+          stockQuantity = int.tryParse(stockQuantityStr);
+        }
 
         return Product(
           id: newId,
@@ -332,7 +386,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                                 : (p.isLocked ? Colors.grey : Colors.black87),
                           ),
                         ),
-                        subtitle: Text("${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity})"),
+                        subtitle: Text(
+                          "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})",
+                        ),
                         onTap: () {
                           if (widget.selectionMode) {
                             if (p.isHidden) return; // safety: do not return hidden in selection

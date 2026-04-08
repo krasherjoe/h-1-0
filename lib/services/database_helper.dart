@@ -1248,6 +1248,18 @@ class DatabaseHelper {
       'CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)',
     );
 
+    // 商品カテゴリーマスター
+    await db.execute('''
+      CREATE TABLE product_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_product_categories_name ON product_categories(name)');
+
     // 商品マスター
     await db.execute('''
       CREATE TABLE products (
@@ -1257,14 +1269,17 @@ class DatabaseHelper {
         wholesale_price INTEGER DEFAULT 0,
         barcode TEXT,
         category TEXT,
-        stock_quantity INTEGER DEFAULT 0,
+        category_id TEXT,
+        stock_quantity INTEGER,
         is_locked INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
-        odoo_id TEXT
+        odoo_id TEXT,
+        FOREIGN KEY(category_id) REFERENCES product_categories(id)
       )
     ''');
     await db.execute('CREATE INDEX idx_products_name ON products(name)');
     await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
+    await db.execute('CREATE INDEX idx_products_category_id ON products(category_id)');
 
     await db.execute('''
       CREATE TABLE master_hidden (

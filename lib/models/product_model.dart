@@ -5,7 +5,8 @@ class Product {
   final int wholesalePrice;
   final String? barcode;
   final String? category;
-  final int stockQuantity; // 追加
+  final String? categoryId; // カテゴリー ID
+  final int? stockQuantity; // null = 在庫管理なし、0以上 = 在庫数
   final String? odooId;
   final bool isLocked; // ロック
   final bool isHidden; // 非表示
@@ -17,7 +18,8 @@ class Product {
     this.wholesalePrice = 0,
     this.barcode,
     this.category,
-    this.stockQuantity = 0, // 追加
+    this.categoryId,
+    this.stockQuantity,
     this.odooId,
     this.isLocked = false,
     this.isHidden = false,
@@ -31,7 +33,8 @@ class Product {
       'wholesale_price': wholesalePrice,
       'barcode': barcode,
       'category': category,
-      'stock_quantity': stockQuantity, // 追加
+      'category_id': categoryId,
+      'stock_quantity': stockQuantity,
       'is_locked': isLocked ? 1 : 0,
       'odoo_id': odooId,
       'is_hidden': isHidden ? 1 : 0,
@@ -46,7 +49,8 @@ class Product {
       wholesalePrice: map['wholesale_price'] ?? 0,
       barcode: map['barcode'],
       category: map['category'],
-      stockQuantity: map['stock_quantity'] ?? 0, // 追加
+      categoryId: map['category_id'],
+      stockQuantity: map['stock_quantity'],
       isLocked: (map['is_locked'] ?? 0) == 1,
       odooId: map['odoo_id'],
       isHidden: (map['is_hidden'] ?? 0) == 1,
@@ -60,6 +64,7 @@ class Product {
     int? wholesalePrice,
     String? barcode,
     String? category,
+    String? categoryId,
     int? stockQuantity,
     String? odooId,
     bool? isLocked,
@@ -72,6 +77,7 @@ class Product {
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       barcode: barcode ?? this.barcode,
       category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       odooId: odooId ?? this.odooId,
       isLocked: isLocked ?? this.isLocked,
