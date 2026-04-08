@@ -119,7 +119,6 @@ class _StocktakeInputScreenState extends State<StocktakeInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('IC:棚卸入力'),
         actions: [

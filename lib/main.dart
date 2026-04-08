@@ -223,7 +223,6 @@ class _MyAppState extends State<MyApp> {
         ),
         themeMode: mode,
         builder: (context, child) {
-          final mq = MediaQuery.of(context);
           return Listener(
             onPointerDown: (_) => setState(() => _activePointers++),
             onPointerUp: (_) => setState(() => _activePointers = (_activePointers - 1).clamp(0, 10)),
@@ -231,20 +230,15 @@ class _MyAppState extends State<MyApp> {
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
-              child: AnimatedPadding(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
-                child: InteractiveViewer(
-                  panEnabled: false,
-                  scaleEnabled: true,
-                  minScale: 0.8,
-                  maxScale: 4.0,
-                  transformationController: _zoomController,
-                  child: IgnorePointer(
-                    ignoring: _activePointers > 1,
-                    child: child ?? const SizedBox.shrink(),
-                  ),
+              child: InteractiveViewer(
+                panEnabled: false,
+                scaleEnabled: true,
+                minScale: 0.8,
+                maxScale: 4.0,
+                transformationController: _zoomController,
+                child: IgnorePointer(
+                  ignoring: _activePointers > 1,
+                  child: child ?? const SizedBox.shrink(),
                 ),
               ),
             ),
