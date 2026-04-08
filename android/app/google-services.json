@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "344812781289",
-    "project_id": "hanai-1",
-    "storage_bucket": "hanai-1.firebasestorage.app"
+    "project_number": "339175354397",
+    "project_id": "hanai-app-bbedf",
+    "storage_bucket": "hanai-app-bbedf.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:344812781289:android:d02a81c5a9f3afcf21ba78",
+        "mobilesdk_app_id": "1:339175354397:android:ecac7e239ea3847af656f4",
         "android_client_info": {
           "package_name": "com.example.h_1"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "339175354397-56vkd488es4n6k86fotu23g7hskjtjjv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.h_1",
+            "certificate_hash": "2a97b5add0a458e20ea282822f3b6189098da31d"
+          }
+        },
+        {
+          "client_id": "339175354397-8ajpedpse5l4aeocljdsha2d950260vq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAF76k3dGjhe38UT4ab4Ykmow_SMmO2L64"
+          "current_key": "AIzaSyA4O77r3WDIbqpAHPnzhQwD_3fGpzOs6Bo"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "339175354397-8ajpedpse5l4aeocljdsha2d950260vq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
