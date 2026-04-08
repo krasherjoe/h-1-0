@@ -39,6 +39,23 @@ flutter test
 
 ---
 
+## AI セッション開始時標準手順
+
+新規セッション開始時は必ず以下を実行：
+
+1. **README.md 確認**: プロジェクト概要と開発ルールを把握
+2. **TODO.md 確認**: 現在のタスク状況（進行中・緊急タスク）を把握
+3. **ユーザーリクエスト理解**: 実際の指示を待ってから作業開始
+
+### 作業実施時の流れ
+
+```
+タスク開始 → TODO.md更新（進行中マーク） → 実装 → テスト → 
+flutter analyze → git commit（日本語） → TODO.md更新（完了マーク）
+```
+
+---
+
 ## 絶対必須ルール
 
 ### 1. Git コミットは日本語のみ
@@ -162,6 +179,84 @@ class BaseDocument {
 
 ---
 
+## 既存画面 ID 一覧（重複防止用）
+
+| ID | 画面名 | ファイル名 |
+|----|--------|------------|
+| S1 | 設定 | `lib/screens/settings_screen.dart` |
+| SM | メール設定 | `lib/screens/screen_s8_email_settings.dart` |
+| P1 | 商品マスター | `lib/screens/product_master_screen.dart` |
+| C1 | 得意先マスター | `lib/screens/customer_master_screen.dart` |
+| SI | 仕入先マスター | `lib/screens/supplier_master_screen.dart` |
+| WH | 倉庫マスター | `lib/screens/warehouse_master_screen.dart` |
+| ST | 担当者マスター | `lib/screens/staff_master_screen.dart` |
+| ES | 見積入力 | `lib/screens/estimate_input_screen.dart` |
+| OR | 受注入力 | `lib/screens/order_input_screen.dart` |
+| IV | 請求書発行 | `lib/screens/invoice_issue_screen.dart` |
+| IQ | 在庫照会 | `lib/screens/stock_inquiry_screen.dart` |
+| IM | 在庫移動 | `lib/screens/stock_transfer_screen.dart` |
+| IC | 棚卸入力 | `lib/screens/stocktake_input_screen.dart` |
+| CS | 得意先別売上推移 | `lib/screens/customer_sales_trend_screen.dart` |
+| PA | 商品別粗利分析 | `lib/screens/product_profit_analysis_screen.dart` |
+| CH | 母艦チャット | `lib/screens/chat_screen.dart` |
+| M1 | マスター管理 | `lib/screens/management_screen.dart` |
+| D2 | ダッシュボード設定 | `lib/screens/dashboard_menu_settings_screen.dart` |
+
+**新規画面追加時**: 上記と重複しない 2 文字 ID を選定
+
+---
+
+## 重要な実装上の注意事項
+
+### StatefulWidget での非同期処理
+```dart
+// ✅ 正しいパターン
+Future<void> loadData() async {
+  final result = await repository.fetchData();
+  if (!mounted) return;  // ← 必須
+  setState(() => data = result);
+}
+
+// ❌ 間違い: mounted チェックなし
+Future<void> loadData() async {
+  final result = await repository.fetchData();
+  setState(() => data = result);  // Widget 破棄後にエラー
+}
+```
+
+### Navigator 使用時の mounted チェック
+```dart
+// ✅ 正しいパターン
+await someAsyncOperation();
+if (!mounted) return;
+Navigator.push(context, ...);
+
+// ❌ 警告が出る
+await someAsyncOperation();
+Navigator.push(context, ...);  // use_build_context_synchronously
+```
+
+### データベースマイグレーション
+```dart
+// lib/services/database_helper.dart
+onUpgrade: (db, oldVersion, newVersion) async {
+  if (oldVersion < 34) {
+    await db.execute('ALTER TABLE ...');
+  }
+}
+```
+- **バージョン増分必須**: スキーマ変更時は `version:` を増やす
+- **既存データ保護**: `DROP TABLE` せず `ALTER TABLE` を使用
+
+### SharedPreferences のキー命名
+```dart
+// ✅ 命名規則: スネークケース
+const String kMailSendMethodSmtp = 'mail_send_method_smtp';
+const String kLastBackupTime = 'last_backup_time';
+```
+
+---
+
 ## 画面実装ワークフロー
 
 1. **画面 ID 決定**: 2 文字プレフィックスと一意な名付け（例：`S1`）
@@ -210,6 +305,48 @@ try {
   if (!mounted) return;
   showOfflineWarning();
 }
+```
+
+---
+
+## デバッグ・トラブルシューティング
+
+### よくあるエラーと対処法
+
+**1. `use_build_context_synchronously`**
+```dart
+// NG: async後に直接context使用
+await someAsyncFunction();
+Navigator.push(context, ...);  // ← 警告
+
+// OK: mounted チェック
+await someAsyncFunction();
+if (!mounted) return;
+Navigator.push(context, ...);
+```
+
+**2. `duplicate_definition`**
+- 変数・メソッドの重複宣言を確認
+- インポートの重複確認
+
+**3. `unused_field` / `unused_element`**
+- 未使用の変数・メソッドを削除
+- または実装を完成させる
+
+### データベースリセット（開発時のみ）
+```bash
+# アプリをアンインストールしてDBクリア
+adb uninstall com.example.h_1
+```
+
+### ビルドエラー時の確認ポイント
+```bash
+# 依存関係の更新
+flutter clean
+flutter pub get
+
+# コード検証
+flutter analyze --no-fatal-infos
 ```
 
 ---

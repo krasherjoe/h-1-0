@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:path/path.dart' as p;
 
@@ -32,20 +33,58 @@ class DriveBackupService extends GoogleApiServiceBase {
   }
 
   Future<void> _uploadFile(File file, {required String description}) async {
-    await withClient((client) async {
-      final api = drive.DriveApi(client);
-      final folderId = await _ensureNodeFolder(api);
-      final fileName = _buildFileName(file);
-      final driveFile = drive.File()
-        ..name = fileName
-        ..description = description
-        ..parents = [folderId];
-      final media = drive.Media(file.openRead(), await file.length());
-      await api.files.create(
-        driveFile,
-        uploadMedia: media,
+    final startTime = DateTime.now();
+    final fileSize = await file.length();
+    final fileName = file.path.split('/').last;
+    
+    try {
+      await withClient((client) async {
+        final api = drive.DriveApi(client);
+        final folderId = await _ensureNodeFolder(api);
+        final uploadFileName = _buildFileName(file);
+        final driveFile = drive.File()
+          ..name = uploadFileName
+          ..description = description
+          ..parents = [folderId];
+        final media = drive.Media(file.openRead(), fileSize);
+        await api.files.create(
+          driveFile,
+          uploadMedia: media,
+        );
+      });
+      
+      final duration = DateTime.now().difference(startTime);
+      final durationSeconds = duration.inMilliseconds / 1000.0;
+      final speedMbps = (fileSize / (1024 * 1024)) / durationSeconds;
+      
+      debugPrint(
+        '[DriveBackup] ✅ アップロード完了\n'
+        '  ファイル: $fileName\n'
+        '  サイズ: ${_formatBytes(fileSize)}\n'
+        '  所要時間: ${durationSeconds.toStringAsFixed(2)}秒\n'
+        '  速度: ${speedMbps.toStringAsFixed(2)} MB/s',
       );
-    });
+    } catch (e) {
+      final duration = DateTime.now().difference(startTime);
+      debugPrint(
+        '[DriveBackup] ❌ アップロード失敗\n'
+        '  ファイル: $fileName\n'
+        '  サイズ: ${_formatBytes(fileSize)}\n'
+        '  経過時間: ${duration.inSeconds}秒\n'
+        '  エラー: $e',
+      );
+      rethrow;
+    }
+  }
+  
+  /// バイト数を人間が読みやすい形式にフォーマット
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
   Future<String> _ensureNodeFolder(drive.DriveApi api) async {

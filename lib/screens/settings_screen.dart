@@ -688,6 +688,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onChanged: _setAutoBackup,
                 ),
                 const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: const Text(
+                    '📌 ローカルバックアップは起動時に即座に実行されます。'
+                    'Google Drive バックアップはバックグラウンドで実行されるため、'
+                    'アプリの起動時間に影響しません。',
+                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 8),
                 Row(

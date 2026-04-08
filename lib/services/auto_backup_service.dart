@@ -54,19 +54,33 @@ class AutoBackupService {
       throw Exception('Database file not found');
     }
 
-    // ローカルバックアップを実行
+    // ローカルバックアップを実行（起動時に実行、数秒で完了）
     final localBackupService = LocalBackupService();
     await localBackupService.createAutoBackup(dbPath);
 
-    // Google Drive バックアップも実行
-    final driveService = DriveBackupService();
-    await driveService.uploadDatabaseSnapshot(
-      dbFile,
-      description: 'Auto backup - ${DateTime.now().toIso8601String()}',
-    );
+    // Google Drive バックアップはバックグラウンド実行（起動をブロックしない）
+    _performDriveBackupInBackground(dbFile);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyLastBackup, DateTime.now().toIso8601String());
+  }
+
+  /// Google Drive バックアップをバックグラウンド実行
+  /// 起動時の待機時間を排除するため、非同期で実行し await しない
+  static void _performDriveBackupInBackground(File dbFile) {
+    Future.microtask(() async {
+      try {
+        final driveService = DriveBackupService();
+        await driveService.uploadDatabaseSnapshot(
+          dbFile,
+          description: 'Auto backup - ${DateTime.now().toIso8601String()}',
+        );
+        debugPrint('[AutoBackup] Google Drive バックアップ完了（バックグラウンド）');
+      } catch (e) {
+        // エラーは無視（ユーザーに通知しない、起動を妨げない）
+        debugPrint('[AutoBackup] Google Drive バックアップ失敗（バックグラウンド）: $e');
+      }
+    });
   }
 
   /// 初回起動時のリストアチェック：DBが空でバックアップが存在する場合に提案
