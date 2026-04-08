@@ -25,6 +25,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   final _zipController = TextEditingController();
   final _addressController = TextEditingController();
   final _telController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _faxController = TextEditingController();
+  final _urlController = TextEditingController();
   double _taxRate = 0.10;
   String _taxDisplayMode = 'normal';
 
@@ -40,6 +43,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     _zipController.text = _info.zipCode ?? "";
     _addressController.text = _info.address ?? "";
     _telController.text = _info.tel ?? "";
+    _emailController.text = _info.email ?? "";
+    _faxController.text = _info.fax ?? "";
+    _urlController.text = _info.url ?? "";
     _taxRate = _info.defaultTaxRate;
     _taxDisplayMode = _info.taxDisplayMode;
     setState(() => _isLoading = false);
@@ -94,6 +100,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       zipCode: _zipController.text,
       address: _addressController.text,
       tel: _telController.text,
+      email: _emailController.text,
+      fax: _faxController.text,
+      url: _urlController.text,
       defaultTaxRate: _taxRate,
       taxDisplayMode: _taxDisplayMode,
     );
@@ -131,6 +140,12 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               _buildTextField("住所", _addressController),
               const SizedBox(height: 12),
               _buildTextField("電話番号", _telController),
+              const SizedBox(height: 12),
+              _buildTextField("メールアドレス", _emailController),
+              const SizedBox(height: 12),
+              _buildTextField("FAX", _faxController),
+              const SizedBox(height: 12),
+              _buildTextField("ウェブサイト URL", _urlController),
               const SizedBox(height: 20),
               const Text("デフォルト消費税率", style: TextStyle(fontWeight: FontWeight.bold)),
               Row(
@@ -219,6 +234,8 @@ class _SealContrastDialog extends StatefulWidget {
 
 class _SealContrastDialogState extends State<_SealContrastDialog> {
   double _contrast = 1.0;
+  double _scale = 1.0;
+  Offset _offset = Offset.zero;
   final _repaintKey = GlobalKey();
   bool _saving = false;
 
@@ -259,43 +276,98 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('角印のコントラスト調整'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          RepaintBoundary(
-            key: _repaintKey,
-            child: ColorFiltered(
-              colorFilter: ColorFilter.matrix(_contrastMatrix(_contrast)),
-              child: Image.file(
-                File(widget.imagePath),
+      title: const Text('角印の調整（コントラスト・トリミング・リサイズ）'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // プレビュー
+            RepaintBoundary(
+              key: _repaintKey,
+              child: Container(
                 width: 200,
                 height: 200,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.brightness_low, size: 18, color: Colors.grey),
-              Expanded(
-                child: Slider(
-                  value: _contrast,
-                  min: 0.5,
-                  max: 3.0,
-                  divisions: 25,
-                  onChanged: (v) => setState(() => _contrast = v),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _offset += details.delta;
+                    });
+                  },
+                  child: ColorFiltered(
+                    colorFilter: ColorFilter.matrix(_contrastMatrix(_contrast)),
+                    child: Transform.translate(
+                      offset: _offset,
+                      child: Transform.scale(
+                        scale: _scale,
+                        child: Image.file(
+                          File(widget.imagePath),
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const Icon(Icons.brightness_high, size: 18, color: Colors.grey),
-            ],
-          ),
-          Text(
-            'コントラスト: ${_contrast.toStringAsFixed(1)}',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ],
+            ),
+            const SizedBox(height: 16),
+            
+            // コントラスト調整
+            const Text('コントラスト', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Row(
+              children: [
+                const Icon(Icons.brightness_low, size: 18, color: Colors.grey),
+                Expanded(
+                  child: Slider(
+                    value: _contrast,
+                    min: 0.5,
+                    max: 3.0,
+                    divisions: 25,
+                    onChanged: (v) => setState(() => _contrast = v),
+                  ),
+                ),
+                const Icon(Icons.brightness_high, size: 18, color: Colors.grey),
+              ],
+            ),
+            Text(
+              _contrast.toStringAsFixed(1),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            
+            // リサイズ調整
+            const Text('サイズ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Row(
+              children: [
+                const Icon(Icons.zoom_out, size: 18, color: Colors.grey),
+                Expanded(
+                  child: Slider(
+                    value: _scale,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15,
+                    onChanged: (v) => setState(() => _scale = v),
+                  ),
+                ),
+                const Icon(Icons.zoom_in, size: 18, color: Colors.grey),
+              ],
+            ),
+            Text(
+              '${(_scale * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'ドラッグで位置調整',
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
