@@ -1,9 +1,247 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/warehouse_constants.dart';
+
+/// ローカルバックアップサービス
+///
+/// 機能：
+/// - 自動ローカルバックアップ（毎日）
+/// - バックアップ履歴管理（過去 3 件保持）
+/// - リストア機能
+class LocalBackupService {
+  static const _backupPrefix = 'backup_';
+  static const _maxBackups = 3;
+  static const _lastBackupKey = 'last_backup_timestamp';
+  static const _dailyBackupKey = 'backup_date_today';
+
+  /// バックアップディレクトリパス
+  Future<String> _getBackupDirectory() async {
+    final dbPath = await getDatabasesPath();
+    return path.join(dbPath, 'backups');
+  }
+
+  /// 今日のバックアップ済みフラグ取得
+  Future<bool> _isTodayBackedUp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    final backedUpDate = prefs.getString(_dailyBackupKey);
+    return backedUpDate == today;
+  }
+
+  /// 今日のバックアップ済みフラグ設定
+  Future<void> _setTodayBackedUp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    await prefs.setString(_dailyBackupKey, today);
+  }
+
+  /// バックアップ作成（自動実行用）
+  Future<String?> createAutoBackup(String databasePath) async {
+    // 今日のバックアップ済みならスキップ
+    if (await _isTodayBackedUp()) {
+      print('今日のバックアップは既に完了しています');
+      return null;
+    }
+
+    try {
+      final backupDir = await _getBackupDirectory();
+      final backupDirObj = Directory(backupDir);
+      if (!await backupDirObj.exists()) {
+        await backupDirObj.create(recursive: true);
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final backupPath = path.join(backupDir, '$_backupPrefix$timestamp.db');
+
+      final dbFile = File(databasePath);
+      if (!await dbFile.exists()) {
+        print('バックアップ対象のデータベースが見つかりません：$databasePath');
+        return null;
+      }
+
+      await dbFile.copy(backupPath);
+      print('ローカルバックアップ作成：$backupPath');
+
+      // 過去バックアップを整理（最大 3 件）
+      await _cleanupOldBackups(backupDir, max: _maxBackups);
+
+      // 今日のバックアップ済みフラグ設定
+      await _setTodayBackedUp();
+
+      return backupPath;
+    } catch (e) {
+      print('ローカルバックアップ作成失敗：$e');
+      return null;
+    }
+  }
+
+  /// 古いバックアップを削除（最新 N 件保持）
+  Future<void> _cleanupOldBackups(String backupDir, {int max = 3}) async {
+    try {
+      final backupDirObj = Directory(backupDir);
+      if (!await backupDirObj.exists()) return;
+
+      final files = await backupDirObj
+          .list()
+          .where((f) => f.path.endsWith('.db'))
+          .toList();
+
+      // 作成時間でソート（古い順）- ファイル名からタイムスタンプを抽出
+      files.sort((a, b) {
+        final aPath = (a as File).path;
+        final bPath = (b as File).path;
+        // backup_1234567890.db から数値部分を抽出
+        final aNum =
+            int.tryParse(
+              aPath.replaceAll(_backupPrefix, '').replaceAll('.db', ''),
+            ) ??
+            0;
+        final bNum =
+            int.tryParse(
+              bPath.replaceAll(_backupPrefix, '').replaceAll('.db', ''),
+            ) ??
+            0;
+        return aNum.compareTo(bNum);
+      });
+
+      // 古いファイルから削除（max を超える分）
+      while (files.length > max) {
+        final oldest = files.removeAt(0);
+        await (oldest as File).delete();
+        print('古いバックアップを削除：${oldest.path}');
+      }
+    } catch (e) {
+      print('バックアップ整理失敗：$e');
+    }
+  }
+
+  /// バックアップ一覧取得
+  Future<List<BackupFile>> getBackupList(String databasePath) async {
+    try {
+      final backupDir = await _getBackupDirectory();
+      final backupDirObj = Directory(backupDir);
+      if (!await backupDirObj.exists()) return [];
+
+      final files = await backupDirObj
+          .list()
+          .where((f) => f.path.endsWith('.db'))
+          .toList();
+
+      // 作成時間でソート（新しい順）- ファイル名からタイムスタンプを抽出
+      files.sort((a, b) {
+        final aPath = (a as File).path;
+        final bPath = (b as File).path;
+        // backup_1234567890.db から数値部分を抽出
+        final aNum =
+            int.tryParse(
+              aPath.replaceAll(_backupPrefix, '').replaceAll('.db', ''),
+            ) ??
+            0;
+        final bNum =
+            int.tryParse(
+              bPath.replaceAll(_backupPrefix, '').replaceAll('.db', ''),
+            ) ??
+            0;
+        return bNum.compareTo(aNum);
+      });
+
+      return files.map((f) {
+        final file = f as File;
+        final stat = file.statSync();
+        final fileName = file.path.split('/').last;
+        // backup_1234567890.db からタイムスタンプを抽出
+        final timestampStr = fileName
+            .replaceAll(_backupPrefix, '')
+            .replaceAll('.db', '');
+        final timestamp = int.tryParse(timestampStr) ?? 0;
+
+        return BackupFile(
+          path: file.path,
+          size: stat.size,
+          createdTime: DateTime.fromMillisecondsSinceEpoch(timestamp),
+          isLatest: files.first == file,
+        );
+      }).toList();
+    } catch (e) {
+      print('バックアップ一覧取得失敗：$e');
+      return [];
+    }
+  }
+
+  /// バックアップからリストア
+  Future<bool> restoreFromBackup(String backupPath, String databasePath) async {
+    try {
+      final backupFile = File(backupPath);
+      if (!await backupFile.exists()) {
+        print('バックアップファイルが見つかりません：$backupPath');
+        return false;
+      }
+
+      // 現在のデータベースをクローズ
+      final dbObj = await openDatabase(
+        databasePath,
+        version: 43,
+        readOnly: true,
+      );
+      await dbObj.close();
+
+      // 現在の DB をバックアップ（上書き前）
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final currentBackupPath = '$databasePath.restore-$timestamp';
+      if (await File(databasePath).exists()) {
+        await File(databasePath).copy(currentBackupPath);
+        print('リストア前の DB をバックアップ：$currentBackupPath');
+      }
+
+      // 現在の DB を削除
+      if (await File(databasePath).exists()) {
+        await File(databasePath).delete();
+      }
+
+      // バックアップからコピー
+      await backupFile.copy(databasePath);
+      print('リストア完了：$backupPath -> $databasePath');
+
+      return true;
+    } catch (e) {
+      print('リストア失敗：$e');
+      return false;
+    }
+  }
+}
+
+/// バックアップファイル情報
+class BackupFile {
+  final String path;
+  final int size;
+  final DateTime createdTime;
+  final bool isLatest;
+
+  BackupFile({
+    required this.path,
+    required this.size,
+    required this.createdTime,
+    required this.isLatest,
+  });
+
+  String get formattedSize {
+    if (size < 1024) return '$size B';
+    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
+    if (size < 1024 * 1024 * 1024)
+      return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  String get formattedDate {
+    return '${createdTime.year}-${createdTime.month.toString().padLeft(2, '0')}-${createdTime.day.toString().padLeft(2, '0')} ${createdTime.hour.toString().padLeft(2, '0')}:${createdTime.minute.toString().padLeft(2, '0')}';
+  }
+}
 
 class DatabaseHelper {
   static const _databaseVersion = 43;
@@ -26,33 +264,48 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'gemi_invoice.db');
+    String dbPath = path.join(await getDatabasesPath(), 'gemi_invoice.db');
     try {
       return await openDatabase(
-        path,
+        dbPath,
         version: _databaseVersion,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
     } catch (e) {
-      print('DB初期化エラー: $e');
+      print('DB 初期化エラー：$e');
+      // データ消失を防ぐため、破損ファイルは削除せずバックアップのみ作成
       try {
-        final dbFile = File(path);
+        final dbFile = File(dbPath);
         if (await dbFile.exists()) {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final backupPath = '$path.corrupt-$timestamp';
+          final backupPath = '$dbPath.corrupt-$timestamp';
+
+          // 破損 DB をバックアップ（ファイルは削除せず保持）
           await dbFile.copy(backupPath);
-          await dbFile.delete();
-          print('破損DBをバックアップしました: $backupPath');
+          print('破損 DB をバックアップしました：$backupPath');
+          print('データ保存のため、既存 DB ファイルを保持します');
+
+          // バックアップ作成後、再度オープン試行（破損ファイルはスキップされる可能性あり）
+          return await openDatabase(
+            dbPath,
+            version: _databaseVersion,
+            onCreate: _onCreate,
+            onUpgrade: _onUpgrade,
+            singleInstance: true, // 重複オープン防止
+          );
+        } else {
+          print('DB ファイルが存在しないため、新規作成します');
+          return await openDatabase(
+            dbPath,
+            version: _databaseVersion,
+            onCreate: _onCreate,
+            onUpgrade: _onUpgrade,
+          );
         }
-        return await openDatabase(
-          path,
-          version: _databaseVersion,
-          onCreate: _onCreate,
-          onUpgrade: _onUpgrade,
-        );
       } catch (recoveryError) {
-        print('DBリカバリエラー: $recoveryError');
+        print('DB リカバリエラー：$recoveryError');
+        // データ消失を防ぐため、既存ファイルを削除せず再試行
         rethrow;
       }
     }
@@ -60,7 +313,9 @@ class DatabaseHelper {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT 0.10');
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT 0.10',
+      );
     }
     if (oldVersion < 3) {
       await db.execute('''
@@ -82,12 +337,16 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE products ADD COLUMN barcode TEXT');
     }
     if (oldVersion < 5) {
-      await db.execute('ALTER TABLE invoices ADD COLUMN customer_formal_name TEXT');
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN customer_formal_name TEXT',
+      );
     }
     if (oldVersion < 6) {
       await db.execute('ALTER TABLE products ADD COLUMN category TEXT');
       await db.execute('CREATE INDEX idx_products_name ON products(name)');
-      await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
+      await db.execute(
+        'CREATE INDEX idx_products_barcode ON products(barcode)',
+      );
       await db.execute('''
         CREATE TABLE activity_logs (
           id TEXT PRIMARY KEY,
@@ -100,8 +359,12 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 7) {
-      await db.execute('ALTER TABLE products ADD COLUMN stock_quantity INTEGER DEFAULT 0');
-      await db.execute('ALTER TABLE invoices ADD COLUMN document_type TEXT DEFAULT "invoice"');
+      await db.execute(
+        'ALTER TABLE products ADD COLUMN stock_quantity INTEGER DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN document_type TEXT DEFAULT "invoice"',
+      );
       await db.execute('ALTER TABLE invoice_items ADD COLUMN product_id TEXT');
     }
     if (oldVersion < 8) {
@@ -117,20 +380,28 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 9) {
-      await db.execute('ALTER TABLE company_info ADD COLUMN tax_display_mode TEXT DEFAULT "normal"');
+      await db.execute(
+        'ALTER TABLE company_info ADD COLUMN tax_display_mode TEXT DEFAULT "normal"',
+      );
     }
     if (oldVersion < 10) {
-      await db.execute('ALTER TABLE invoices ADD COLUMN terminal_id TEXT DEFAULT "T1"');
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN terminal_id TEXT DEFAULT "T1"',
+      );
       await db.execute('ALTER TABLE invoices ADD COLUMN content_hash TEXT');
     }
     if (oldVersion < 11) {
-      await db.execute('ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0');
+      await db.execute(
+        'ALTER TABLE invoices ADD COLUMN is_draft INTEGER DEFAULT 0',
+      );
     }
     if (oldVersion < 12) {
       await db.execute('ALTER TABLE invoices ADD COLUMN subject TEXT');
     }
     if (oldVersion < 13) {
-      await db.execute('ALTER TABLE company_info ADD COLUMN registration_number TEXT');
+      await db.execute(
+        'ALTER TABLE company_info ADD COLUMN registration_number TEXT',
+      );
     }
     if (oldVersion < 14) {
       await _safeAddColumn(db, 'invoices', 'subject TEXT');
@@ -154,7 +425,9 @@ class DatabaseHelper {
           FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
         )
       ''');
-      await db.execute('CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)');
+      await db.execute(
+        'CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)',
+      );
 
       // 既存顧客の連絡先を初期バージョンとしてコピー
       final existing = await db.query('customers');
@@ -190,8 +463,12 @@ class DatabaseHelper {
     if (oldVersion < 19) {
       await _safeAddColumn(db, 'customers', 'head_char1 TEXT');
       await _safeAddColumn(db, 'customers', 'head_char2 TEXT');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_head1 ON customers(head_char1)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_head2 ON customers(head_char2)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_head1 ON customers(head_char1)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_head2 ON customers(head_char2)',
+      );
     }
     if (oldVersion < 20) {
       await _safeAddColumn(db, 'customers', 'email TEXT');
@@ -207,8 +484,12 @@ class DatabaseHelper {
     if (oldVersion < 23) {
       await _safeAddColumn(db, 'customers', 'is_hidden INTEGER DEFAULT 0');
       await _safeAddColumn(db, 'products', 'is_hidden INTEGER DEFAULT 0');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_customers_hidden ON customers(is_hidden)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_products_hidden ON products(is_hidden)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_hidden ON customers(is_hidden)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_products_hidden ON products(is_hidden)',
+      );
     }
     if (oldVersion < 24) {
       await db.execute('''
@@ -219,7 +500,9 @@ class DatabaseHelper {
           PRIMARY KEY(master_type, master_id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_master_hidden_type ON master_hidden(master_type)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_master_hidden_type ON master_hidden(master_type)',
+      );
     }
     if (oldVersion < 25) {
       await _safeAddColumn(db, 'invoices', 'company_snapshot TEXT');
@@ -240,7 +523,9 @@ class DatabaseHelper {
           delivered_at INTEGER
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)',
+      );
     }
     if (oldVersion < 37) {
       // 支払実績テーブル
@@ -259,7 +544,7 @@ class DatabaseHelper {
           FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
         )
       ''');
-      
+
       // 支払・仕入紐付けテーブル
       await db.execute('''
         CREATE TABLE IF NOT EXISTS payment_purchases (
@@ -271,7 +556,7 @@ class DatabaseHelper {
           FOREIGN KEY (purchase_id) REFERENCES purchases (id)
         )
       ''');
-      
+
       // 支払予定テーブル
       await db.execute('''
         CREATE TABLE IF NOT EXISTS payment_schedules (
@@ -288,15 +573,29 @@ class DatabaseHelper {
           FOREIGN KEY (payment_id) REFERENCES payments (id)
         )
       ''');
-      
+
       // インデックス作成
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_supplier ON payments(supplier_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_purchases_payment ON payment_purchases(payment_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_purchases_purchase ON payment_purchases(purchase_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_purchase ON payment_schedules(purchase_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date ON payment_schedules(due_date)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_status ON payment_schedules(status)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payments_supplier ON payments(supplier_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payment_purchases_payment ON payment_purchases(payment_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payment_purchases_purchase ON payment_purchases(purchase_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payment_schedules_purchase ON payment_schedules(purchase_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date ON payment_schedules(due_date)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_payment_schedules_status ON payment_schedules(status)',
+      );
     }
     if (oldVersion < 27) {
       await _safeAddColumn(db, 'chat_messages', 'sequence INTEGER');
@@ -314,7 +613,9 @@ class DatabaseHelper {
           created_at TEXT NOT NULL
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_mothership_locations_host ON mothership_locations(host)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_mothership_locations_host ON mothership_locations(host)',
+      );
     }
     if (oldVersion < 29) {
       await db.execute('''
@@ -332,7 +633,9 @@ class DatabaseHelper {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name)',
+      );
     }
     if (oldVersion < 30) {
       await db.execute('''
@@ -345,8 +648,10 @@ class DatabaseHelper {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_warehouses_name ON warehouses(name)');
-      
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_warehouses_name ON warehouses(name)',
+      );
+
       await db.execute('''
         CREATE TABLE IF NOT EXISTS staff (
           id TEXT PRIMARY KEY,
@@ -360,7 +665,9 @@ class DatabaseHelper {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_staff_name ON staff(name)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_staff_name ON staff(name)',
+      );
     }
     if (oldVersion < 31) {
       await db.execute('''
@@ -374,8 +681,12 @@ class DatabaseHelper {
           FOREIGN KEY(warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_stock_product ON warehouse_stock(product_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_stock_warehouse ON warehouse_stock(warehouse_id)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_warehouse_stock_product ON warehouse_stock(product_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_warehouse_stock_warehouse ON warehouse_stock(warehouse_id)',
+      );
 
       await db.execute('''
         CREATE TABLE IF NOT EXISTS stock_transfers (
@@ -392,7 +703,9 @@ class DatabaseHelper {
           FOREIGN KEY(to_warehouse_id) REFERENCES warehouses(id)
         )
       ''');
-      await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_transfers_document_no ON stock_transfers(document_no)');
+      await db.execute(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_stock_transfers_document_no ON stock_transfers(document_no)',
+      );
 
       await db.execute('''
         CREATE TABLE IF NOT EXISTS stock_transfer_items (
@@ -405,7 +718,9 @@ class DatabaseHelper {
           FOREIGN KEY(product_id) REFERENCES products(id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_transfer_items_transfer ON stock_transfer_items(transfer_id)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_stock_transfer_items_transfer ON stock_transfer_items(transfer_id)',
+      );
 
       await _seedDefaultWarehouse(db);
       await _migrateExistingStockIntoDefaultWarehouse(db);
@@ -429,9 +744,13 @@ class DatabaseHelper {
           FOREIGN KEY(customer_id) REFERENCES customers(id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_quotations_date ON quotations(date)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)');
-      
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_quotations_date ON quotations(date)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_quotations_customer ON quotations(customer_id)',
+      );
+
       await db.execute('''
         CREATE TABLE IF NOT EXISTS quotation_items (
           id TEXT PRIMARY KEY,
@@ -447,7 +766,9 @@ class DatabaseHelper {
           FOREIGN KEY(product_id) REFERENCES products(id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_quotation_items_quotation ON quotation_items(quotation_id)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_quotation_items_quotation ON quotation_items(quotation_id)',
+      );
     }
     if (oldVersion < 33) {
       await db.execute('''
@@ -468,9 +789,13 @@ class DatabaseHelper {
           FOREIGN KEY(customer_id) REFERENCES customers(id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_customer ON sales(customer_id)');
-      
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_sales_customer ON sales(customer_id)',
+      );
+
       await db.execute('''
         CREATE TABLE IF NOT EXISTS sales_items (
           id TEXT PRIMARY KEY,
@@ -486,7 +811,9 @@ class DatabaseHelper {
           FOREIGN KEY(product_id) REFERENCES products(id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_items_sales ON sales_items(sales_id)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_sales_items_sales ON sales_items(sales_id)',
+      );
     }
     if (oldVersion < 34) {
       await db.execute('''
@@ -633,12 +960,24 @@ class DatabaseHelper {
         )
       ''');
 
-      await db.execute('CREATE INDEX idx_purchase_orders_supplier ON purchase_orders(supplier_id)');
-      await db.execute('CREATE INDEX idx_purchase_orders_status ON purchase_orders(status)');
-      await db.execute('CREATE INDEX idx_purchase_returns_supplier ON purchase_returns(supplier_id)');
-      await db.execute('CREATE INDEX idx_purchase_returns_status ON purchase_returns(status)');
-      await db.execute('CREATE INDEX idx_purchase_payments_supplier ON purchase_payments(supplier_id)');
-      await db.execute('CREATE INDEX idx_purchase_payments_order ON purchase_payments(purchase_order_id)');
+      await db.execute(
+        'CREATE INDEX idx_purchase_orders_supplier ON purchase_orders(supplier_id)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_purchase_orders_status ON purchase_orders(status)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_purchase_returns_supplier ON purchase_returns(supplier_id)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_purchase_returns_status ON purchase_returns(status)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_purchase_payments_supplier ON purchase_payments(supplier_id)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_purchase_payments_order ON purchase_payments(purchase_order_id)',
+      );
     }
     if (oldVersion < 38) {
       // BusinessProfileテーブル
@@ -656,8 +995,12 @@ class DatabaseHelper {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_business_profiles_type ON business_profiles(business_type)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_business_profiles_updated ON business_profiles(updated_at)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_business_profiles_type ON business_profiles(business_type)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_business_profiles_updated ON business_profiles(updated_at)',
+      );
 
       // 在庫ロケーションテーブル
       await db.execute('''
@@ -674,8 +1017,12 @@ class DatabaseHelper {
           UNIQUE(warehouse_id, location_code)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_locations_warehouse ON inventory_locations(warehouse_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_locations_active ON inventory_locations(is_active)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_locations_warehouse ON inventory_locations(warehouse_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_locations_active ON inventory_locations(is_active)',
+      );
 
       // 在庫移動履歴テーブル
       await db.execute('''
@@ -697,11 +1044,21 @@ class DatabaseHelper {
           FOREIGN KEY(location_id) REFERENCES inventory_locations(id)
         )
       ''');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_product ON inventory_movements(product_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_warehouse ON inventory_movements(warehouse_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_location ON inventory_movements(location_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_type ON inventory_movements(movement_type)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_movements_date ON inventory_movements(movement_date)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_movements_product ON inventory_movements(product_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_movements_warehouse ON inventory_movements(warehouse_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_movements_location ON inventory_movements(location_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_movements_type ON inventory_movements(movement_type)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_inventory_movements_date ON inventory_movements(movement_date)',
+      );
 
       // デフォルトの業種プロファイルを初期化
       await _initializeDefaultBusinessProfile(db);
@@ -721,11 +1078,19 @@ class DatabaseHelper {
           is_active INTEGER DEFAULT 1
         )
       ''');
-      await db.execute('CREATE INDEX idx_electronic_ledgers_type ON electronic_ledgers(document_type)');
-      await db.execute('CREATE INDEX idx_electronic_ledgers_created ON electronic_ledgers(created_at)');
-      await db.execute('CREATE INDEX idx_electronic_ledgers_profile ON electronic_ledgers(business_profile_id)');
-      await db.execute('CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)');
-      
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledgers_type ON electronic_ledgers(document_type)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledgers_created ON electronic_ledgers(created_at)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledgers_profile ON electronic_ledgers(business_profile_id)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)',
+      );
+
       await db.execute('''
         CREATE TABLE electronic_ledger_history (
           id TEXT PRIMARY KEY,
@@ -738,9 +1103,13 @@ class DatabaseHelper {
           FOREIGN KEY(ledger_id) REFERENCES electronic_ledgers(id) ON DELETE CASCADE
         )
       ''');
-      await db.execute('CREATE INDEX idx_electronic_ledger_history_ledger ON electronic_ledger_history(ledger_id)');
-      await db.execute('CREATE INDEX idx_electronic_ledger_history_created ON electronic_ledger_history(created_at)');
-      
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledger_history_ledger ON electronic_ledger_history(ledger_id)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledger_history_created ON electronic_ledger_history(created_at)',
+      );
+
       await db.execute('''
         CREATE TABLE electronic_ledger_archive (
           id TEXT PRIMARY KEY,
@@ -754,10 +1123,16 @@ class DatabaseHelper {
           archived_at TEXT NOT NULL
         )
       ''');
-      await db.execute('CREATE INDEX idx_electronic_ledger_archive_type ON electronic_ledger_archive(document_type)');
-      await db.execute('CREATE INDEX idx_electronic_ledger_archive_created ON electronic_ledger_archive(created_at)');
-      await db.execute('CREATE INDEX idx_electronic_ledger_archive_archived ON electronic_ledger_archive(archived_at)');
-      
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledger_archive_type ON electronic_ledger_archive(document_type)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledger_archive_created ON electronic_ledger_archive(created_at)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledger_archive_archived ON electronic_ledger_archive(archived_at)',
+      );
+
       await db.execute('''
         CREATE TABLE electronic_ledger_settings (
           id TEXT PRIMARY KEY,
@@ -772,7 +1147,9 @@ class DatabaseHelper {
           FOREIGN KEY(business_profile_id) REFERENCES business_profiles(id) ON DELETE CASCADE
         )
       ''');
-      await db.execute('CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)');
+      await db.execute(
+        'CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)',
+      );
     }
 
     if (oldVersion < 41) {
@@ -812,8 +1189,12 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'invoices', 'source_document_id TEXT');
       await _safeAddColumn(db, 'invoices', 'linked_delivery_id TEXT');
       await _safeAddColumn(db, 'invoices', 'linked_invoice_id TEXT');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_order_status ON invoices(order_status)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_invoices_promised_date ON invoices(promised_date)');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_invoices_order_status ON invoices(order_status)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_invoices_promised_date ON invoices(promised_date)',
+      );
     }
   }
 
@@ -863,7 +1244,9 @@ class DatabaseHelper {
         FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)');
+    await db.execute(
+      'CREATE INDEX idx_customer_contacts_cust ON customer_contacts(customer_id)',
+    );
 
     // 商品マスター
     await db.execute('''
@@ -891,7 +1274,9 @@ class DatabaseHelper {
         PRIMARY KEY(master_type, master_id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_master_hidden_type ON master_hidden(master_type)');
+    await db.execute(
+      'CREATE INDEX idx_master_hidden_type ON master_hidden(master_type)',
+    );
 
     // 伝票マスター
     await db.execute('''
@@ -1002,7 +1387,9 @@ class DatabaseHelper {
         signature TEXT
       )
     ''');
-    await db.execute('CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at)');
+    await db.execute(
+      'CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at)',
+    );
 
     await db.execute('''
       CREATE TABLE mothership_locations (
@@ -1014,7 +1401,9 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX idx_mothership_locations_host ON mothership_locations(host)');
+    await db.execute(
+      'CREATE INDEX idx_mothership_locations_host ON mothership_locations(host)',
+    );
 
     await db.execute('''
       CREATE TABLE suppliers (
@@ -1039,7 +1428,9 @@ class DatabaseHelper {
         updated_at TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX idx_suppliers_display_name ON suppliers(display_name)');
+    await db.execute(
+      'CREATE INDEX idx_suppliers_display_name ON suppliers(display_name)',
+    );
 
     await db.execute('''
       CREATE TABLE warehouses (
@@ -1064,8 +1455,12 @@ class DatabaseHelper {
         FOREIGN KEY(warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_warehouse_stock_product ON warehouse_stock(product_id)');
-    await db.execute('CREATE INDEX idx_warehouse_stock_warehouse ON warehouse_stock(warehouse_id)');
+    await db.execute(
+      'CREATE INDEX idx_warehouse_stock_product ON warehouse_stock(product_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_warehouse_stock_warehouse ON warehouse_stock(warehouse_id)',
+    );
 
     await db.execute('''
       CREATE TABLE stock_transfers (
@@ -1146,8 +1541,12 @@ class DatabaseHelper {
       )
     ''');
     await db.execute('CREATE INDEX idx_audit_logs_user ON audit_logs(user_id)');
-    await db.execute('CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id)');
-    await db.execute('CREATE INDEX idx_audit_logs_created ON audit_logs(created_at)');
+    await db.execute(
+      'CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_audit_logs_created ON audit_logs(created_at)',
+    );
 
     await db.execute('''
       CREATE TABLE user_sessions (
@@ -1162,10 +1561,18 @@ class DatabaseHelper {
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_user_sessions_user ON user_sessions(user_id)');
-    await db.execute('CREATE INDEX idx_user_sessions_active ON user_sessions(is_active)');
-    await db.execute('CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at)');
-    await db.execute('CREATE UNIQUE INDEX idx_stock_transfers_document_no ON stock_transfers(document_no)');
+    await db.execute(
+      'CREATE INDEX idx_user_sessions_user ON user_sessions(user_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_user_sessions_active ON user_sessions(is_active)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at)',
+    );
+    await db.execute(
+      'CREATE UNIQUE INDEX idx_stock_transfers_document_no ON stock_transfers(document_no)',
+    );
 
     // 販売フロー関連テーブル
     await db.execute('''
@@ -1190,9 +1597,15 @@ class DatabaseHelper {
         FOREIGN KEY(warehouse_id) REFERENCES warehouses(id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_stock_allocations_order ON stock_allocations(order_id)');
-    await db.execute('CREATE INDEX idx_stock_allocations_sales ON stock_allocations(sales_id)');
-    await db.execute('CREATE INDEX idx_stock_allocations_product ON stock_allocations(product_id)');
+    await db.execute(
+      'CREATE INDEX idx_stock_allocations_order ON stock_allocations(order_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_stock_allocations_sales ON stock_allocations(sales_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_stock_allocations_product ON stock_allocations(product_id)',
+    );
 
     await db.execute('''
       CREATE TABLE flow_status_logs (
@@ -1205,9 +1618,15 @@ class DatabaseHelper {
         FOREIGN KEY(user_id) REFERENCES users(id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_flow_status_logs_document ON flow_status_logs(document_id)');
-    await db.execute('CREATE INDEX idx_flow_status_logs_type ON flow_status_logs(document_type)');
-    await db.execute('CREATE INDEX idx_flow_status_logs_created ON flow_status_logs(created_at)');
+    await db.execute(
+      'CREATE INDEX idx_flow_status_logs_document ON flow_status_logs(document_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_flow_status_logs_type ON flow_status_logs(document_type)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_flow_status_logs_created ON flow_status_logs(created_at)',
+    );
 
     await db.execute('''
       CREATE TABLE deliveries (
@@ -1227,8 +1646,12 @@ class DatabaseHelper {
         FOREIGN KEY(created_by) REFERENCES users(id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_deliveries_sales ON deliveries(sales_id)');
-    await db.execute('CREATE INDEX idx_deliveries_status ON deliveries(status)');
+    await db.execute(
+      'CREATE INDEX idx_deliveries_sales ON deliveries(sales_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_deliveries_status ON deliveries(status)',
+    );
 
     // 顧客訪問記録テーブル
     await db.execute('''
@@ -1246,9 +1669,15 @@ class DatabaseHelper {
         FOREIGN KEY(client_id) REFERENCES clients(id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_client_visits_client ON client_visits(client_id)');
-    await db.execute('CREATE INDEX idx_client_visits_time ON client_visits(visit_time)');
-    await db.execute('CREATE INDEX idx_client_visits_manual ON client_visits(is_manual)');
+    await db.execute(
+      'CREATE INDEX idx_client_visits_client ON client_visits(client_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_client_visits_time ON client_visits(visit_time)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_client_visits_manual ON client_visits(is_manual)',
+    );
 
     // 配送写真テーブル
     await db.execute('''
@@ -1268,10 +1697,18 @@ class DatabaseHelper {
         FOREIGN KEY(client_id) REFERENCES clients(id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_delivery_photos_delivery ON delivery_photos(delivery_id)');
-    await db.execute('CREATE INDEX idx_delivery_photos_order ON delivery_photos(order_id)');
-    await db.execute('CREATE INDEX idx_delivery_photos_client ON delivery_photos(client_id)');
-    await db.execute('CREATE INDEX idx_delivery_photos_created ON delivery_photos(created_at)');
+    await db.execute(
+      'CREATE INDEX idx_delivery_photos_delivery ON delivery_photos(delivery_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_delivery_photos_order ON delivery_photos(order_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_delivery_photos_client ON delivery_photos(client_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_delivery_photos_created ON delivery_photos(created_at)',
+    );
 
     // FTS（全文検索）テーブル - FTS5が利用できない環境ではスキップ
     try {
@@ -1287,7 +1724,7 @@ class DatabaseHelper {
           content_rowid='rowid'
         )
       ''');
-      
+
       await db.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS clients_fts USING fts5(
           id UNINDEXED,
@@ -1301,7 +1738,7 @@ class DatabaseHelper {
           content_rowid='rowid'
         )
       ''');
-      
+
       await db.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts5(
           id UNINDEXED,
@@ -1315,7 +1752,7 @@ class DatabaseHelper {
           content_rowid='rowid'
         )
       ''');
-      
+
       await db.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS quotes_fts USING fts5(
           id UNINDEXED,
@@ -1327,7 +1764,7 @@ class DatabaseHelper {
           content_rowid='rowid'
         )
       ''');
-      
+
       await db.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS orders_fts USING fts5(
           id UNINDEXED,
@@ -1339,7 +1776,7 @@ class DatabaseHelper {
           content_rowid='rowid'
       )
     ''');
-    
+
       await db.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS sales_fts USING fts5(
           id UNINDEXED,
@@ -1351,7 +1788,7 @@ class DatabaseHelper {
           content_rowid='rowid'
         )
       ''');
-      
+
       await db.execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS inventory_fts USING fts5(
           id UNINDEXED,
@@ -1362,7 +1799,7 @@ class DatabaseHelper {
           content_rowid='rowid'
         )
       ''');
-      
+
       print('FTS5テーブルを作成しました');
     } catch (e) {
       print('FTS5が利用できないため、全文検索機能は無効化されます: $e');
@@ -1379,7 +1816,9 @@ class DatabaseHelper {
         FOREIGN KEY(product_id) REFERENCES products(id)
       )
     ''');
-    await db.execute('CREATE INDEX idx_stock_transfer_items_transfer ON stock_transfer_items(transfer_id)');
+    await db.execute(
+      'CREATE INDEX idx_stock_transfer_items_transfer ON stock_transfer_items(transfer_id)',
+    );
 
     await _seedDefaultWarehouse(db);
     await db.execute('''
@@ -1412,12 +1851,16 @@ class DatabaseHelper {
         updated_at TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX idx_business_profiles_type ON business_profiles(business_type)');
-    await db.execute('CREATE INDEX idx_business_profiles_updated ON business_profiles(updated_at)');
+    await db.execute(
+      'CREATE INDEX idx_business_profiles_type ON business_profiles(business_type)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_business_profiles_updated ON business_profiles(updated_at)',
+    );
 
     // デフォルトの業種プロファイルを初期化
     await _initializeDefaultBusinessProfile(db);
-    
+
     // バージョン39: カスタムフィールドテーブル追加
     await db.execute('''
       CREATE TABLE custom_fields (
@@ -1436,9 +1879,13 @@ class DatabaseHelper {
         FOREIGN KEY(business_profile_id) REFERENCES business_profiles(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_custom_fields_profile ON custom_fields(business_profile_id)');
-    await db.execute('CREATE INDEX idx_custom_fields_name ON custom_fields(field_name)');
-    
+    await db.execute(
+      'CREATE INDEX idx_custom_fields_profile ON custom_fields(business_profile_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_custom_fields_name ON custom_fields(field_name)',
+    );
+
     await db.execute('''
       CREATE TABLE custom_field_values (
         id TEXT PRIMARY KEY,
@@ -1451,9 +1898,13 @@ class DatabaseHelper {
         FOREIGN KEY(custom_field_id) REFERENCES custom_fields(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_custom_field_values_field ON custom_field_values(custom_field_id)');
-    await db.execute('CREATE INDEX idx_custom_field_values_entity ON custom_field_values(entity_id, entity_type)');
-    
+    await db.execute(
+      'CREATE INDEX idx_custom_field_values_field ON custom_field_values(custom_field_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_custom_field_values_entity ON custom_field_values(entity_id, entity_type)',
+    );
+
     // バージョン40: 電子帳簿保存法対応テーブル追加
     await db.execute('''
       CREATE TABLE electronic_ledgers (
@@ -1468,11 +1919,19 @@ class DatabaseHelper {
         is_active INTEGER DEFAULT 1
       )
     ''');
-    await db.execute('CREATE INDEX idx_electronic_ledgers_type ON electronic_ledgers(document_type)');
-    await db.execute('CREATE INDEX idx_electronic_ledgers_created ON electronic_ledgers(created_at)');
-    await db.execute('CREATE INDEX idx_electronic_ledgers_profile ON electronic_ledgers(business_profile_id)');
-    await db.execute('CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)');
-    
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledgers_type ON electronic_ledgers(document_type)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledgers_created ON electronic_ledgers(created_at)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledgers_profile ON electronic_ledgers(business_profile_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)',
+    );
+
     await db.execute('''
       CREATE TABLE electronic_ledger_history (
         id TEXT PRIMARY KEY,
@@ -1485,9 +1944,13 @@ class DatabaseHelper {
         FOREIGN KEY(ledger_id) REFERENCES electronic_ledgers(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_electronic_ledger_history_ledger ON electronic_ledger_history(ledger_id)');
-    await db.execute('CREATE INDEX idx_electronic_ledger_history_created ON electronic_ledger_history(created_at)');
-    
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledger_history_ledger ON electronic_ledger_history(ledger_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledger_history_created ON electronic_ledger_history(created_at)',
+    );
+
     await db.execute('''
       CREATE TABLE electronic_ledger_archive (
         id TEXT PRIMARY KEY,
@@ -1501,10 +1964,16 @@ class DatabaseHelper {
         archived_at TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX idx_electronic_ledger_archive_type ON electronic_ledger_archive(document_type)');
-    await db.execute('CREATE INDEX idx_electronic_ledger_archive_created ON electronic_ledger_archive(created_at)');
-    await db.execute('CREATE INDEX idx_electronic_ledger_archive_archived ON electronic_ledger_archive(archived_at)');
-    
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledger_archive_type ON electronic_ledger_archive(document_type)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledger_archive_created ON electronic_ledger_archive(created_at)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledger_archive_archived ON electronic_ledger_archive(archived_at)',
+    );
+
     await db.execute('''
       CREATE TABLE electronic_ledger_settings (
         id TEXT PRIMARY KEY,
@@ -1519,10 +1988,16 @@ class DatabaseHelper {
         FOREIGN KEY(business_profile_id) REFERENCES business_profiles(id) ON DELETE CASCADE
       )
     ''');
-    await db.execute('CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)');
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)',
+    );
   }
 
-  Future<void> _safeAddColumn(Database db, String table, String columnDef) async {
+  Future<void> _safeAddColumn(
+    Database db,
+    String table,
+    String columnDef,
+  ) async {
     try {
       await db.execute('ALTER TABLE $table ADD COLUMN $columnDef');
     } catch (_) {
@@ -1532,7 +2007,11 @@ class DatabaseHelper {
 
   Future<void> _seedDefaultWarehouse(Database db) async {
     const defaultId = kDefaultWarehouseId;
-    final existing = await db.query('warehouses', where: 'id = ?', whereArgs: [defaultId]);
+    final existing = await db.query(
+      'warehouses',
+      where: 'id = ?',
+      whereArgs: [defaultId],
+    );
     if (existing.isNotEmpty) return;
     await db.insert('warehouses', {
       'id': defaultId,
@@ -1550,16 +2029,12 @@ class DatabaseHelper {
     final now = DateTime.now().toIso8601String();
     for (final product in products) {
       final quantity = product['stock_quantity'] as int? ?? 0;
-      await db.insert(
-        'warehouse_stock',
-        {
-          'product_id': product['id'],
-          'warehouse_id': defaultId,
-          'quantity': quantity,
-          'updated_at': now,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('warehouse_stock', {
+        'product_id': product['id'],
+        'warehouse_id': defaultId,
+        'quantity': quantity,
+        'updated_at': now,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 
@@ -1571,7 +2046,7 @@ class DatabaseHelper {
     await db.insert('business_profiles', {
       'id': 'default',
       'business_type': 'retail',
-      'product_units': '個,式',
+      'product_units': '個，式',
       'needs_inventory': 1,
       'needs_gps': 0,
       'needs_photos': 0,
@@ -1581,4 +2056,487 @@ class DatabaseHelper {
       'updated_at': now,
     });
   }
+
+  /// ローカルバックアップ管理ダイアログを表示（static メソッド）
+  static Widget showLocalBackupManagement({
+    required String databasePath,
+    Function(String)? onRestore,
+  }) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return FutureBuilder<List<BackupInfo>>(
+          future: _getLocalBackups(databasePath),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('バックアップ一覧を読み込んでいます...'),
+                  ],
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return AlertDialog(
+                title: const Text('エラー'),
+                content: Text('読み込みエラー：${snapshot.error}'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('閉じる'),
+                  ),
+                ],
+              );
+            }
+
+            final backups = snapshot.data ?? [];
+
+            return AlertDialog(
+              title: const Text('ローカルバックアップ管理'),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '過去 3 件のバックアップが保持されます。',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 16),
+                    if (backups.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('バックアップファイルがありません'),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: backups.length,
+                        itemBuilder: (context, index) {
+                          final backup = backups[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: Icon(
+                                backup.isLatest
+                                    ? Icons.file_present
+                                    : Icons.history,
+                                color: backup.isLatest ? Colors.green : null,
+                              ),
+                              title: Text(
+                                backup.createdTime
+                                    .toIso8601String()
+                                    .split('T')
+                                    .first,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('サイズ：${backup.formattedSize}'),
+                                  if (backup.isLatest)
+                                    Text(
+                                      '（最新）',
+                                      style: TextStyle(
+                                        color: Colors.green.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.restore),
+                                tooltip: 'リストア',
+                                onPressed: () async {
+                                  if (onRestore != null) {
+                                    onRestore(backup.path);
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// ローカルバックアップ一覧取得（static メソッド）
+  static Future<List<BackupInfo>> _getLocalBackups(String databasePath) async {
+    final backupDir = await _getBackupDirectory(databasePath);
+    final backupDirObj = Directory(backupDir);
+
+    if (!await backupDirObj.exists()) {
+      return [];
+    }
+
+    final files = await backupDirObj
+        .list()
+        .where((f) => f.path.endsWith('.db'))
+        .map((e) => e as File)
+        .toList();
+
+    // ファイル名からタイムスタンプを抽出してソート（新しい順）
+    files.sort((a, b) {
+      final aName = path.basename(a.path);
+      final bName = path.basename(b.path);
+      final aNum = int.tryParse(aName.replaceAll(RegExp(r'^backup_'), '')) ?? 0;
+      final bNum = int.tryParse(bName.replaceAll(RegExp(r'^backup_'), '')) ?? 0;
+      return bNum.compareTo(aNum);
+    });
+
+    // 最新ファイルは最新バックアップとみなす
+    final latestFile = File(databasePath);
+    final latestModified = await latestFile.stat();
+
+    final backups = files.map((file) async {
+      final stat = await file.stat();
+      final createdTime = DateTime.fromMillisecondsSinceEpoch(
+        stat.modified.millisecondsSinceEpoch,
+      );
+      final size = await file.length();
+      final isLatest = file.path == databasePath; // DB ファイル自身は最新とみなさない
+
+      return BackupInfo(
+        path: file.path,
+        createdTime: createdTime,
+        formattedDate: createdTime.toString().split(' ').first,
+        formattedSize: _formatFileSize(size),
+        isLatest: false,
+      );
+    }).toList();
+
+    return Future.wait(backups);
+  }
+
+  /// ローカルバックアップディレクトリ取得（static メソッド）
+  static Future<String> _getBackupDirectory(String databasePath) async {
+    final dbPath = databasePath;
+    final dbDir = path.dirname(dbPath);
+    return path.join(dbDir, 'backups');
+  }
+
+  /// ファイルサイズフォーマット（static メソッド）
+  static String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
+  }
+}
+
+/// バックアップ処理用ウィジェット（プログレス表示）
+
+/// バックアップ実行中のダイアログ表示
+class BackupProgressDialog extends StatefulWidget {
+  final String title;
+  final String message;
+  final Future<String?> Function() onBackup;
+  final VoidCallback? onComplete;
+  final Function(String)? onError;
+
+  const BackupProgressDialog({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.onBackup,
+    this.onComplete,
+    this.onError,
+  });
+
+  @override
+  State<BackupProgressDialog> createState() => _BackupProgressDialogState();
+}
+
+class _BackupProgressDialogState extends State<BackupProgressDialog> {
+  bool _isComplete = false;
+  String? _errorMessage;
+  String? _statusMessage;
+
+  Future<void> _executeBackup() async {
+    setState(() {
+      _statusMessage = 'バックアップを開始します...';
+    });
+
+    try {
+      final result = await widget.onBackup();
+      if (!mounted) return;
+
+      setState(() {
+        _isComplete = true;
+        _statusMessage = result != null ? 'バックアップ完了！' : 'バックアップできませんでした';
+      });
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onComplete?.call(); // LSP は警告するが、null チェック済みのため問題なし
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'エラー：$e';
+      });
+
+      widget.onError?.call(e.toString());
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // ダイアログ表示後にバックアップ実行
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _executeBackup();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16.0),
+            child: CircularProgressIndicator(),
+          ),
+          Text(widget.message, style: Theme.of(context).textTheme.bodyMedium),
+          if (_statusMessage != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              _statusMessage!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Colors.red.shade700),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        if (_isComplete)
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
+          ),
+      ],
+    );
+  }
+}
+
+/// バックアップ一覧表示用ダイアログ
+class BackupListDialog extends StatelessWidget {
+  final List<BackupFile> backups;
+  final String databasePath;
+  final Function(String)? onRestore;
+
+  const BackupListDialog({
+    super.key,
+    required this.backups,
+    required this.databasePath,
+    this.onRestore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('バックアップ一覧'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: backups.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('バックアップファイルがありません'),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: backups.length,
+                itemBuilder: (context, index) {
+                  final backup = backups[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        backup.isLatest ? Icons.file_present : Icons.history,
+                        color: backup.isLatest ? Colors.green : null,
+                      ),
+                      title: Text(
+                        backup.createdTime.toIso8601String().split('T').first,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('サイズ：${backup.formattedSize}'),
+                          if (backup.isLatest)
+                            Text(
+                              '（最新）',
+                              style: TextStyle(
+                                color: Colors.green.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.restore),
+                        tooltip: 'リストア',
+                        onPressed: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('リストア確認'),
+                              content: Text(
+                                'このバックアップからデータを復元します。\n現在のデータは上書きされます。\n\n${backup.formattedDate}\nサイズ：${backup.formattedSize}',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('キャンセル'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('リストアする'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed == true) {
+                            onRestore?.call(backup.path);
+                          }
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('閉じる'),
+        ),
+      ],
+    );
+  }
+
+  /// ローカルバックアップ一覧取得（static メソッド）
+  static Future<List<BackupInfo>> _getLocalBackups(String databasePath) async {
+    final backupDir = await _getBackupDirectory(databasePath);
+    final backupDirObj = Directory(backupDir);
+
+    if (!await backupDirObj.exists()) {
+      return [];
+    }
+
+    final files = await backupDirObj
+        .list()
+        .where((f) => f.path.endsWith('.db'))
+        .map((e) => e as File)
+        .toList();
+
+    // ファイル名からタイムスタンプを抽出してソート（新しい順）
+    files.sort((a, b) {
+      final aName = path.basename(a.path);
+      final bName = path.basename(b.path);
+      final aNum = int.tryParse(aName.replaceAll(RegExp(r'^backup_'), '')) ?? 0;
+      final bNum = int.tryParse(bName.replaceAll(RegExp(r'^backup_'), '')) ?? 0;
+      return bNum.compareTo(aNum);
+    });
+
+    // 最新ファイルは最新バックアップとみなす
+    final latestFile = File(databasePath);
+    final latestModified = await latestFile.stat();
+
+    final backups = files.map((file) async {
+      final stat = await file.stat();
+      final createdTime = DateTime.fromMillisecondsSinceEpoch(
+        stat.modified.millisecondsSinceEpoch,
+      );
+      final size = await file.length();
+      final isLatest = file.path == databasePath; // DB ファイル自身は最新とみなさない
+
+      return BackupInfo(
+        path: file.path,
+        createdTime: createdTime,
+        formattedDate: createdTime.toString().split(' ').first,
+        formattedSize: _formatFileSize(size),
+        isLatest: false,
+      );
+    }).toList();
+
+    return Future.wait(backups);
+  }
+
+  /// ローカルバックアップディレクトリ取得（static メソッド）
+  static Future<String> _getBackupDirectory(String databasePath) async {
+    final dbPath = databasePath;
+    final dbDir = path.dirname(dbPath);
+    return path.join(dbDir, 'backups');
+  }
+
+  /// ファイルサイズフォーマット（static メソッド）
+  static String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
+  }
+}
+
+/// バックアップ情報クラス
+class BackupInfo {
+  final String path;
+  final DateTime createdTime;
+  final String formattedDate;
+  final String formattedSize;
+  final bool isLatest;
+
+  BackupInfo({
+    required this.path,
+    required this.createdTime,
+    required this.formattedDate,
+    required this.formattedSize,
+    required this.isLatest,
+  });
 }

@@ -651,7 +651,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '最終バックアップ: ${_formatBackupTime(_lastBackupTime)}',
+                  '最終バックアップ：${_formatBackupTime(_lastBackupTime)}',
                   style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 const SizedBox(height: 12),
@@ -683,9 +683,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('自動バックアップ'),
-                  subtitle: const Text('毎日起動時に自動実行（24時間経過後）'),
+                  subtitle: const Text('毎日起動時に自動実行（24 時間経過後）'),
                   value: _autoBackupEnabled,
                   onChanged: _setAutoBackup,
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.storage, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'ローカルバックアップ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '端末内に毎日自動バックアップ（過去 3 件保持）',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _showLocalBackupManagement(),
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('バックアップ一覧・復元'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -907,6 +936,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  /// ローカルバックアップ管理画面を表示
+  Future<void> _showLocalBackupManagement() async {
+    final dbHelper = DatabaseHelper();
+    final db = await dbHelper.database;
+    final dbPath = db.path;
+
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return DatabaseHelper.showLocalBackupManagement(
+              databasePath: dbPath,
+              onRestore: (backupPath) async {
+                Navigator.of(context).pop(); // ダイアログを閉じる
+
+                if (!mounted) return;
+
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('リストア確認'),
+                    content: Text(
+                      'このバックアップからデータを復元します。\n'
+                      '現在のデータは上書きされます。\n\n'
+                      'パス：${backupPath}',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('キャンセル'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text('リストアする'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed != true) return;
+
+                setState(() => _restoring = true);
+                try {
+                  await db.close();
+
+                  final file = File(backupPath);
+                  if (!await file.exists()) {
+                    throw Exception('バックアップファイルが見つかりません');
+                  }
+
+                  // データベースを削除してバックアップからコピー
+                  final dbFile = File(dbPath);
+                  if (await dbFile.exists()) {
+                    await dbFile.delete();
+                  }
+
+                  await file.copy(dbPath);
+
+                  // 再度データベースを開く
+                  await dbHelper.database;
+
+                  if (!mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ ローカルバックアップから復元しました。アプリを再起動してください。'),
+                      duration: Duration(seconds: 5),
+                    ),
+                  );
+
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => AlertDialog(
+                      title: const Text('復元完了'),
+                      content: const Text('データベースを復元しました。\nアプリを再起動してください。'),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () => SystemNavigator.pop(),
+                          child: const Text('アプリを終了'),
+                        ),
+                      ],
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  setState(() => _restoring = false);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('❌ リストア失敗：$e')));
+                }
+              },
+            );
+          },
+        ),
       ),
     );
   }

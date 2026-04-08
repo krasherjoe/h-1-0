@@ -24,7 +24,7 @@ class AutoBackupService {
 
       final prefs = await SharedPreferences.getInstance();
       final lastBackupStr = prefs.getString(_keyLastBackup);
-      
+
       if (lastBackupStr == null) {
         // 初回バックアップ
         await _performBackup();
@@ -54,6 +54,11 @@ class AutoBackupService {
       throw Exception('Database file not found');
     }
 
+    // ローカルバックアップを実行
+    final localBackupService = LocalBackupService();
+    await localBackupService.createAutoBackup(dbPath);
+
+    // Google Drive バックアップも実行
     final driveService = DriveBackupService();
     await driveService.uploadDatabaseSnapshot(
       dbFile,
@@ -69,7 +74,7 @@ class AutoBackupService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final checked = prefs.getBool(_keyFirstLaunchChecked) ?? false;
-      
+
       if (checked) {
         return false; // 既にチェック済み
       }
@@ -79,7 +84,7 @@ class AutoBackupService {
       final db = await dbHelper.database;
       final dbPath = db.path;
       final dbFile = File(dbPath);
-      
+
       if (!await dbFile.exists()) {
         return false; // DBファイルがない（初期化前）
       }
@@ -103,7 +108,7 @@ class AutoBackupService {
 
       return hasBackup;
     } catch (e) {
-    debugPrint('Restore check failed: $e');
+      debugPrint('Restore check failed: $e');
       return false;
     }
   }
