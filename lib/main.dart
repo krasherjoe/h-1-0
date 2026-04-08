@@ -19,6 +19,7 @@ import 'services/chat_sync_scheduler.dart';
 import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
 import 'services/auto_backup_service.dart';
+import 'services/backup_progress_notifier.dart';
 import 'services/google_account_service.dart';
 import 'screens/settings_screen.dart';
 import 'utils/build_expiry_info.dart';
@@ -55,13 +56,55 @@ class _MyAppState extends State<MyApp> {
   final ChatSyncScheduler? _chatSyncScheduler = kIsWeb
       ? null
       : ChatSyncScheduler();
+  late BackupProgressNotifier _backupProgressNotifier;
 
   @override
   void initState() {
     super.initState();
+    _backupProgressNotifier = BackupProgressNotifier();
+    _backupProgressNotifier.addListener(_onBackupProgressChanged);
     _sendHeartbeat();
     _chatSyncScheduler?.start();
     _checkFirstLaunchRestore();
+  }
+
+  void _onBackupProgressChanged() {
+    if (!mounted) return;
+    if (_backupProgressNotifier.isBackingUp) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_backupProgressNotifier.currentMessage),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _backupProgressNotifier.progress,
+                  minHeight: 4,
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 60),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.blue.shade700,
+        ),
+      );
+    } else if (_backupProgressNotifier.currentMessage.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_backupProgressNotifier.currentMessage),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: _backupProgressNotifier.currentMessage.contains('失敗')
+              ? Colors.red.shade700
+              : Colors.green.shade700,
+        ),
+      );
+    }
   }
 
   void _checkFirstLaunchRestore() {
@@ -110,6 +153,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    _backupProgressNotifier.removeListener(_onBackupProgressChanged);
     _chatSyncScheduler?.dispose();
     super.dispose();
   }

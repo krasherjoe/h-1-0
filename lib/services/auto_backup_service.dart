@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 import 'drive_backup_service.dart';
+import 'backup_progress_notifier.dart';
 
 class AutoBackupService {
   static const String _keyLastBackup = 'last_backup_time';
@@ -65,23 +66,32 @@ class AutoBackupService {
   /// ローカル・Google Drive バックアップをバックグラウンド実行
   /// 起動時の待機時間を排除するため、非同期で実行し await しない
   static void _performBackupInBackground(String dbPath, File dbFile) {
+    final notifier = BackupProgressNotifier();
+    
     Future.microtask(() async {
       try {
+        notifier.startBackup();
+        
         // ローカルバックアップを実行
         final localBackupService = LocalBackupService();
+        notifier.updateLocalBackupProgress('ローカルバックアップを実行中...');
         await localBackupService.createAutoBackup(dbPath);
         debugPrint('[AutoBackup] ローカルバックアップ完了（バックグラウンド）');
 
         // Google Drive バックアップも実行
         final driveService = DriveBackupService();
+        notifier.updateDriveBackupProgress('Google Drive にアップロード中...');
         await driveService.uploadDatabaseSnapshot(
           dbFile,
           description: 'Auto backup - ${DateTime.now().toIso8601String()}',
         );
         debugPrint('[AutoBackup] Google Drive バックアップ完了（バックグラウンド）');
+        
+        notifier.completeBackup();
       } catch (e) {
         // エラーは無視（ユーザーに通知しない、起動を妨げない）
         debugPrint('[AutoBackup] バックアップ失敗（バックグラウンド）: $e');
+        notifier.failBackup(e.toString());
       }
     });
   }
