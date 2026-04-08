@@ -102,7 +102,10 @@ class AutoBackupService {
       final prefs = await SharedPreferences.getInstance();
       final checked = prefs.getBool(_keyFirstLaunchChecked) ?? false;
 
+      debugPrint('[Restore Check] チェック済みフラグ: $checked');
+
       if (checked) {
+        debugPrint('[Restore Check] 既にチェック済みのため、スキップ');
         return false; // 既にチェック済み
       }
 
@@ -112,30 +115,45 @@ class AutoBackupService {
       final dbPath = db.path;
       final dbFile = File(dbPath);
 
+      debugPrint('[Restore Check] DB パス: $dbPath');
+
       if (!await dbFile.exists()) {
+        debugPrint('[Restore Check] DB ファイルが存在しません');
         return false; // DBファイルがない（初期化前）
       }
 
       final dbSize = await dbFile.length();
       final isEmpty = dbSize < 50000; // 50KB未満なら新規とみなす
 
+      debugPrint('[Restore Check] DB サイズ: $dbSize bytes, 新規: $isEmpty');
+
       if (!isEmpty) {
         // DBにデータがある場合はチェック完了とマーク
+        debugPrint('[Restore Check] DB にデータがあるため、復元不要');
         await prefs.setBool(_keyFirstLaunchChecked, true);
         return false;
       }
 
       // Google Driveにバックアップが存在するかチェック
+      debugPrint('[Restore Check] Google Drive のバックアップを検索中...');
       final driveService = DriveBackupService();
       final backups = await driveService.listBackupFiles();
+      
+      debugPrint('[Restore Check] バックアップファイル数: ${backups.length}');
+      for (final backup in backups) {
+        debugPrint('[Restore Check] - ${backup.name} (ID: ${backup.id})');
+      }
+      
       final hasBackup = backups.any((f) => f.name?.endsWith('.db') ?? false);
+      debugPrint('[Restore Check] DB バックアップ存在: $hasBackup');
 
       // チェック完了をマーク
       await prefs.setBool(_keyFirstLaunchChecked, true);
 
       return hasBackup;
-    } catch (e) {
-      debugPrint('Restore check failed: $e');
+    } catch (e, st) {
+      debugPrint('[Restore Check] エラー: $e');
+      debugPrint('[Restore Check] スタックトレース: $st');
       return false;
     }
   }

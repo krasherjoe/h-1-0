@@ -20,6 +20,7 @@ import 'mothership_discovery_settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_helper.dart';
 import '../services/drive_backup_service.dart';
+import '../services/auto_backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -219,6 +220,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return '${dt.year}/${dt.month}/${dt.day} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
     } catch (_) {
       return isoTime;
+    }
+  }
+
+  Future<void> _resetRestoreCheck() async {
+    try {
+      await AutoBackupService.resetFirstLaunchCheck();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ 復元ダイアログをリセットしました。アプリを再起動してください。')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ エラー: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -787,6 +803,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _resetRestoreCheck,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('復元ダイアログを再表示'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey,
                   ),
                 ),
               ],
