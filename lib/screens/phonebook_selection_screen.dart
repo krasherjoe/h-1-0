@@ -294,9 +294,11 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
         ? orgCompany
         : person;
 
+    // 「様」が既に含まれている場合は削除してから追加
+    final personWithoutSuffix = person.endsWith('様') ? person.substring(0, person.length - 1) : person;
     final formalName = selectedNameSource == 'company' && orgCompany.isNotEmpty
         ? '株式会社 ${orgCompany}'
-        : '${person} 様';
+        : '${personWithoutSuffix} 様';
 
     return Customer(
       id: DateTime.now().millisecondsSinceEpoch.toString(), // 一時的 ID
