@@ -222,37 +222,14 @@ adb uninstall com.example.h_1
 
 ## 🔴 緊急・高優先度
 
-### 進行中 - メール送信機能のリファクタリング（2026-04-07）
+### 進行中 - なし
 
-仕様変更：Gmail 直接制御と SMTP 送信機能を削除し、スマホ標準のメールアプリに委ねる方針に変更
+本セッション（2026-04-09）で以下のタスクを完了しました：
+- Google 統合の復元（drive_backup_service.dart, gmail_sync_client.dart）
+- データベース場所の変更（gemi_invoice.db → 販売アシスト 1 号.db）
+- 設定画面に Google 機能切替スイッチ追加
 
-**変更内容**:
-- ✅ SMTP サーバー設定（ホスト、ポート、ユーザー、パスワード）をすべて削除
-- ✅ Gmail アカウント連携機能とテスト送信機能を削除  
-- ✅ TLS/証明書関連設定を削除
-- ✅ BCC 設定のみを維持（端末メールアプリの控え用として必須）
-- ✅ メールテンプレート（ヘッダー/フッター）は維持
-- ⏳ 「メールで共有」ボタンはスマホ標準メーラーに委ねる実装へ変更
-
-**関連ファイル**:
-- `lib/screens/email_settings_screen.dart` - SMTP/Gmail 機能削除完了、BCC/テンプレートのみ維持（LSP エラー修正中）
-- `lib/widgets/invoice_pdf_preview_page.dart` - SMTP 依存コード削除と share_plus 実装が必要
-- `lib/services/google_account_service.dart` - Gmail 連携用、削除検討
-- `lib/services/email_sender.dart` - SMTP 送信用、削除検討
-- `pubspec.yaml` - google_sign_in 依存削除
-
-**残タスク**:
-1. [ ] email_settings_screen.dart の LSP エラー修正（_selectingBccFromDevice 変数未定義）
-2. [ ] invoice_pdf_preview_page.dart の SMTP 依存コード削除と share_plus 実装
-3. [ ] settings_screen.dart のメール設定画面へのリンク確認・更新
-4. [ ] google_account_service.dart と email_sender.dart の削除/非推奨化
-5. [ ] pubspec.yaml から不要な依存（google_sign_in など）を削除
-6. [ ] flutter analyze でエラー確認・修正
-7. [ ] git commit & push（日本語メッセージ）
-
-**理由**:
-- 既存実装が過度に複雑（email_settings_screen.dart は 979 行にも及んでいた）
-- Google OAuth 設定の煩雑さから一般ユーザーにとって導入障壁が高かった
-- スマホ標準のメールアプリで十分機能するため、依存関係を簡素化
-- BCC 機能は取引先への送信控えとして必須のため維持
+次回のセッションで確認が必要な事項：
+1. 実機テストによる動作確認
+2. 残存する flutter analyze 警告の整理（任意）
 
