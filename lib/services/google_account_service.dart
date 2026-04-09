@@ -22,6 +22,9 @@ class GoogleAccountService extends GoogleApiServiceBase {
   // Google Sign-In インスタンス（開発用）
   late final GoogleSignIn _googleSignIn;
 
+  // 初期化状態管理
+  bool _isInitialized = false;
+
   // 初期化メソッド（ランチャーから呼び出し）
   void init() {
     _googleSignIn = GoogleSignIn(
@@ -31,6 +34,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
         'https://www.googleapis.com/auth/gmail.send',
       ],
     );
+    _isInitialized = true;
   }
 
   /// Google アカウントにログイン
@@ -38,11 +42,13 @@ class GoogleAccountService extends GoogleApiServiceBase {
     try {
       debugPrint('[GoogleAccount] ログイン開始');
 
-      // _googleSignIn が初期化されていない場合は初期化
-      if (_googleSignIn == null) init();
+      // Google Sign-In が未初期化の場合は初期化
+      if (!_isInitialized) {
+        init();
+      }
 
       // 既にログインしている場合は確認
-      final currentUser = await _googleSignIn.currentUser;
+      final currentUser = _googleSignIn.currentUser;
       if (currentUser != null) {
         debugPrint('[GoogleAccount] 既にログイン済み');
         return true;
@@ -104,7 +110,10 @@ class GoogleAccountService extends GoogleApiServiceBase {
       await prefs.remove(_keyGoogleId);
 
       // Google Sign-In をログアウト（初期化されている場合のみ）
-      if (_googleSignIn != null) await _googleSignIn.signOut();
+      if (_isInitialized) {
+        await _googleSignIn.signOut();
+        _isInitialized = false;
+      }
 
       debugPrint('[GoogleAccount] ログアウト成功');
       return true;
@@ -190,8 +199,10 @@ class GoogleAccountService extends GoogleApiServiceBase {
   Future<GoogleSignInAccount?> getCurrentAccount() async {
     // 既にログインしている場合は確認
     try {
-      if (_googleSignIn == null) init();
-      return await _googleSignIn.currentUser;
+      if (_googleSignIn == null) {
+        init();
+      }
+      return _googleSignIn.currentUser;
     } catch (e) {
       debugPrint('[GoogleAccount] 現在アカウント取得エラー：$e');
       return null;

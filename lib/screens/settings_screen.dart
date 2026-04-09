@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/invoice_list_style.dart';
 import '../models/sync_preferences.dart';
@@ -18,6 +19,7 @@ import 'mothership_discovery_settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_helper.dart';
 import '../services/auto_backup_service.dart';
+import '../services/google_account_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,6 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _lastBackupTime;
   bool _autoBackupEnabled = false;
   bool _googleFeaturesEnabled = false;
+  GoogleSignInAccount? _currentGoogleAccount;
+  bool _googleAuthLoading = false;
 
   Future<void> _loadBackupSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,6 +63,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _googleFeaturesEnabled = enabled;
       });
+    }
+    // Google アカウント情報を取得
+    await _loadGoogleAccountInfo();
+  }
+
+  Future<void> _loadGoogleAccountInfo() async {
+    try {
+      final account = await GoogleAccountService().getCurrentAccount();
+      if (mounted) {
+        setState(() {
+          _currentGoogleAccount = account;
+        });
+      }
+    } catch (e) {
+      print('[Settings] Google アカウント情報の取得に失敗：$e');
+      if (mounted) {
+        setState(() {
+          _currentGoogleAccount = null;
+        });
+      }
     }
   }
 
@@ -90,55 +114,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _restoreFromGoogleDrive() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('データ復元確認'),
-        content: const Text(
-          '現在のデータベースを Google Drive の最新バックアップで上書きします。\n\n'
-          '※現在のデータは失われます。続けますか？',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('復元する'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      final dbHelper = DatabaseHelper();
-      final db = await dbHelper.database;
-      final dbPath = db.path;
-
-      print('[Restore] DB パス：$dbPath');
-      await db.close();
-      print('[Restore] DB をクローズしました');
-
-      // Google Drive バックアップ機能は削除されました
-      throw Exception(
-        'Google Drive 連携機能は削除されました。代わりに、設定画面から手動でバックアップ・復元を行ってください。',
-      );
-    } catch (e, st) {
-      print('[Restore] エラー：$e');
-      print('[Restore] スタックトレース：$st');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('❌ 復元失敗：$e')));
-      }
-    }
-  }
-
   Future<void> _setAutoBackup(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_backup_enabled', enabled);
@@ -160,6 +135,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(enabled ? 'Google 連携機能を有効化しました' : 'Google 連携機能を無効化しました'),
       ),
     );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_googleAuthLoading) return;
+
+    setState(() => _googleAuthLoading = true);
+
+    try {
+      final googleService = GoogleAccountService();
+      await googleService.signIn();
+
+      // 認証後のアカウント情報を再取得
+      await _loadGoogleAccountInfo();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Google アカウントにサインインしました'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('[Settings] Google サインイン失敗：$e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ サインインに失敗しました：$e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _googleAuthLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('サインアウト確認'),
+        content: const Text(
+          'Google アカウントからサインアウトします。\n\nバックアップ・同期機能は使用できなくなります。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('サインアウト'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _googleAuthLoading = true);
+
+    try {
+      final googleService = GoogleAccountService();
+      await googleService.signOut();
+
+      // アカウント情報をクリア
+      if (mounted) {
+        setState(() {
+          _currentGoogleAccount = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Google アカウントからサインアウトしました'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('[Settings] Google サインアウト失敗：$e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ サインアウトに失敗しました：$e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _googleAuthLoading = false);
+      }
+    }
   }
 
   String _formatBackupTime(String? isoTime) {
@@ -913,6 +981,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: _googleFeaturesEnabled,
                   onChanged: _setGoogleFeaturesEnabled,
                 ),
+                const SizedBox(height: 12),
+                if (_googleAuthLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_currentGoogleAccount != null)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.check_circle, color: Colors.green),
+                                SizedBox(width: 8),
+                                Text(
+                                  '✅ サインイン済み',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _currentGoogleAccount!.email,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _handleGoogleSignOut,
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Google アカウントからサインアウト'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '⚠️ Google アカウントのサインインが必要です',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _handleGoogleSignIn,
+                        icon: const Icon(Icons.login),
+                        label: const Text('Google アカウントにサインイン'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 40),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '• Google Drive へのバックアップ',
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                      const Text(
+                        '• Gmail を使用したデータ同期',
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                      const Text(
+                        '• ブラウザでの OAuth 認証（安全に実施）',
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
