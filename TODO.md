@@ -1,17 +1,21 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-04-07 15:00
+最終更新: 2026-04-09 15:30
 
 ## 🔴 緊急・高優先度
 
-### 進行中
-- [ ] データベースの日本語フォルダ移行完了 (2026-04-09)
-  - 関連：`lib/services/database_helper.dart`, `lib/screens/management_screen.dart`
+### 完了
+- [x] Google 統合の復元とデータベース場所の変更 (2026-04-09, commit: fe6e875)
+  - 関連：`lib/services/database_helper.dart`, `lib/screens/management_screen.dart`, `lib/services/google_api_service_base.dart`, `lib/services/google_account_service.dart`, `lib/services/drive_backup_service.dart`, `lib/services/gmail_sync_client.dart`, `lib/screens/settings_screen.dart`, `lib/services/app_settings_repository.dart`
   - 内容:
     - DB フォルダを `/storage/emulated/0/販売アシスト 1 号/` に変更
-    - ファイル名を `gemi_invoice.db` → `販売アシスト 1 号.db` に変更
+    - ファイル名を `gemi_invoice.db` → `販売アシスト 1 号.db` に変更（バージョン v33→v43）
     - `_migrateDatabaseIfNeeded()` 実装で既存データ移行対応
-    - バックアップ機能も新パスに対応
+    - Google Drive バックアップ機能復元（drive_backup_service.dart, gmail_sync_client.dart）
+    - Google API サービス基底クラス実装（google_api_service_base.dart）
+    - Gmail Sync Client 互換性修正（getCurrentAccount() 追加）
+    - 設定画面に Google 機能切替スイッチ追加（オン/オフ切り替え可能）
+    - データ保管場所ドキュメント作成（データ保管場所_重要.md）
 
 ### 未着手
 なし
