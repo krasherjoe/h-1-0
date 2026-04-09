@@ -60,7 +60,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   SyncTransportMode _transportMode = SyncTransportMode.gmailOnly;
   bool _backingUp = false;
   String? _lastBackupTime;
-  BackupLocationType _lastBackupLocation = BackupLocationType.local;
   bool _autoBackupEnabled = false;
   bool _googleFeaturesEnabled = false;
   GoogleSignInAccount? _currentGoogleAccount;
@@ -509,6 +508,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _encodingMode = encoding);
       final transport = await _repo.getSyncTransportMode();
       await _loadBackupSettings();
+      await _loadBackupDestination();
       await _loadGoogleSettings();
       setState(() => _transportMode = transport);
     });
