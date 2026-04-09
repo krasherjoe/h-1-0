@@ -7,8 +7,8 @@
 ### 完了
 - [x] Google 統合の復元とデータベース場所の変更 (2026-04-09, commit: fe6e875)
 
-- [x] S1:設定画面の LSP 構文エラー修正とバックアップ機能拡張 (2026-04-10, 進行中)
-  - 関連：`lib/screens/settings_screen.dart`
+- [x] S1:設定画面の LSP 構文エラー修正とバックアップ機能拡張 (2026-04-10, 完了，commit: f62b752)
+   - 関連：`lib/screens/settings_screen.dart`
   - 内容:
     - バックアップ状況表示 UI に `_localBackupStatus` と `_driveBackupStatus` を追加
     - バックアップ先選択機能を実装（ローカル/Goggle ドライブ/両方）
