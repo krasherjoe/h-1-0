@@ -17,13 +17,23 @@
     - 設定画面に Google 機能切替スイッチ追加（オン/オフ切り替え可能）
     - データ保管場所ドキュメント作成（データ保管場所_重要.md）
 
-- [x] バックアップ進捗表示の詳細化 (2026-04-09, commit: pending)
+- [x] バックアップ進捗表示の詳細化 (2026-04-09, commit: 69e60f7)
   - 関連：`lib/main.dart`, `lib/services/backup_progress_notifier.dart`
   - 内容:
     - BackupProgressNotifier にファイル進行度情報プロパティ追加（currentFileIndex, totalFiles, fileName）
     - main.dart のバックアップ進捗表示を GestureDetector で囲み、タップで詳細ダイアログを表示
     - 詳細ダイアログ：進行状況バー拡大表示、ステータス情報、エラー詳細（ある場合）
     - ScaffoldMessenger エラーを状態ベースのアプローチで修正
+
+- [x] S1:設定画面に Google アカウント認証 UI を追加 (2026-04-09, commit: 9275e23)
+  - 関連：`lib/screens/settings_screen.dart`, `lib/services/google_account_service.dart`
+  - 内容:
+    - Google 連携機能セクションを新規追加（オン/オフ切り替えスイッチ）
+    - アカウント状態表示を実装（未認証/読み込み中/認証済み）
+    - サインインボタン：ブラウザベースの OAuth フローを開始
+    - サイナウトボタン：確認ダイアログを表示して認証解除
+    - 認証済み時はメールアドレスと有効期限を表示
+    - google_account_service.dart の初期化チェックを修正（_isInitialized 追加）
 
 ### 未着手
 なし
@@ -236,8 +246,10 @@ adb uninstall com.example.h_1
 - Google 統合の復元（drive_backup_service.dart, gmail_sync_client.dart）
 - データベース場所の変更（gemi_invoice.db → 販売アシスト 1 号.db）
 - 設定画面に Google 機能切替スイッチ追加
+- **S1:設定画面に OAuth 認証 UI を実装**（サインイン/アウト、アカウント状態表示）
 
 次回のセッションで確認が必要な事項：
-1. 実機テストによる動作確認
-2. 残存する flutter analyze 警告の整理（任意）
+1. 実機テストによる動作確認（Google アカウント認証フロー）
+2. バックアップ・復元機能の実動テスト
+3. 残存する flutter analyze 警告の整理（テストファイルのみ、本番コードは問題なし）
 
