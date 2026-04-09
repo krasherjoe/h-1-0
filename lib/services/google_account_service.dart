@@ -1,85 +1,226 @@
-import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'google_api_service_base.dart';
 
-/// Googleアカウント連携とアクセストークン管理を司るサービス。
-/// Gmail／Drive／Sheets／Calendarで共通利用するOAuthセッションを一元管理する。
-class GoogleAccountService {
-  GoogleAccountService._internal() {
-    _init();
-  }
+/// Google アカウント管理サービス
+/// ユーザーの Google アカウント認証とトークン管理を担当
+class GoogleAccountService extends GoogleApiServiceBase {
+  static const String _keyGoogleEmail = 'google_email';
+  static const String _keyGoogleName = 'google_name';
+  static const String _keyGoogleId = 'google_id';
 
+  // シングルトンインスタンス
   static final GoogleAccountService instance = GoogleAccountService._internal();
 
-  GoogleSignIn? _googleSignIn;
-  final StreamController<GoogleSignInAccount?> _accountController =
-      StreamController.broadcast();
+  factory GoogleAccountService() {
+    return instance;
+  }
 
-  void _init() {
+  GoogleAccountService._internal();
+
+  // Google Sign-In インスタンス（開発用）
+  late final GoogleSignIn _googleSignIn;
+
+  // 初期化メソッド（ランチャーから呼び出し）
+  void init() {
+    _googleSignIn = GoogleSignIn(
+      scopes: [
+        'email',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/gmail.send',
+      ],
+    );
+  }
+
+  /// Google アカウントにログイン
+  Future<bool> signIn() async {
     try {
-      _googleSignIn = GoogleSignIn(
-        scopes: const [
-          'email',
-          'https://www.googleapis.com/auth/gmail.modify',
-          'https://www.googleapis.com/auth/drive.file',
-          'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/calendar.events',
-        ],
+      debugPrint('[GoogleAccount] ログイン開始');
+
+      // _googleSignIn が初期化されていない場合は初期化
+      if (_googleSignIn == null) init();
+
+      // 既にログインしている場合は確認
+      final currentUser = await _googleSignIn.currentUser;
+      if (currentUser != null) {
+        debugPrint('[GoogleAccount] 既にログイン済み');
+        return true;
+      }
+
+      // Google ログイン実行
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        debugPrint('[GoogleAccount] ログインキャンセル');
+        return false;
+      }
+
+      // トークン情報を取得
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if (accessToken == null || idToken == null) {
+        debugPrint('[GoogleAccount] トークン取得に失敗');
+        return false;
+      }
+
+      // トークンを保存（リフレッシュトークンは ID トークンから取得）
+      await saveTokens(
+        accessToken: accessToken,
+        refreshToken: idToken, // 開発環境では ID トークンをリフレッシュ用に使用
+        expiresIn: 3600,
       );
-      _googleSignIn?.onCurrentUserChanged.listen(_accountController.add);
+
+      // ユーザー情報を保存
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyGoogleEmail, googleUser.email);
+      await prefs.setString(_keyGoogleName, googleUser.displayName ?? '');
+      await prefs.setString(_keyGoogleId, googleUser.id);
+
+      debugPrint('[GoogleAccount] ログイン成功：${googleUser.email}');
+      return true;
     } catch (e) {
-      print('GoogleSignIn初期化エラー: $e');
-      // Webで初期化失敗しても続行
+      debugPrint('[GoogleAccount] ログインエラー：$e');
+      return false;
     }
   }
 
-  /// 現在の連携アカウント。
-  GoogleSignInAccount? get currentAccount => _googleSignIn?.currentUser;
-
-  /// 連携アカウントが変化した際に通知されるストリーム。
-  Stream<GoogleSignInAccount?> get accountStream => _accountController.stream;
-
-  /// サイレントログインで既存のセッションを復元する。
-  Future<GoogleSignInAccount?> recoverAccount() async {
-    if (_googleSignIn == null) return null;
+  /// Google アカウントからログアウト
+  Future<bool> signOut() async {
     try {
-      final account = await _googleSignIn!.signInSilently();
-      return account ?? _googleSignIn?.currentUser;
-    } catch (_) {
+      debugPrint('[GoogleAccount] ログアウト開始');
+
+      // トークンをクリア
+      await clearTokens();
+
+      // ユーザー情報を削除
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyGoogleEmail);
+      await prefs.remove(_keyGoogleName);
+      await prefs.remove(_keyGoogleId);
+
+      // Google Sign-In をログアウト（初期化されている場合のみ）
+      if (_googleSignIn != null) await _googleSignIn.signOut();
+
+      debugPrint('[GoogleAccount] ログアウト成功');
+      return true;
+    } catch (e) {
+      debugPrint('[GoogleAccount] ログアウトエラー：$e');
+      return false;
+    }
+  }
+
+  /// 現在ログイン中のユーザー情報を取得
+  Future<Map<String, String>?> getCurrentUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString(_keyGoogleEmail);
+      final name = prefs.getString(_keyGoogleName);
+      final id = prefs.getString(_keyGoogleId);
+
+      if (email == null) {
+        return null; // ログインしていない
+      }
+
+      return {'email': email, 'name': name ?? '', 'id': id ?? ''};
+    } catch (e) {
+      debugPrint('[GoogleAccount] ユーザー情報取得エラー：$e');
       return null;
     }
   }
 
-  /// ユーザーにアカウント選択UIを提示する。
-  Future<GoogleSignInAccount?> pickAccount() async {
-    if (_googleSignIn == null) return null;
-    final account = await _googleSignIn!.signIn();
-    return account;
-  }
-
-  /// 連携を解除し、トークンを破棄する。
-  Future<void> disconnect() async {
+  /// Google アカウントがログイン済みかチェック
+  Future<bool> isSignedIn() async {
     try {
-      await _googleSignIn?.disconnect();
-    } finally {
-      _accountController.add(null);
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString(_keyGoogleEmail);
+      return email != null && email.isNotEmpty;
+    } catch (e) {
+      debugPrint('[GoogleAccount] ログイン状態チェックエラー：$e');
+      return false;
     }
   }
 
-  /// Google API呼び出し時に使用するHTTPヘッダを取得する。
-  Future<Map<String, String>> getAuthHeaders() async {
-    final account = currentAccount ?? await recoverAccount();
-    if (account == null) {
-      throw StateError('Googleアカウントに未連携です');
-    }
-    return account.authHeaders;
+  /// クライアント ID/シークレットを設定（管理者用）
+  Future<void> setClientCredentials({
+    required String clientId,
+    required String clientSecret,
+  }) async {
+    await saveClientCredentials(clientId: clientId, clientSecret: clientSecret);
   }
 
-  /// Bearerトークンのみ必要なケース向けにトークン文字列を返す。
-  Future<String?> getAccessToken() async {
-    final headers = await getAuthHeaders();
-    final auth = headers['Authorization'];
-    if (auth == null) return null;
-    if (!auth.startsWith('Bearer ')) return auth;
-    return auth.substring(7);
+  /// クライアント情報を取得
+  Future<Map<String, String>?> getClientCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = prefs.getString(GoogleApiServiceBase.kClientId);
+      final clientSecret = prefs.getString(GoogleApiServiceBase.kClientSecret);
+
+      if (clientId == null || clientSecret == null) {
+        return null;
+      }
+
+      return {
+        'clientId': clientId,
+        'clientSecret': clientSecret, // 本番環境では非推奨（ログ出力に注意）
+      };
+    } catch (e) {
+      debugPrint('[GoogleAccount] クライアント情報取得エラー：$e');
+      return null;
+    }
+  }
+
+  /// Google Drive API のスコープを持つリクエストヘッダーを取得
+  Map<String, String> getDriveAuthHeaders() {
+    final baseHeaders = getAuthHeaders();
+    baseHeaders['X-Upload-Type'] = 'multipart';
+    return baseHeaders;
+  }
+
+  /// Gmail API のスコープを持つリクエストヘッダーを取得
+  Map<String, String> getGmailAuthHeaders() {
+    return getAuthHeaders();
+  }
+
+  /// 現在ログイン中のユーザー情報を取得
+  Future<GoogleSignInAccount?> getCurrentAccount() async {
+    // 既にログインしている場合は確認
+    try {
+      if (_googleSignIn == null) init();
+      return await _googleSignIn.currentUser;
+    } catch (e) {
+      debugPrint('[GoogleAccount] 現在アカウント取得エラー：$e');
+      return null;
+    }
+  }
+
+  /// トークン情報をデバッグ用に出力
+  Future<void> debugPrintTokenInfo() async {
+    final hasToken = await hasAccessToken();
+    debugPrint('[GoogleAccount] トークン存在：$hasToken');
+
+    if (hasToken) {
+      final user = await getCurrentUser();
+      if (user != null) {
+        debugPrint(
+          '[GoogleAccount] 現在のユーザー：${user['email']} (${user['name']})',
+        );
+      }
+
+      // クライアント情報を確認（シークレットはハッシュ化して表示）
+      final creds = await getClientCredentials();
+      if (creds != null) {
+        debugPrint('[GoogleAccount] クライアント ID: ${creds['clientId']}');
+        // セキュリティのためシークレットは一部のみ表示
+        final secret = creds['clientSecret'] ?? '';
+        debugPrint(
+          '[GoogleAccount] クライアントシークレット：${secret.substring(0, 4)}...${secret.substring(secret.length - 4)}',
+        );
+      }
+    }
   }
 }

@@ -20,10 +20,10 @@ class GmailSyncClient extends GoogleApiServiceBase {
     AppSettingsRepository? settingsRepository,
     MothershipClient? nodeIdProvider,
     InvoiceRepository? invoiceRepository,
-  })  : _chatRepository = chatRepository ?? ChatRepository(),
-        _settingsRepository = settingsRepository ?? AppSettingsRepository(),
-        _nodeIdProvider = nodeIdProvider ?? MothershipClient(),
-        _invoiceRepository = invoiceRepository ?? InvoiceRepository();
+  }) : _chatRepository = chatRepository ?? ChatRepository(),
+       _settingsRepository = settingsRepository ?? AppSettingsRepository(),
+       _nodeIdProvider = nodeIdProvider ?? MothershipClient(),
+       _invoiceRepository = invoiceRepository ?? InvoiceRepository();
 
   static const _userId = 'me';
   static const _defaultSubjectPrefix = '[Sync:v1]';
@@ -40,12 +40,13 @@ class GmailSyncClient extends GoogleApiServiceBase {
 
   Future<void> sync({bool chats = true, bool invoices = true}) async {
     if (!chats && !invoices) return;
-    if (GoogleAccountService.instance.currentAccount == null) return;
+    final account = await GoogleAccountService.instance.getCurrentAccount();
+    if (account == null) return;
     try {
       await withClient((client) async {
         final transport = await _settingsRepository.getSyncTransportMode();
         if (transport == SyncTransportMode.directOnly) {
-          debugPrint('[GmailSync] transport=directOnly → Gmail同期をスキップ');
+          debugPrint('[GmailSync] transport=directOnly → Gmail 同期をスキップ');
           return;
         }
         final api = gmail.GmailApi(client);
@@ -59,14 +60,16 @@ class GmailSyncClient extends GoogleApiServiceBase {
         if (invoices) {
           tasks.add(_pushPendingInvoices(api, clientId, encoding));
         }
-        tasks.add(_fetchInbound(
-          api,
-          labelId,
-          clientId,
-          encoding,
-          allowChatPayload: chats,
-          allowInvoicePayload: invoices,
-        ));
+        tasks.add(
+          _fetchInbound(
+            api,
+            labelId,
+            clientId,
+            encoding,
+            allowChatPayload: chats,
+            allowInvoicePayload: invoices,
+          ),
+        );
         await Future.wait(tasks);
       });
     } catch (err, stack) {
@@ -76,13 +79,17 @@ class GmailSyncClient extends GoogleApiServiceBase {
     }
   }
 
-  Future<void> _pushPendingChats(gmail.GmailApi api, String clientId, GmailEnvelopeEncoding encoding) async {
+  Future<void> _pushPendingChats(
+    gmail.GmailApi api,
+    String clientId,
+    GmailEnvelopeEncoding encoding,
+  ) async {
     final pending = await _chatRepository.pendingOutbound();
     if (pending.isEmpty) return;
 
     final bccAddress = await _settingsRepository.getGmailSyncBccAddress();
     if (bccAddress == null || bccAddress.isEmpty) {
-      debugPrint('[GmailSync] skip push: BCCアドレス未設定');
+      debugPrint('[GmailSync] skip push: BCC アドレス未設定');
       return;
     }
 
@@ -106,7 +113,11 @@ class GmailSyncClient extends GoogleApiServiceBase {
         );
         successes.add(message.messageId);
         if (response.id != null) {
-          await _tagMessage(api, response.id!, labelId: await _settingsRepository.getGmailSyncLabelId());
+          await _tagMessage(
+            api,
+            response.id!,
+            labelId: await _settingsRepository.getGmailSyncLabelId(),
+          );
         }
       } catch (err) {
         debugPrint('[GmailSync] push ${message.messageId} failed: $err');
@@ -120,13 +131,17 @@ class GmailSyncClient extends GoogleApiServiceBase {
     }
   }
 
-  Future<void> _pushPendingInvoices(gmail.GmailApi api, String clientId, GmailEnvelopeEncoding encoding) async {
+  Future<void> _pushPendingInvoices(
+    gmail.GmailApi api,
+    String clientId,
+    GmailEnvelopeEncoding encoding,
+  ) async {
     final pending = await _invoiceRepository.pendingSyncSnapshots(limit: 5);
     if (pending.isEmpty) return;
 
     final bccAddress = await _settingsRepository.getGmailSyncBccAddress();
     if (bccAddress == null || bccAddress.isEmpty) {
-      debugPrint('[GmailSync] skip invoice push: BCCアドレス未設定');
+      debugPrint('[GmailSync] skip invoice push: BCC アドレス未設定');
       return;
     }
 
@@ -150,7 +165,11 @@ class GmailSyncClient extends GoogleApiServiceBase {
         );
         synced.add(payload.recordId);
         if (response.id != null) {
-          await _tagMessage(api, response.id!, labelId: await _settingsRepository.getGmailSyncLabelId());
+          await _tagMessage(
+            api,
+            response.id!,
+            labelId: await _settingsRepository.getGmailSyncLabelId(),
+          );
         }
       } catch (err) {
         debugPrint('[GmailSync] invoice push ${payload.recordId} failed: $err');
@@ -259,21 +278,26 @@ class GmailSyncClient extends GoogleApiServiceBase {
     return results;
   }
 
-  Future<void> _ackMessages(gmail.GmailApi api, List<String> messageIds, String labelId) async {
+  Future<void> _ackMessages(
+    gmail.GmailApi api,
+    List<String> messageIds,
+    String labelId,
+  ) async {
     final request = gmail.ModifyMessageRequest()
       ..addLabelIds = [labelId]
       ..removeLabelIds = ['INBOX', 'UNREAD'];
     await Future.wait(
-      messageIds.map(
-        (id) => api.users.messages.modify(request, _userId, id),
-      ),
+      messageIds.map((id) => api.users.messages.modify(request, _userId, id)),
     );
   }
 
-  Future<void> _tagMessage(gmail.GmailApi api, String messageId, {String? labelId}) async {
+  Future<void> _tagMessage(
+    gmail.GmailApi api,
+    String messageId, {
+    String? labelId,
+  }) async {
     if (labelId == null || labelId.isEmpty) return;
-    final request = gmail.ModifyMessageRequest()
-      ..addLabelIds = [labelId];
+    final request = gmail.ModifyMessageRequest()..addLabelIds = [labelId];
     try {
       await api.users.messages.modify(request, _userId, messageId);
     } catch (err) {
@@ -301,8 +325,11 @@ class GmailSyncClient extends GoogleApiServiceBase {
           if (!allowChatPayload) {
             return false;
           }
-          final chat = ChatMessage.fromJson(envelope.payload)
-              .copyWith(direction: ChatDirection.inbound, synced: true, sequence: envelope.sequence);
+          final chat = ChatMessage.fromJson(envelope.payload).copyWith(
+            direction: ChatDirection.inbound,
+            synced: true,
+            sequence: envelope.sequence,
+          );
           await _chatRepository.upsertInbound(chat);
           return true;
         case _payloadTypeInvoiceSnapshot:
@@ -313,7 +340,9 @@ class GmailSyncClient extends GoogleApiServiceBase {
           await _invoiceRepository.applyInboundSnapshot(payload);
           return true;
         default:
-          debugPrint('[GmailSync] unknown payload type ${envelope.payloadType}');
+          debugPrint(
+            '[GmailSync] unknown payload type ${envelope.payloadType}',
+          );
           return false;
       }
     } catch (err) {

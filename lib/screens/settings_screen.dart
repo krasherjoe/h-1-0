@@ -3,12 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/invoice_list_style.dart';
 import '../models/sync_preferences.dart';
 import '../services/app_settings_repository.dart';
-import '../services/google_account_service.dart';
 import '../services/theme_controller.dart';
 import 'screen_s8_email_settings.dart';
 import 'master_hub_page.dart';
@@ -19,7 +17,6 @@ import 'dashboard_menu_settings_screen.dart';
 import 'mothership_discovery_settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_helper.dart';
-import '../services/drive_backup_service.dart';
 import '../services/auto_backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -31,8 +28,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _repo = AppSettingsRepository();
-  final GoogleAccountService _googleAccountService =
-      GoogleAccountService.instance;
   String _theme = 'system';
   String _summaryTheme = 'white';
   InvoiceListStyle _invoiceListStyle = InvoiceListStyle.legacy;
@@ -41,13 +36,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showCategoryDescriptions = true;
   GmailEnvelopeEncoding _encodingMode = GmailEnvelopeEncoding.gzipBase64;
   SyncTransportMode _transportMode = SyncTransportMode.gmailOnly;
-  GoogleSignInAccount? _googleAccount;
-  bool _linkingAccount = false;
-  StreamSubscription<GoogleSignInAccount?>? _accountSubscription;
   bool _backingUp = false;
-  bool _restoring = false;
   String? _lastBackupTime;
   bool _autoBackupEnabled = false;
+  bool _googleFeaturesEnabled = false;
 
   Future<void> _loadBackupSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,13 +53,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _loadGoogleSettings() async {
+    final enabled = await _repo.getGoogleFeaturesEnabled();
+    if (mounted) {
+      setState(() {
+        _googleFeaturesEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _backupToGoogleDrive() async {
+    if (_backingUp) return;
+    setState(() => _backingUp = true);
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+      final dbFile = File(dbPath);
+
+      if (!await dbFile.exists()) {
+        throw Exception('データベースファイルが見つかりません');
+      }
+
+      // Google Drive バックアップ機能は削除されました
+      throw Exception('Google Drive 連携機能は削除されました。代わりに、自動バックアップをご利用ください。');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ バックアップ失敗：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _backingUp = false);
+      }
+    }
+  }
+
   Future<void> _restoreFromGoogleDrive() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('データ復元確認'),
         content: const Text(
-          '現在のデータベースをGoogle Driveの最新バックアップで上書きします。\n\n'
+          '現在のデータベースを Google Drive の最新バックアップで上書きします。\n\n'
           '※現在のデータは失われます。続けますか？',
         ),
         actions: [
@@ -86,112 +115,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed != true) return;
 
-    setState(() => _restoring = true);
     try {
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
       final dbPath = db.path;
 
-      print('[Restore] DB パス: $dbPath');
+      print('[Restore] DB パス：$dbPath');
       await db.close();
       print('[Restore] DB をクローズしました');
 
-      final driveService = DriveBackupService();
-      print('[Restore] バックアップファイル一覧を取得中...');
-      final backups = await driveService.listBackupFiles();
-      print('[Restore] バックアップファイル数: ${backups.length}');
-      
-      if (backups.isEmpty) {
-        throw Exception('復元可能なバックアップが見つかりません');
-      }
-
-      // DB ファイルを探す
-      final dbBackup = backups.firstWhere(
-        (f) => f.name?.endsWith('.db') ?? false,
-        orElse: () => throw Exception('DB ファイルが見つかりません'),
+      // Google Drive バックアップ機能は削除されました
+      throw Exception(
+        'Google Drive 連携機能は削除されました。代わりに、設定画面から手動でバックアップ・復元を行ってください。',
       );
-      
-      print('[Restore] DB バックアップ: ${dbBackup.name} (ID: ${dbBackup.id})');
-      
-      final success = await driveService.restoreLatestBackup(dbPath);
-
-      if (!success) {
-        throw Exception('復元に失敗しました');
-      }
-
-      print('[Restore] 復元完了');
-
-      if (mounted) {
-        setState(() => _restoring = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ データを復元しました。アプリを再起動してください。')),
-        );
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('復元完了'),
-            content: const Text('データベースを復元しました。\nアプリを再起動してください。'),
-            actions: [
-              ElevatedButton(
-                onPressed: () => SystemNavigator.pop(),
-                child: const Text('アプリを終了'),
-              ),
-            ],
-          ),
-        );
-      }
     } catch (e, st) {
-      print('[Restore] エラー: $e');
-      print('[Restore] スタックトレース: $st');
-      if (mounted) {
-        setState(() => _restoring = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('❌ 復元失敗: $e')));
-      }
-    }
-  }
-
-  Future<void> _backupToGoogleDrive() async {
-    if (_backingUp) return;
-    setState(() => _backingUp = true);
-    try {
-      final dbHelper = DatabaseHelper();
-      final db = await dbHelper.database;
-      final dbPath = db.path;
-      final dbFile = File(dbPath);
-
-      if (!await dbFile.exists()) {
-        throw Exception('データベースファイルが見つかりません');
-      }
-
-      final driveService = DriveBackupService();
-      await driveService.uploadDatabaseSnapshot(
-        dbFile,
-        description: 'Manual backup - ${DateTime.now().toIso8601String()}',
-      );
-
-      final prefs = await SharedPreferences.getInstance();
-      final now = DateTime.now().toIso8601String();
-      await prefs.setString('last_backup_time', now);
-
-      if (mounted) {
-        setState(() => _lastBackupTime = now);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Google Driveにバックアップしました')),
-        );
-      }
-    } catch (e) {
+      print('[Restore] エラー：$e');
+      print('[Restore] スタックトレース：$st');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ バックアップ失敗: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _backingUp = false);
+        ).showSnackBar(SnackBar(content: Text('❌ 復元失敗：$e')));
       }
     }
   }
@@ -204,6 +147,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(enabled ? '自動バックアップを有効化しました' : '自動バックアップを無効化しました'),
+      ),
+    );
+  }
+
+  Future<void> _setGoogleFeaturesEnabled(bool enabled) async {
+    await _repo.setGoogleFeaturesEnabled(enabled);
+    setState(() => _googleFeaturesEnabled = enabled);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(enabled ? 'Google 連携機能を有効化しました' : 'Google 連携機能を無効化しました'),
       ),
     );
   }
@@ -233,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('❌ エラー：$e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -259,70 +213,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() => _encodingMode = encoding);
       final transport = await _repo.getSyncTransportMode();
       await _loadBackupSettings();
+      await _loadGoogleSettings();
       setState(() => _transportMode = transport);
-      final account = await _googleAccountService.recoverAccount();
-      if (!mounted) return;
-      setState(() => _googleAccount = account);
-    });
-    _accountSubscription = _googleAccountService.accountStream.listen((
-      account,
-    ) {
-      if (!mounted) return;
-      setState(() => _googleAccount = account);
     });
   }
 
   @override
   void dispose() {
-    _accountSubscription?.cancel();
     _statusTextController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectGoogleAccount() async {
-    setState(() => _linkingAccount = true);
-    try {
-      final account = await _googleAccountService.pickAccount();
-      if (account == null && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('アカウント選択がキャンセルされました')));
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Google連携に失敗しました: $e')));
-    } finally {
-      if (mounted) {
-        setState(() => _linkingAccount = false);
-      }
-    }
-  }
-
-  Future<void> _disconnectGoogleAccount() async {
-    setState(() => _linkingAccount = true);
-    try {
-      await _googleAccountService.disconnect();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('連携解除に失敗しました: $e')));
-    } finally {
-      if (mounted) {
-        setState(() => _linkingAccount = false);
-      }
-    }
-  }
-
-  String _googleAccountSummary() {
-    if (_googleAccount == null) {
-      return '未連携（Googleアカウントを選択してください）';
-    }
-    final name = _googleAccount!.displayName;
-    final email = _googleAccount!.email;
-    return name == null || name.isEmpty ? email : '$name / $email';
   }
 
   @override
@@ -335,7 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.dashboard_customize),
             title: const Text('ダッシュボード設定'),
-            subtitle: const Text('表示するメニューのON/OFFと順序を管理'),
+            subtitle: const Text('表示するメニューの ON/OFF と順序を管理'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
               context,
@@ -498,7 +397,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownButtonFormField<InvoiceListStyle>(
                   initialValue: _invoiceListStyle,
                   decoration: const InputDecoration(
-                    labelText: 'IV / Q1 一覧UI',
+                    labelText: 'IV / Q1 一覧 UI',
                     border: OutlineInputBorder(),
                   ),
                   items: const [
@@ -508,7 +407,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     DropdownMenuItem(
                       value: InvoiceListStyle.a2,
-                      child: Text('A2スタイル（淡色カード＋長押し確定）'),
+                      child: Text('A2 スタイル（淡色カード＋長押し確定）'),
                     ),
                   ],
                   onChanged: (style) async {
@@ -520,7 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   '※将来的にその他のスタイルを追加予定です。'
-                  '設定変更後はIV/Q1画面を再表示すると反映されます。',
+                  '設定変更後は IV/Q1 画面を再表示すると反映されます。',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
@@ -563,66 +462,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('カテゴリ説明を表示'),
-                  subtitle: const Text('ダッシュボードの見出し・各項目の説明テキストをON/OFF'),
+                  subtitle: const Text('ダッシュボードの見出し・各項目の説明テキストを ON/OFF'),
                   value: _showCategoryDescriptions,
                   onChanged: (value) async {
                     await _repo.setDashboardShowCategoryDescriptions(value);
                     setState(() => _showCategoryDescriptions = value);
                   },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.cloud_sync, color: Colors.green),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Googleアカウント連携',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _googleAccountSummary(),
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _linkingAccount
-                            ? null
-                            : _selectGoogleAccount,
-                        icon: const Icon(Icons.account_circle),
-                        label: Text(
-                          _googleAccount == null ? 'アカウントを選択' : '別アカウントに切替',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    OutlinedButton.icon(
-                      onPressed: (_googleAccount == null || _linkingAccount)
-                          ? null
-                          : _disconnectGoogleAccount,
-                      icon: const Icon(Icons.logout),
-                      label: const Text('連携解除'),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -652,8 +497,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.settings),
-                  title: const Text('SM:メール設定'),
-                  subtitle: const Text('SMTP/BCC設定、Gmailアカウント選択'),
+                  title: const Text('SM: メール設定'),
+                  subtitle: const Text('BCC 設定、メールテンプレート（ヘッダー/フッター）'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
@@ -733,11 +578,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.blue.shade200),
                   ),
-                  child: const Text(
-                    '📌 ローカルバックアップは起動時に即座に実行されます。'
-                    'Google Drive バックアップはバックグラウンドで実行されるため、'
-                    'アプリの起動時間に影響しません。',
-                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        '📌 自動バックアップについて',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '• Google Drive 連携機能は削除されました',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                      Text(
+                        '• ローカルバックアップは起動時に即座に実行されます',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                      Text(
+                        '• 端末内に毎日自動バックアップ（過去 3 件保持）',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -749,7 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'ローカルバックアップ',
+                        'ローカルバックアップ管理',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -757,7 +622,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '端末内に毎日自動バックアップ（過去 3 件保持）',
+                  '端末内のバックアップファイルを確認・復元できます',
                   style: TextStyle(fontSize: 12, color: Colors.black54),
                 ),
                 const SizedBox(height: 8),
@@ -769,37 +634,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     foregroundColor: Colors.orange,
                   ),
                 ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _restoring ? null : _restoreFromGoogleDrive,
-                  icon: _restoring
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.restore),
-                  label: Text(_restoring ? '復元中...' : 'バックアップから復元'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange,
-                  ),
-                ),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      Icon(Icons.info_outline, size: 16, color: Colors.grey),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Google Drive連携が必要です。上記「Googleアカウント連携」で設定してください。',
-                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                          '※Google Drive バックアップ機能は削除されました。代わりにローカルバックアップをご利用ください。',
+                          style: TextStyle(fontSize: 11, color: Colors.black87),
                         ),
                       ),
                     ],
@@ -810,9 +660,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: _resetRestoreCheck,
                   icon: const Icon(Icons.refresh),
                   label: const Text('復元ダイアログを再表示'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey,
-                  ),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.grey),
                 ),
               ],
             ),
@@ -858,7 +706,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     DropdownMenuItem(
                       value: GmailEnvelopeEncoding.plainJson,
-                      child: Text('JSON平文'),
+                      child: Text('JSON 平文'),
                     ),
                   ],
                   onChanged: (value) async {
@@ -873,7 +721,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: const InputDecoration(
                     labelText: '同期トランスポート',
                     border: OutlineInputBorder(),
-                    helperText: 'LAN/VPN直通が使える場合は直接通信を優先できます',
+                    helperText: 'LAN/VPN 直通が使える場合は直接通信を優先できます',
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -882,11 +730,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     DropdownMenuItem(
                       value: SyncTransportMode.directOnly,
-                      child: Text('直接通信のみ (母艦API)'),
+                      child: Text('直接通信のみ (母艦 API)'),
                     ),
                     DropdownMenuItem(
                       value: SyncTransportMode.auto,
-                      child: Text('自動切替 (LAN優先/Gmailフォールバック)'),
+                      child: Text('自動切替 (LAN 優先/Gmail フォールバック)'),
                     ),
                   ],
                   onChanged: (value) async {
@@ -900,7 +748,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.location_on),
                   title: const Text('お局様検出設定'),
-                  subtitle: const Text('GPS位置ベースの自動検出と記憶された場所の管理'),
+                  subtitle: const Text('GPS 位置ベースの自動検出と記憶された場所の管理'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
@@ -942,11 +790,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     try {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CompanyInfoScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const CompanyInfoScreen(),
+                        ),
                       );
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+                        SnackBar(
+                          content: Text('エラー：$e'),
+                          backgroundColor: Colors.red,
+                        ),
                       );
                     }
                   },
@@ -958,11 +811,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     try {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CustomerMasterScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const CustomerMasterScreen(),
+                        ),
                       );
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+                        SnackBar(
+                          content: Text('エラー：$e'),
+                          backgroundColor: Colors.red,
+                        ),
                       );
                     }
                   },
@@ -974,11 +832,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     try {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProductMasterScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ProductMasterScreen(),
+                        ),
                       );
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+                        SnackBar(
+                          content: Text('エラー：$e'),
+                          backgroundColor: Colors.red,
+                        ),
                       );
                     }
                   },
@@ -1011,10 +874,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.storage),
-                  title: const Text('M1:マスター管理'),
+                  title: const Text('M1: マスター管理'),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => MasterHubPage()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.cloud_queue, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Google 連携機能',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Google Drive/Gmail 連携を有効化'),
+                  subtitle: const Text('バックアップ・同期機能を使用可能にします'),
+                  value: _googleFeaturesEnabled,
+                  onChanged: _setGoogleFeaturesEnabled,
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.deepPurple.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        '⚠️ 重要なお知らせ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '• Google Drive バックアップは自動バックアップと重複します',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                      Text(
+                        '• ローカルバックアップを優先してご利用ください',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                      Text(
+                        '• Google 連携を無効にしてもデータは安全に保存されます',
+                        style: TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1071,7 +1001,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 if (confirmed != true) return;
 
-                setState(() => _restoring = true);
                 try {
                   await db.close();
 
@@ -1116,7 +1045,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 } catch (e) {
                   if (!mounted) return;
-                  setState(() => _restoring = false);
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('❌ リストア失敗：$e')));

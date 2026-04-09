@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../constants/warehouse_constants.dart';
 
@@ -20,10 +21,11 @@ class LocalBackupService {
   static const _lastBackupKey = 'last_backup_timestamp';
   static const _dailyBackupKey = 'backup_date_today';
 
-  /// バックアップディレクトリパス
+  /// バックアップディレクトリパス（メイン DB と同じフォルダ）
   Future<String> _getBackupDirectory() async {
-    final dbPath = await getDatabasesPath();
-    return path.join(dbPath, 'backups');
+    // メイン DB と同じフォルダを使用し、バックアップも保護されるようにする
+    final dbDir = await DatabaseHelper._getDatabaseDirectory();
+    return path.join(dbDir, 'backups');
   }
 
   /// 今日のバックアップ済みフラグ取得
@@ -263,8 +265,42 @@ class DatabaseHelper {
     return _database!;
   }
 
+  /// データベース保存ディレクトリを取得（販売アシスト 1 号専用フォルダ）
+  /// 再インストール時にもデータを保護するために、システム固有のフォルダを使用
+  /// Android: /storage/emulated/0/販売アシスト 1 号/
+  /// iOS: Documents フォルダ
+  static Future<String> _getDatabaseDirectory() async {
+    if (Platform.isAndroid) {
+      try {
+        // 販売アシスト 1 号専用フォルダ（日本語名）
+        final dir = Directory('/storage/emulated/0/販売アシスト 1 号');
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        return dir.path;
+      } catch (e) {
+        debugPrint('販売アシスト 1 号フォルダへのアクセスエラー：$e');
+      }
+    } else if (Platform.isIOS) {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        return dir.path;
+      } catch (e) {
+        debugPrint('iOS ドキュメントフォルダ取得エラー：$e');
+      }
+    }
+
+    // フォールバック：内部ストレージ
+    return await getDatabasesPath();
+  }
+
   Future<Database> _initDatabase() async {
-    String dbPath = path.join(await getDatabasesPath(), 'gemi_invoice.db');
+    final dbDir = await _getDatabaseDirectory();
+    String dbPath = path.join(dbDir, '販売アシスト 1 号.db');
+
+    // 既存のデータベースを新しいフォルダへ移行（初回のみ）
+    await _migrateDatabaseIfNeeded();
+
     try {
       return await openDatabase(
         dbPath,
@@ -308,6 +344,84 @@ class DatabaseHelper {
         // データ消失を防ぐため、既存ファイルを削除せず再試行
         rethrow;
       }
+    }
+  }
+
+  /// 既存データベースの移行処理（初回起動時のみ）
+  /// gemi_invoice.db → 販売アシスト 1 号.db へリネームし、適切なフォルダへ移動
+  Future<void> _migrateDatabaseIfNeeded() async {
+    try {
+      // 新しい DB フォルダの取得
+      final newDbDir = await _getDatabaseDirectory();
+      final newDbPath = path.join(newDbDir, '販売アシスト 1 号.db');
+
+      // 新しい DB が既に存在すれば移行不要
+      if (await File(newDbPath).exists()) {
+        debugPrint('新しい形式の DB が既に存在します：$newDbPath');
+        return;
+      }
+
+      // 古い形式の DB 位置の調査
+      final oldLocations = [
+        // 1. Download フォルダ（旧実装）
+        path.join('/storage/emulated/0/Download', 'gemi_invoice.db'),
+        // 2. アプリ内部ストレージ（初期実装）
+        path.join(await getDatabasesPath(), 'gemi_invoice.db'),
+      ];
+
+      File? oldDbFile;
+      String? oldLocation;
+
+      // 古い DB ファイルを探す
+      for (final loc in oldLocations) {
+        final testFile = File(loc);
+        if (await testFile.exists()) {
+          oldDbFile = testFile;
+          oldLocation = loc;
+          debugPrint('既存の DB を発見：$loc');
+          break;
+        }
+      }
+
+      // 古い DB がなければ移行不要
+      if (oldDbFile == null) {
+        debugPrint('既存のデータベースは見つかりませんでした。新規作成します。');
+        return;
+      }
+
+      // 1. 新しいフォルダを作成
+      final newDir = Directory(newDbDir);
+      if (!await newDir.exists()) {
+        await newDir.create(recursive: true);
+        debugPrint('新しい DB フォルダを作成：${newDir.path}');
+      }
+
+      // 2. データベースを新しい場所へコピー（リネーム付き）
+      await oldDbFile.copy(newDbPath);
+      debugPrint('データベースを移行：$oldLocation → $newDbPath');
+
+      // 3. 元のファイルをバックアップ（念のため）
+      final backupPath =
+          '${oldDbFile.path}.migrate-${DateTime.now().millisecondsSinceEpoch}';
+      await oldDbFile.copy(backupPath);
+      debugPrint('元ファイルをバックアップ：$backupPath');
+
+      // 4. 古いファイルを削除（安全のため 3 日後まで残すロジックは後日実装）
+      try {
+        await oldDbFile.delete();
+        debugPrint('元の DB ファイルを削除：${oldDbFile.path}');
+      } catch (e) {
+        debugPrint('元ファイルの削除に失敗しましたが、移行は完了しています：$e');
+      }
+
+      // 5. バージョン情報を SharedPreferences に記録
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('db_version', _databaseVersion);
+      await prefs.setString('db_location', 'new_format');
+      debugPrint('データベース移行完了！バージョン：$_databaseVersion');
+    } catch (e) {
+      debugPrint('データベース移行エラー：$e');
+      // エラー時は既存の DB をそのまま使用（データ消失防止）
     }
   }
 
@@ -1258,7 +1372,9 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
-    await db.execute('CREATE INDEX idx_product_categories_name ON product_categories(name)');
+    await db.execute(
+      'CREATE INDEX idx_product_categories_name ON product_categories(name)',
+    );
 
     // 商品マスター
     await db.execute('''
@@ -1279,7 +1395,9 @@ class DatabaseHelper {
     ''');
     await db.execute('CREATE INDEX idx_products_name ON products(name)');
     await db.execute('CREATE INDEX idx_products_barcode ON products(barcode)');
-    await db.execute('CREATE INDEX idx_products_category_id ON products(category_id)');
+    await db.execute(
+      'CREATE INDEX idx_products_category_id ON products(category_id)',
+    );
 
     await db.execute('''
       CREATE TABLE master_hidden (

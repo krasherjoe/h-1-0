@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'product_master_screen.dart';
@@ -37,14 +38,24 @@ class _ManagementScreenState extends State<ManagementScreen> {
             Icons.inventory_2,
             "商品マスター管理",
             "販売商品の名称や単価を管理します",
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductMasterScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProductMasterScreen(),
+              ),
+            ),
           ),
           _buildMenuTile(
             context,
             Icons.people,
             "顧客マスター管理",
             "取引先（請求先）の名称や敬称を管理します",
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomerMasterScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CustomerMasterScreen(),
+              ),
+            ),
           ),
           _buildMenuTile(
             context,
@@ -74,14 +85,24 @@ class _ManagementScreenState extends State<ManagementScreen> {
             Icons.list_alt,
             "アクティビティ履歴 (Git風)",
             "データの作成・変更・削除の履歴を確認します",
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ActivityLogScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ActivityLogScreen(),
+              ),
+            ),
           ),
           _buildMenuTile(
             context,
             Icons.analytics_outlined,
             "売上・資金管理レポート",
             "売上や資金の流れを分析します", // Added subtitle
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SalesReportScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SalesReportScreen(),
+              ),
+            ),
           ),
           _buildMenuTile(
             context,
@@ -95,21 +116,32 @@ class _ManagementScreenState extends State<ManagementScreen> {
             Icons.location_history,
             "GPS座標履歴の管理",
             "過去に取得した位置情報の履歴を確認します",
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const GpsHistoryScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const GpsHistoryScreen()),
+            ),
           ),
           _buildMenuTile(
             context,
             Icons.camera_alt,
             "納品写真管理",
             "カメラで撮影した納品写真を管理します",
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CameraDeliveryPhotoScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CameraDeliveryPhotoScreen(),
+              ),
+            ),
           ),
           _buildMenuTile(
             context,
             Icons.search,
             "高速全文検索",
             "FTSで商品・顧客データを高速検索します",
-            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FastSearchScreen())),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const FastSearchScreen()),
+            ),
           ),
           const Divider(),
           _buildSectionHeader("外部同期 (将来のOdoo連携)"),
@@ -130,12 +162,22 @@ class _ManagementScreenState extends State<ManagementScreen> {
       padding: const EdgeInsets.all(16.0),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.blueGrey,
+        ),
       ),
     );
   }
 
-  Widget _buildMenuTile(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildMenuTile(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Colors.blueGrey),
       title: Text(title),
@@ -148,43 +190,53 @@ class _ManagementScreenState extends State<ManagementScreen> {
   Future<void> _exportAllInvoicesCsv(BuildContext context) async {
     final invoiceRepo = InvoiceRepository();
     final customerRepo = CustomerRepository();
-    
+
     final customers = await customerRepo.getAllCustomers();
     final invoices = await invoiceRepo.getAllInvoices(customers);
-    
+
     if (invoices.isEmpty) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("エクスポートするデータがありません")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("エクスポートするデータがありません")));
       return;
     }
 
     StringBuffer buffer = StringBuffer();
     buffer.writeln("日付,請求番号,取引先,合計金額,備考");
     for (var inv in invoices) {
-      buffer.writeln("${inv.date},$inv.invoiceNumber,${inv.customer.formalName},${inv.totalAmount},${inv.notes ?? ""}");
+      buffer.writeln(
+        "${inv.date},$inv.invoiceNumber,${inv.customer.formalName},${inv.totalAmount},${inv.notes ?? ""}",
+      );
     }
 
     await SharePlus.instance.share(
-      ShareParams(
-        text: buffer.toString(),
-        subject: '販売アシスト1号_全伝票マスター',
-      ),
+      ShareParams(text: buffer.toString(), subject: '販売アシスト1号_全伝票マスター'),
     );
   }
 
   Future<void> _backupDatabase(BuildContext context) async {
-    final dbPath = p.join(await getDatabasesPath(), 'gemi_invoice.db');
+    // 新しい DB フォルダからファイルを参照
+    String dbPath;
+    if (Platform.isAndroid) {
+      dbPath = '/storage/emulated/0/販売アシスト 1 号/販売アシスト 1 号.db';
+    } else if (Platform.isIOS) {
+      final dir = await getApplicationDocumentsDirectory();
+      dbPath = p.join(dir.path, '販売アシスト 1 号.db');
+    } else {
+      dbPath = p.join(await getDatabasesPath(), '販売アシスト 1 号.db');
+    }
+
     final file = File(dbPath);
     if (await file.exists()) {
       await SharePlus.instance.share(
-        ShareParams(
-          text: '販売アシスト1号_DBバックアップ',
-          files: [XFile(dbPath)],
-        ),
+        ShareParams(text: '販売アシスト 1 号_DB バックアップ', files: [XFile(dbPath)]),
       );
     } else {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("データベースファイルが見つかりません")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("データベースファイルが見つかりません")));
     }
   }
 
@@ -195,7 +247,12 @@ class _ManagementScreenState extends State<ManagementScreen> {
       builder: (context) => AlertDialog(
         title: const Text("インポート"),
         content: const Text("インポート用CSVファイルを選択してください。\n(現在この機能はファイル選択の基盤待ちです)"),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("閉じる"))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("閉じる"),
+          ),
+        ],
       ),
     );
   }
@@ -207,8 +264,14 @@ class _ManagementScreenState extends State<ManagementScreen> {
         title: const Text("データベース・リストア"),
         content: const Text("バックアップファイル(.db)を選択して上書き復元します。現在のデータは失われます。"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("キャンセル")),
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ファイル選択", style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("キャンセル"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("ファイル選択", style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -221,8 +284,14 @@ class _ManagementScreenState extends State<ManagementScreen> {
         title: const Text("クラウド同期 (Odoo)"),
         content: const Text("クラウドサーバーとデータを同期します。\n未同期項目: 5件"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("閉じる")),
-          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("実行")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("閉じる"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("実行"),
+          ),
         ],
       ),
     );

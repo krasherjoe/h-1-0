@@ -17,12 +17,15 @@ class AppSettingsRepository {
   static const _kDashboardStatusText = 'dashboard_status_text';
   static const _kDashboardMenu = 'dashboard_menu';
   static const _kDashboardHistoryUnlocked = 'dashboard_history_unlocked';
-  static const _kDashboardShowCategoryDescriptions = 'dashboard_show_category_desc';
+  static const _kDashboardShowCategoryDescriptions =
+      'dashboard_show_category_desc';
   static const _kTheme = 'app_theme';
   static const _kSummaryTheme = 'summary_theme';
   static const _kInvoiceListStyle = 'invoice_list_style';
-  static const _kForceInvoiceTaxInclusiveLabels = 'invoice_force_tax_inclusive_labels';
-  static const _kShowInvoiceTaxExceptionNote = 'invoice_show_tax_exception_note';
+  static const _kForceInvoiceTaxInclusiveLabels =
+      'invoice_force_tax_inclusive_labels';
+  static const _kShowInvoiceTaxExceptionNote =
+      'invoice_show_tax_exception_note';
   static const _kGmailSyncBccAddress = 'gmail_sync_bcc_address';
   static const _kGmailSyncLabelName = 'gmail_sync_label_name';
   static const _kGmailSyncLabelId = 'gmail_sync_label_id';
@@ -30,8 +33,10 @@ class AppSettingsRepository {
   static const _kGmailSyncSequence = 'gmail_sync_sequence';
   static const _kGmailSyncEncodingMode = 'gmail_sync_encoding_mode';
   static const _kSyncTransportMode = 'sync_transport_mode';
+  static const _kGoogleFeaturesEnabled = 'google_features_enabled';
 
-  static final StreamController<String> _homeModeController = StreamController<String>.broadcast();
+  static final StreamController<String> _homeModeController =
+      StreamController<String>.broadcast();
 
   final DatabaseHelper _dbHelper = DatabaseHelper();
   SharedPreferences? _prefs;
@@ -94,12 +99,16 @@ class AppSettingsRepository {
     await _setValue(_kDashboardStatusText, text);
   }
 
-  Future<bool> getDashboardShowCategoryDescriptions() async => getBool(_kDashboardShowCategoryDescriptions, defaultValue: true);
+  Future<bool> getDashboardShowCategoryDescriptions() async =>
+      getBool(_kDashboardShowCategoryDescriptions, defaultValue: true);
 
-  Future<void> setDashboardShowCategoryDescriptions(bool value) async => setBool(_kDashboardShowCategoryDescriptions, value);
+  Future<void> setDashboardShowCategoryDescriptions(bool value) async =>
+      setBool(_kDashboardShowCategoryDescriptions, value);
 
   List<DashboardMenuItem> getDefaultDashboardMenu() {
-    return kMenuDefinitions.map((def) => def.toMenuItem()).toList(growable: false);
+    return kMenuDefinitions
+        .map((def) => def.toMenuItem())
+        .toList(growable: false);
   }
 
   Future<List<DashboardMenuItem>> getDashboardMenu() async {
@@ -111,7 +120,9 @@ class AppSettingsRepository {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        final stored = decoded.map((e) => DashboardMenuItem.fromJson(e as Map<String, dynamic>)).toList();
+        final stored = decoded
+            .map((e) => DashboardMenuItem.fromJson(e as Map<String, dynamic>))
+            .toList();
         return _mergeMenu(defaults, stored);
       }
     } catch (_) {}
@@ -127,29 +138,38 @@ class AppSettingsRepository {
     await _remove(_kDashboardMenu);
   }
 
-  Future<bool> getDashboardHistoryUnlocked() async => getBool(_kDashboardHistoryUnlocked, defaultValue: false);
-  Future<void> setDashboardHistoryUnlocked(bool unlocked) async => setBool(_kDashboardHistoryUnlocked, unlocked);
+  Future<bool> getDashboardHistoryUnlocked() async =>
+      getBool(_kDashboardHistoryUnlocked, defaultValue: false);
+  Future<void> setDashboardHistoryUnlocked(bool unlocked) async =>
+      setBool(_kDashboardHistoryUnlocked, unlocked);
 
   Future<String> getTheme() async => await getString(_kTheme) ?? 'light';
   Future<void> setTheme(String theme) async => setString(_kTheme, theme);
 
-  Future<String> getSummaryTheme() async => await getString(_kSummaryTheme) ?? 'white';
-  Future<void> setSummaryTheme(String theme) async => setString(_kSummaryTheme, theme);
+  Future<String> getSummaryTheme() async =>
+      await getString(_kSummaryTheme) ?? 'white';
+  Future<void> setSummaryTheme(String theme) async =>
+      setString(_kSummaryTheme, theme);
 
   Future<InvoiceListStyle> getInvoiceListStyle() async {
     final raw = await getString(_kInvoiceListStyle);
     return InvoiceListStyleStorage.fromStorage(raw);
   }
 
-  Future<void> setInvoiceListStyle(InvoiceListStyle style) async => setString(_kInvoiceListStyle, style.storageValue);
+  Future<void> setInvoiceListStyle(InvoiceListStyle style) async =>
+      setString(_kInvoiceListStyle, style.storageValue);
 
-  Future<bool> getForceInvoiceTaxInclusiveLabels() async => getBool(_kForceInvoiceTaxInclusiveLabels, defaultValue: false);
+  Future<bool> getForceInvoiceTaxInclusiveLabels() async =>
+      getBool(_kForceInvoiceTaxInclusiveLabels, defaultValue: false);
 
-  Future<void> setForceInvoiceTaxInclusiveLabels(bool value) async => setBool(_kForceInvoiceTaxInclusiveLabels, value);
+  Future<void> setForceInvoiceTaxInclusiveLabels(bool value) async =>
+      setBool(_kForceInvoiceTaxInclusiveLabels, value);
 
-  Future<bool> getShowInvoiceTaxExceptionNote() async => getBool(_kShowInvoiceTaxExceptionNote, defaultValue: false);
+  Future<bool> getShowInvoiceTaxExceptionNote() async =>
+      getBool(_kShowInvoiceTaxExceptionNote, defaultValue: false);
 
-  Future<void> setShowInvoiceTaxExceptionNote(bool value) async => setBool(_kShowInvoiceTaxExceptionNote, value);
+  Future<void> setShowInvoiceTaxExceptionNote(bool value) async =>
+      setBool(_kShowInvoiceTaxExceptionNote, value);
 
   Future<String?> getGmailSyncBccAddress() async {
     final address = await getString(_kGmailSyncBccAddress);
@@ -157,26 +177,33 @@ class AppSettingsRepository {
     return await getString('smtp_bcc');
   }
 
-  Future<void> setGmailSyncBccAddress(String value) async => setString(_kGmailSyncBccAddress, value);
+  Future<void> setGmailSyncBccAddress(String value) async =>
+      setString(_kGmailSyncBccAddress, value);
 
-  Future<String> getGmailSyncLabelName() async => await getString(_kGmailSyncLabelName) ?? 'SalesAssist Sync';
+  Future<String> getGmailSyncLabelName() async =>
+      await getString(_kGmailSyncLabelName) ?? 'SalesAssist Sync';
 
-  Future<void> setGmailSyncLabelName(String value) async => setString(_kGmailSyncLabelName, value);
+  Future<void> setGmailSyncLabelName(String value) async =>
+      setString(_kGmailSyncLabelName, value);
 
   Future<String?> getGmailSyncLabelId() async => getString(_kGmailSyncLabelId);
 
-  Future<void> setGmailSyncLabelId(String labelId) async => setString(_kGmailSyncLabelId, labelId);
+  Future<void> setGmailSyncLabelId(String labelId) async =>
+      setString(_kGmailSyncLabelId, labelId);
 
   Future<void> clearGmailSyncLabelCache() async {
     await _remove(_kGmailSyncLabelId);
   }
 
-  Future<String?> getGmailSyncHistoryId() async => getString(_kGmailSyncHistoryId);
+  Future<String?> getGmailSyncHistoryId() async =>
+      getString(_kGmailSyncHistoryId);
 
-  Future<void> setGmailSyncHistoryId(String historyId) async => setString(_kGmailSyncHistoryId, historyId);
+  Future<void> setGmailSyncHistoryId(String historyId) async =>
+      setString(_kGmailSyncHistoryId, historyId);
 
   Future<int> nextGmailSequence() async {
-    final current = int.tryParse(await getString(_kGmailSyncSequence) ?? '0') ?? 0;
+    final current =
+        int.tryParse(await getString(_kGmailSyncSequence) ?? '0') ?? 0;
     final next = current + 1;
     await setString(_kGmailSyncSequence, next.toString());
     return next;
@@ -205,7 +232,8 @@ class AppSettingsRepository {
   }
 
   Future<String?> getString(String key) async => _getValue(key);
-  Future<void> setString(String key, String value) async => _setValue(key, value);
+  Future<void> setString(String key, String value) async =>
+      _setValue(key, value);
 
   Future<bool> getBool(String key, {bool defaultValue = false}) async {
     final v = await _getValue(key);
@@ -213,7 +241,8 @@ class AppSettingsRepository {
     return v == '1' || v.toLowerCase() == 'true';
   }
 
-  Future<void> setBool(String key, bool value) async => _setValue(key, value ? '1' : '0');
+  Future<void> setBool(String key, bool value) async =>
+      _setValue(key, value ? '1' : '0');
 
   /// DEBUG スイッチ - デバッグ機能のオン/オフ
   /// true の場合：ダッシュボードで全機能一覧を表示（メニュー制限を解除）
@@ -253,6 +282,12 @@ class AppSettingsRepository {
     await _setValue('debug_keyboard_mapping', raw);
   }
 
+  /// Google 機能のオン/オフ設定
+  Future<bool> getGoogleFeaturesEnabled() async =>
+      getBool(_kGoogleFeaturesEnabled, defaultValue: false);
+  Future<void> setGoogleFeaturesEnabled(bool enabled) async =>
+      setBool(_kGoogleFeaturesEnabled, enabled);
+
   /// ヘルパー: 存在しないキーを削除する
   Future<void> _remove(String key) async {
     if (kIsWeb) {
@@ -273,7 +308,12 @@ class AppSettingsRepository {
     }
     await _ensureTable();
     final db = await _dbHelper.database;
-    final res = await db.query('app_settings', where: 'key = ?', whereArgs: [key], limit: 1);
+    final res = await db.query(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
     if (res.isEmpty) return null;
     return res.first['value'] as String?;
   }
@@ -286,10 +326,16 @@ class AppSettingsRepository {
     }
     await _ensureTable();
     final db = await _dbHelper.database;
-    await db.insert('app_settings', {'key': key, 'value': value}, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('app_settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  List<DashboardMenuItem> _mergeMenu(List<DashboardMenuItem> defaults, List<DashboardMenuItem>? stored) {
+  List<DashboardMenuItem> _mergeMenu(
+    List<DashboardMenuItem> defaults,
+    List<DashboardMenuItem>? stored,
+  ) {
     if (stored == null || stored.isEmpty) {
       return defaults;
     }
@@ -300,11 +346,13 @@ class AppSettingsRepository {
     for (final item in stored) {
       final defaultItem = defaultMap[item.id];
       if (defaultItem != null) {
-        merged.add(defaultItem.copyWith(
-          enabled: item.enabled,
-          iconName: item.iconName ?? defaultItem.iconName,
-          customIconPath: item.customIconPath ?? defaultItem.customIconPath,
-        ));
+        merged.add(
+          defaultItem.copyWith(
+            enabled: item.enabled,
+            iconName: item.iconName ?? defaultItem.iconName,
+            customIconPath: item.customIconPath ?? defaultItem.customIconPath,
+          ),
+        );
         seen.add(item.id);
       } else {
         merged.add(item);

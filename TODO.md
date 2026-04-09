@@ -5,7 +5,13 @@
 ## 🔴 緊急・高優先度
 
 ### 進行中
-なし
+- [ ] データベースの日本語フォルダ移行完了 (2026-04-09)
+  - 関連：`lib/services/database_helper.dart`, `lib/screens/management_screen.dart`
+  - 内容:
+    - DB フォルダを `/storage/emulated/0/販売アシスト 1 号/` に変更
+    - ファイル名を `gemi_invoice.db` → `販売アシスト 1 号.db` に変更
+    - `_migrateDatabaseIfNeeded()` 実装で既存データ移行対応
+    - バックアップ機能も新パスに対応
 
 ### 未着手
 なし

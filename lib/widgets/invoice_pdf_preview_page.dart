@@ -1,17 +1,10 @@
-import 'dart:io';
-
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import '../models/invoice_models.dart';
-import '../services/app_settings_repository.dart';
 import '../services/pdf_generator.dart';
-import '../services/email_sender.dart';
-import 'bcc_email_service.dart';
 
 /// 請求書 PDF プレビューウィジェット
 ///
@@ -103,68 +96,30 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     return Uint8List.fromList(await doc.save());
   }
 
-  /// メール送信（Gmail 起動・BCC 自動追加付き）
+  /// メールで共有（share_plus を使用）
   ///
-  /// FlutterEmailSender を使用して Gmail（端末の既定メールアプリ）を起動する。
-  /// 宛先：顧客メール、BCC：S8 設定値、件名：伝票種別＋番号
+  /// share_plus を使用して端末標準の共有メニューを起動し、
+  /// ユーザーがメールアプリを選択できるようにする。
   Future<void> _shareMail(BuildContext context) async {
     try {
       final pdfBytes = await _buildPdfBytes();
       final fileName = widget.invoice.mailAttachmentFileName;
 
-      // PDF ファイルを一時的に保存
-      final tempDir = await getTemporaryDirectory();
-      final pdfFile = File('${tempDir.path}/$fileName');
-      await pdfFile.writeAsBytes(pdfBytes, flush: true);
-
-      // 請求書のハッシュを生成
-      final hash = sha256.convert(pdfBytes).toString();
-
-      // BCC アドレスを取得（S8 設定 → SQLite）
-      final bccRaw = await AppSettingsRepository().getString('smtp_bcc') ?? '';
-      final bccAddresses = EmailSender.parseBcc(bccRaw);
-
-      // 宛先メールアドレス（顧客のメール）
-      final toEmail = widget.invoice.customer.email ?? '';
-
-      if (toEmail.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('顧客のメールアドレスが設定されていません')),
-          );
-        }
-        return;
-      }
-
-      // 件名：伝票種別 + 伝票番号
-      final subject =
-          '${widget.invoice.documentTypeName}送付のご案内（${widget.invoice.invoiceNumber}）';
-
-      // Gmail（端末の既定メールアプリ）を起動
-      await BccEmailService.sendWithBcc(
-        pdfFile: pdfFile,
-        toEmail: toEmail,
-        bccAddresses: bccAddresses,
-        filename: fileName,
-        hash: hash,
-        attachmentFileName: fileName,
-        subject: subject,
-        documentTypeName: widget.invoice.documentTypeName,
-      );
+      // share_plus を使用して共有メニューを起動
+      await Printing.sharePdf(bytes: pdfBytes, filename: fileName);
 
       if (context.mounted) {
-        final bccMsg =
-            bccAddresses.isNotEmpty ? '（BCC：${bccAddresses.length}件）' : '';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('メールアプリを起動しました$bccMsg')),
+          const SnackBar(content: Text('共有メニューを起動しました。メールアプリを選択してください')),
         );
       }
     } catch (e) {
-      debugPrint('_shareMail エラー：$e');
+      if (!mounted) return;
+      debugPrint('メール共有エラー：$e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('メール起動に失敗しました：$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('共有に失敗しました')));
       }
     }
   }
@@ -260,10 +215,12 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (widget.showShare && (!isDraft || effectiveIsLocked))
+                      onPressed:
+                          (widget.showShare && (!isDraft || effectiveIsLocked))
                           ? () async {
                               final bytes = await _buildPdfBytes();
-                              final fileName = widget.invoice.mailAttachmentFileName;
+                              final fileName =
+                                  widget.invoice.mailAttachmentFileName;
                               await Printing.sharePdf(
                                 bytes: bytes,
                                 filename: fileName,
@@ -277,7 +234,8 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (widget.showEmail && (!isDraft || effectiveIsLocked))
+                      onPressed:
+                          (widget.showEmail && (!isDraft || effectiveIsLocked))
                           ? () async {
                               await _shareMail(context);
                             }
@@ -310,4 +268,3 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     );
   }
 }
-

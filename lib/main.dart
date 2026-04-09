@@ -20,10 +20,6 @@ import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
 import 'services/auto_backup_service.dart';
 import 'services/backup_progress_notifier.dart';
-import 'services/google_account_service.dart';
-import 'services/database_helper.dart';
-import 'services/drive_backup_service.dart';
-import 'screens/settings_screen.dart';
 import 'utils/build_expiry_info.dart';
 
 void main() async {
@@ -35,7 +31,6 @@ void main() async {
     return;
   }
   // 起動時に自動バックアップチェック（非同期、アプリ起動を妨げない）
-  // WebプラットフォームではGoogle Driveバックアップはスキップ
   if (!kIsWeb) {
     AutoBackupService.checkAndBackupOnStartup();
   }
@@ -110,7 +105,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _checkFirstLaunchRestore() {
-    // Webプラットフォームでは復元機能はスキップ
+    // Web プラットフォームでは復元機能はスキップ
     if (kIsWeb) return;
     Future.microtask(() async {
       final shouldOffer = await AutoBackupService.shouldOfferRestore();
@@ -127,7 +122,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context) => AlertDialog(
         title: const Text('バックアップからの復元'),
         content: const Text(
-          'Google Driveにバックアップが見つかりました。\n'
+          'Google Drive にバックアップが見つかりました。\n'
           'データを復元しますか？\n\n'
           '※現在のデータは失われます。',
         ),
@@ -149,78 +144,27 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  // Google Drive バックアップ機能は削除されました
+  // ローカルバックアップのみ利用可能です
   Future<void> _performImmediateRestore() async {
-    try {
-      if (!mounted) return;
-      
-      // プログレスダイアログを表示
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('復元中...'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              const Text('Google Driveからデータを復元しています...'),
-            ],
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('復元機能について'),
+        content: const Text(
+          'Google Drive 連携機能は削除されました。\n'
+          '代わりに、設定画面から手動でバックアップ・復元を行ってください。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
-        ),
-      );
-
-      final dbHelper = DatabaseHelper();
-      final db = await dbHelper.database;
-      final dbPath = db.path;
-
-      await db.close();
-
-      final driveService = DriveBackupService();
-      final success = await driveService.restoreLatestBackup(dbPath);
-
-      if (!mounted) return;
-      Navigator.pop(context); // プログレスダイアログを閉じる
-
-      if (!success) {
-        throw Exception('復元に失敗しました');
-      }
-
-      // 復元完了ダイアログ
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('復元完了'),
-          content: const Text('データベースを復元しました。\nアプリを再起動してください。'),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                SystemNavigator.pop();
-              },
-              child: const Text('アプリを終了'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context); // プログレスダイアログを閉じる
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('復元失敗'),
-          content: Text('復元に失敗しました：\n$e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
+        ],
+      ),
+    );
   }
 
   @override
@@ -231,7 +175,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _sendHeartbeat() {
-    if (kIsWeb) return; // Webプラットフォームではハートビートを送信しない
+    if (kIsWeb) return; // Web プラットフォームではハートビートを送信しない
     Future.microtask(() => _mothershipClient?.sendHeartbeat(widget.expiryInfo));
   }
 
@@ -407,12 +351,12 @@ class ExpiredApp extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'ビルド日時: $buildText',
+                  'ビルド日時：$buildText',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '有効期限: $expiryText',
+                  '有効期限：$expiryText',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 24),
@@ -460,38 +404,6 @@ class _HomeDeciderState extends State<_HomeDecider> {
       if (!mounted) return;
       setState(() => _mode = mode);
     });
-    if (!kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _checkGoogleAccountSetup(),
-      );
-    }
-  }
-
-  Future<void> _checkGoogleAccountSetup() async {
-    final dismissed =
-        await _settings.getString('google_setup_dismissed') == 'true';
-    if (dismissed) return;
-    final account = await GoogleAccountService.instance.recoverAccount();
-    if (account != null) return;
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => _GoogleSetupGuideDialog(
-        onSetup: () {
-          Navigator.pop(ctx);
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          );
-        },
-        onLater: () => Navigator.pop(ctx),
-        onDismissForever: () async {
-          await _settings.setString('google_setup_dismissed', 'true');
-          if (ctx.mounted) Navigator.pop(ctx);
-        },
-      ),
-    );
   }
 
   Future<void> _loadHome() async {
@@ -516,84 +428,6 @@ class _HomeDeciderState extends State<_HomeDecider> {
       return const DashboardScreen();
     }
     return const InvoiceHistoryScreen();
-  }
-}
-
-class _GoogleSetupGuideDialog extends StatelessWidget {
-  final VoidCallback onSetup;
-  final VoidCallback onLater;
-  final VoidCallback onDismissForever;
-
-  const _GoogleSetupGuideDialog({
-    required this.onSetup,
-    required this.onLater,
-    required this.onDismissForever,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      icon: const Icon(Icons.cloud_sync, size: 48, color: Colors.indigo),
-      title: const Text('Googleアカウントを連携しますか？', textAlign: TextAlign.center),
-      content: const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('連携すると以下の機能が使えます：'),
-          SizedBox(height: 12),
-          _FeatureRow(icon: Icons.backup, text: 'Google Drive へ自動バックアップ'),
-          _FeatureRow(icon: Icons.sync, text: 'Gmail でチャット同期'),
-          _FeatureRow(icon: Icons.restore, text: '機種変更時にデータを復元'),
-          SizedBox(height: 8),
-          Text(
-            '設定は後からでも変更できます',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ],
-      ),
-      actionsAlignment: MainAxisAlignment.center,
-      actions: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FilledButton.icon(
-              onPressed: onSetup,
-              icon: const Icon(Icons.account_circle),
-              label: const Text('今すぐ設定する'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(onPressed: onLater, child: const Text('後で')),
-            TextButton(
-              onPressed: onDismissForever,
-              child: const Text(
-                '今後は表示しない',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _FeatureRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _FeatureRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Colors.indigo),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
   }
 }
 
@@ -623,7 +457,7 @@ class _InvoiceFlowScreenState extends State<InvoiceFlowScreen> {
     // 入力フォーム自身が Scaffold を持つため、ここではそのまま返す
     return InvoiceInputForm(
       onInvoiceGenerated: (invoice, path) async {
-        // GPSの記録を試みる
+        // GPS の記録を試みる
         final locationService = LocationService();
         final position = await locationService.getCurrentLocation();
         if (position != null) {
