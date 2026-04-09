@@ -4,22 +4,42 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/invoice_list_style.dart';
 import '../models/sync_preferences.dart';
 import '../services/app_settings_repository.dart';
+import '../services/auto_backup_service.dart';
+import '../services/database_helper.dart';
+import '../services/drive_backup_service.dart';
+import '../services/google_account_service.dart';
 import '../services/theme_controller.dart';
-import 'screen_s8_email_settings.dart';
-import 'master_hub_page.dart';
 import 'company_info_screen.dart';
 import 'customer_master_screen.dart';
-import 'product_master_screen.dart';
 import 'dashboard_menu_settings_screen.dart';
+import 'master_hub_page.dart';
 import 'mothership_discovery_settings_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/database_helper.dart';
-import '../services/auto_backup_service.dart';
-import '../services/google_account_service.dart';
+import 'product_master_screen.dart';
+import 'screen_s8_email_settings.dart';
+
+/// バックアップ先タイプ（ローカル / Google Drive）
+enum BackupLocationType {
+  local('ローカル'),
+  googleDrive('Google Drive');
+
+  final String displayName;
+  const BackupLocationType(this.displayName);
+}
+
+/// バックアップ先選択（ローカル / Google Drive / 両方）
+enum BackupDestination {
+  localOnly('ローカルのみのバックアップ'),
+  driveOnly('Google Drive のみ'),
+  both('両方にバックアップ');
+
+  final String displayName;
+  const BackupDestination(this.displayName);
+}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,10 +60,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   SyncTransportMode _transportMode = SyncTransportMode.gmailOnly;
   bool _backingUp = false;
   String? _lastBackupTime;
+  BackupLocationType _lastBackupLocation = BackupLocationType.local;
   bool _autoBackupEnabled = false;
   bool _googleFeaturesEnabled = false;
   GoogleSignInAccount? _currentGoogleAccount;
   bool _googleAuthLoading = false;
+
+  /// バックアップ先タイプ
+  BackupDestination _backupDestination = BackupDestination.both;
+
+  /// バックアップ状況情報（表示用）
+  String _localBackupStatus = '未実施';
+  String _driveBackupStatus = '未認証';
 
   Future<void> _loadBackupSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -87,7 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _backupToGoogleDrive() async {
-    if (_backingUp) return;
+    if (_backingUp || _currentGoogleAccount == null) return;
     setState(() => _backingUp = true);
     try {
       final dbHelper = DatabaseHelper();
@@ -99,8 +127,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         throw Exception('データベースファイルが見つかりません');
       }
 
-      // Google Drive バックアップ機能は削除されました
-      throw Exception('Google Drive 連携機能は削除されました。代わりに、自動バックアップをご利用ください。');
+      // Google Drive バックアップを実行
+      final driveService = DriveBackupService();
+      await driveService.uploadDatabaseSnapshot(
+        dbFile,
+        description: '手動バックアップ - ${DateTime.now().toIso8601String()}',
+      );
+
+      if (!mounted) return;
+
+      // バックアップ状況を更新
+      await _loadBackupStatus();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Google Drive にバックアップしました'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -112,6 +156,190 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() => _backingUp = false);
       }
     }
+  }
+
+  /// 手動バックアップを実行（選択された先に応じて）
+  Future<void> _performManualBackup() async {
+    if (_backingUp) return;
+
+    // Google アカウントが必要（Drive のみまたは両方の場合）
+    if (_backupDestination != BackupDestination.localOnly &&
+        _currentGoogleAccount == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Google Drive バックアップを選択していますが、アカウントが認証されていません。'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _backingUp = true);
+
+    try {
+      switch (_backupDestination) {
+        case BackupDestination.localOnly:
+          await _performLocalBackup();
+          break;
+        case BackupDestination.driveOnly:
+          await _backupToGoogleDrive();
+          break;
+        case BackupDestination.both:
+          // 両方にバックアップ
+          final dbHelper = DatabaseHelper();
+          final db = await dbHelper.database;
+          final dbPath = db.path;
+
+          // ローカルバックアップ
+          final localService = LocalBackupService();
+          await localService.createAutoBackup(dbPath);
+
+          // Google Drive バックアップ
+          final driveService = DriveBackupService();
+          await driveService.uploadDatabaseSnapshot(
+            File(dbPath),
+            description: '手動バックアップ - ${DateTime.now().toIso8601String()}',
+          );
+
+          if (!mounted) return;
+
+          // バックアップ状況を更新
+          await _loadBackupStatus();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ ローカルと Google Drive の両方にバックアップしました'),
+              backgroundColor: Colors.green,
+            ),
+          );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ バックアップ失敗：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _backingUp = false);
+      }
+    }
+  }
+
+  /// ローカルバックアップを実行
+  Future<void> _performLocalBackup() async {
+    if (_backingUp) return;
+    setState(() => _backingUp = true);
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+
+      final localService = LocalBackupService();
+      await localService.createAutoBackup(dbPath);
+
+      if (!mounted) return;
+
+      // バックアップ状況を更新
+      await _loadBackupStatus();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ ローカルバックアップしました'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ バックアップ失敗：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _backingUp = false);
+      }
+    }
+  }
+
+  /// バックアップ状況を読み込み
+  Future<void> _loadBackupStatus() async {
+    try {
+      final dbHelper = DatabaseHelper();
+
+      // ローカルバックアップ状況
+      final localService = LocalBackupService();
+      final db = await dbHelper.database;
+      final dbPath = db.path;
+      final localBackups = await localService.getBackupList(dbPath);
+      final latestLocal = localBackups.isNotEmpty ? localBackups.first : null;
+
+      setState(() {
+        if (latestLocal != null) {
+          _localBackupStatus =
+              '${latestLocal.path.split('/').last} (${_formatDateTime(latestLocal.createdTime)})';
+        } else {
+          _localBackupStatus = '未実施';
+        }
+      });
+
+      // Google Drive バックアップ状況
+      final driveService = DriveBackupService();
+      final driveBackups = await driveService.listBackupFiles();
+      final latestDrive = driveBackups.isNotEmpty ? driveBackups.first : null;
+
+      setState(() {
+        if (latestDrive != null) {
+          _driveBackupStatus =
+              '最新：${_formatDateTime(latestDrive.modifiedTime)}';
+        } else {
+          _driveBackupStatus = '未認証';
+        }
+      });
+    } catch (e) {
+      print('[Settings] バックアップ状況の読み込みに失敗：$e');
+    }
+  }
+
+  String _formatDateTime(DateTime? dt) {
+    if (dt == null) return '不明';
+    try {
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'たった今';
+      if (diff.inHours < 1) return '${diff.inMinutes}分前';
+      if (diff.inDays < 1) return '${diff.inHours}時間前';
+      return '${dt.year}/${dt.month}/${dt.day} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return dt.toString().substring(0, 16);
+    }
+  }
+
+  /// バックアップ先を変更
+  Future<void> _setBackupDestination(BackupDestination newDestination) async {
+    final prefs = await SharedPreferences.getInstance();
+    // バックアップ先タイプを保存（'local', 'drive', 'both'）
+    await prefs.setString('backup_destination_type', newDestination.name);
+
+    setState(() => _backupDestination = newDestination);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${newDestination.displayName}に設定しました')),
+    );
+  }
+
+  /// バックアップ先を読み込み
+  Future<void> _loadBackupDestination() async {
+    final prefs = await SharedPreferences.getInstance();
+    final destinationName =
+        prefs.getString('backup_destination_type') ?? 'both';
+    setState(() {
+      _backupDestination = BackupDestination.values.firstWhere(
+        (d) => d.name == destinationName,
+        orElse: () => BackupDestination.both,
+      );
+    });
   }
 
   Future<void> _setAutoBackup(bool enabled) async {
@@ -310,6 +538,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 builder: (_) => const DashboardMenuSettingsScreen(),
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+
+          /// バックアップ状況表示
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'バックアップ状況',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.storage, size: 16, color: Colors.orange),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'ローカル：${_localBackupStatus}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_googleFeaturesEnabled) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.cloud,
+                        size: 16,
+                        color: Colors.deepPurple,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Google Drive: ${_driveBackupStatus}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('自動バックアップ'),
+            subtitle: const Text('毎日起動時に自動実行（24 時間経過後）'),
+            value: _autoBackupEnabled,
+            onChanged: _setAutoBackup,
           ),
           const Divider(indent: 16, endIndent: 16),
           Container(
@@ -610,7 +907,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: _backingUp ? null : _backupToGoogleDrive,
+                        onPressed: _backingUp ? null : _performManualBackup,
                         icon: _backingUp
                             ? const SizedBox(
                                 width: 16,
@@ -627,6 +924,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           foregroundColor: Colors.white,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _loadBackupStatus,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'バックアップ状況を更新',
+                      color: Colors.deepPurple,
                     ),
                   ],
                 ),
@@ -648,28 +952,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        '📌 自動バックアップについて',
+                        '📌 バックアップ設定',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'バックアップ先を選択:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      RadioListTile<BackupDestination>(
+                        title: const Text(
+                          'ローカルのみ',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        value: BackupDestination.localOnly,
+                        groupValue: _backupDestination,
+                        onChanged: (value) {
+                          if (value != null) _setBackupDestination(value);
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                      RadioListTile<BackupDestination>(
+                        title: const Text(
+                          'Google Drive のみ',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        value: BackupDestination.driveOnly,
+                        groupValue: _backupDestination,
+                        onChanged: (value) {
+                          if (value != null) _setBackupDestination(value);
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                      RadioListTile<BackupDestination>(
+                        title: const Text(
+                          '両方にバックアップ',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        value: BackupDestination.both,
+                        groupValue: _backupDestination,
+                        onChanged: (value) {
+                          if (value != null) _setBackupDestination(value);
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                      const SizedBox(height: 8),
                       Text(
-                        '• Google Drive 連携機能は削除されました',
+                        '• ローカルバックアップは起動時に自動実行（過去 3 件保持）',
                         style: TextStyle(fontSize: 12, color: Colors.black87),
                       ),
-                      Text(
-                        '• ローカルバックアップは起動時に即座に実行されます',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
-                      Text(
-                        '• 端末内に毎日自動バックアップ（過去 3 件保持）',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
+                      if (_googleFeaturesEnabled)
+                        Text(
+                          '• Google Drive バックアップは選択時に自動実行',
+                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                        ),
                     ],
                   ),
                 ),
@@ -703,26 +1052,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.grey),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '※Google Drive バックアップ機能は削除されました。代わりにローカルバックアップをご利用ください。',
-                          style: TextStyle(fontSize: 11, color: Colors.black87),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _resetRestoreCheck,
