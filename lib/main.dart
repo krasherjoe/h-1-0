@@ -22,6 +22,41 @@ import 'services/auto_backup_service.dart';
 import 'services/backup_progress_notifier.dart';
 import 'utils/build_expiry_info.dart';
 
+// --- バックアップ進捗状態のデータクラス ---
+/// バックアップ進捗表示用の状態管理クラス
+class BackupProgressState {
+  final String message;
+  final double progress;
+  final bool isBackingUp;
+  final int? currentFileIndex;
+  final int? totalFiles;
+  final String? fileName;
+
+  const BackupProgressState({
+    required this.message,
+    required this.progress,
+    required this.isBackingUp,
+    this.currentFileIndex,
+    this.totalFiles,
+    this.fileName,
+  });
+
+  /// 詳細メッセージを取得（ファイル名や進行度がある場合）
+  String get detailedMessage {
+    if (fileName != null || currentFileIndex != null) {
+      final parts = <String>[message];
+      if (fileName != null) {
+        parts.add('📄 $fileName');
+      }
+      if (currentFileIndex != null && totalFiles != null) {
+        parts.add('(${currentFileIndex}/${totalFiles})');
+      }
+      return parts.join(' ');
+    }
+    return message;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppThemeController.instance.load();
@@ -55,6 +90,9 @@ class _MyAppState extends State<MyApp> {
       : ChatSyncScheduler();
   late BackupProgressNotifier _backupProgressNotifier;
 
+  // バックアップ進捗表示用の状態管理
+  BackupProgressState? _backupProgressState;
+
   @override
   void initState() {
     super.initState();
@@ -66,42 +104,232 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _onBackupProgressChanged() {
+    // 非同期リスナーからの呼び出しを防止するために mounted チェック
     if (!mounted) return;
-    if (_backupProgressNotifier.isBackingUp) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
+
+    final isBackingUp = _backupProgressNotifier.isBackingUp;
+    final message = _backupProgressNotifier.currentMessage;
+    final progress = _backupProgressNotifier.progress;
+    final currentFileIndex = _backupProgressNotifier.currentFileIndex;
+    final totalFiles = _backupProgressNotifier.totalFiles;
+    final fileName = _backupProgressNotifier.fileName;
+
+    // 進捗中またはメッセージがある場合のみ状態更新
+    if (isBackingUp || message.isNotEmpty) {
+      setState(() {
+        _backupProgressState = BackupProgressState(
+          message: message,
+          progress: progress,
+          isBackingUp: isBackingUp,
+          currentFileIndex: currentFileIndex,
+          totalFiles: totalFiles,
+          fileName: fileName,
+        );
+      });
+
+      // 完了メッセージは自動的に消去されるタイマーを設定
+      if (!isBackingUp && message.isNotEmpty) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              _backupProgressState = null;
+            });
+          }
+        });
+      }
+    } else {
+      // メッセージが空の場合はクリア
+      setState(() {
+        _backupProgressState = null;
+      });
+    }
+  }
+
+  /// バックアップ進捗詳細ダイアログを表示
+  void _showBackupProgressDetails(BackupProgressState state) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              state.isBackingUp
+                  ? Icons.cloud_upload
+                  : (state.message.contains('失敗')
+                        ? Icons.error
+                        : Icons.check_circle),
+              color: state.isBackingUp
+                  ? Colors.blue
+                  : (state.message.contains('失敗') ? Colors.red : Colors.green),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                state.isBackingUp
+                    ? 'バックアップ中'
+                    : (state.message.contains('失敗')
+                          ? 'バックアップ完了（失敗）'
+                          : 'バックアップ完了'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_backupProgressNotifier.currentMessage),
+              // 詳細メッセージ（ファイル名、進行度）
+              if (state.detailedMessage.isNotEmpty) ...[
+                const Text(
+                  '詳細情報',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Text(state.detailedMessage),
+                const SizedBox(height: 16),
+              ],
+
+              // 進行状況バー（拡大表示）
+              const Text(
+                '進行状況',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
               const SizedBox(height: 8),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: _backupProgressNotifier.progress,
-                  minHeight: 4,
+                  value: state.progress,
+                  minHeight: 20,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    state.isBackingUp
+                        ? Colors.blue
+                        : (state.message.contains('失敗')
+                              ? Colors.red
+                              : Colors.green),
+                  ),
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                '${(state.progress * 100).toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              // ステータス情報
+              const SizedBox(height: 16),
+              const Text(
+                'ステータス',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: state.isBackingUp
+                      ? Colors.blue.shade50
+                      : (state.message.contains('失敗')
+                            ? Colors.red.shade50
+                            : Colors.green.shade50),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: state.isBackingUp
+                        ? Colors.blue.shade200
+                        : (state.message.contains('失敗')
+                              ? Colors.red.shade200
+                              : Colors.green.shade200),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      state.isBackingUp
+                          ? Icons.hourglass_empty
+                          : (state.message.contains('失敗')
+                                ? Icons.error_outline
+                                : Icons.check_circle_outline),
+                      color: state.isBackingUp
+                          ? Colors.blue.shade700
+                          : (state.message.contains('失敗')
+                                ? Colors.red.shade700
+                                : Colors.green.shade700),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        state.isBackingUp
+                            ? 'バックアップ処理中...'
+                            : (state.message.contains('失敗')
+                                  ? 'エラーが発生しました'
+                                  : '完了'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: state.isBackingUp
+                              ? Colors.blue.shade900
+                              : (state.message.contains('失敗')
+                                    ? Colors.red.shade900
+                                    : Colors.green.shade900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // エラー詳細（ある場合）
+              if (state.message.contains('失敗') ||
+                  state.message.contains('エラー')) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'エラー詳細',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Text(
+                    state.message,
+                    style: TextStyle(color: Colors.red.shade900),
+                  ),
+                ),
+              ],
             ],
           ),
-          duration: const Duration(seconds: 60),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.blue.shade700,
         ),
-      );
-    } else if (_backupProgressNotifier.currentMessage.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_backupProgressNotifier.currentMessage),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: _backupProgressNotifier.currentMessage.contains('失敗')
-              ? Colors.red.shade700
-              : Colors.green.shade700,
-        ),
-      );
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる'),
+          ),
+          if (!state.isBackingUp)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // 完了メッセージをクリア
+                setState(() {
+                  _backupProgressState = null;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade700,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('OK'),
+            ),
+        ],
+      ),
+    );
   }
 
   void _checkFirstLaunchRestore() {
@@ -300,11 +528,73 @@ class _MyAppState extends State<MyApp> {
         builder: (context, child) {
           // キーボード表示時のせり上がり問題を回避するため、InteractiveViewer は削除
           // ズーム機能が必要な画面のみに個別に適用する（必要に応じて）
-          return GestureDetector(
+          Widget widget = GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () => FocusScope.of(context).unfocus(),
             child: child ?? const SizedBox.shrink(),
           );
+
+          // バックアップ進捗表示
+          if (_backupProgressState != null) {
+            final state = _backupProgressState!;
+            widget = Stack(
+              children: [
+                widget,
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: GestureDetector(
+                    onTap: () => _showBackupProgressDetails(state),
+                    child: SnackBar(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  state.message,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Colors.white70,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: state.progress,
+                              minHeight: 6,
+                            ),
+                          ),
+                        ],
+                      ),
+                      duration: state.isBackingUp
+                          ? const Duration(seconds: 60)
+                          : const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: state.isBackingUp
+                          ? Colors.blue.shade700
+                          : (state.message.contains('失敗')
+                                ? Colors.red.shade700
+                                : Colors.green.shade700),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return widget;
         },
         home: const _HomeDecider(),
       ),

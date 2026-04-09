@@ -17,6 +17,14 @@
     - 設定画面に Google 機能切替スイッチ追加（オン/オフ切り替え可能）
     - データ保管場所ドキュメント作成（データ保管場所_重要.md）
 
+- [x] バックアップ進捗表示の詳細化 (2026-04-09, commit: pending)
+  - 関連：`lib/main.dart`, `lib/services/backup_progress_notifier.dart`
+  - 内容:
+    - BackupProgressNotifier にファイル進行度情報プロパティ追加（currentFileIndex, totalFiles, fileName）
+    - main.dart のバックアップ進捗表示を GestureDetector で囲み、タップで詳細ダイアログを表示
+    - 詳細ダイアログ：進行状況バー拡大表示、ステータス情報、エラー詳細（ある場合）
+    - ScaffoldMessenger エラーを状態ベースのアプローチで修正
+
 ### 未着手
 なし
 
