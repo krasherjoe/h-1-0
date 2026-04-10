@@ -106,11 +106,11 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
   /// - BCC: 設定から取得したアドレス
   /// - アタッチメント：PDF ファイル
   Future<void> _sendMail(BuildContext context) async {
-    try {
-      // メール送信サービスを作成
-      final settingsRepo = AppSettingsRepository();
-      final emailSender = InvoiceEmailSender(settingsRepo);
+    // メール送信サービスを作成
+    final settingsRepo = AppSettingsRepository();
+    final emailSender = InvoiceEmailSender(settingsRepo);
 
+    try {
       // メール送信を実行
       final result = await emailSender.sendEmail(invoice: widget.invoice);
 
