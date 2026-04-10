@@ -1150,11 +1150,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (tax > 0) ...[
-              _buildSummaryRow(
-                "小計",
-                "￥${formatAmount(subtotal)}",
-                labelColor,
-              ),
+              _buildSummaryRow("小計", "￥${formatAmount(subtotal)}", labelColor),
               Divider(color: dividerColor),
               _buildSummaryRow("消費税", "￥${formatAmount(tax)}", labelColor),
               Divider(color: dividerColor),
@@ -1240,7 +1236,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       ? ElevatedButton.icon(
                           onPressed: null,
                           icon: const Icon(Icons.lock),
-                          label: const Text("ロック中"),
+                          label: const Text("ロック済み"),
                         )
                       : (_isViewMode
                             ? ElevatedButton.icon(

@@ -676,7 +676,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 8),
                       child: Chip(
-                        label: const Text("ロック中"),
+                        label: const Text("ロック済み"),
                         avatar: const Icon(Icons.lock, size: 16),
                       ),
                     ),
