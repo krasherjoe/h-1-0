@@ -5,6 +5,7 @@ import '../models/customer_model.dart'
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 import '../models/customer_contact.dart';
+import 'hash_utils.dart';
 
 class CustomerRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -93,6 +94,29 @@ class CustomerRepository {
     return false;
   }
 
+  /// HASH チェーン計算用ヘルパーメソッド
+  Future<String> _calculateContentHash(Customer customer) async {
+    // SHA256 = ID + All Field Values + valid_from + previous_hash
+    return HashUtils.calculateCustomerHash(
+      id: customer.id!,
+      displayName: customer.displayName,
+      formalName: customer.formalName,
+      title: customer.title,
+      department: customer.department,
+      address: customer.address,
+      tel: customer.tel,
+      email: customer.email,
+      contactVersionId: customer.contactVersionId,
+      odooId: customer.odooId,
+      isLocked: customer.isLocked,
+      isHidden: customer.isHidden,
+      headChar1: customer.headChar1,
+      headChar2: customer.headChar2,
+      validFrom: customer.validFrom,
+      previousHash: customer.previousHash,
+    );
+  }
+
   Future<void> saveCustomer(Customer customer, {bool force = false}) async {
     final db = await _dbHelper.database;
 
@@ -110,9 +134,44 @@ class CustomerRepository {
     }
 
     await db.transaction((txn) async {
+      // 既存の現行レコードを非現行化（履歴化）
+      final existing = await txn.query(
+        'customers',
+        where: 'id = ? AND is_current = 1',
+        whereArgs: [customer.id],
+      );
+
+      if (existing.isNotEmpty) {
+        // 既存レコードを非現行化
+        await txn.update(
+          'customers',
+          {'is_current': 0, 'valid_to': DateTime.now().toIso8601String()},
+          where: 'id = ? AND is_current = 1',
+          whereArgs: [customer.id],
+        );
+      }
+
+      // 新しいバージョンとして INSERT（HASH チェーン計算）
+      final customerMap = customer.toMap();
+      final previousHash = existing.isNotEmpty
+          ? existing.first['content_hash']
+          : null;
+
+      // HASH 計算
+      final contentHash = await _calculateContentHash(customer);
+
+      customerMap['content_hash'] = contentHash;
+      customerMap['previous_hash'] = previousHash ?? '';
+      customerMap['is_current'] = 1;
+      final currentVersion =
+          (existing.isNotEmpty ? existing.first['version'] : 0) as int? ?? 0;
+      customerMap['version'] = currentVersion + 1;
+      customerMap['valid_from'] = DateTime.now().toIso8601String();
+      customerMap['valid_to'] = null;
+
       await txn.insert(
         'customers',
-        customer.toMap(),
+        customerMap,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
       await _upsertActiveContact(txn, customer);
@@ -122,7 +181,7 @@ class CustomerRepository {
       action: "SAVE_CUSTOMER",
       targetType: "CUSTOMER",
       targetId: customer.id,
-      details: "名称：${customer.formalName}, 敬称：${customer.title}",
+      details: "名称：${customer.formalName}, 敬称：${customer.title} (version up)",
     );
   }
 

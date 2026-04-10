@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/product_model.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
+import 'hash_utils.dart';
 
 class ProductRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -14,7 +15,9 @@ class ProductRepository {
       return [];
     }
     final db = await _dbHelper.database;
-    final String where = includeHidden ? '' : 'WHERE COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
+    final String where = includeHidden
+        ? ''
+        : 'WHERE COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT p.*, COALESCE(mh.is_hidden, p.is_hidden, 0) AS is_hidden
       FROM products p
@@ -26,13 +29,18 @@ class ProductRepository {
     return List.generate(maps.length, (i) => Product.fromMap(maps[i]));
   }
 
-  Future<List<Product>> searchProducts(String query, {bool includeHidden = false}) async {
+  Future<List<Product>> searchProducts(
+    String query, {
+    bool includeHidden = false,
+  }) async {
     if (kIsWeb) {
       return [];
     }
     final db = await _dbHelper.database;
     final args = ['%$query%', '%$query%', '%$query%'];
-    final String whereHidden = includeHidden ? '' : 'AND COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
+    final String whereHidden = includeHidden
+        ? ''
+        : 'AND COALESCE(mh.is_hidden, p.is_hidden, 0) = 0';
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT p.*, COALESCE(mh.is_hidden, p.is_hidden, 0) AS is_hidden
       FROM products p
@@ -47,20 +55,73 @@ class ProductRepository {
 
   Future<void> saveProduct(Product product) async {
     if (kIsWeb) {
-      throw UnsupportedError('Webプラットフォームでは商品保存は使用できません');
+      throw UnsupportedError('Web プラットフォームでは商品保存は使用できません');
     }
     final db = await _dbHelper.database;
-    await db.insert(
-      'products',
-      product.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    
+
+    await db.transaction((txn) async {
+      // 既存の現行レコードを非現行化（履歴化）
+      final existing = await txn.query(
+        'products',
+        where: 'id = ? AND is_current = 1',
+        whereArgs: [product.id],
+      );
+
+      if (existing.isNotEmpty) {
+        // 既存レコードを非現行化
+        await txn.update(
+          'products',
+          {'is_current': 0, 'valid_to': DateTime.now().toIso8601String()},
+          where: 'id = ? AND is_current = 1',
+          whereArgs: [product.id],
+        );
+      }
+
+      // 新しいバージョンとして INSERT（HASH チェーン計算）
+      final productMap = product.toMap();
+      final previousHash = existing.isNotEmpty
+          ? existing.first['content_hash']
+          : null;
+
+      // HASH 計算
+      final contentHash = HashUtils.calculateProductHash(
+        id: product.id!,
+        name: product.name,
+        defaultUnitPrice: product.defaultUnitPrice,
+        wholesalePrice: product.wholesalePrice,
+        barcode: product.barcode,
+        category: product.category,
+        categoryId: product.categoryId,
+        stockQuantity: product.stockQuantity,
+        odooId: product.odooId,
+        isLocked: product.isLocked,
+        isHidden: product.isHidden,
+        validFrom: product.validFrom,
+        previousHash: product.previousHash,
+      );
+
+      productMap['content_hash'] = contentHash;
+      productMap['previous_hash'] = previousHash ?? '';
+      productMap['is_current'] = 1;
+      final currentVersion =
+          (existing.isNotEmpty ? existing.first['version'] : 0) as int? ?? 0;
+      productMap['version'] = currentVersion + 1;
+      productMap['valid_from'] = DateTime.now().toIso8601String();
+      productMap['valid_to'] = null;
+
+      await txn.insert(
+        'products',
+        productMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    });
+
     await _logRepo.logAction(
       action: "SAVE_PRODUCT",
       targetType: "PRODUCT",
       targetId: product.id,
-      details: "商品名: ${product.name}, 単価: ${product.defaultUnitPrice}, カテゴリ: ${product.category ?? '未設定'}",
+      details:
+          "商品名：${product.name}, 単価：${product.defaultUnitPrice}, カテゴリ：${product.category ?? '未設定'} (version up)",
     );
   }
 
@@ -69,11 +130,7 @@ class ProductRepository {
       throw UnsupportedError('Webプラットフォームでは商品削除は使用できません');
     }
     final db = await _dbHelper.database;
-    await db.delete(
-      'products',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('products', where: 'id = ?', whereArgs: [id]);
 
     await _logRepo.logAction(
       action: "DELETE_PRODUCT",
@@ -88,15 +145,11 @@ class ProductRepository {
       throw UnsupportedError('Webプラットフォームでは非表示設定は使用できません');
     }
     final db = await _dbHelper.database;
-    await db.insert(
-      'master_hidden',
-      {
-        'master_type': 'product',
-        'master_id': id,
-        'is_hidden': hidden ? 1 : 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('master_hidden', {
+      'master_type': 'product',
+      'master_id': id,
+      'is_hidden': hidden ? 1 : 0,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
     await _logRepo.logAction(
       action: hidden ? "HIDE_PRODUCT" : "UNHIDE_PRODUCT",
       targetType: "PRODUCT",

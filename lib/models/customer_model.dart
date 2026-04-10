@@ -14,6 +14,18 @@ class DuplicateCustomerException implements Exception {
   }
 }
 
+/// 電子帳簿保存法対応 - バージョン管理フィールド
+extension CustomerVersioning on Customer {
+  /// 現在のバージョンか判定
+  bool get isCurrent => isCurrentFlag;
+
+  /// バージョンハッシュ（改ざん検出用）
+  String? get contentHashValue => contentHash;
+
+  /// 前バージョンハッシュ（チェーンリンク）
+  String? get previousHashValue => previousHash;
+}
+
 class Customer {
   final String id;
   final String displayName; // 表示用（電話帳名など）
@@ -24,13 +36,21 @@ class Customer {
   final String? tel; // 電話番号（最新連絡先）
   final String? email; // メール（最新連絡先）
   final int? contactVersionId; // 連絡先バージョン
-  final String? odooId; // Odoo側のID
+  final String? odooId; // Odoo 側の ID
   final bool isSynced; // 同期フラグ
   final DateTime updatedAt; // 最終更新日時
   final bool isLocked; // ロック
   final bool isHidden; // 非表示
-  final String? headChar1; // インデックス1
-  final String? headChar2; // インデックス2
+  final String? headChar1; // インデックス 1
+  final String? headChar2; // インデックス 2
+
+  // 電子帳簿保存法対応 - バージョン管理フィールド
+  final DateTime? validFrom; // 有効開始日
+  final DateTime? validTo; // 有効終了日（NULL = 現在有効）
+  final bool isCurrentFlag; // 現在のバージョンか
+  final int version; // バージョン番号
+  final String? contentHash; // コンテンツハッシュ（改ざん検出用）
+  final String? previousHash; // 前バージョンハッシュ（チェーンリンク）
 
   Customer({
     required this.id,
@@ -49,6 +69,12 @@ class Customer {
     this.isHidden = false,
     this.headChar1,
     this.headChar2,
+    this.validFrom,
+    this.validTo,
+    this.isCurrentFlag = true,
+    this.version = 1,
+    this.contentHash,
+    this.previousHash,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   String get invoiceName {
@@ -77,6 +103,13 @@ class Customer {
       'is_synced': isSynced ? 1 : 0,
       'is_hidden': isHidden ? 1 : 0,
       'updated_at': updatedAt.toIso8601String(),
+      // 電子帳簿保存法対応 - バージョン管理フィールド
+      'valid_from': validFrom?.toIso8601String(),
+      'valid_to': validTo?.toIso8601String(),
+      'is_current': isCurrentFlag ? 1 : 0,
+      'version': version,
+      'content_hash': contentHash,
+      'previous_hash': previousHash,
     };
   }
 
@@ -98,6 +131,15 @@ class Customer {
       updatedAt: DateTime.parse(map['updated_at']),
       headChar1: map['head_char1'],
       headChar2: map['head_char2'],
+      // 電子帳簿保存法対応 - バージョン管理フィールド
+      validFrom: map['valid_from'] != null
+          ? DateTime.parse(map['valid_from'])
+          : null,
+      validTo: map['valid_to'] != null ? DateTime.parse(map['valid_to']) : null,
+      isCurrentFlag: (map['is_current'] ?? 1) == 1,
+      version: map['version'] ?? 1,
+      contentHash: map['content_hash'],
+      previousHash: map['previous_hash'],
     );
   }
 
@@ -118,6 +160,12 @@ class Customer {
     int? contactVersionId,
     String? headChar1,
     String? headChar2,
+    DateTime? validFrom,
+    DateTime? validTo,
+    bool? isCurrentFlag,
+    int? version,
+    String? contentHash,
+    String? previousHash,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -136,6 +184,13 @@ class Customer {
       isHidden: isHidden ?? this.isHidden,
       headChar1: headChar1 ?? this.headChar1,
       headChar2: headChar2 ?? this.headChar2,
+      // 電子帳簿保存法対応 - バージョン管理フィールド
+      validFrom: validFrom ?? this.validFrom,
+      validTo: validTo ?? this.validTo,
+      isCurrentFlag: isCurrentFlag ?? this.isCurrentFlag,
+      version: version ?? this.version,
+      contentHash: contentHash ?? this.contentHash,
+      previousHash: previousHash ?? this.previousHash,
     );
   }
 }

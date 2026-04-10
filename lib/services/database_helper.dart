@@ -189,7 +189,7 @@ class LocalBackupService {
       // 現在のデータベースをクローズ
       final dbObj = await openDatabase(
         databasePath,
-        version: 43,
+        version: 44,
         readOnly: true,
       );
       await dbObj.close();
@@ -1314,6 +1314,46 @@ class DatabaseHelper {
       );
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_invoices_promised_date ON invoices(promised_date)',
+      );
+    }
+
+    // v44: 電子帳簿保存法対応 - バージョン管理と HASH チェーン追加
+    if (oldVersion < 44) {
+      // customers テーブルにバージョン管理カラムを追加
+      await _safeAddColumn(db, 'customers', 'valid_from TEXT');
+      await _safeAddColumn(db, 'customers', 'valid_to TEXT');
+      await _safeAddColumn(db, 'customers', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'customers', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'customers', 'content_hash TEXT');
+      await _safeAddColumn(db, 'customers', 'previous_hash TEXT');
+
+      // products テーブルにも同様に追加
+      await _safeAddColumn(db, 'products', 'valid_from TEXT');
+      await _safeAddColumn(db, 'products', 'valid_to TEXT');
+      await _safeAddColumn(db, 'products', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'products', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'products', 'content_hash TEXT');
+      await _safeAddColumn(db, 'products', 'previous_hash TEXT');
+
+      // 既存レコードをカレントとしてマーク（全フィールド NULL で初期化）
+      await db.execute('''
+        UPDATE customers 
+        SET is_current = 1, version = 1, valid_from = created_at, valid_to = NULL
+        WHERE is_current IS NULL
+      ''');
+
+      await db.execute('''
+        UPDATE products 
+        SET is_current = 1, version = 1, valid_from = created_at, valid_to = NULL
+        WHERE is_current IS NULL
+      ''');
+
+      // パフォーマンス最適化：インデックス追加（最新データのみ高速検索）
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_current ON customers(is_current, valid_to)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_products_current ON products(is_current, valid_to)',
       );
     }
   }
