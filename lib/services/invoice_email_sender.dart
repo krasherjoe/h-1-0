@@ -72,6 +72,15 @@ class InvoiceEmailSender {
     // アタッチメント：PDF ファイルパス（リスト形式）
     final attachmentPaths = [pdfFilePath];
 
+    // デバッグログ：メール設定を確認
+    debugPrint('===== メール送信設定 =====');
+    debugPrint('件名 (subject): $subject');
+    debugPrint('本文 (body): $body');
+    debugPrint('BCC アドレス：$bccAddress');
+    debugPrint('BCC リスト：$bcc');
+    debugPrint('PDF ファイルパス：$pdfFilePath');
+    debugPrint('=========================');
+
     return Email(
       body: body,
       subject: subject,
