@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/invoice_list_style.dart';
@@ -71,6 +72,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// バックアップ状況情報（表示用）
   String _localBackupStatus = '未実施';
   String _driveBackupStatus = '未認証';
+
+  /// アプリバージョン情報
+  String _appVersion = '';
+  String _buildNumber = '';
 
   Future<void> _loadBackupSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -491,6 +496,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     Future.microtask(() async {
+      // Google API サービスを初期化
+      GoogleAccountService().init();
+
+      // アプリバージョン情報を取得
+      await _loadAppVersion();
+
       final theme = await _repo.getTheme();
       setState(() => _theme = theme);
       final summaryTheme = await _repo.getSummaryTheme();
@@ -514,16 +525,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  /// アプリバージョン情報を取得
+  Future<void> _loadAppVersion() async {
+    try {
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = packageInfo.version;
+          _buildNumber = packageInfo.buildNumber;
+        });
+      }
+    } catch (e) {
+      print('[Settings] バージョン情報の取得に失敗：$e');
+      if (mounted) {
+        setState(() {
+          _appVersion = 'unknown';
+          _buildNumber = 'unknown';
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _statusTextController.dispose();
     super.dispose();
   }
 
+  /// バージョン情報ダイアログを表示
+  Future<void> _showVersionInfoDialog(
+    BuildContext context,
+    String value,
+  ) async {
+    if (value != 'version') return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('バージョン情報'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    'アプリバージョン',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Text('v${_appVersion} ($_buildNumber)'),
+                ),
+                if (_appVersion.isNotEmpty && _buildNumber.isNotEmpty) ...[
+                  const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      '詳細情報',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const Padding(padding: EdgeInsets.only(bottom: 4.0)),
+                  Text('バージョン：${_appVersion}'),
+                  Text('ビルド番号：${_buildNumber}'),
+                  Text('パッケージ名：h_1'),
+                ],
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('閉じる'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // バージョン文字列を生成（例：v1.5.09+154）
+    final versionTitle = 'S1:設定 v${_appVersion}($_buildNumber)';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('S1:設定')),
+      appBar: AppBar(
+        title: Text(versionTitle),
+        actions: [
+          // three-dot menu ボタン
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (String value) {
+              _showVersionInfoDialog(context, value);
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'version',
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 20),
+                    SizedBox(width: 8),
+                    Text('バージョン情報'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: ListView(
         children: [
           const Padding(padding: EdgeInsets.all(20)),
