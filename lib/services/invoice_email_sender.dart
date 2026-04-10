@@ -34,12 +34,7 @@ class InvoiceEmailSender {
   /// - 本文：[invoice.mailBodyText] を使用
   /// - BCC: 設定から取得したアドレス（未設定の場合は空）
   /// - アタッチメント：PDF ファイルを一時保存してパスを渡す
-  ///
-  /// [context] は UI 表示用のコンテキスト（エラーメッセージ表示用）
-  Future<String> sendEmail({
-    required Invoice invoice,
-    required BuildContext context,
-  }) async {
+  Future<String> sendEmail({required Invoice invoice}) async {
     try {
       // 1. PDF ファイルを一時ディレクトリに保存
       final pdfFilePath = await _savePdfToTemp(invoice);

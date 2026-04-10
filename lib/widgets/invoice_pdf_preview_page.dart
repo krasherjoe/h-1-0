@@ -112,10 +112,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
       final emailSender = InvoiceEmailSender(settingsRepo);
 
       // メール送信を実行
-      final result = await emailSender.sendEmail(
-        invoice: widget.invoice,
-        context: context,
-      );
+      final result = await emailSender.sendEmail(invoice: widget.invoice);
 
       if (!mounted) return;
 
