@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../constants/warehouse_constants.dart';
+import 'storage_permission_service.dart';
 
 /// ローカルバックアップサービス
 ///
@@ -272,6 +273,10 @@ class DatabaseHelper {
   static Future<String> _getDatabaseDirectory() async {
     if (Platform.isAndroid) {
       try {
+        // 権限を確認・取得し、バックアップディレクトリを作成
+        final storageService = StoragePermissionService();
+        await storageService.ensureBackupDirectory();
+
         // 販売アシスト 1 号専用フォルダ（日本語名）
         final dir = Directory('/storage/emulated/0/販売アシスト 1 号');
         if (!await dir.exists()) {
@@ -280,6 +285,7 @@ class DatabaseHelper {
         return dir.path;
       } catch (e) {
         debugPrint('販売アシスト 1 号フォルダへのアクセスエラー：$e');
+        // エラー時はフォールバックとして内部ストレージを使用
       }
     } else if (Platform.isIOS) {
       try {

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import '../models/invoice_models.dart';
+import '../services/app_settings_repository.dart';
+import '../services/invoice_email_sender.dart';
 import '../services/pdf_generator.dart';
 
 /// 請求書 PDF プレビューウィジェット
@@ -96,31 +98,43 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     return Uint8List.fromList(await doc.save());
   }
 
-  /// メールで共有（share_plus を使用）
+  /// メールで送信（直接メールアプリを起動）
   ///
-  /// share_plus を使用して端末標準の共有メニューを起動し、
-  /// ユーザーがメールアプリを選択できるようにする。
-  Future<void> _shareMail(BuildContext context) async {
+  /// `InvoiceEmailSender` を使用して、端末標準のメールアプリを直接起動します。
+  /// - 件名：請求書の mailTitleCore
+  /// - 本文：請求書の mailBodyText
+  /// - BCC: 設定から取得したアドレス
+  /// - アタッチメント：PDF ファイル
+  Future<void> _sendMail(BuildContext context) async {
     try {
-      final pdfBytes = await _buildPdfBytes();
-      final fileName = widget.invoice.mailAttachmentFileName;
+      // メール送信サービスを作成
+      final settingsRepo = AppSettingsRepository();
+      final emailSender = InvoiceEmailSender(settingsRepo);
 
-      // share_plus を使用して共有メニューを起動
-      await Printing.sharePdf(bytes: pdfBytes, filename: fileName);
+      // メール送信を実行
+      final result = await emailSender.sendEmail(
+        invoice: widget.invoice,
+        context: context,
+      );
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('共有メニューを起動しました。メールアプリを選択してください')),
-        );
-      }
-    } catch (e) {
       if (!mounted) return;
-      debugPrint('メール共有エラー：$e');
-      if (context.mounted) {
+
+      if (result == 'success') {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('共有に失敗しました')));
+        ).showSnackBar(const SnackBar(content: Text('メールアプリを起動しました')));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('メール送信がキャンセルされました')));
       }
+    } catch (e, stackTrace) {
+      if (!mounted) return;
+      debugPrint('メール送信エラー：$e');
+      debugPrint('スタックトレース：$stackTrace');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('メール送信に失敗しました')));
     }
   }
 
@@ -237,7 +251,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                       onPressed:
                           (widget.showEmail && (!isDraft || effectiveIsLocked))
                           ? () async {
-                              await _shareMail(context);
+                              await _sendMail(context);
                             }
                           : null,
                       icon: const Icon(Icons.mail_outline),
