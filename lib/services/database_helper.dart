@@ -1338,13 +1338,13 @@ class DatabaseHelper {
       // 既存レコードをカレントとしてマーク（全フィールド NULL で初期化）
       await db.execute('''
         UPDATE customers 
-        SET is_current = 1, version = 1, valid_from = created_at, valid_to = NULL
+        SET is_current = 1, version = 1, valid_from = updated_at, valid_to = NULL
         WHERE is_current IS NULL
       ''');
 
       await db.execute('''
         UPDATE products 
-        SET is_current = 1, version = 1, valid_from = created_at, valid_to = NULL
+        SET is_current = 1, version = 1, valid_from = updated_at, valid_to = NULL
         WHERE is_current IS NULL
       ''');
 
