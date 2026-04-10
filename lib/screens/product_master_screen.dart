@@ -12,7 +12,11 @@ class ProductMasterScreen extends StatefulWidget {
   final bool selectionMode;
   final bool showHidden;
 
-  const ProductMasterScreen({super.key, this.selectionMode = false, this.showHidden = false});
+  const ProductMasterScreen({
+    super.key,
+    this.selectionMode = false,
+    this.showHidden = false,
+  });
 
   @override
   State<ProductMasterScreen> createState() => _ProductMasterScreenState();
@@ -61,7 +65,10 @@ class ProductPreviewCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name.isEmpty ? '商品名未入力' : name, style: theme.textTheme.titleMedium),
+                      Text(
+                        name.isEmpty ? '商品名未入力' : name,
+                        style: theme.textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         category.isEmpty ? 'カテゴリ: 未分類' : 'カテゴリ: $category',
@@ -77,9 +84,18 @@ class ProductPreviewCard extends StatelessWidget {
               spacing: 16,
               runSpacing: 8,
               children: [
-                _ProductInfoChip(label: '単価', value: unitPrice.isEmpty ? '未設定' : '￥$unitPrice'),
-                _ProductInfoChip(label: '在庫', value: stockQuantity.isEmpty ? '0' : stockQuantity),
-                _ProductInfoChip(label: 'バーコード', value: barcode.isEmpty ? '未登録' : barcode),
+                _ProductInfoChip(
+                  label: '単価',
+                  value: unitPrice.isEmpty ? '未設定' : '￥$unitPrice',
+                ),
+                _ProductInfoChip(
+                  label: '在庫',
+                  value: stockQuantity.isEmpty ? '0' : stockQuantity,
+                ),
+                _ProductInfoChip(
+                  label: 'バーコード',
+                  value: barcode.isEmpty ? '未登録' : barcode,
+                ),
               ],
             ),
           ],
@@ -107,7 +123,12 @@ class _ProductInfoChip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.indigo)),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: Colors.indigo),
+          ),
           const SizedBox(height: 2),
           Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ],
@@ -135,7 +156,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
 
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
-    final products = await _productRepo.getAllProducts(includeHidden: widget.showHidden);
+    final products = await _productRepo.getAllProducts(
+      includeHidden: widget.showHidden,
+    );
     final categories = await _categoryRepo.getAllCategories();
     if (!mounted) return;
     setState(() {
@@ -151,11 +174,13 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       _filteredProducts = _products.where((p) {
         final query = _searchQuery.toLowerCase();
         return p.name.toLowerCase().contains(query) ||
-               (p.barcode?.toLowerCase().contains(query) ?? false) ||
-               (p.category?.toLowerCase().contains(query) ?? false);
+            (p.barcode?.toLowerCase().contains(query) ?? false) ||
+            (p.category?.toLowerCase().contains(query) ?? false);
       }).toList();
       if (!widget.showHidden) {
-        _filteredProducts = _filteredProducts.where((p) => !p.isHidden).toList();
+        _filteredProducts = _filteredProducts
+            .where((p) => !p.isHidden)
+            .toList();
       }
       if (widget.showHidden) {
         _filteredProducts.sort((a, b) => b.id.compareTo(a.id));
@@ -238,7 +263,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   onPressed: () async {
                     final code = await Navigator.push<String>(
                       context,
-                      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const BarcodeScannerScreen(),
+                      ),
                     );
                     if (code != null) {
                       updateValue(code);
@@ -284,8 +311,11 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       ),
       buildModel: (values) {
         final locked = product?.isLocked ?? false;
-        final newId = locked ? const Uuid().v4() : (product?.id ?? const Uuid().v4());
-        final defaultUnitPrice = int.tryParse(values['defaultUnitPrice'] ?? '') ?? 0;
+        final newId = locked
+            ? const Uuid().v4()
+            : (product?.id ?? const Uuid().v4());
+        final defaultUnitPrice =
+            int.tryParse(values['defaultUnitPrice'] ?? '') ?? 0;
         final stockQuantityStr = values['stockQuantity']?.trim();
         final barcode = values['barcode']?.trim();
         final category = values['category']?.trim();
@@ -318,7 +348,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         print('P1 商品保存エラー: $e');
         print('スタックトレース: $st');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('商品の保存に失敗しました: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('商品の保存に失敗しました: $e')));
         }
       }
     }
@@ -343,7 +375,10 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
                 contentPadding: EdgeInsets.zero,
               ),
               onChanged: (val) {
@@ -359,107 +394,142 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _filteredProducts.isEmpty
-                ? const Center(child: Text("商品が見つかりません"))
-                : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 80, top: 8),
-                    itemCount: _filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final p = _filteredProducts[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: p.isLocked ? Colors.grey.shade300 : Colors.indigo.shade100,
-                          child: Stack(
+            ? const Center(child: Text("商品が見つかりません"))
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 80, top: 8),
+                itemCount: _filteredProducts.length,
+                itemBuilder: (context, index) {
+                  final p = _filteredProducts[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: p.isLocked
+                          ? Colors.grey.shade300
+                          : Colors.indigo.shade100,
+                      child: Stack(
+                        children: [
+                          const Align(
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.inventory_2,
+                              color: Colors.indigo,
+                            ),
+                          ),
+                          if (p.isLocked)
+                            const Align(
+                              alignment: Alignment.bottomRight,
+                              child: Icon(
+                                Icons.lock,
+                                size: 14,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    title: Text(
+                      p.name + (p.isHidden ? " (非表示)" : ""),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: p.isHidden
+                            ? Colors.grey
+                            : (p.isLocked ? Colors.grey : Colors.black87),
+                      ),
+                    ),
+                    subtitle: Text(
+                      "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})",
+                    ),
+                    onTap: () {
+                      if (widget.selectionMode) {
+                        if (p.isHidden)
+                          return; // safety: do not return hidden in selection
+                        Navigator.pop(context, p);
+                      } else {
+                        _showDetailPane(p);
+                      }
+                    },
+                    onLongPress: () async {
+                      await showModalBottomSheet(
+                        context: context,
+                        builder: (ctx) => SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Align(alignment: Alignment.center, child: Icon(Icons.inventory_2, color: Colors.indigo)),
-                              if (p.isLocked)
-                                const Align(alignment: Alignment.bottomRight, child: Icon(Icons.lock, size: 14, color: Colors.redAccent)),
+                              ListTile(
+                                leading: const Icon(Icons.edit),
+                                title: const Text("編集"),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _showEditDialog(product: p);
+                                },
+                              ),
+                              if (!p.isHidden)
+                                ListTile(
+                                  leading: const Icon(Icons.visibility_off),
+                                  title: const Text("非表示にする"),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    await _productRepo.setHidden(p.id, true);
+                                    if (mounted) _loadProducts();
+                                  },
+                                ),
+                              if (!p.isLocked)
+                                ListTile(
+                                  leading: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.redAccent,
+                                  ),
+                                  title: const Text(
+                                    "削除",
+                                    style: TextStyle(color: Colors.redAccent),
+                                  ),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        title: const Text("削除の確認"),
+                                        content: Text("${p.name} を削除しますか？"),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text("キャンセル"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text(
+                                              "削除",
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirmed == true) {
+                                      await _productRepo.deleteProduct(p.id);
+                                      if (mounted) _loadProducts();
+                                    }
+                                  },
+                                ),
                             ],
                           ),
                         ),
-                        title: Text(
-                          p.name + (p.isHidden ? " (非表示)" : ""),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: p.isHidden
-                                ? Colors.grey
-                                : (p.isLocked ? Colors.grey : Colors.black87),
-                          ),
-                        ),
-                        subtitle: Text(
-                          "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})",
-                        ),
-                        onTap: () {
-                          if (widget.selectionMode) {
-                            if (p.isHidden) return; // safety: do not return hidden in selection
-                            Navigator.pop(context, p);
-                          } else {
-                            _showDetailPane(p);
-                          }
-                        },
-                        onLongPress: () async {
-                          await showModalBottomSheet(
-                            context: context,
-                            builder: (ctx) => SafeArea(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(Icons.edit),
-                                    title: const Text("編集"),
-                                    onTap: () {
-                                      Navigator.pop(ctx);
-                                      _showEditDialog(product: p);
-                                    },
-                                  ),
-                                  if (!p.isHidden)
-                                    ListTile(
-                                      leading: const Icon(Icons.visibility_off),
-                                      title: const Text("非表示にする"),
-                                      onTap: () async {
-                                        Navigator.pop(ctx);
-                                        await _productRepo.setHidden(p.id, true);
-                                        if (mounted) _loadProducts();
-                                      },
-                                    ),
-                                  if (!p.isLocked)
-                                    ListTile(
-                                      leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                      title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
-                                      onTap: () async {
-                                        Navigator.pop(ctx);
-                                        final confirmed = await showDialog<bool>(
-                                          context: context,
-                                          builder: (_) => AlertDialog(
-                                            title: const Text("削除の確認"),
-                                            content: Text("${p.name} を削除しますか？"),
-                                            actions: [
-                                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirmed == true) {
-                                          await _productRepo.deleteProduct(p.id);
-                                          if (mounted) _loadProducts();
-                                        }
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                        trailing: widget.selectionMode
-                            ? null
-                            : IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: p.isLocked ? null : () => _showEditDialog(product: p),
-                                tooltip: p.isLocked ? "ロック中" : "編集",
-                              ),
                       );
                     },
-                  ),
+                    trailing: widget.selectionMode
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _showEditDialog(product: p),
+                            tooltip: "編集（電子帳簿保存法対応：ロック中も履歴保存して編集可能）",
+                          ),
+                  );
+                },
+              ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
@@ -486,16 +556,28 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             children: [
               Row(
                 children: [
-                  Icon(p.isLocked ? Icons.lock : Icons.inventory_2, color: p.isLocked ? Colors.redAccent : Colors.indigo),
+                  Icon(
+                    p.isLocked ? Icons.lock : Icons.inventory_2,
+                    color: p.isLocked ? Colors.redAccent : Colors.indigo,
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                  Expanded(
+                    child: Text(
+                      p.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
                   Chip(label: Text(p.category ?? '未分類')),
                 ],
               ),
               const SizedBox(height: 8),
               Text("単価: ￥${p.defaultUnitPrice}"),
               Text("在庫: ${p.stockQuantity}"),
-              if (p.barcode != null && p.barcode!.isNotEmpty) Text("バーコード: ${p.barcode}"),
+              if (p.barcode != null && p.barcode!.isNotEmpty)
+                Text("バーコード: ${p.barcode}"),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -508,10 +590,58 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                     },
                   ),
                   const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.redAccent,
+                    ),
+                    label: const Text(
+                      "削除",
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("削除の確認（電子帳簿保存法）"),
+                          content: Text(
+                            "${p.name}を削除してよろしいですか？\n※電子帳簿保存法により、実際の削除は行わずに非表示フラグのみを設定します。履歴は保持されます。",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("キャンセル"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                "削除",
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (!context.mounted) return;
+                      if (confirmed == true) {
+                        await _productRepo.setHiddenProduct(p.id, true);
+                        if (!context.mounted) return;
+                        Navigator.pop(context); // sheet
+                        _loadProducts();
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
                   if (!p.isLocked)
                     OutlinedButton.icon(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                      label: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
+                      label: const Text(
+                        "削除",
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
                       onPressed: () async {
                         final confirmed = await showDialog<bool>(
                           context: context,
@@ -519,10 +649,16 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                             title: const Text("削除の確認"),
                             content: Text("${p.name}を削除してよろしいですか？"),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("キャンセル"),
+                              ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: const Text("削除", style: TextStyle(color: Colors.red)),
+                                child: const Text(
+                                  "削除",
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ),
                             ],
                           ),
@@ -539,7 +675,10 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   if (p.isLocked)
                     Padding(
                       padding: const EdgeInsets.only(left: 8),
-                      child: Chip(label: const Text("ロック中"), avatar: const Icon(Icons.lock, size: 16)),
+                      child: Chip(
+                        label: const Text("ロック中"),
+                        avatar: const Icon(Icons.lock, size: 16),
+                      ),
                     ),
                 ],
               ),

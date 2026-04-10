@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
+import 'package:crypto/crypto.dart' as crypto;
 
 /// 電子帳簿保存法対応 - HASH 計算ユーティリティ
 ///
@@ -8,9 +8,9 @@ class HashUtils {
   /// SHA256 ハッシュを計算
   ///
   /// [input] ハッシュ化したい文字列
-  static String sha256(String input) {
+  static String calculateSha256(String input) {
     final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
+    final digest = crypto.sha256.convert(bytes);
     return digest.toString();
   }
 
@@ -60,7 +60,7 @@ class HashUtils {
       previousHash ?? '',
     ].join('|');
 
-    return sha256(input);
+    return calculateSha256(input);
   }
 
   /// Product のコンテンツハッシュを計算
@@ -103,7 +103,7 @@ class HashUtils {
       previousHash ?? '',
     ].join('|');
 
-    return sha256(input);
+    return calculateSha256(input);
   }
 
   /// ハッシュチェーンを検証
@@ -116,7 +116,7 @@ class HashUtils {
     String? expectedPreviousHash,
   }) {
     // 現在入力のハッシュを再計算
-    final calculatedHash = sha256(currentInput);
+    final calculatedHash = calculateSha256(currentInput);
 
     if (calculatedHash != currentHash) {
       return false;

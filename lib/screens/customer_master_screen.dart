@@ -208,14 +208,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   }
 
   Future<void> _showContactUpdateDialog(Customer customer) async {
-    if (customer.isLocked) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('ロック中の顧客は連絡先を更新できません')));
-      }
-      return;
-    }
+    // 電子帳簿保存法対応：ロック中でも編集可能（履歴は自動保存）
     final emailController = TextEditingController(text: customer.email ?? "");
     final telController = TextEditingController(text: customer.tel ?? "");
     final addressController = TextEditingController(
@@ -659,13 +652,15 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   /// 敬称の重複を削除
   Future<void> _cleanDuplicateHonorific() async {
     try {
-      final duplicates = CustomerDataCleaner.filterDuplicateHonorific(_customers);
-      
+      final duplicates = CustomerDataCleaner.filterDuplicateHonorific(
+        _customers,
+      );
+
       if (duplicates.isEmpty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('敬称の重複がある顧客はいません')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('敬称の重複がある顧客はいません')));
         return;
       }
 
@@ -734,14 +729,18 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Future<void> _cleanHonorificFromName() async {
     try {
       final toClean = _customers
-          .where((c) => CustomerDataCleaner.removeTitleFromName(c.formalName) != c.formalName)
+          .where(
+            (c) =>
+                CustomerDataCleaner.removeTitleFromName(c.formalName) !=
+                c.formalName,
+          )
           .toList();
 
       if (toClean.isEmpty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('名前から削除する敬称がありません')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('名前から削除する敬称がありません')));
         return;
       }
 
@@ -767,11 +766,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     children: [
                       Text(
                         '${toClean[i].formalName}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '↓ ${CustomerDataCleaner.removeTitleFromName(toClean[i].formalName)}',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -846,7 +851,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final checkedIssues = issues.where((i) => selected[i.original.id] == true).toList();
+          final checkedIssues = issues
+              .where((i) => selected[i.original.id] == true)
+              .toList();
           return AlertDialog(
             title: Row(
               children: [
@@ -869,22 +876,31 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 18),
+                        Icon(
+                          Icons.warning_amber,
+                          color: Colors.orange.shade700,
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '${issues.length}件の問題を検出',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                          ),
                         ),
                         const Spacer(),
                         TextButton(
                           onPressed: () => setDialogState(() {
-                            for (final i in issues) selected[i.original.id] = true;
+                            for (final i in issues)
+                              selected[i.original.id] = true;
                           }),
                           child: const Text('全選択'),
                         ),
                         TextButton(
                           onPressed: () => setDialogState(() {
-                            for (final i in issues) selected[i.original.id] = false;
+                            for (final i in issues)
+                              selected[i.original.id] = false;
                           }),
                           child: const Text('解除'),
                         ),
@@ -905,55 +921,90 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                         final isChecked = selected[issue.original.id] ?? true;
                         return CheckboxListTile(
                           value: isChecked,
-                          onChanged: (v) => setDialogState(() =>
-                              selected[issue.original.id] = v ?? false),
+                          onChanged: (v) => setDialogState(
+                            () => selected[issue.original.id] = v ?? false,
+                          ),
                           dense: true,
                           title: Text(
                             issue.original.displayName,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (issue.fixedFormalName != issue.original.formalName)
+                              if (issue.fixedFormalName !=
+                                  issue.original.formalName)
                                 RichText(
                                   text: TextSpan(
-                                    style: const TextStyle(fontSize: 11, color: Colors.black87),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.black87,
+                                    ),
                                     children: [
-                                      const TextSpan(text: '正式: ', style: TextStyle(color: Colors.grey)),
+                                      const TextSpan(
+                                        text: '正式: ',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
                                       TextSpan(
                                         text: issue.original.formalName,
-                                        style: const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough),
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
                                       ),
                                       const TextSpan(text: ' → '),
                                       TextSpan(
                                         text: issue.fixedFormalName,
-                                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              if (issue.fixedDisplayName != issue.original.displayName)
+                              if (issue.fixedDisplayName !=
+                                  issue.original.displayName)
                                 RichText(
                                   text: TextSpan(
-                                    style: const TextStyle(fontSize: 11, color: Colors.black87),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.black87,
+                                    ),
                                     children: [
-                                      const TextSpan(text: '表示: ', style: TextStyle(color: Colors.grey)),
+                                      const TextSpan(
+                                        text: '表示: ',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
                                       TextSpan(
                                         text: issue.original.displayName,
-                                        style: const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough),
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
                                       ),
                                       const TextSpan(text: ' → '),
                                       TextSpan(
                                         text: issue.fixedDisplayName,
-                                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                               Text(
                                 '敬称: ${issue.original.title}',
-                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
@@ -966,7 +1017,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         '${checkedIssues.length}件を修正します',
-                        style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade700,
+                        ),
                       ),
                     ),
                 ],
@@ -980,7 +1034,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               ElevatedButton.icon(
                 icon: const Icon(Icons.auto_fix_high, size: 18),
                 label: Text('${checkedIssues.length}件を修正'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade700),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade700,
+                ),
                 onPressed: checkedIssues.isEmpty
                     ? null
                     : () async {
@@ -1213,10 +1269,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           ? null
                           : IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: c.isLocked
-                                  ? null
-                                  : () => _addOrEditCustomer(customer: c),
-                              tooltip: c.isLocked ? "ロック中" : "編集",
+                              onPressed: () => _addOrEditCustomer(customer: c),
+                              tooltip: "編集（電子帳簿保存法対応：ロック中も履歴保存して編集可能）",
                             ),
                       onLongPress: () => _showContextActions(c),
                     );
@@ -1287,7 +1341,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('編集'),
-              enabled: !c.isLocked,
+              enabled: true,
               onTap: () {
                 Navigator.pop(context);
                 _addOrEditCustomer(customer: c);
@@ -1296,9 +1350,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ListTile(
               leading: const Icon(Icons.contact_mail),
               title: const Text('連絡先を更新'),
-              enabled: !c.isLocked,
+              enabled: true,
               onTap: () {
-                if (c.isLocked) return;
                 Navigator.pop(context);
                 _showContactUpdateDialog(c);
               },
@@ -1322,37 +1375,37 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 '削除',
                 style: TextStyle(color: Colors.redAccent),
               ),
-              enabled: !c.isLocked,
-              onTap: c.isLocked
-                  ? null
-                  : () async {
-                      Navigator.pop(context);
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('削除確認'),
-                          content: Text('「${c.displayName}」を削除しますか？'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('キャンセル'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                '削除',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
+              enabled: true,
+              onTap: () async {
+                Navigator.pop(context);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('削除確認（電子帳簿保存法）'),
+                    content: Text(
+                      '「${c.displayName}」を削除しますか？\n※電子帳簿保存法により、実際の削除は行わずに非表示フラグのみを設定します。履歴は保持されます。',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('キャンセル'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text(
+                          '削除',
+                          style: TextStyle(color: Colors.red),
                         ),
-                      );
-                      if (confirm == true) {
-                        await _customerRepo.deleteCustomer(c.id);
-                        if (!mounted) return;
-                        _loadCustomers();
-                      }
-                    },
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await _customerRepo.setHidden(c.id, true);
+                  if (!mounted) return;
+                  _loadCustomers();
+                }
+              },
             ),
           ],
         ),

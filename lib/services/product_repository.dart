@@ -127,7 +127,7 @@ class ProductRepository {
 
   Future<void> deleteProduct(String id) async {
     if (kIsWeb) {
-      throw UnsupportedError('Webプラットフォームでは商品削除は使用できません');
+      throw UnsupportedError('Web プラットフォームでは商品削除は使用できません');
     }
     final db = await _dbHelper.database;
     await db.delete('products', where: 'id = ?', whereArgs: [id]);
@@ -137,6 +137,27 @@ class ProductRepository {
       targetType: "PRODUCT",
       targetId: id,
       details: "商品を削除しました",
+    );
+  }
+
+  /// 電子帳簿保存法対応：非表示フラグのみ設定（実際の削除は行わない）
+  Future<void> setHiddenProduct(String id, bool hidden) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Web プラットフォームでは商品非表示は使用できません');
+    }
+    final db = await _dbHelper.database;
+    // products テーブルの is_hidden フィールドを更新
+    await db.update(
+      'products',
+      {'isHidden': hidden ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    await _logRepo.logAction(
+      action: hidden ? "HIDE_PRODUCT" : "UNHIDE_PRODUCT",
+      targetType: "PRODUCT",
+      targetId: id,
+      details: hidden ? "商品を非表示にしました（電子帳簿保存法対応）" : "商品を再表示しました（電子帳簿保存法対応）",
     );
   }
 
