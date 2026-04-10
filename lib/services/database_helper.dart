@@ -247,7 +247,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 43;
+  static const _databaseVersion = 44;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -1355,6 +1355,17 @@ class DatabaseHelper {
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_products_current ON products(is_current, valid_to)',
       );
+
+      // v44.1: customer_contacts の email を customers.email から同期（migration v16 でコピーされなかったため）
+      await db.execute('''
+        UPDATE customer_contacts cc
+        SET email = (
+          SELECT c.email 
+          FROM customers c 
+          WHERE c.id = cc.customer_id AND c.is_current = 1
+        )
+        WHERE cc.is_active = 1 AND cc.email IS NULL
+      ''');
     }
   }
 
