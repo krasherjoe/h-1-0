@@ -1358,13 +1358,13 @@ class DatabaseHelper {
 
       // v44.1: customer_contacts の email を customers.email から同期（migration v16 でコピーされなかったため）
       await db.execute('''
-        UPDATE customer_contacts cc
+        UPDATE customer_contacts
         SET email = (
           SELECT c.email 
           FROM customers c 
-          WHERE c.id = cc.customer_id AND c.is_current = 1
+          WHERE c.id = customer_contacts.customer_id
         )
-        WHERE cc.is_active = 1 AND cc.email IS NULL
+        WHERE is_active = 1 AND email IS NULL
       ''');
     }
   }
