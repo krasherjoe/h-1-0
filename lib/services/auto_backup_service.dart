@@ -67,11 +67,11 @@ class AutoBackupService {
   /// 起動時の待機時間を排除するため、非同期で実行し await しない
   static void _performBackupInBackground(String dbPath, File dbFile) {
     final notifier = BackupProgressNotifier();
-    
+
     Future.microtask(() async {
       try {
         notifier.startBackup();
-        
+
         // ローカルバックアップを実行
         final localBackupService = LocalBackupService();
         notifier.updateLocalBackupProgress('ローカルバックアップを実行中...');
@@ -86,7 +86,7 @@ class AutoBackupService {
           description: 'Auto backup - ${DateTime.now().toIso8601String()}',
         );
         debugPrint('[AutoBackup] Google Drive バックアップ完了（バックグラウンド）');
-        
+
         notifier.completeBackup();
       } catch (e) {
         // エラーは無視（ユーザーに通知しない、起動を妨げない）
@@ -138,12 +138,12 @@ class AutoBackupService {
       debugPrint('[Restore Check] Google Drive のバックアップを検索中...');
       final driveService = DriveBackupService();
       final backups = await driveService.listBackupFiles();
-      
+
       debugPrint('[Restore Check] バックアップファイル数: ${backups.length}');
       for (final backup in backups) {
         debugPrint('[Restore Check] - ${backup.name} (ID: ${backup.id})');
       }
-      
+
       final hasBackup = backups.any((f) => f.name?.endsWith('.db') ?? false);
       debugPrint('[Restore Check] DB バックアップ存在: $hasBackup');
 

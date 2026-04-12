@@ -22,6 +22,7 @@ import 'master_hub_page.dart';
 import 'mothership_discovery_settings_screen.dart';
 import 'product_master_screen.dart';
 import 'screen_s8_email_settings.dart';
+import 'db_debug_screen.dart' show DatabaseDebugScreen;
 
 /// バックアップ先タイプ（ローカル / Google Drive）
 enum BackupLocationType {
@@ -992,6 +993,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const ScreenS8EmailSettings(),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: Icon(Icons.storage, color: Colors.red),
+                  title: const Text('DB デバッグ画面'),
+                  subtitle: const Text('SQLite テーブルスキーマ確認・データ照会'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DatabaseDebugScreen(),
                     ),
                   ),
                 ),
