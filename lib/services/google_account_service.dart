@@ -38,7 +38,8 @@ class GoogleAccountService extends GoogleApiServiceBase {
   }
 
   /// Google アカウントにログイン
-  Future<bool> signIn() async {
+  /// [forceAccountPicker] true の場合、アカウント選択画面を強制表示（複数アカウント対応）
+  Future<bool> signIn({bool forceAccountPicker = true}) async {
     try {
       debugPrint('[GoogleAccount] ログイン開始');
 
@@ -50,11 +51,17 @@ class GoogleAccountService extends GoogleApiServiceBase {
       // 既にログインしている場合は確認
       final currentUser = _googleSignIn.currentUser;
       if (currentUser != null) {
-        debugPrint('[GoogleAccount] 既にログイン済み');
-        return true;
+        // 強制選択モード：サインアウトして選択画面を表示
+        if (forceAccountPicker) {
+          debugPrint('[GoogleAccount] アカウント選択画面を強制表示');
+          await _googleSignIn.signOut();
+        } else {
+          debugPrint('[GoogleAccount] 既にログイン済み');
+          return true;
+        }
       }
 
-      // Google ログイン実行
+      // Google ログイン実行（複数アカウントがある場合は選択画面が表示される）
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
