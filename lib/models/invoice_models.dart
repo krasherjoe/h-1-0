@@ -249,7 +249,7 @@ class Invoice {
     return _sanitizeForFile(raw);
   }
 
-  String get mailAttachmentFileName => '$mailTitleCore.PDF';
+  String get mailAttachmentFileName => '$mailTitleCore.pdf';
 
   String get mailBodyText => '請求書をお送りします。ご確認ください。';
 
