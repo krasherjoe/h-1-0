@@ -105,6 +105,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final List<_DetailSnapshot> _redoStack = [];
   bool _isApplyingSnapshot = false;
   bool _summaryIsBlue = false; // デフォルトは白
+  bool _titleBarFlash = false; // タイトルバータップエフェクト用
+  bool _showCopyBadge = false; // コピーボタンエフェクト用
   final EditLogRepository _editLogRepo = EditLogRepository();
 
   String _documentTypeLabel(DocumentType type) {
@@ -290,10 +292,26 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       appBar: AppBar(
         leading: const BackButton(), // 常に表示
         title: GestureDetector(
-          onTap: _showDocumentTypeChangeDialog,
-          child: Text(
-            "A3: ${_documentTypeLabel(_currentInvoice.documentType)}",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          onTap: () async {
+            // タップエフェクト
+            setState(() => _titleBarFlash = true);
+            await Future.delayed(const Duration(milliseconds: 150));
+            setState(() => _titleBarFlash = false);
+            _showDocumentTypeChangeDialog();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _titleBarFlash
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              "A3: ${_documentTypeLabel(_currentInvoice.documentType)}",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
         backgroundColor: Colors.indigo.shade700,
@@ -318,9 +336,23 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             ),
             if (widget.isUnlocked && !locked)
               IconButton(
-                icon: const Icon(Icons.copy),
+                icon: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: EdgeInsets.all(_showCopyBadge ? 4 : 0),
+                  decoration: BoxDecoration(
+                    color: _showCopyBadge
+                        ? Colors.white.withValues(alpha: 0.4)
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.copy),
+                ),
                 tooltip: "コピーして新規作成",
                 onPressed: () async {
+                  // コピーエフェクト
+                  setState(() => _showCopyBadge = true);
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  setState(() => _showCopyBadge = false);
                   // 複製元の伝票にも編集ログを記録
                   final editLogRepo = EditLogRepository();
                   await editLogRepo.addLog(_currentInvoice.id!, "伝票をコピーしました");
@@ -332,7 +364,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   String? newSubject;
                   if (_currentInvoice.subject != null &&
                       _currentInvoice.subject!.isNotEmpty) {
-                    newSubject = '【複写】${_currentInvoice.subject}';
+                    newSubject = '[複写]${_currentInvoice.subject}';
                   }
 
                   final duplicateInvoice = _currentInvoice.copyWith(

@@ -79,6 +79,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final AppSettingsRepository _settingsRepo = AppSettingsRepository();
   bool _showNewBadge = false;
   bool _showCopyBadge = false;
+  bool _titleBarFlash = false; // タイトルバータップエフェクト用
   final EditLogRepository _editLogRepo = EditLogRepository();
   List<EditLogEntry> _editLogs = [];
   final FocusNode _subjectFocusNode = FocusNode();
@@ -222,7 +223,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final clonedItems = _cloneItems(_items, resetIds: true);
     // 案件名に「複写」接頭辞を追加
     final originalSubject = _subjectController.text;
-    final newSubject = originalSubject.isNotEmpty ? '【複写】$originalSubject' : '';
+    final newSubject = originalSubject.isNotEmpty ? '[複写]$originalSubject' : '';
 
     setState(() {
       _currentId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -588,8 +589,26 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         backgroundColor: docColor,
         leading: const BackButton(),
         title: GestureDetector(
-          onTap: _isDraft && !_isLocked ? _showDocumentTypeChangeDialog : null,
-          child: Text("A1:${_documentTypeLabel(_documentType)}"),
+          onTap: _isDraft && !_isLocked
+              ? () async {
+                  // タップエフェクト
+                  setState(() => _titleBarFlash = true);
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  setState(() => _titleBarFlash = false);
+                  _showDocumentTypeChangeDialog();
+                }
+              : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _titleBarFlash
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text("A1:${_documentTypeLabel(_documentType)}"),
+          ),
         ),
         actions: [
           if (_isDraft)
@@ -598,9 +617,25 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               child: _DraftBadge(),
             ),
           IconButton(
-            icon: const Icon(Icons.copy),
+            icon: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.all(_showCopyBadge ? 4 : 0),
+              decoration: BoxDecoration(
+                color: _showCopyBadge
+                    ? Colors.white.withValues(alpha: 0.4)
+                    : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.copy),
+            ),
             tooltip: "コピーして新規",
-            onPressed: _copyAsNew,
+            onPressed: () async {
+              // コピーエフェクト
+              setState(() => _showCopyBadge = true);
+              await Future.delayed(const Duration(milliseconds: 300));
+              setState(() => _showCopyBadge = false);
+              _copyAsNew();
+            },
           ),
           if (_isLocked)
             const Padding(
