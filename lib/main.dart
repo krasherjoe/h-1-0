@@ -544,49 +544,53 @@ class _MyAppState extends State<MyApp> {
                   left: 16,
                   right: 16,
                   bottom: 16,
-                  child: GestureDetector(
-                    onTap: () => _showBackupProgressDetails(state),
-                    child: SnackBar(
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  state.message,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showBackupProgressDetails(state),
+                      borderRadius: BorderRadius.circular(8),
+                      child: SnackBar(
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    state.message,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Icon(
-                                Icons.info_outline,
-                                size: 18,
-                                color: Colors.white70,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: state.progress,
-                              minHeight: 6,
+                                Icon(
+                                  Icons.info_outline,
+                                  size: 18,
+                                  color: Colors.white70,
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: state.progress,
+                                minHeight: 6,
+                              ),
+                            ),
+                          ],
+                        ),
+                        duration: state.isBackingUp
+                            ? const Duration(seconds: 60)
+                            : const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: state.isBackingUp
+                            ? Colors.blue.shade700
+                            : (state.message.contains('失敗')
+                                  ? Colors.red.shade700
+                                  : Colors.green.shade700),
                       ),
-                      duration: state.isBackingUp
-                          ? const Duration(seconds: 60)
-                          : const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: state.isBackingUp
-                          ? Colors.blue.shade700
-                          : (state.message.contains('失敗')
-                                ? Colors.red.shade700
-                                : Colors.green.shade700),
                     ),
                   ),
                 ),
