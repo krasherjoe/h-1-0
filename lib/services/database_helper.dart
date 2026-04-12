@@ -189,7 +189,7 @@ class LocalBackupService {
       // 現在のデータベースをクローズ
       final dbObj = await openDatabase(
         databasePath,
-        version: 44,
+        version: 45,
         readOnly: true,
       );
       await dbObj.close();
@@ -247,7 +247,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 44;
+  static const _databaseVersion = 45;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -1365,6 +1365,37 @@ class DatabaseHelper {
           WHERE c.id = customer_contacts.customer_id
         )
         WHERE is_active = 1 AND email IS NULL
+      ''');
+    }
+    if (oldVersion < 45) {
+      // v45: v44 カラムが未適用の場合に備えた修復マイグレーション
+      await _safeAddColumn(db, 'customers', 'valid_from TEXT');
+      await _safeAddColumn(db, 'customers', 'valid_to TEXT');
+      await _safeAddColumn(db, 'customers', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'customers', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'customers', 'content_hash TEXT');
+      await _safeAddColumn(db, 'customers', 'previous_hash TEXT');
+      await _safeAddColumn(db, 'products', 'valid_from TEXT');
+      await _safeAddColumn(db, 'products', 'valid_to TEXT');
+      await _safeAddColumn(db, 'products', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'products', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'products', 'content_hash TEXT');
+      await _safeAddColumn(db, 'products', 'previous_hash TEXT');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_customers_current ON customers(is_current, valid_to)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_products_current ON products(is_current, valid_to)',
+      );
+      await db.execute('''
+        UPDATE customers 
+        SET is_current = 1, version = 1, valid_from = updated_at, valid_to = NULL
+        WHERE is_current IS NULL
+      ''');
+      await db.execute('''
+        UPDATE products 
+        SET is_current = 1, version = 1, valid_from = datetime('now'), valid_to = NULL
+        WHERE is_current IS NULL
       ''');
     }
   }
