@@ -374,25 +374,9 @@ Future<String?> generateInvoicePdf(Invoice invoice) async {
   try {
     final pdf = await buildInvoiceDocument(invoice);
 
-    final String hash = invoice.contentHash;
-    final String dateStr = DateFormat('yyyyMMdd').format(invoice.date);
-    final String amountStr = NumberFormat("#,###").format(invoice.totalAmount);
-    // {日付}({タイプ}){顧客名}_{案件}_{金額}_{HASH下8桁}.pdf
-    // 顧客名から敬称を除去
-    String safeCustomerName = invoice.customerNameForDisplay
-      .replaceAll('株式会社', '')
-      .replaceAll('（株）', '')
-      .replaceAll('(株)', '')
-      .replaceAll('有限会社', '')
-      .replaceAll('（有）', '')
-      .replaceAll('(有)', '')
-      .replaceAll('合同会社', '')
-      .replaceAll('（同）', '')
-      .replaceAll('(同)', '')
-      .trim();
-
-    final suffix = (invoice.subject?.isNotEmpty ?? false) ? "_${invoice.subject}" : "";
-    final String fileName = "$dateStr(${invoice.documentTypeName})$safeCustomerName${suffix}_$amountStr円_$hash.pdf";
+    // メール添付用ルールに統一
+    // {日付}({短縮タイプ}){案件}@{顧客名}_{金額}円.pdf
+    final String fileName = invoice.mailAttachmentFileName;
 
     final directory = await getExternalStorageDirectory();
     if (directory == null) return null;
