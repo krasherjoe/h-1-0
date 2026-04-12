@@ -27,6 +27,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
 
   // 初期化メソッド（ランチャーから呼び出し）
   void init() {
+    if (_isInitialized) return; // 既に初期化済みの場合はスキップ
     _googleSignIn = GoogleSignIn(
       scopes: [
         'email',
@@ -206,7 +207,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
   Future<GoogleSignInAccount?> getCurrentAccount() async {
     // 既にログインしている場合は確認
     try {
-      if (_googleSignIn == null) {
+      if (!_isInitialized) {
         init();
       }
       return _googleSignIn.currentUser;
