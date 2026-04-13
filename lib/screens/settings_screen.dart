@@ -121,9 +121,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _backupToGoogleDrive() async {
-    if (_backingUp || _currentGoogleAccount == null) return;
+    debugPrint('[Settings] _backupToGoogleDrive() 開始');
+    if (_backingUp) {
+      debugPrint('[Settings] 既にバックアップ中のためスキップ');
+      return;
+    }
+    if (_currentGoogleAccount == null) {
+      debugPrint('[Settings] Googleアカウント未サインインのためスキップ');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Google アカウントにサインインしてください'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
     setState(() => _backingUp = true);
     try {
+      debugPrint('[Settings] データベースパスを取得');
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
       final dbPath = db.path;
@@ -132,13 +149,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!await dbFile.exists()) {
         throw Exception('データベースファイルが見つかりません');
       }
+      debugPrint('[Settings] DBファイル確認: ${dbFile.path}');
 
       // Google Drive バックアップを実行
+      debugPrint('[Settings] DriveBackupService.uploadDatabaseSnapshot() 呼び出し');
       final driveService = DriveBackupService();
       await driveService.uploadDatabaseSnapshot(
         dbFile,
         description: '手動バックアップ - ${DateTime.now().toIso8601String()}',
       );
+      debugPrint('[Settings] アップロード完了');
 
       if (!mounted) return;
 
