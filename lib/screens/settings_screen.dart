@@ -23,6 +23,7 @@ import 'mothership_discovery_settings_screen.dart';
 import 'product_master_screen.dart';
 import 'screen_s8_email_settings.dart';
 import 'db_debug_screen.dart' show DatabaseDebugScreen;
+import 'drive_backup_screen.dart';
 
 /// バックアップ先タイプ（ローカル / Google Drive）
 enum BackupLocationType {
@@ -718,6 +719,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           'Google Drive: ${_driveBackupStatus}',
                           style: const TextStyle(fontSize: 13),
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DriveBackupScreen(),
+                          ),
+                        ),
+                        tooltip: 'Google Drive バックアップ管理',
                       ),
                     ],
                   ),
