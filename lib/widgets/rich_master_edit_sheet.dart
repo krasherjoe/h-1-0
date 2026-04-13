@@ -175,32 +175,47 @@ class _RichMasterEditDialogState<T>
 
     final label = field.required ? '${field.label} *' : field.label;
 
-    return TextField(
-      controller: textController,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: field.hint,
-        suffixIcon: suffix,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
-        ),
-        counterText: field.maxLength != null ? '' : null,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      keyboardType: field.keyboardType,
-      maxLines: field.maxLines,
-      maxLength: field.maxLength,
-      onChanged: (value) {
-        controller.updateValue(field.key, value.trim(), refresh: false);
-        setState(() {});
-      },
+      child: TextField(
+        controller: textController,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: field.hint,
+          suffixIcon: suffix,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
+          ),
+          counterText: field.maxLength != null ? '' : null,
+        ),
+        keyboardType: field.keyboardType,
+        maxLines: field.maxLines,
+        maxLength: field.maxLength,
+        onChanged: (value) {
+          controller.updateValue(field.key, value.trim(), refresh: false);
+          setState(() {});
+        },
+      ),
     );
   }
 
@@ -209,8 +224,8 @@ class _RichMasterEditDialogState<T>
     RichMasterEditController controller,
   ) {
     return Card(
-      elevation: 1,
-      color: Colors.grey.shade100,
+      elevation: 2,
+      color: Colors.grey.shade200,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
