@@ -318,6 +318,7 @@ class _RichMasterEditDialogState<T>
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
+      backgroundColor: Colors.white.withOpacity(0.85),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: SizedBox(
