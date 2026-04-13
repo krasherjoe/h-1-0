@@ -149,14 +149,12 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
             label: '表示名（略称）',
             hint: '例: 佐々木製作所',
             required: true,
-            flex: 2,
           ),
           MasterFieldConfig(
             key: 'formalName',
             label: '正式名称',
             hint: '例: 株式会社 佐々木製作所',
             required: true,
-            flex: 2,
           ),
         ],
         accessories: [
@@ -263,14 +261,12 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
             label: '支払条件',
             hint: '例: 月末締め翌月末払い',
             maxLines: 2,
-            flex: 2,
           ),
           MasterFieldConfig(
             key: 'bankAccount',
             label: '銀行口座',
             hint: '例: ○○銀行 △△支店 普通 1234567',
             maxLines: 2,
-            flex: 2,
           ),
           MasterFieldConfig(
             key: 'closingDay',
