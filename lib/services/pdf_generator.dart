@@ -54,7 +54,7 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
               if (sealImage != null)
                 pw.Positioned(
                   right: 10,
-                  top: 10,
+                  top: 50,
                   child: pw.Image(sealImage!, width: 100, height: 100),
                 ),
               if (!invoice.isDraft) pw.SizedBox(),
