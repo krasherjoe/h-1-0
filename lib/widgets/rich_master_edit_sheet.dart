@@ -69,10 +69,8 @@ Future<T?> showRichMasterEditSheet<T>({
   FutureOr<String?> Function(Map<String, String> values)? onValidate,
   List<RichAccessoryBuilder> headerActions = const [],
   PreviewBuilder? previewBuilder,
-  // 色指定パラメータ（各パーツの識別・透明度調整用）
-  Color? headerColor,
-  Color? contentColor,
-  Color? footerColor,
+  // 色指定パラメータ（全体の背景色制御用）
+  Color? backgroundColor,
 }) async {
   return showDialog<T>(
     context: context,
@@ -89,9 +87,7 @@ Future<T?> showRichMasterEditSheet<T>({
       onValidate: onValidate,
       headerActions: headerActions,
       previewBuilder: previewBuilder,
-      headerColor: headerColor,
-      contentColor: contentColor,
-      footerColor: footerColor,
+      backgroundColor: backgroundColor,
     ),
   );
 }
@@ -107,9 +103,7 @@ class _RichMasterEditDialog<T> extends StatefulWidget {
   final FutureOr<String?> Function(Map<String, String> values)? onValidate;
   final List<RichAccessoryBuilder> headerActions;
   final PreviewBuilder? previewBuilder;
-  final Color? headerColor;
-  final Color? contentColor;
-  final Color? footerColor;
+  final Color? backgroundColor;
 
   const _RichMasterEditDialog({
     required this.dialogContext,
@@ -122,9 +116,7 @@ class _RichMasterEditDialog<T> extends StatefulWidget {
     this.onValidate,
     this.headerActions = const [],
     this.previewBuilder,
-    this.headerColor,
-    this.contentColor,
-    this.footerColor,
+    this.backgroundColor,
   });
 
   @override
@@ -331,17 +323,16 @@ class _RichMasterEditDialogState<T>
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
+      backgroundColor: widget.backgroundColor,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: SizedBox(
           width: maxWidth,
           child: Column(
             children: [
-              ColoredBox(
-                color: widget.headerColor ?? Colors.transparent,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-                  child: Row(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -374,57 +365,50 @@ class _RichMasterEditDialogState<T>
                       ),
                   ],
                 ),
-                ),
               ),
               const Divider(height: 1),
-              ColoredBox(
-                color: widget.contentColor ?? Colors.transparent,
-                child: Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
-                    child: Column(
-                      children: [
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: sectionCards
-                              .map((card) => SizedBox(
-                                    width: maxWidth > 960
-                                        ? (maxWidth - 16) / 2
-                                        : maxWidth,
-                                    child: card,
-                                  ))
-                              .toList(),
-                        ),
-                        if (widget.previewBuilder != null) ...[
-                          const SizedBox(height: 16),
-                          widget.previewBuilder!(context, richController),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              ColoredBox(
-                color: widget.footerColor ?? Colors.transparent,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
+                  child: Column(
                     children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('キャンセル'),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: sectionCards
+                            .map((card) => SizedBox(
+                                  width: maxWidth > 960
+                                      ? (maxWidth - 16) / 2
+                                      : maxWidth,
+                                  child: card,
+                                ))
+                            .toList(),
                       ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('保存'),
-                        onPressed: () => _handleSave(richController),
-                      ),
+                      if (widget.previewBuilder != null) ...[
+                        const SizedBox(height: 16),
+                        widget.previewBuilder!(context, richController),
+                      ],
                     ],
                   ),
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('キャンセル'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text('保存'),
+                      onPressed: () => _handleSave(richController),
+                    ),
+                  ],
                 ),
               ),
             ],

@@ -337,10 +337,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           isLocked: false,
         );
       },
-      // 色指定パラメータ（各パーツの識別・透明度調整用）
-      headerColor: Colors.red.withOpacity(0.3),  // ヘッダーを赤で識別
-      contentColor: Colors.blue.withOpacity(0.3), // コンテンツを青で識別
-      footerColor: Colors.white.withOpacity(0.8), // フッターを透明にして隠れた部分が見えるように
+      // 色指定パラメータ（全体の背景色制御用）
+      backgroundColor: Colors.white.withOpacity(0.85), // 全体を透明にして隠れた部分が見えるように
     );
 
     if (result != null) {
