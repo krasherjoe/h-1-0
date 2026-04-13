@@ -69,8 +69,8 @@ Future<T?> showRichMasterEditSheet<T>({
   FutureOr<String?> Function(Map<String, String> values)? onValidate,
   List<RichAccessoryBuilder> headerActions = const [],
   PreviewBuilder? previewBuilder,
-  // 色指定パラメータ（全体の背景色制御用）
-  Color? backgroundColor,
+  // フッター（キャンセル/保存ボタン）の背景色（透明度設定用）
+  Color? footerColor,
 }) async {
   return showDialog<T>(
     context: context,
@@ -87,7 +87,7 @@ Future<T?> showRichMasterEditSheet<T>({
       onValidate: onValidate,
       headerActions: headerActions,
       previewBuilder: previewBuilder,
-      backgroundColor: backgroundColor,
+      footerColor: footerColor,
     ),
   );
 }
@@ -103,7 +103,7 @@ class _RichMasterEditDialog<T> extends StatefulWidget {
   final FutureOr<String?> Function(Map<String, String> values)? onValidate;
   final List<RichAccessoryBuilder> headerActions;
   final PreviewBuilder? previewBuilder;
-  final Color? backgroundColor;
+  final Color? footerColor;
 
   const _RichMasterEditDialog({
     required this.dialogContext,
@@ -116,7 +116,7 @@ class _RichMasterEditDialog<T> extends StatefulWidget {
     this.onValidate,
     this.headerActions = const [],
     this.previewBuilder,
-    this.backgroundColor,
+    this.footerColor,
   });
 
   @override
@@ -323,7 +323,6 @@ class _RichMasterEditDialogState<T>
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
-      backgroundColor: widget.backgroundColor,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: SizedBox(
@@ -368,45 +367,54 @@ class _RichMasterEditDialogState<T>
               ),
               const Divider(height: 1),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
-                  child: Column(
-                    children: [
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: sectionCards
-                            .map((card) => SizedBox(
-                                  width: maxWidth > 960
-                                      ? (maxWidth - 16) / 2
-                                      : maxWidth,
-                                  child: card,
-                                ))
-                            .toList(),
-                      ),
-                      if (widget.previewBuilder != null) ...[
-                        const SizedBox(height: 16),
-                        widget.previewBuilder!(context, richController),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Stack(
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('キャンセル'),
+                    SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 72 + keyboardInset),
+                      child: Column(
+                        children: [
+                          Wrap(
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: sectionCards
+                                .map((card) => SizedBox(
+                                      width: maxWidth > 960
+                                          ? (maxWidth - 16) / 2
+                                          : maxWidth,
+                                      child: card,
+                                    ))
+                                .toList(),
+                          ),
+                          if (widget.previewBuilder != null) ...[
+                            const SizedBox(height: 16),
+                            widget.previewBuilder!(context, richController),
+                          ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: () => _handleSave(richController),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        color: widget.footerColor ?? Theme.of(context).dialogBackgroundColor,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('キャンセル'),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.save),
+                              label: const Text('保存'),
+                              onPressed: () => _handleSave(richController),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

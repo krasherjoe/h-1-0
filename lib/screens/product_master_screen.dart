@@ -337,8 +337,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           isLocked: false,
         );
       },
-      // 色指定パラメータ（全体の背景色制御用）
-      backgroundColor: Colors.white.withOpacity(0.85), // 全体を透明にして隠れた部分が見えるように
+      // フッター透明度設定（キャンセル/保存ボタンの後ろのコンテンツが見えるように）
+      footerColor: Colors.white.withOpacity(0.3),
     );
 
     if (result != null) {
