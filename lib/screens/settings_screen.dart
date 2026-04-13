@@ -158,9 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _setGoogleFeaturesEnabled(bool enabled) async {
-    debugPrint('[S1] Google連携設定を変更: $enabled');
     await _repo.setGoogleFeaturesEnabled(enabled);
-    debugPrint('[S1] Google連携設定を保存完了: $enabled');
     setState(() => _googleFeaturesEnabled = enabled);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
