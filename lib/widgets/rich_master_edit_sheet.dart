@@ -259,15 +259,6 @@ class _RichMasterEditDialogState<T>
               ));
             }
 
-            for (final accessory in section.accessories) {
-              children.add(SizedBox(
-                width: fullWidth,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: accessory(context, controller),
-                ),
-              ));
-            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,6 +277,15 @@ class _RichMasterEditDialogState<T>
                 ),
                 const SizedBox(height: 16),
                 Wrap(spacing: gap, runSpacing: gap, children: children),
+                if (section.accessories.isNotEmpty)
+                  Column(
+                    children: section.accessories
+                        .map((accessory) => Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: accessory(context, controller),
+                            ))
+                        .toList(),
+                  ),
               ],
             );
           },
