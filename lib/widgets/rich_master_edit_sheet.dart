@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -396,23 +397,28 @@ class _RichMasterEditDialogState<T>
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      child: Container(
-                        color: widget.footerColor ?? Theme.of(context).dialogBackgroundColor,
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('キャンセル'),
+                      child: ClipRect(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            color: Colors.white.withOpacity(0.45),
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('キャンセル'),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.save),
+                                  label: const Text('保存'),
+                                  onPressed: () => _handleSave(richController),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.save),
-                              label: const Text('保存'),
-                              onPressed: () => _handleSave(richController),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
