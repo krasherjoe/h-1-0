@@ -13,6 +13,7 @@ import 'sales_report_screen.dart';
 import 'gps_history_screen.dart';
 import 'camera_delivery_photo_screen.dart';
 import 'fast_search_screen.dart';
+import 'restore_screen.dart';
 
 class ManagementScreen extends StatefulWidget {
   const ManagementScreen({super.key});
@@ -109,7 +110,10 @@ class _ManagementScreenState extends State<ManagementScreen> {
             Icons.settings_backup_restore,
             "データベース・リストア",
             "バックアップから全てのデータを復元します",
-            () => _restoreDatabase(context),
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RestoreScreen()),
+            ),
           ),
           _buildMenuTile(
             context,
@@ -251,26 +255,6 @@ class _ManagementScreenState extends State<ManagementScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("閉じる"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _restoreDatabase(BuildContext context) async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("データベース・リストア"),
-        content: const Text("バックアップファイル(.db)を選択して上書き復元します。現在のデータは失われます。"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("キャンセル"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("ファイル選択", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

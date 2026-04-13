@@ -266,6 +266,12 @@ class DatabaseHelper {
     return _database!;
   }
 
+  /// データベースファイルパスを取得
+  Future<String> getDatabasePath() async {
+    final dbDir = await _getDatabaseDirectory();
+    return path.join(dbDir, '販売アシスト 1 号.db');
+  }
+
   /// データベース保存ディレクトリを取得（販売アシスト 1 号専用フォルダ）
   /// 再インストール時にもデータを保護するために、システム固有のフォルダを使用
   /// Android: /storage/emulated/0/販売アシスト 1 号/
