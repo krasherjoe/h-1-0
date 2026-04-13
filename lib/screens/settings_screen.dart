@@ -128,7 +128,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadBackupSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final autoBackup = prefs.getBool('auto_backup_enabled') ?? false;
-    final googleFeaturesEnabled = prefs.getBool('google_features_enabled') ?? false;
+    // Google連携設定はSQLiteから読み込み
+    final googleFeaturesEnabled = await _repo.getGoogleFeaturesEnabled();
     if (mounted) {
       setState(() {
         _googleFeaturesEnabled = googleFeaturesEnabled;
