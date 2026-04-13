@@ -49,13 +49,31 @@ class GoogleAccountService extends GoogleApiServiceBase {
         init();
       }
 
-      // SharedPreferences に保存済みの場合はログイン済みと判定（デフォルト時）
+      // 強制選択モードでなければ、まず保存済み認証情報で自動復元を試みる
       if (!forceAccountPicker) {
         final prefs = await SharedPreferences.getInstance();
         final savedEmail = prefs.getString(_keyGoogleEmail);
+        
         if (savedEmail != null && savedEmail.isNotEmpty) {
-          debugPrint('[GoogleAccount] 既にログイン済み（保存済み: $savedEmail）');
-          return true;
+          debugPrint('[GoogleAccount] 保存済み認証情報で自動復元を試みます: $savedEmail');
+          
+          // signInSilently で自動復元を試みる
+          final GoogleSignInAccount? silentUser = await _googleSignIn.signInSilently();
+          if (silentUser != null) {
+            debugPrint('[GoogleAccount] 自動復元成功: ${silentUser.email}');
+            // ユーザー情報が一致するか確認
+            if (silentUser.email == savedEmail) {
+              // トークンを更新
+              final GoogleSignInAuthentication googleAuth = await silentUser.authentication;
+              await saveTokens(
+                accessToken: googleAuth.accessToken ?? '',
+                refreshToken: googleAuth.idToken ?? '',
+                expiresIn: 3600,
+              );
+              return true;
+            }
+          }
+          debugPrint('[GoogleAccount] 自動復元失敗、新規サインインが必要');
         }
       }
 
