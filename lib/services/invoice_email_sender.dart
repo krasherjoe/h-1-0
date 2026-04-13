@@ -101,7 +101,8 @@ class InvoiceEmailSender {
 
       // 2. 一時ディレクトリを取得
       final tempDir = await getTemporaryDirectory();
-      final pdfFile = File('${tempDir.path}/invoice_${invoice.id}.pdf');
+      // mailAttachmentFileName を使用（例: "請求書_2024-04-13_001.pdf"）
+      final pdfFile = File('${tempDir.path}/${invoice.mailAttachmentFileName}');
 
       // 3. PDF bytes をファイルに保存
       // document は pw.Document で、save() で bytes を取得
