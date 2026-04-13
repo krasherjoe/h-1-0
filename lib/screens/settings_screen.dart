@@ -378,8 +378,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final googleService = GoogleAccountService();
-      // 明示的にサインインボタンを押した場合は、アカウント選択画面を強制表示
-      await googleService.signIn(forceAccountPicker: true);
+      
+      // 既にサインイン済みの場合は一度サインアウトしてから再度サインイン
+      // （これによりアカウント選択が可能になる）
+      final isAlreadySignedIn = await googleService.isSignedIn();
+      if (isAlreadySignedIn) {
+        debugPrint('[Settings] 既にサインイン済み → 一度サインアウトしてから再サインイン');
+        await googleService.signOut();
+        // 少し待機して状態をリセット
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      
+      // サインイン実行
+      await googleService.signIn();
 
       // 認証後のアカウント情報を再取得
       await _loadGoogleAccountInfo();

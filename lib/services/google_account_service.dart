@@ -40,9 +40,10 @@ class GoogleAccountService extends GoogleApiServiceBase {
 
   /// Google アカウントにログイン
   /// [forceAccountPicker] true の場合、アカウント選択画面を強制表示（複数アカウント対応）
-  Future<bool> signIn({bool forceAccountPicker = false}) async {
+  /// [selectedEmail] 指定時はそのアカウントで直接サインイン
+  Future<bool> signIn({bool forceAccountPicker = false, String? selectedEmail}) async {
     try {
-      debugPrint('[GoogleAccount] ログイン開始 (forceAccountPicker: $forceAccountPicker)');
+      debugPrint('[GoogleAccount] ログイン開始 (forceAccountPicker: $forceAccountPicker, selectedEmail: $selectedEmail)');
 
       // Google Sign-In が未初期化の場合は初期化
       if (!_isInitialized) {
@@ -50,7 +51,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
       }
 
       // 強制選択モードでなければ、まず保存済み認証情報で自動復元を試みる
-      if (!forceAccountPicker) {
+      if (!forceAccountPicker && selectedEmail == null) {
         final prefs = await SharedPreferences.getInstance();
         final savedEmail = prefs.getString(_keyGoogleEmail);
         
@@ -77,21 +78,31 @@ class GoogleAccountService extends GoogleApiServiceBase {
         }
       }
 
-      // 既にログインしている場合は確認
-      final currentUser = _googleSignIn.currentUser;
-      if (currentUser != null) {
-        // 強制選択モード：サインアウトして選択画面を表示
-        if (forceAccountPicker) {
-          debugPrint('[GoogleAccount] アカウント選択画面を強制表示');
-          await _googleSignIn.disconnect();  // 完全に切断
-          await _googleSignIn.signOut();     // サインアウト
-        } else {
-          debugPrint('[GoogleAccount] 既にログイン済み（currentUser）');
-          return true;
-        }
+      // 強制選択モード：完全にリセット
+      if (forceAccountPicker) {
+        debugPrint('[GoogleAccount] アカウント選択モード - リセット実行');
+        
+        // SharedPreferences の認証情報をクリア
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_keyGoogleEmail);
+        await prefs.remove(_keyGoogleName);
+        await prefs.remove(_keyGoogleId);
+        await clearTokens();
+        
+        // Google Sign-In を切断・サインアウト
+        try {
+          await _googleSignIn.disconnect();
+        } catch (_) {}
+        await _googleSignIn.signOut();
+        
+        // GoogleSignIn インスタンスを作り直し
+        _isInitialized = false;
+        init();
+        
+        debugPrint('[GoogleAccount] リセット完了、新規サインインを開始');
       }
 
-      // Google ログイン実行（複数アカウントがある場合は選択画面が表示される）
+      // Google ログイン実行
       debugPrint('[GoogleAccount] signIn() を呼び出し');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
