@@ -181,7 +181,17 @@ class _RichMasterEditDialogState<T>
         labelText: label,
         hintText: field.hint,
         suffixIcon: suffix,
-        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
+        ),
         counterText: field.maxLength != null ? '' : null,
       ),
       keyboardType: field.keyboardType,
@@ -200,6 +210,7 @@ class _RichMasterEditDialogState<T>
   ) {
     return Card(
       elevation: 1,
+      color: Colors.grey.shade100,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
