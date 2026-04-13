@@ -399,9 +399,9 @@ class _RichMasterEditDialogState<T>
                       bottom: 0,
                       child: ClipRect(
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                           child: Container(
-                            color: Colors.white.withOpacity(0.45),
+                            color: Colors.white.withOpacity(0.15),
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
