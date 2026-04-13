@@ -78,7 +78,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
         return;
       }
 
-      // 通常モード時はバックアップ一覧を読み込み
+      // 通常・リストアモード時はバックアップ一覧を読み込み
       if (mounted) {
         setState(() => _currentStep = DriveStep.loadingBackups);
       }

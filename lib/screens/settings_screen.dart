@@ -772,6 +772,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DriveBackupScreen(initialMode: DriveBackupMode.restore),
+                            ),
+                          ),
+                          icon: const Icon(Icons.cloud_download, size: 16),
+                          label: const Text('Google Driveからリストア'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.orange.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ],
             ),
