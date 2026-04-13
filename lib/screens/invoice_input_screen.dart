@@ -939,11 +939,19 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           ),
                           const SizedBox(height: 4),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
+                                "￥${fmt.format(item.unitPrice)}",
                                 style: const TextStyle(fontSize: 12.5),
+                              ),
+                              Text(
+                                "× ${item.quantity}",
+                                style: const TextStyle(fontSize: 12.5),
+                              ),
+                              Text(
+                                "= ￥${fmt.format(item.unitPrice * item.quantity)}",
+                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
