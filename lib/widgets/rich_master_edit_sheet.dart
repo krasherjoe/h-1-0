@@ -349,7 +349,7 @@ class _RichMasterEditDialogState<T>
     final mq = MediaQuery.of(context);
     final screenWidth = mq.size.width;
     final screenHeight = mq.size.height;
-    final maxWidth = screenWidth > 1080 ? 1040.0 : screenWidth - 32;
+    final maxWidth = screenWidth > 1080 ? 1200.0 : screenWidth - 32;
     final maxHeight = screenHeight * 0.85;
     final keyboardInset = mq.viewInsets.bottom;
 
@@ -384,12 +384,16 @@ class _RichMasterEditDialogState<T>
                                     ? widget.titleNew
                                     : widget.titleEdit,
                                 style: Theme.of(context).textTheme.titleLarge,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
                               ),
                               if (widget.existing != null) ...[
                                 const SizedBox(height: 4),
                                 Text(
                                   _values['displayName'] ?? '',
                                   style: const TextStyle(color: Colors.black54),
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ],
