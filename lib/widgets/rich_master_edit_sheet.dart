@@ -357,40 +357,46 @@ class _RichMasterEditDialogState<T>
           width: maxWidth,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.existing == null
-                                ? widget.titleNew
-                                : widget.titleEdit,
-                            style: Theme.of(context).textTheme.titleLarge,
+              ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    color: Colors.white.withOpacity(0.05),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.existing == null
+                                    ? widget.titleNew
+                                    : widget.titleEdit,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              if (widget.existing != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _values['displayName'] ?? '',
+                                  style: const TextStyle(color: Colors.black54),
+                                ),
+                              ],
+                            ],
                           ),
-                          if (widget.existing != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              _values['displayName'] ?? '',
-                              style: const TextStyle(color: Colors.black54),
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                        if (widget.headerActions.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: widget.headerActions
+                                .map((builder) => builder(context, richController))
+                                .toList(),
+                          ),
+                      ],
                     ),
-                    if (widget.headerActions.isNotEmpty)
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: widget.headerActions
-                            .map((builder) => builder(context, richController))
-                            .toList(),
-                      ),
-                  ],
+                  ),
                 ),
               ),
               const Divider(height: 1),
