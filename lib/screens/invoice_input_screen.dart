@@ -752,7 +752,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   ),
                                   SizedBox(height: 6),
                                   Text(
-                                    'PDF を生成しています',
+                                    '暗号処理中',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,
