@@ -371,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _handleGoogleSignIn() async {
+  Future<void> _handleGoogleSignIn({bool switchAccount = false}) async {
     if (_googleAuthLoading) return;
 
     setState(() => _googleAuthLoading = true);
@@ -379,18 +379,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final googleService = GoogleAccountService();
       
-      // 既にサインイン済みの場合は一度サインアウトしてから再度サインイン
-      // （これによりアカウント選択が可能になる）
-      final isAlreadySignedIn = await googleService.isSignedIn();
-      if (isAlreadySignedIn) {
-        debugPrint('[Settings] 既にサインイン済み → 一度サインアウトしてから再サインイン');
+      // アカウント切り替え時は一度サインアウトしてから再度サインイン
+      if (switchAccount) {
+        debugPrint('[Settings] アカウント切り替え → サインアウトしてから再サインイン');
         await googleService.signOut();
         // 少し待機して状態をリセット
         await Future.delayed(const Duration(milliseconds: 500));
       }
       
-      // サインイン実行
-      await googleService.signIn();
+      // サインイン実行（切り替え時はアカウント選択強制）
+      await googleService.signIn(forceAccountPicker: switchAccount);
 
       // 認証後のアカウント情報を再取得
       await _loadGoogleAccountInfo();
@@ -1513,13 +1511,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: _handleGoogleSignOut,
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Google アカウントからサインアウト'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _handleGoogleSignOut,
+                              icon: const Icon(Icons.logout),
+                              label: const Text('サインアウト'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _handleGoogleSignIn(switchAccount: true),
+                              icon: const Icon(Icons.swap_horiz),
+                              label: const Text('アカウント切り替え'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   )
