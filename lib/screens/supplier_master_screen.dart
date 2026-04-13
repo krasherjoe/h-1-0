@@ -8,6 +8,7 @@ import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/master_field_config.dart';
 import '../widgets/rich_master_edit_sheet.dart';
+import 'supplier_phonebook_selection_screen.dart';
 
 /// 仕入先一覧画面
 class SupplierMasterScreen extends StatefulWidget {
@@ -36,72 +37,22 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
       BuildContext actionContext,
       RichMasterEditController controller,
     ) async {
-      if (!await FlutterContacts.requestPermission(readonly: true)) {
-        if (!actionContext.mounted) return;
-        ScaffoldMessenger.of(actionContext).showSnackBar(
-          const SnackBar(content: Text('連絡先へのアクセスが許可されていません')),
-        );
-        return;
-      }
-
-      final contacts = await FlutterContacts.getContacts(withProperties: true);
-      if (!actionContext.mounted) return;
-      if (contacts.isEmpty) {
-        ScaffoldMessenger.of(actionContext).showSnackBar(
-          const SnackBar(content: Text('連絡先が見つかりません')),
-        );
-        return;
-      }
-
-      final picked = await showModalBottomSheet<Contact>(
-        context: actionContext,
-        isScrollControlled: true,
-        builder: (ctx) => SafeArea(
-          child: SizedBox(
-            height: MediaQuery.of(ctx).size.height * 0.7,
-            child: ListView.builder(
-              itemCount: contacts.length,
-              itemBuilder: (ctx, index) {
-                final c = contacts[index];
-                return ListTile(
-                  leading: const Icon(Icons.contact_page_outlined),
-                  title: Text(c.displayName),
-                  subtitle: Text(c.phones.isNotEmpty ? c.phones.first.number : '電話番号なし'),
-                  onTap: () => Navigator.pop(ctx, c),
-                );
-              },
-            ),
-          ),
+      final result = await Navigator.push<Map<String, dynamic>>(
+        actionContext,
+        MaterialPageRoute(
+          builder: (context) => const SupplierPhonebookSelectionScreen(),
         ),
       );
 
-      if (!actionContext.mounted || picked == null) return;
-
-      final org = picked.organizations.isNotEmpty ? picked.organizations.first.company : '';
-      final personParts = [picked.name.last, picked.name.first].where((v) => v.isNotEmpty).toList();
-      final person = personParts.isNotEmpty ? personParts.join(' ') : picked.displayName;
-      final display = org.isNotEmpty ? org : person;
-
-      controller.updateValue('displayName', display, refresh: false);
-      controller.updateValue('formalName', org.isNotEmpty ? org : display, refresh: false);
-      controller.updateValue('contactPerson', person, refresh: false);
-      if (picked.phones.isNotEmpty) {
-        controller.updateValue('tel', picked.phones.first.number, refresh: false);
+      if (result != null && actionContext.mounted) {
+        controller.updateValue('displayName', result['displayName'] ?? '', refresh: false);
+        controller.updateValue('formalName', result['formalName'] ?? '', refresh: false);
+        controller.updateValue('contactPerson', result['contactPerson'] ?? '', refresh: false);
+        controller.updateValue('tel', result['tel'] ?? '', refresh: false);
+        controller.updateValue('email', result['email'] ?? '', refresh: false);
+        controller.updateValue('address', result['address'] ?? '', refresh: false);
+        controller.refresh();
       }
-      if (picked.emails.isNotEmpty) {
-        controller.updateValue('email', picked.emails.first.address, refresh: false);
-      }
-      if (picked.addresses.isNotEmpty) {
-        final addr = picked.addresses.first;
-        final text = [addr.postalCode, addr.state, addr.city, addr.street]
-            .where((v) => v.isNotEmpty)
-            .join(' ');
-        controller.updateValue('address', text, refresh: false);
-      }
-      final isCompany = org.isNotEmpty;
-      controller.updateValue('companyFlag', isCompany ? 'company' : 'individual', refresh: false);
-      controller.updateValue('title', isCompany ? '御中' : '様', refresh: false);
-      controller.refresh();
     }
 
     Future<void> pickPaymentTemplate(
