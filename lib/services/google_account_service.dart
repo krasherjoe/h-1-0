@@ -20,7 +20,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
   GoogleAccountService._internal();
 
   // Google Sign-In インスタンス（開発用）
-  late final GoogleSignIn _googleSignIn;
+  late GoogleSignIn _googleSignIn;
 
   // 初期化状態管理
   bool _isInitialized = false;
@@ -96,9 +96,17 @@ class GoogleAccountService extends GoogleApiServiceBase {
         } catch (_) {}
         await _googleSignIn.signOut();
         
-        // GoogleSignIn インスタンスを作り直し
+        // GoogleSignIn インスタンスを再作成
         _isInitialized = false;
-        init();
+        _googleSignIn = GoogleSignIn(
+          scopes: [
+            'email',
+            'https://www.googleapis.com/auth/drive.file',
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.modify',
+          ],
+        );
+        _isInitialized = true;
         
         debugPrint('[GoogleAccount] リセット完了、新規サインインを開始');
       }
