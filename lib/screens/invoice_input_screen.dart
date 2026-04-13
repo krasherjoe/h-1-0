@@ -223,7 +223,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final clonedItems = _cloneItems(_items, resetIds: true);
     // 案件名に「複写」接頭辞を追加
     final originalSubject = _subjectController.text;
-    final newSubject = originalSubject.isNotEmpty ? '[複写]$originalSubject' : '';
+    final newSubject = originalSubject.isNotEmpty ? '[複写]$originalSubject' : '[複写]';
 
     setState(() {
       _currentId = DateTime.now().millisecondsSinceEpoch.toString();

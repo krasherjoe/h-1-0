@@ -375,6 +375,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   if (_currentInvoice.subject != null &&
                       _currentInvoice.subject!.isNotEmpty) {
                     newSubject = '[複写]${_currentInvoice.subject}';
+                  } else {
+                    // 空白の場合は「複写」のみ設定
+                    newSubject = '[複写]';
                   }
 
                   final duplicateInvoice = _currentInvoice.copyWith(
