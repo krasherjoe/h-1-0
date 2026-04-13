@@ -177,6 +177,21 @@ class LocalBackupService {
     }
   }
 
+  /// 最終バックアップ時間を取得
+  Future<DateTime?> getLastBackupTime() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getInt(_lastBackupKey);
+      if (timestamp != null) {
+        return DateTime.fromMillisecondsSinceEpoch(timestamp);
+      }
+      return null;
+    } catch (e) {
+      print('最終バックアップ時間取得失敗：$e');
+      return null;
+    }
+  }
+
   /// バックアップからリストア
   Future<bool> restoreFromBackup(String backupPath, String databasePath) async {
     try {

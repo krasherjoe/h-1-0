@@ -368,4 +368,17 @@ class AppSettingsRepository {
 
     return merged;
   }
+
+  // 自動バックアップ設定
+  static const _kAutoBackupEnabled = 'auto_backup_enabled';
+
+  Future<bool> getAutoBackupEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kAutoBackupEnabled) ?? true;
+  }
+
+  Future<void> setAutoBackupEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kAutoBackupEnabled, enabled);
+  }
 }
