@@ -582,18 +582,42 @@ keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androidd
 
 ## セットアップ & ビルド
 
+### APKビルド（寿命設定付き）
+
 1. Flutter 3.x 環境を用意し、依存パッケージを取得
    ```bash
    flutter pub get
    ```
-2. 90 日寿命 APK の生成
+
+2. 寿命設定付きAPKの生成
    ```bash
    chmod +x scripts/build_with_expiry.sh
-   ./scripts/build_with_expiry.sh [debug|profile|release]
+   ./scripts/build_with_expiry.sh [debug|profile|release] [lifespan_days]
    ```
+   
+   **使用例:**
+   ```bash
+   # デフォルト90日寿命でビルド
+   ./scripts/build_with_expiry.sh release
+   
+   # 180日寿命でビルド
+   ./scripts/build_with_expiry.sh release 180
+   
+   # 365日寿命でビルド
+   ./scripts/build_with_expiry.sh release 365
+   ```
+   
+   **仕様:**
    - スクリプト内で `APP_BUILD_TIMESTAMP` を UTC で自動付与
+   - `APP_BUILD_LIFESPAN_DAYS` で寿命を設定（デフォルト90日）
    - `flutter analyze` → `flutter build apk` を連続実行
-3. 実機/エミュレータで起動すると、寿命切れ時には `ExpiredApp` が自動表示されます。
+
+### 寿命切れ時の動作
+
+- **デフォルト寿命**: 90日
+- **寿命切れ時の動作**: 新規登録が制限される（既存データの編集・閲覧は可能）
+- **寿命設定**: ビルドスクリプトの第2引数で日数を指定可能
+- **無効化**: `APP_BUILD_TIMESTAMP` 環境変数を設定しないと寿命チェックは無効化される
 
 ### Googleアカウント連携・同期フロー
 

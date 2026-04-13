@@ -61,10 +61,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppThemeController.instance.load();
   final expiryInfo = BuildExpiryInfo.fromEnvironment();
-  if (expiryInfo.isExpired) {
-    runApp(ExpiredApp(expiryInfo: expiryInfo));
-    return;
-  }
   // 起動時に自動バックアップチェック（非同期、アプリ起動を妨げない）
   if (!kIsWeb) {
     AutoBackupService.checkAndBackupOnStartup();

@@ -3,8 +3,22 @@ import 'package:flutter/foundation.dart';
 class BuildExpiryInfo {
   BuildExpiryInfo._(this.buildTimestamp, this.lifespan, this._hasValidTimestamp);
 
-  factory BuildExpiryInfo.fromEnvironment({Duration lifespan = const Duration(days: 90)}) {
+  factory BuildExpiryInfo.fromEnvironment({Duration? lifespan}) {
     const rawTimestamp = String.fromEnvironment('APP_BUILD_TIMESTAMP');
+    const rawLifespanDays = String.fromEnvironment('APP_BUILD_LIFESPAN_DAYS');
+    
+    // 環境変数で寿命を設定（優先）
+    if (rawLifespanDays.isNotEmpty) {
+      final days = int.tryParse(rawLifespanDays);
+      if (days != null && days > 0) {
+        lifespan = Duration(days: days);
+        debugPrint('[BuildExpiry] Lifespan set to $days days from environment variable.');
+      }
+    }
+    
+    // デフォルトは90日
+    lifespan ??= const Duration(days: 90);
+    
     if (rawTimestamp.isEmpty) {
       debugPrint('[BuildExpiry] APP_BUILD_TIMESTAMP is missing; expiry guard disabled.');
       return BuildExpiryInfo._(null, lifespan, false);
