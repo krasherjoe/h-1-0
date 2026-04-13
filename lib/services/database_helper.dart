@@ -1363,11 +1363,16 @@ class DatabaseHelper {
         WHERE is_current IS NULL
       ''');
 
-      await db.execute('''
-        UPDATE products 
-        SET is_current = 1, version = 1, valid_from = updated_at, valid_to = NULL
-        WHERE is_current IS NULL
-      ''');
+      // products テーブルに updated_at カラムが存在する場合のみ実行
+      final columns = await db.rawQuery("PRAGMA table_info(products)");
+      final hasUpdatedAt = columns.any((col) => col['name'] == 'updated_at');
+      if (hasUpdatedAt) {
+        await db.execute('''
+          UPDATE products 
+          SET is_current = 1, version = 1, valid_from = updated_at, valid_to = NULL
+          WHERE is_current IS NULL
+        ''');
+      }
 
       // パフォーマンス最適化：インデックス追加（最新データのみ高速検索）
       await db.execute(
