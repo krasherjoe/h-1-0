@@ -48,40 +48,40 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
           italic: ipaex,
           boldItalic: ipaex,
         ).copyWith(defaultTextStyle: pw.TextStyle(fontFallback: [ipaex])),
-        buildForeground: (context) {
-          if (sealImage == null) return pw.SizedBox();
+        buildBackground: (context) {
           return pw.Stack(
             children: [
-              pw.Positioned(
-                right: 40,
-                top: 96,
-                child: pw.Opacity(
-                  opacity: 0.85,
-                  child: pw.Image(sealImage!, width: 80, height: 80),
+              if (sealImage != null)
+                pw.Positioned(
+                  right: 40,
+                  top: 96,
+                  child: pw.Opacity(
+                    opacity: 0.3,
+                    child: pw.Image(sealImage!, width: 100, height: 100),
+                  ),
                 ),
-              ),
+              if (!invoice.isDraft) pw.SizedBox(),
+              if (invoice.isDraft)
+                pw.Center(
+                  child: pw.Transform.rotate(
+                    angle: -0.5,
+                    child: pw.Opacity(
+                      opacity: 0.18,
+                      child: pw.Text(
+                        '下書き',
+                        style: pw.TextStyle(
+                          fontSize: 120,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           );
         },
-        buildBackground: (context) {
-          if (!invoice.isDraft) return pw.SizedBox();
-          return pw.Center(
-            child: pw.Transform.rotate(
-              angle: -0.5,
-              child: pw.Opacity(
-                opacity: 0.18,
-                child: pw.Text(
-                  '下書き',
-                  style: pw.TextStyle(
-                    fontSize: 120,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+        buildForeground: (context) => pw.SizedBox(),
       ),
       build: (context) {
         final content = <pw.Widget>[
