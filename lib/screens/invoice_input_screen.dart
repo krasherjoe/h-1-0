@@ -950,9 +950,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                "× ${item.quantity}",
-                                style: const TextStyle(fontSize: 12.5),
+                              SizedBox(
+                                width: 40,
+                                child: Text(
+                                  "× ${item.quantity}",
+                                  style: const TextStyle(fontSize: 12.5),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                               const Spacer(flex: 1),
                               Text(
