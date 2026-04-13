@@ -928,19 +928,26 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   (item) => Card(
                     margin: const EdgeInsets.only(bottom: 6),
                     elevation: 0.5,
-                    child: ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      title: Text(
-                        item.description,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
-                      ),
-                      subtitle: Text(
-                        "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
-                        style: const TextStyle(fontSize: 12.5),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.description,
+                            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
+                                style: const TextStyle(fontSize: 12.5),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
