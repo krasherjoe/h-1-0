@@ -69,6 +69,10 @@ Future<T?> showRichMasterEditSheet<T>({
   FutureOr<String?> Function(Map<String, String> values)? onValidate,
   List<RichAccessoryBuilder> headerActions = const [],
   PreviewBuilder? previewBuilder,
+  // 色指定パラメータ（各パーツの識別・透明度調整用）
+  Color? headerColor,
+  Color? contentColor,
+  Color? footerColor,
 }) async {
   return showDialog<T>(
     context: context,
@@ -85,6 +89,9 @@ Future<T?> showRichMasterEditSheet<T>({
       onValidate: onValidate,
       headerActions: headerActions,
       previewBuilder: previewBuilder,
+      headerColor: headerColor,
+      contentColor: contentColor,
+      footerColor: footerColor,
     ),
   );
 }
@@ -100,6 +107,9 @@ class _RichMasterEditDialog<T> extends StatefulWidget {
   final FutureOr<String?> Function(Map<String, String> values)? onValidate;
   final List<RichAccessoryBuilder> headerActions;
   final PreviewBuilder? previewBuilder;
+  final Color? headerColor;
+  final Color? contentColor;
+  final Color? footerColor;
 
   const _RichMasterEditDialog({
     required this.dialogContext,
@@ -112,6 +122,9 @@ class _RichMasterEditDialog<T> extends StatefulWidget {
     this.onValidate,
     this.headerActions = const [],
     this.previewBuilder,
+    this.headerColor,
+    this.contentColor,
+    this.footerColor,
   });
 
   @override
@@ -318,14 +331,14 @@ class _RichMasterEditDialogState<T>
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
-      backgroundColor: Colors.white.withOpacity(0.85),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: SizedBox(
           width: maxWidth,
           child: Column(
             children: [
-              Padding(
+              Container(
+                color: widget.headerColor,
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,33 +375,37 @@ class _RichMasterEditDialogState<T>
                 ),
               ),
               const Divider(height: 1),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
-                  child: Column(
-                    children: [
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: sectionCards
-                            .map((card) => SizedBox(
-                                  width: maxWidth > 960
-                                      ? (maxWidth - 16) / 2
-                                      : maxWidth,
-                                  child: card,
-                                ))
-                            .toList(),
-                      ),
-                      if (widget.previewBuilder != null) ...[
-                        const SizedBox(height: 16),
-                        widget.previewBuilder!(context, richController),
+              Container(
+                color: widget.contentColor,
+                child: Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
+                    child: Column(
+                      children: [
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 16,
+                          children: sectionCards
+                              .map((card) => SizedBox(
+                                    width: maxWidth > 960
+                                        ? (maxWidth - 16) / 2
+                                        : maxWidth,
+                                    child: card,
+                                  ))
+                              .toList(),
+                        ),
+                        if (widget.previewBuilder != null) ...[
+                          const SizedBox(height: 16),
+                          widget.previewBuilder!(context, richController),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
               const Divider(height: 1),
-              Padding(
+              Container(
+                color: widget.footerColor,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
