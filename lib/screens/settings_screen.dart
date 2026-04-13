@@ -455,14 +455,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
 
           // バックアップ・リストア設定（専用画面へ）
-          ListTile(
-            leading: const Icon(Icons.backup, color: Colors.green),
-            title: const Text('バックアップ・リストア設定'),
-            subtitle: Text('ローカル: $_localBackupStatus${_googleFeaturesEnabled ? " / Google Drive: $_driveBackupStatus" : ""}'),
-            trailing: const Icon(Icons.chevron_right),
+          InkWell(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const BackupSettingsScreen()),
+            ),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.backup, color: Colors.green.shade700, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'バックアップ・リストア設定',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'ローカル: $_localBackupStatus${_googleFeaturesEnabled ? " / Drive: $_driveBackupStatus" : ""}',
+                          style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.green.shade600),
+                ],
+              ),
             ),
           ),
           const Divider(indent: 16, endIndent: 16),

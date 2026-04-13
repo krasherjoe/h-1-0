@@ -33,6 +33,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
         'email',
         'https://www.googleapis.com/auth/drive.file',
         'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.modify',
       ],
     );
     _isInitialized = true;
@@ -246,12 +247,29 @@ class GoogleAccountService extends GoogleApiServiceBase {
 
   /// 現在ログイン中のユーザー情報を取得
   Future<GoogleSignInAccount?> getCurrentAccount() async {
-    // 既にログインしている場合は確認
     try {
       if (!_isInitialized) {
         init();
       }
-      return _googleSignIn.currentUser;
+      if (_googleSignIn.currentUser != null) {
+        return _googleSignIn.currentUser;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString(_keyGoogleEmail);
+      if (savedEmail != null && savedEmail.isNotEmpty) {
+        final silentUser = await _googleSignIn.signInSilently();
+        if (silentUser != null) {
+          debugPrint('[GoogleAccount] getCurrentAccount: サイレント復元成功: ${silentUser.email}');
+          final googleAuth = await silentUser.authentication;
+          await saveTokens(
+            accessToken: googleAuth.accessToken ?? '',
+            refreshToken: googleAuth.idToken ?? '',
+            expiresIn: 3600,
+          );
+          return silentUser;
+        }
+      }
+      return null;
     } catch (e) {
       debugPrint('[GoogleAccount] 現在アカウント取得エラー：$e');
       return null;
