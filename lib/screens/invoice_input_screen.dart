@@ -617,22 +617,32 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               child: _DraftBadge(),
             ),
           IconButton(
-            icon: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: EdgeInsets.all(_showCopyBadge ? 4 : 0),
-              decoration: BoxDecoration(
-                color: _showCopyBadge
-                    ? Colors.white.withOpacity(0.4)
-                    : Colors.transparent,
-                shape: BoxShape.circle,
+            icon: AnimatedScale(
+              scale: _showCopyBadge ? 1.3 : 1.0,
+              duration: const Duration(milliseconds: 150),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.all(_showCopyBadge ? 8 : 0),
+                decoration: BoxDecoration(
+                  color: _showCopyBadge
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: _showCopyBadge
+                      ? Border.all(color: Colors.green, width: 2)
+                      : null,
+                ),
+                child: Icon(
+                  _showCopyBadge ? Icons.check : Icons.copy,
+                  color: _showCopyBadge ? Colors.green : null,
+                ),
               ),
-              child: const Icon(Icons.copy),
             ),
             tooltip: "コピーして新規",
             onPressed: () async {
-              // コピーエフェクト
+              // コピーエフェクト（派手に）
               setState(() => _showCopyBadge = true);
-              await Future.delayed(const Duration(milliseconds: 300));
+              await Future.delayed(const Duration(milliseconds: 500));
               setState(() => _showCopyBadge = false);
               _copyAsNew();
             },
