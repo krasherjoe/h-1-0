@@ -83,7 +83,8 @@ class GoogleAccountService extends GoogleApiServiceBase {
         // 強制選択モード：サインアウトして選択画面を表示
         if (forceAccountPicker) {
           debugPrint('[GoogleAccount] アカウント選択画面を強制表示');
-          await _googleSignIn.signOut();
+          await _googleSignIn.disconnect();  // 完全に切断
+          await _googleSignIn.signOut();     // サインアウト
         } else {
           debugPrint('[GoogleAccount] 既にログイン済み（currentUser）');
           return true;
@@ -91,6 +92,7 @@ class GoogleAccountService extends GoogleApiServiceBase {
       }
 
       // Google ログイン実行（複数アカウントがある場合は選択画面が表示される）
+      debugPrint('[GoogleAccount] signIn() を呼び出し');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
