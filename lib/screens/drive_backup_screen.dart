@@ -5,9 +5,21 @@ import '../services/google_account_service.dart';
 import '../services/database_helper.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 
+/// バックアップ画面の初期モード
+enum DriveBackupMode {
+  normal,    // 通常（一覧表示）
+  backup,    // バックアップ自動開始
+  restore,   // リストアモード
+}
+
 /// S1:Google Drive バックアップ・リストア画面
 class DriveBackupScreen extends StatefulWidget {
-  const DriveBackupScreen({super.key});
+  final DriveBackupMode initialMode;
+
+  const DriveBackupScreen({
+    super.key,
+    this.initialMode = DriveBackupMode.normal,
+  });
 
   @override
   State<DriveBackupScreen> createState() => _DriveBackupScreenState();
@@ -57,11 +69,19 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
       if (mounted) {
         setState(() {
           _currentUserEmail = userInfo?['email'];
-          _currentStep = DriveStep.loadingBackups;
         });
       }
 
-      // バックアップ一覧を読み込み
+      // バックアップモード時は自動的にバックアップを開始
+      if (widget.initialMode == DriveBackupMode.backup) {
+        await _handleBackup();
+        return;
+      }
+
+      // 通常モード時はバックアップ一覧を読み込み
+      if (mounted) {
+        setState(() => _currentStep = DriveStep.loadingBackups);
+      }
       await _loadBackups();
     } catch (e) {
       setState(() {
@@ -439,6 +459,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
   }
 
   Widget _buildSuccessPanel() {
+    final isBackup = _statusMessage.contains('バックアップ');
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -446,9 +467,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           Icon(Icons.check_circle, size: 80, color: Colors.green.shade400),
           const SizedBox(height: 24),
           Text(
-            _currentStep == DriveStep.backingUp
-                ? 'バックアップ完了'
-                : 'リストア完了',
+            isBackup ? 'バックアップ完了' : 'リストア完了',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -460,6 +479,30 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
             _statusMessage,
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              if (widget.initialMode == DriveBackupMode.backup) {
+                // バックアップモード時は前の画面に戻る
+                Navigator.pop(context);
+              } else {
+                // 通常モード時は一覧に戻る
+                setState(() {
+                  _currentStep = DriveStep.loadingBackups;
+                  _selectedBackup = null;
+                  _progress = 0.0;
+                });
+                _loadBackups();
+              }
+            },
+            icon: const Icon(Icons.check),
+            label: const Text('確認'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+            ),
           ),
         ],
       ),

@@ -209,7 +209,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           await _performLocalBackup();
           break;
         case BackupDestination.driveOnly:
-          await _backupToGoogleDrive();
+          // Google Drive 専用画面に遷移して進捗表示付きでバックアップ
+          if (!mounted) return;
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const DriveBackupScreen(initialMode: DriveBackupMode.backup),
+            ),
+          );
+          // 戻ってきたらバックアップ状況を更新
+          await _loadBackupStatus();
           break;
         case BackupDestination.both:
           // 両方にバックアップ
@@ -221,11 +230,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final localService = LocalBackupService();
           await localService.createAutoBackup(dbPath);
 
-          // Google Drive バックアップ
-          final driveService = DriveBackupService();
-          await driveService.uploadDatabaseSnapshot(
-            File(dbPath),
-            description: '手動バックアップ - ${DateTime.now().toIso8601String()}',
+          // Google Drive バックアップは専用画面で
+          if (!mounted) return;
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const DriveBackupScreen(initialMode: DriveBackupMode.backup),
+            ),
           );
 
           if (!mounted) return;
