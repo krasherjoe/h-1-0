@@ -987,7 +987,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       style: const TextStyle(fontSize: 13.5),
                     ),
                     subtitle: Text(
-                      "￥${fmt.format(item.unitPrice)} x ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
+                      "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
                       style: const TextStyle(fontSize: 12.5),
                     ),
                     trailing: Row(
