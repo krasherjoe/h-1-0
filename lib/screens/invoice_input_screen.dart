@@ -1040,12 +1040,57 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             ),
                             padding: EdgeInsets.zero,
                           ),
-                          SizedBox(
-                            width: 24,
-                            child: Text(
-                              '${item.quantity}',
-                              style: const TextStyle(fontSize: 12.5),
-                              textAlign: TextAlign.center,
+                          GestureDetector(
+                            onTap: () async {
+                              final ctrl = TextEditingController(
+                                text: '${item.quantity}',
+                              );
+                              final result = await showDialog<int>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('数量を入力'),
+                                  content: TextField(
+                                    controller: ctrl,
+                                    keyboardType: TextInputType.number,
+                                    autofocus: true,
+                                    decoration: const InputDecoration(
+                                      labelText: '数量',
+                                    ),
+                                    onSubmitted: (v) {
+                                      final n = int.tryParse(v);
+                                      if (n != null && n >= 1) Navigator.pop(ctx, n);
+                                    },
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx),
+                                      child: const Text('キャンセル'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        final n = int.tryParse(ctrl.text);
+                                        if (n != null && n >= 1) Navigator.pop(ctx, n);
+                                      },
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() => _items[idx] = item.copyWith(quantity: result));
+                                _pushHistory();
+                                final id = _ensureCurrentId();
+                                await _editLogRepo.addLog(id, '${item.description} の数量を $result に変更しました');
+                                await _loadEditLogs();
+                              }
+                            },
+                            child: SizedBox(
+                              width: 36,
+                              child: Text(
+                                '${item.quantity}',
+                                style: const TextStyle(fontSize: 12.5),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
                           IconButton(
@@ -1245,7 +1290,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             style: TextStyle(
               fontSize: isTotal ? 18 : 14,
               fontWeight: FontWeight.w600,
-              color: isTotal ? Colors.white : textColor,
+              color: textColor,
             ),
           ),
         ],
