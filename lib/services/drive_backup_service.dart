@@ -200,6 +200,64 @@ class DriveBackupService extends GoogleApiServiceBase {
     });
   }
 
+  /// 指定IDのバックアップからDBを復元
+  Future<bool> restoreBackupById(String backupId, String targetDbPath) async {
+    try {
+      debugPrint('[DriveBackup] 指定IDから復元開始：$backupId → $targetDbPath');
+
+      // 一時ファイルにダウンロード
+      final tempPath = '$targetDbPath.tmp';
+      debugPrint('[DriveBackup] ダウンロード中：$tempPath');
+      await downloadBackup(backupId, tempPath);
+      debugPrint('[DriveBackup] ダウンロード完了');
+
+      // ダウンロードしたファイルの検証
+      final tempFile = File(tempPath);
+      if (!await tempFile.exists()) {
+        throw Exception('ダウンロードしたファイルが見つかりません');
+      }
+
+      final fileSize = await tempFile.length();
+      debugPrint('[DriveBackup] ダウンロードファイルサイズ：$fileSize bytes');
+
+      if (fileSize < 10000) {
+        // 10KB 未満は破損ファイルの可能性
+        debugPrint('[DriveBackup] ⚠️ ファイルサイズが小さい（破損の可能性）: $fileSize bytes');
+      }
+
+      // 既存 DB をバックアップ
+      final targetFile = File(targetDbPath);
+      if (await targetFile.exists()) {
+        debugPrint('[DriveBackup] 既存 DB をバックアップ：$targetDbPath.old');
+        await targetFile.rename('$targetDbPath.old');
+      }
+
+      // 復元
+      debugPrint('[DriveBackup] DB を復元中...');
+      await File(tempPath).rename(targetDbPath);
+      debugPrint('[DriveBackup] DB 復元完了');
+
+      // 古いバックアップを削除
+      final oldBackup = File('$targetDbPath.old');
+      if (await oldBackup.exists()) {
+        debugPrint('[DriveBackup] 古いバックアップを削除');
+        await oldBackup.delete();
+      }
+
+      return true;
+    } catch (e, st) {
+      debugPrint('[DriveBackup] ❌ 復元エラー：$e');
+      debugPrint('[DriveBackup] スタックトレース：$st');
+      // エラー時は元に戻す
+      final oldBackup = File('$targetDbPath.old');
+      if (await oldBackup.exists()) {
+        debugPrint('[DriveBackup] 既存 DB を復元');
+        await oldBackup.rename(targetDbPath);
+      }
+      rethrow;
+    }
+  }
+
   /// 最新のバックアップをダウンロードして DB を復元
   Future<bool> restoreLatestBackup(String targetDbPath) async {
     try {

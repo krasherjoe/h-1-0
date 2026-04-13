@@ -755,9 +755,9 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
         _statusMessage = 'ダウンロード中...';
       });
 
-      // Drive からダウンロードして復元
+      // Drive から選択したバックアップをダウンロードして復元
       final driveService = DriveBackupService();
-      final success = await driveService.restoreLatestBackup(dbPath);
+      final success = await driveService.restoreBackupById(backup.id!, dbPath);
 
       if (success) {
         setState(() {
