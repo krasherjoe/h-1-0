@@ -1040,9 +1040,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             ),
                             padding: EdgeInsets.zero,
                           ),
-                          Text(
-                            '${item.quantity}',
-                            style: const TextStyle(fontSize: 12.5),
+                          SizedBox(
+                            width: 24,
+                            child: Text(
+                              '${item.quantity}',
+                              style: const TextStyle(fontSize: 12.5),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.add, size: 18),
@@ -1066,11 +1070,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             padding: EdgeInsets.zero,
                           ),
                         ],
-                        Text(
-                          "￥${fmt.format(item.unitPrice * item.quantity)}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13.5,
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            "￥${fmt.format(item.unitPrice * item.quantity)}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                            textAlign: TextAlign.right,
                           ),
                         ),
                         const SizedBox(width: 6),
