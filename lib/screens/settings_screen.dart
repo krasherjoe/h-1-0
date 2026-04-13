@@ -377,7 +377,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final googleService = GoogleAccountService();
-      await googleService.signIn();
+      // 明示的にサインインボタンを押した場合は、アカウント選択画面を強制表示
+      await googleService.signIn(forceAccountPicker: true);
 
       // 認証後のアカウント情報を再取得
       await _loadGoogleAccountInfo();
