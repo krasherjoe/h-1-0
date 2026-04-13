@@ -397,6 +397,9 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
 
     if (result != null) {
       await _repo.saveSupplier(result);
+      if (mounted) {
+        setState(() {}); // 仕入先保存後にStateを更新する
+      }
     }
   }
   @override
