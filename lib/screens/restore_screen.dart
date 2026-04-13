@@ -42,19 +42,27 @@ class _RestoreScreenState extends State<RestoreScreen> {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildStepIndicator(),
-            const SizedBox(height: 24),
-            _buildStatusCard(),
-            const SizedBox(height: 24),
-            Expanded(child: _buildDetailPanel()),
-            const SizedBox(height: 16),
-            _buildActionButtons(),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildStepIndicator(),
+              const SizedBox(height: 24),
+              _buildStatusCard(),
+              const SizedBox(height: 24),
+              Expanded(child: _buildDetailPanel()),
+              const SizedBox(height: 16),
+              // システムナビゲーションバー分のスペースを確保
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom,
+                ),
+                child: _buildActionButtons(),
+              ),
+            ],
+          ),
         ),
       ),
     );

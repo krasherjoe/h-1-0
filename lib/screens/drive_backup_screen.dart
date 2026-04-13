@@ -12,7 +12,7 @@ enum DriveBackupMode {
   restore,   // リストアモード
 }
 
-/// S1:Google Drive バックアップ・リストア画面
+/// SD:Google Drive バックアップ・リストア画面
 class DriveBackupScreen extends StatefulWidget {
   final DriveBackupMode initialMode;
 
@@ -124,7 +124,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('S1:Google Drive バックアップ'),
+        title: const Text('SD:Google Drive バックアップ'),
         backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
         actions: [
@@ -136,20 +136,27 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 認証ステータスカード
-            _buildAuthStatusCard(),
-            const SizedBox(height: 16),
-            // メインコンテンツ
-            Expanded(child: _buildMainContent()),
-            const SizedBox(height: 16),
-            // アクションボタン
-            _buildActionButtons(),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 認証ステータスカード
+              _buildAuthStatusCard(),
+              const SizedBox(height: 16),
+              // メインコンテンツ
+              Expanded(child: _buildMainContent()),
+              const SizedBox(height: 16),
+              // アクションボタン（SafeAreaで保護）
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom,
+                ),
+                child: _buildActionButtons(),
+              ),
+            ],
+          ),
         ),
       ),
     );
