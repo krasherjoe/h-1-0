@@ -978,186 +978,151 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Card(
                   margin: const EdgeInsets.only(bottom: 6),
                   elevation: 0.5,
-                  child: ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    title: Text(
-                      item.description,
-                      style: const TextStyle(fontSize: 13.5),
-                    ),
-                    subtitle: Text(
-                      "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
-                      style: const TextStyle(fontSize: 12.5),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (!_isViewMode && !_isLocked) ...[
-                          IconButton(
-                            icon: const Icon(Icons.remove, size: 18),
-                            onPressed: () async {
-                              if (item.quantity <= 1) return;
-                              setState(
-                                () => _items[idx] = item.copyWith(
-                                  quantity: item.quantity - 1,
-                                ),
-                              );
-                              _pushHistory();
-                              final id = _ensureCurrentId();
-                              final msg =
-                                  "${item.description} の数量を ${item.quantity - 1} に変更しました";
-                              await _editLogRepo.addLog(id, msg);
-                              await _loadEditLogs();
-                            },
-                            constraints: const BoxConstraints.tightFor(
-                              width: 28,
-                              height: 28,
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                          GestureDetector(
-                            onTap: () async {
-                              final ctrl = TextEditingController(
-                                text: '${item.quantity}',
-                              );
-                              final result = await showDialog<int>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('数量を入力'),
-                                  content: TextField(
-                                    controller: ctrl,
-                                    keyboardType: TextInputType.number,
-                                    autofocus: true,
-                                    decoration: const InputDecoration(
-                                      labelText: '数量',
-                                    ),
-                                    onSubmitted: (v) {
-                                      final n = int.tryParse(v);
-                                      if (n != null && n >= 1) Navigator.pop(ctx, n);
-                                    },
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('キャンセル'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        final n = int.tryParse(ctrl.text);
-                                        if (n != null && n >= 1) Navigator.pop(ctx, n);
-                                      },
-                                      child: const Text('OK'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (result != null) {
-                                setState(() => _items[idx] = item.copyWith(quantity: result));
-                                _pushHistory();
-                                final id = _ensureCurrentId();
-                                await _editLogRepo.addLog(id, '${item.description} の数量を $result に変更しました');
-                                await _loadEditLogs();
-                              }
-                            },
-                            child: SizedBox(
-                              width: 36,
-                              child: Text(
-                                '${item.quantity}',
-                                style: const TextStyle(fontSize: 12.5),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add, size: 18),
-                            onPressed: () async {
-                              setState(
-                                () => _items[idx] = item.copyWith(
-                                  quantity: item.quantity + 1,
-                                ),
-                              );
-                              _pushHistory();
-                              final id = _ensureCurrentId();
-                              final msg =
-                                  "${item.description} の数量を ${item.quantity + 1} に変更しました";
-                              await _editLogRepo.addLog(id, msg);
-                              await _loadEditLogs();
-                            },
-                            constraints: const BoxConstraints.tightFor(
-                              width: 28,
-                              height: 28,
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                        ],
-                        SizedBox(
-                          width: 80,
-                          child: Text(
-                            "￥${fmt.format(item.unitPrice * item.quantity)}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13.5,
-                            ),
-                            textAlign: TextAlign.right,
-                          ),
+                        Text(
+                          item.description,
+                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
                         ),
-                        const SizedBox(width: 6),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                            color: Colors.redAccent,
-                            size: 18,
-                          ),
-                          onPressed: () async {
-                            final removed = _items[idx];
-                            setState(() => _items.removeAt(idx));
-                            _pushHistory();
-                            final id = _ensureCurrentId();
-                            final msg = "商品「${removed.description}」を削除しました";
-                            await _editLogRepo.addLog(id, msg);
-                            await _loadEditLogs();
-                          },
-                          tooltip: "削除",
-                          constraints: const BoxConstraints.tightFor(
-                            width: 32,
-                            height: 32,
-                          ),
-                          padding: EdgeInsets.zero,
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                            if (!_isViewMode && !_isLocked)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove, size: 18),
+                                    onPressed: () async {
+                                      if (item.quantity <= 1) return;
+                                      setState(
+                                        () => _items[idx] = item.copyWith(
+                                          quantity: item.quantity - 1,
+                                        ),
+                                      );
+                                      _pushHistory();
+                                      final id = _ensureCurrentId();
+                                      final msg =
+                                          "${item.description} の数量を ${item.quantity - 1} に変更しました";
+                                      await _editLogRepo.addLog(id, msg);
+                                      await _loadEditLogs();
+                                    },
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 28,
+                                      height: 28,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final ctrl = TextEditingController(
+                                        text: '${item.quantity}',
+                                      );
+                                      final result = await showDialog<int>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('数量を入力'),
+                                          content: TextField(
+                                            controller: ctrl,
+                                            keyboardType: TextInputType.number,
+                                            autofocus: true,
+                                            decoration: const InputDecoration(
+                                              labelText: '数量',
+                                            ),
+                                            onSubmitted: (v) {
+                                              final n = int.tryParse(v);
+                                              if (n != null && n >= 1) Navigator.pop(ctx, n);
+                                            },
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx),
+                                              child: const Text('キャンセル'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                final n = int.tryParse(ctrl.text);
+                                                if (n != null && n >= 1) Navigator.pop(ctx, n);
+                                              },
+                                              child: const Text('OK'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (result != null) {
+                                        setState(() => _items[idx] = item.copyWith(quantity: result));
+                                        _pushHistory();
+                                        final id = _ensureCurrentId();
+                                        await _editLogRepo.addLog(id, '${item.description} の数量を $result に変更しました');
+                                        await _loadEditLogs();
+                                      }
+                                    },
+                                    child: SizedBox(
+                                      width: 36,
+                                      child: Text(
+                                        '${item.quantity}',
+                                        style: const TextStyle(fontSize: 12.5),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add, size: 18),
+                                    onPressed: () async {
+                                      setState(
+                                        () => _items[idx] = item.copyWith(
+                                          quantity: item.quantity + 1,
+                                        ),
+                                      );
+                                      _pushHistory();
+                                      final id = _ensureCurrentId();
+                                      final msg =
+                                          "${item.description} の数量を ${item.quantity + 1} に変更しました";
+                                      await _editLogRepo.addLog(id, msg);
+                                      await _loadEditLogs();
+                                    },
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 28,
+                                      height: 28,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                      color: Colors.redAccent,
+                                      size: 18,
+                                    ),
+                                    onPressed: () async {
+                                      final removed = _items[idx];
+                                      setState(() => _items.removeAt(idx));
+                                      _pushHistory();
+                                      final id = _ensureCurrentId();
+                                      final msg = "商品「${removed.description}」を削除しました";
+                                      await _editLogRepo.addLog(id, msg);
+                                      await _loadEditLogs();
+                                    },
+                                    tooltip: "削除",
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 32,
+                                      height: 32,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                    onTap: () async {
-                      if (_isViewMode || _isLocked) return;
-                      final messenger = ScaffoldMessenger.of(context);
-                      final product = await Navigator.push<Product>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const ProductMasterScreen(selectionMode: true),
-                        ),
-                      );
-                      if (product != null) {
-                        if (!mounted) return;
-                        final prevDesc = item.description;
-                        setState(() {
-                          _items[idx] = item.copyWith(
-                            productId: product.id,
-                            description: product.name,
-                            unitPrice: product.defaultUnitPrice,
-                          );
-                        });
-                        _pushHistory();
-                        final id = _ensureCurrentId();
-                        final msg = "商品を $prevDesc から ${product.name} に変更しました";
-                        await _editLogRepo.addLog(id, msg);
-                        await _loadEditLogs();
-                        if (!mounted) return;
-                        messenger.showSnackBar(SnackBar(content: Text(msg)));
-                      }
-                    },
                   ),
                 ),
               );
