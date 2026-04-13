@@ -6,7 +6,6 @@ import '../services/auto_backup_service.dart';
 import '../services/database_helper.dart';
 import '../services/drive_backup_service.dart';
 import '../services/google_account_service.dart';
-import '../services/local_backup_service.dart';
 import 'drive_backup_screen.dart';
 import 'restore_screen.dart';
 
@@ -41,21 +40,12 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = AppSettingsRepository();
-    await prefs.init();
-
-    final autoBackup = await prefs.getAutoBackupEnabled();
-    final googleEnabled = await prefs.getGoogleFeaturesEnabled();
-
-    setState(() {
-      _autoBackupEnabled = autoBackup;
-      _googleFeaturesEnabled = googleEnabled;
-    });
-
+    final prefs = await SharedPreferences.getInstance();
+    _autoBackupEnabled = prefs.getBool('auto_backup_enabled') ?? true;
+    _googleFeaturesEnabled = prefs.getBool('google_features_enabled') ?? false;
     await _loadBackupStatus();
-    if (googleEnabled) {
-      await _loadGoogleAccountInfo();
-    }
+    await _loadGoogleAccountInfo();
+    setState(() {});
   }
 
   Future<void> _loadBackupStatus() async {
