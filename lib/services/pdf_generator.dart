@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:image/image.dart' as img;
 import '../models/invoice_models.dart';
 import 'company_repository.dart';
 import 'activity_log_repository.dart';
@@ -33,7 +34,14 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
   if (companyInfo.sealPath != null) {
     final file = File(companyInfo.sealPath!);
     if (await file.exists()) {
-      sealImage = pw.MemoryImage(await file.readAsBytes());
+      final imageBytes = await file.readAsBytes();
+      final image = img.decodeImage(imageBytes);
+      if (image != null) {
+        // 画像の周辺の黒い枠をトリミング
+        final croppedImage = img.trim(image, mode: img.TrimMode.transparent);
+        final croppedBytes = img.encodePng(croppedImage);
+        sealImage = pw.MemoryImage(croppedBytes);
+      }
     }
   }
 
