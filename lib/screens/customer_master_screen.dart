@@ -323,6 +323,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   String _normalizedName(String name) {
     var n = name.replaceAll(RegExp(r"\s+"), "");
+    
+    // 敬称除去（様、御中、殿、先生）
+    n = n.replaceAll(RegExp(r"[\s\u3000]*(様|御中|殿|先生)$"), "");
+    
     if (_ignoreCorpPrefix) {
       for (final token in [
         "株式会社",
@@ -1080,27 +1084,6 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         leading: const BackButton(),
         title: Text(widget.selectionMode ? "C2:顧客選択" : "C1:顧客一覧"),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            tooltip: "ソート",
-            onPressed: () {
-              showMenu<String>(
-                context: context,
-                position: const RelativeRect.fromLTRB(100, 80, 0, 0),
-                items: const [
-                  PopupMenuItem(value: 'name_asc', child: Text('名前昇順')),
-                  PopupMenuItem(value: 'name_desc', child: Text('名前降順')),
-                ],
-              ).then((val) {
-                if (val != null) {
-                  setState(() {
-                    _sortKey = val;
-                    _applyFilter();
-                  });
-                }
-              });
-            },
-          ),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _sortKey,
