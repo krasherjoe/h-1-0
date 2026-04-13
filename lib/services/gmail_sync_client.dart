@@ -136,51 +136,9 @@ class GmailSyncClient extends GoogleApiServiceBase {
     String clientId,
     GmailEnvelopeEncoding encoding,
   ) async {
-    final pending = await _invoiceRepository.pendingSyncSnapshots(limit: 5);
-    if (pending.isEmpty) return;
-
-    final bccAddress = await _settingsRepository.getGmailSyncBccAddress();
-    if (bccAddress == null || bccAddress.isEmpty) {
-      debugPrint('[GmailSync] skip invoice push: BCC アドレス未設定');
-      return;
-    }
-
-    final synced = <String>[];
-
-    for (final snapshot in pending) {
-      final payload = snapshot.toPayload();
-      final raw = await _buildEnvelopeRaw(
-        bccAddress: bccAddress,
-        clientId: clientId,
-        messageId: 'invoice:${payload.recordId}:${snapshot.updatedAtMs}',
-        payloadType: _payloadTypeInvoiceSnapshot,
-        payload: payload.toJson(),
-        createdAtMs: snapshot.updatedAtMs,
-        encoding: encoding,
-      );
-      try {
-        final response = await api.users.messages.send(
-          gmail.Message()..raw = raw,
-          _userId,
-        );
-        synced.add(payload.recordId);
-        if (response.id != null) {
-          await _tagMessage(
-            api,
-            response.id!,
-            labelId: await _settingsRepository.getGmailSyncLabelId(),
-          );
-        }
-      } catch (err) {
-        debugPrint('[GmailSync] invoice push ${payload.recordId} failed: $err');
-        break;
-      }
-    }
-
-    if (synced.isNotEmpty) {
-      await _invoiceRepository.markSynced(synced);
-      debugPrint('[GmailSync] pushed ${synced.length} invoices');
-    }
+    // 受け側が存在しないため、伝票データの送信は無効化
+    debugPrint('[GmailSync] invoice push disabled: receiver not available');
+    return;
   }
 
   Future<void> _fetchInbound(
