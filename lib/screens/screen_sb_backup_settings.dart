@@ -43,7 +43,10 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _autoBackupEnabled = prefs.getBool('auto_backup_enabled') ?? true;
-    _googleFeaturesEnabled = prefs.getBool('google_features_enabled') ?? false;
+    // Google連携設定はSQLiteから読み込み（S1設定画面と同じ）
+    final repo = AppSettingsRepository();
+    _googleFeaturesEnabled = await repo.getGoogleFeaturesEnabled();
+    debugPrint('[SB] Google連携設定: $_googleFeaturesEnabled');
     await _loadBackupStatus();
     await _loadGoogleAccountInfo();
     setState(() {});
