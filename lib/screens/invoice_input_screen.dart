@@ -603,7 +603,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _titleBarFlash
-                  ? Colors.white.withValues(alpha: 0.3)
+                  ? Colors.white.withOpacity(0.3)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
@@ -622,7 +622,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               padding: EdgeInsets.all(_showCopyBadge ? 4 : 0),
               decoration: BoxDecoration(
                 color: _showCopyBadge
-                    ? Colors.white.withValues(alpha: 0.4)
+                    ? Colors.white.withOpacity(0.4)
                     : Colors.transparent,
                 shape: BoxShape.circle,
               ),
@@ -789,7 +789,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: Colors.black.withOpacity(0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -862,7 +862,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -1326,7 +1326,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: Colors.black.withOpacity(0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
