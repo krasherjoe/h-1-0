@@ -987,79 +987,47 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
 
     final currentType = _currentInvoice.documentType;
 
-    // 変換可能なタイプを決定
-    List<String> options = [];
-    switch (currentType) {
-      case DocumentType.estimation:
-        // 見積 → 納品または請求
-        options = ['納品書', '請求書'];
-        break;
-      case DocumentType.delivery:
-        // 納品 → 請求
-        options = ['請求書'];
-        break;
-      case DocumentType.invoice:
-        // 請求 → 領収
-        options = ['領収書'];
-        break;
-      default:
-        return; // 他のタイプは変換不可
-    }
+    // 全種類（現在のタイプを除く）
+    const allTypes = [
+      DocumentType.estimation,
+      DocumentType.order,
+      DocumentType.delivery,
+      DocumentType.invoice,
+      DocumentType.receipt,
+    ];
+    final options = allTypes.where((t) => t != currentType).toList();
 
-    final selected = await showDialog<String>(
+    final selected = await showModalBottomSheet<DocumentType>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ドキュメントタイプを変更'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '現在のタイプ：${_documentTypeLabel(currentType)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                '現在: ${_documentTypeLabel(currentType)}  →  変更先を選択',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
-              Text('変更先を選択してください'),
-              const SizedBox(height: 12),
-              ...options.map(
-                (label) => ListTile(
-                  leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
-                  title: Text(label),
-                  onTap: () {
-                    Navigator.pop(context, label);
-                  },
-                ),
+            ),
+            const Divider(),
+            ...options.map(
+              (type) => ListTile(
+                leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+                title: Text(_documentTypeLabel(type)),
+                onTap: () => Navigator.pop(context, type),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-        ],
       ),
     );
 
     if (selected == null) return;
-
-    // タイプ変換
-    DocumentType newType;
-    switch (selected) {
-      case '納品書':
-        newType = DocumentType.delivery;
-        break;
-      case '請求書':
-        newType = DocumentType.invoice;
-        break;
-      case '領収書':
-        newType = DocumentType.receipt;
-        break;
-      default:
-        return;
-    }
+    final newType = selected;
 
     final updatedInvoice = _currentInvoice.copyWith(documentType: newType);
 

@@ -130,28 +130,28 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (_isLocked || !_isDraft) return;
 
     final currentType = _documentType;
-    String? newTypeLabel;
 
-    // 変換可能なタイプを決定
-    List<String> options = [];
-    switch (currentType) {
-      case DocumentType.estimation:
-        // 見積 → 納品または請求
-        options = ['納品書', '請求書'];
-        break;
-      case DocumentType.delivery:
-        // 納品 → 請求
-        options = ['請求書'];
-        break;
-      case DocumentType.invoice:
-        // 請求 → 領収
-        options = ['領収書'];
-        break;
-      default:
-        return; // 他のタイプは変換不可
+    // 全種類（現在のタイプを除く）
+    const allTypes = [
+      DocumentType.estimation,
+      DocumentType.order,
+      DocumentType.delivery,
+      DocumentType.invoice,
+      DocumentType.receipt,
+    ];
+    final options = allTypes.where((t) => t != currentType).toList();
+
+    String _typeLabel(DocumentType t) {
+      switch (t) {
+        case DocumentType.estimation: return '見積書';
+        case DocumentType.order:      return '受注伝票';
+        case DocumentType.delivery:   return '納品書';
+        case DocumentType.invoice:    return '請求書';
+        case DocumentType.receipt:    return '領収書';
+      }
     }
 
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showModalBottomSheet<DocumentType>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -160,21 +160,19 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'ドキュメントタイプを変更',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                '現在: ${_typeLabel(currentType)}  →  変更先を選択',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
             const Divider(),
             ...options.map(
-              (label) => ListTile(
+              (type) => ListTile(
                 leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
-                title: Text(label),
-                onTap: () {
-                  Navigator.pop(context, label);
-                },
+                title: Text(_typeLabel(type)),
+                onTap: () => Navigator.pop(context, type),
               ),
             ),
           ],
@@ -183,22 +181,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
 
     if (selected == null) return;
-
-    // タイプ変換
-    DocumentType newType;
-    switch (selected) {
-      case '納品書':
-        newType = DocumentType.delivery;
-        break;
-      case '請求書':
-        newType = DocumentType.invoice;
-        break;
-      case '領収書':
-        newType = DocumentType.receipt;
-        break;
-      default:
-        return;
-    }
+    final newType = selected;
 
     setState(() {
       _documentType = newType;
