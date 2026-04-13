@@ -251,7 +251,10 @@ class Invoice {
 
   String get mailAttachmentFileName => '$mailTitleCore.pdf';
 
-  String get mailBodyText => '請求書をお送りします。ご確認ください。';
+  String get mailBodyText {
+    final docName = documentTypeName.replaceAll('書', '');
+    return '$docNameをお送りします。ご確認ください。\n※このメールはシステムにより自動送信されています。';
+  }
 
   static String _sanitizeForFile(String input) {
     var sanitized = input.replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
