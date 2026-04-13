@@ -174,13 +174,19 @@ class _RichMasterEditDialogState<T>
     }
 
     final label = field.required ? '${field.label} *' : field.label;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? colorScheme.surfaceContainerHighest : Colors.white;
+    final borderColor = isDark ? colorScheme.outline : Colors.grey.shade300;
+    final focusedBorderColor = colorScheme.primary;
+    final shadowColor = isDark ? Colors.transparent : Colors.black.withOpacity(0.08);
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: shadowColor,
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -193,18 +199,18 @@ class _RichMasterEditDialogState<T>
           hintText: field.hint,
           suffixIcon: suffix,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: fillColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: borderColor),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: borderColor),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
+            borderSide: BorderSide(color: focusedBorderColor, width: 2),
           ),
           counterText: field.maxLength != null ? '' : null,
         ),
@@ -223,9 +229,12 @@ class _RichMasterEditDialogState<T>
     RichMasterSection section,
     RichMasterEditController controller,
   ) {
+    final cardColor = Theme.of(context).brightness == Brightness.dark
+        ? Theme.of(context).colorScheme.surfaceContainer
+        : Colors.grey.shade200;
     return Card(
       elevation: 8,
-      color: Colors.grey.shade200,
+      color: cardColor,
       shadowColor: Colors.black.withOpacity(0.15),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
