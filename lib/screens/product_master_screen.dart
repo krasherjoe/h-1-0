@@ -332,7 +332,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         );
       },
       // フッター透明度設定（キャンセル/保存ボタンの後ろのコンテンツが見えるように）
-      footerColor: Colors.white.withOpacity(0.3),
+      footerColor: Colors.white.withOpacity(0.05),
     );
 
     if (result != null) {
