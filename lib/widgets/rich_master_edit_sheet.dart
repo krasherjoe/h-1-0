@@ -224,8 +224,9 @@ class _RichMasterEditDialogState<T>
     RichMasterEditController controller,
   ) {
     return Card(
-      elevation: 2,
+      elevation: 8,
       color: Colors.grey.shade200,
+      shadowColor: Colors.black.withOpacity(0.15),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),

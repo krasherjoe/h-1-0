@@ -196,8 +196,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       existing: product,
       sections: [
         RichMasterSection(
-          title: '基本情報',
-          description: '商品名・カテゴリ・バーコードを登録します',
+          title: '商品情報',
+          description: '商品の基本情報、価格、在庫を登録します',
           fields: [
             const MasterFieldConfig(
               key: 'name',
@@ -274,19 +274,13 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 );
               },
             ),
-          ],
-        ),
-        RichMasterSection(
-          title: '価格・在庫',
-          description: '販売単価や在庫数を管理します',
-          fields: const [
-            MasterFieldConfig(
+            const MasterFieldConfig(
               key: 'defaultUnitPrice',
               label: '標準単価 (税抜)',
               hint: '例: 1980',
               keyboardType: TextInputType.number,
             ),
-            MasterFieldConfig(
+            const MasterFieldConfig(
               key: 'stockQuantity',
               label: '在庫数',
               hint: '例: 120',
