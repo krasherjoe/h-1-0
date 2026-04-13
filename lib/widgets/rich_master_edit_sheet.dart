@@ -337,10 +337,11 @@ class _RichMasterEditDialogState<T>
           width: maxWidth,
           child: Column(
             children: [
-              Container(
-                color: widget.headerColor,
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-                child: Row(
+              ColoredBox(
+                color: widget.headerColor ?? Colors.transparent,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                  child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -373,10 +374,11 @@ class _RichMasterEditDialogState<T>
                       ),
                   ],
                 ),
+                ),
               ),
               const Divider(height: 1),
-              Container(
-                color: widget.contentColor,
+              ColoredBox(
+                color: widget.contentColor ?? Colors.transparent,
                 child: Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
@@ -404,23 +406,25 @@ class _RichMasterEditDialogState<T>
                 ),
               ),
               const Divider(height: 1),
-              Container(
-                color: widget.footerColor,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('キャンセル'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('保存'),
-                      onPressed: () => _handleSave(richController),
-                    ),
-                  ],
+              ColoredBox(
+                color: widget.footerColor ?? Colors.transparent,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('キャンセル'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text('保存'),
+                        onPressed: () => _handleSave(richController),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
