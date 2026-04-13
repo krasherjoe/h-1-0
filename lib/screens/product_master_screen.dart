@@ -285,6 +285,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               label: '在庫数',
               hint: '例: 120',
               keyboardType: TextInputType.number,
+              flex: 1,
             ),
           ],
         ),
