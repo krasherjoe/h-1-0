@@ -161,7 +161,7 @@ class Invoice {
     final input =
         "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${subject ?? ""}|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
     final bytes = utf8.encode(input);
-    return sha256.convert(bytes).toString().substring(0, 8).toUpperCase();
+    return sha256.convert(bytes).toString().toUpperCase();
   }
 
   String get documentTypeName {
