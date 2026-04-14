@@ -147,7 +147,6 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
       headChar1: _head1Ctl.text.trim().isEmpty ? null : _head1Ctl.text.trim(),
       headChar2: _head2Ctl.text.trim().isEmpty ? null : _head2Ctl.text.trim(),
       isLocked: false,
-      isHidden: false, // ロックされたレコードの編集は新マスタとしてフォークするため、削除フラグはクリア
     );
     Navigator.pop(context, newCustomer);
   }
