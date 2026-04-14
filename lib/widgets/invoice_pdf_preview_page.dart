@@ -10,7 +10,7 @@ import '../services/pdf_generator.dart';
 
 /// 請求書 PDF プレビューウィジェット
 ///
-/// ScreenID: 02
+/// ScreenID: PP
 ///
 /// 機能：
 /// - PDF プレビュー表示
@@ -144,9 +144,9 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
-            Text("PDF プレビュー"),
+            Text("PP:PDF プレビュー"),
             Text(
-              "ScreenID: 02",
+              "請求書・見積書のプレビュー",
               style: TextStyle(fontSize: 11, color: Colors.white70),
             ),
           ],
