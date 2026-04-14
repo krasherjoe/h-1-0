@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// タイトルバーを左右スワイプでズームできるAppBarラッパー
+/// ピンチインアウトとタイトルバースワイプでズームできるAppBarラッパー
+///
+/// 機能：
+/// - ピンチインアウト（2本指での拡大縮小）
+/// - タイトルバー左右スワイプでのズーム
 ///
 /// 使用方法：
 /// ```dart
@@ -39,6 +43,21 @@ class _ZoomableAppBarState extends State<ZoomableAppBar> {
     return Scaffold(
       appBar: widget.appBar,
       body: GestureDetector(
+        // ピンチインアウト（拡大縮小）ジェスチャー
+        onScaleStart: (details) {
+          _startScale = _scale;
+        },
+        onScaleUpdate: (details) {
+          _scale = (_startScale * details.scale).clamp(
+            widget.minScale,
+            widget.maxScale,
+          );
+          setState(() {});
+        },
+        onScaleEnd: (details) {
+          setState(() {});
+        },
+        // タイトルバー左右スワイプでのズーム
         onHorizontalDragStart: (details) {
           _startScale = _scale;
           _startX = details.globalPosition.dx;

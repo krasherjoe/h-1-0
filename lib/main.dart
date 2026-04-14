@@ -547,24 +547,25 @@ class _MyAppState extends State<MyApp> {
             fontFamily: 'IPAexGothic',
           );
         } else if (themeString == 'gray') {
+          // グレーテーマ（少し暗め）
           theme = ThemeData(
             brightness: Brightness.light,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.grey.shade700,
-              primary: Colors.grey.shade700,
+              seedColor: Colors.grey.shade600,
+              primary: Colors.grey.shade600,
               secondary: Colors.blueGrey.shade400,
-              surface: Colors.grey.shade200,
-              onSurface: Colors.grey.shade900,
+              surface: const Color(0xFFE0E0E0),
+              onSurface: Colors.grey.shade800,
             ),
-            scaffoldBackgroundColor: Colors.grey.shade200,
+            scaffoldBackgroundColor: const Color(0xFFD0D0D0),
             appBarTheme: AppBarTheme(
-              backgroundColor: Colors.grey.shade700,
+              backgroundColor: Colors.grey.shade600,
               foregroundColor: Colors.white,
               elevation: 0,
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade700,
+                backgroundColor: Colors.grey.shade600,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -578,22 +579,22 @@ class _MyAppState extends State<MyApp> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                side: BorderSide(color: Colors.grey.shade700),
-                foregroundColor: Colors.grey.shade700,
+                side: BorderSide(color: Colors.grey.shade600),
+                foregroundColor: Colors.grey.shade600,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: Colors.white,
+              fillColor: const Color(0xFFF0F0F0),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade400),
+                borderSide: BorderSide(color: Colors.grey.shade500),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade700, width: 1.4),
+                borderSide: BorderSide(color: Colors.grey.shade600, width: 1.4),
               ),
             ),
             visualDensity: VisualDensity.adaptivePlatformDensity,
