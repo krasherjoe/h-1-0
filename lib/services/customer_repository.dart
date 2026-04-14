@@ -57,39 +57,59 @@ class CustomerRepository {
 
   /// 重複チェック（電話番号・メール・社名）
   /// 削除フラグ（is_hidden = 1）のデータは除外
+  /// excludeIdを指定すると、そのIDの顧客を除外してチェックする（編集時用）
   Future<bool> checkDuplicate({
     String? tel,
     String? email,
     String? name,
+    String? excludeId,
   }) async {
     final db = await _dbHelper.database;
 
     // 電話番号で検索（customers テーブルの tel のみ参照）
     if (tel != null && tel.isNotEmpty) {
+      String where = 'tel = ? AND is_hidden = 0';
+      List<dynamic> whereArgs = [tel];
+      if (excludeId != null) {
+        where += ' AND id != ?';
+        whereArgs.add(excludeId);
+      }
       final result = await db.query(
         'customers',
-        where: 'tel = ? AND is_hidden = 0',
-        whereArgs: [tel],
+        where: where,
+        whereArgs: whereArgs,
       );
       if (result.isNotEmpty) return true;
     }
 
     // メールで検索（customers テーブルの email のみ参照）
     if (email != null && email.isNotEmpty) {
+      String where = 'email = ? AND is_hidden = 0';
+      List<dynamic> whereArgs = [email];
+      if (excludeId != null) {
+        where += ' AND id != ?';
+        whereArgs.add(excludeId);
+      }
       final result = await db.query(
         'customers',
-        where: 'email = ? AND is_hidden = 0',
-        whereArgs: [email],
+        where: where,
+        whereArgs: whereArgs,
       );
       if (result.isNotEmpty) return true;
     }
 
     // 社名（表示名・正式名称）で検索
     if (name != null && name.isNotEmpty) {
+      String where = '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0';
+      List<dynamic> whereArgs = ['%$name%', '%$name%'];
+      if (excludeId != null) {
+        where += ' AND id != ?';
+        whereArgs.add(excludeId);
+      }
       final result = await db.query(
         'customers',
-        where: '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0',
-        whereArgs: ['%$name%', '%$name%'],
+        where: where,
+        whereArgs: whereArgs,
       );
       if (result.isNotEmpty) return true;
     }
@@ -124,11 +144,13 @@ class CustomerRepository {
     final db = await _dbHelper.database;
 
     // 重複チェック（force=false の場合）
+    // 編集時は自分自身を除外してチェック
     if (!force) {
       final isDuplicate = await checkDuplicate(
         tel: customer.tel,
         email: customer.email,
         name: customer.displayName,
+        excludeId: customer.id,
       );
 
       if (isDuplicate) {
