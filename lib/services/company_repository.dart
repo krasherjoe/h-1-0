@@ -22,7 +22,9 @@ class CompanyRepository {
     try {
       final db = await _dbHelper.database;
       final List<Map<String, dynamic>> maps = await db.query('company_info', where: 'id = 1');
+      print('DEBUG: company_info query returned ${maps.length} rows');
       if (maps.isEmpty) {
+        print('DEBUG: No company_info found, returning sample data');
         final sample = CompanyInfo(
           name: "販売アシスト1号 サンプル会社",
           zipCode: "100-0001",
@@ -37,6 +39,7 @@ class CompanyRepository {
         return sample;
       }
       final map = maps.first;
+      print('DEBUG: company_info raw map: $map');
       final company = CompanyInfo(
         name: map['name'] ?? '',
         zipCode: map['zip_code'],
@@ -50,6 +53,7 @@ class CompanyRepository {
         taxDisplayMode: map['tax_display_mode'] ?? 'normal',
         registrationNumber: map['registration_number'],
       );
+      print('DEBUG: Loaded company registrationNumber: ${company.registrationNumber}');
       return company;
     } catch (e) {
       print('CompanyRepository.getCompanyInfo エラー: $e');
@@ -96,9 +100,18 @@ class CompanyRepository {
     
     // registrationNumberがnullの場合、明示的にNULLを設定（SQLiteのINSERT OR REPLACEの挙動対策）
     if (info.registrationNumber == null) {
-      await db.rawUpdate(
+      print('DEBUG: Setting registration_number to NULL');
+      final result = await db.rawUpdate(
         'UPDATE company_info SET registration_number = NULL WHERE id = 1',
       );
+      print('DEBUG: rawUpdate result (rows affected): $result');
+      // 確認のために再度クエリ
+      final check = await db.query('company_info', where: 'id = 1');
+      if (check.isNotEmpty) {
+        print('DEBUG: After NULL update, registration_number: ${check.first['registration_number']}');
+      }
+    } else {
+      print('DEBUG: Saving registrationNumber: ${info.registrationNumber}');
     }
   }
 }
