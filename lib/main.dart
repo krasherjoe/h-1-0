@@ -405,123 +405,183 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
+    return ValueListenableBuilder<String>(
       valueListenable: AppThemeController.instance.notifier,
-      builder: (context, mode, _) => MaterialApp(
-        title: '販売アシスト 1 号',
-        // NOTE: InteractiveViewer 削除に伴い、ズームリセット Observer は不要
-        // navigatorObservers: [_ZoomResetObserver(_zoomController)],
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700)
-              .copyWith(
-                primary: Colors.indigo.shade700,
-                secondary: Colors.deepOrange.shade400,
-                surface: Colors.grey.shade100,
-                onSurface: Colors.blueGrey.shade900,
-              ),
-          scaffoldBackgroundColor: Colors.grey.shade100,
-          appBarTheme: AppBarTheme(
-            backgroundColor: Colors.indigo.shade700,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              side: BorderSide(color: Colors.indigo.shade700),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.indigo.shade700, width: 1.4),
-            ),
-          ),
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          useMaterial3: true,
-          fontFamily: 'IPAexGothic',
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.indigo,
+      builder: (context, themeString, _) {
+        ThemeData theme;
+        if (themeString == 'dark') {
+          theme = ThemeData(
             brightness: Brightness.dark,
-          ),
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1E1E1E),
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          cardTheme: const CardThemeData(
-            color: Color(0xFF1E1E1E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.indigo,
+              brightness: Brightness.dark,
             ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo.shade400,
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF1E1E1E),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              elevation: 0,
             ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
+            cardTheme: const CardThemeData(
+              color: Color(0xFF1E1E1E),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
-              side: const BorderSide(color: Colors.white70),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo.shade400,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: const BorderSide(color: Colors.white70),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: const Color(0xFF2C2C2C),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Colors.indigoAccent,
+                  width: 1.4,
+                ),
+              ),
+              labelStyle: const TextStyle(color: Colors.white70),
+              hintStyle: const TextStyle(color: Colors.white54),
+            ),
+            snackBarTheme: const SnackBarThemeData(
+              backgroundColor: Color(0xFF2C2C2C),
+              contentTextStyle: TextStyle(color: Colors.white),
+            ),
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            useMaterial3: true,
+            fontFamily: 'IPAexGothic',
+          );
+        } else if (themeString == 'gray') {
+          theme = ThemeData(
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.grey.shade700,
+              primary: Colors.grey.shade700,
+              secondary: Colors.blueGrey.shade400,
+              surface: Colors.grey.shade200,
+              onSurface: Colors.grey.shade900,
+            ),
+            scaffoldBackgroundColor: Colors.grey.shade200,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.grey.shade700,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              elevation: 0,
             ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: const Color(0xFF2C2C2C),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.indigoAccent,
-                width: 1.4,
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey.shade700,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            labelStyle: const TextStyle(color: Colors.white70),
-            hintStyle: const TextStyle(color: Colors.white54),
-          ),
-          snackBarTheme: const SnackBarThemeData(
-            backgroundColor: Color(0xFF2C2C2C),
-            contentTextStyle: TextStyle(color: Colors.white),
-          ),
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          useMaterial3: true,
-          fontFamily: 'IPAexGothic',
-        ),
-        themeMode: mode,
-        builder: (context, child) {
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(color: Colors.grey.shade700),
+                foregroundColor: Colors.grey.shade700,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade400),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade700, width: 1.4),
+              ),
+            ),
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            useMaterial3: true,
+            fontFamily: 'IPAexGothic',
+          );
+        } else {
+          // light or system (default to light)
+          theme = ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700)
+                .copyWith(
+                  primary: Colors.indigo.shade700,
+                  secondary: Colors.deepOrange.shade400,
+                  surface: Colors.grey.shade100,
+                  onSurface: Colors.blueGrey.shade900,
+                ),
+            scaffoldBackgroundColor: Colors.grey.shade100,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.indigo.shade700,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(color: Colors.indigo.shade700),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.indigo.shade700, width: 1.4),
+              ),
+            ),
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            useMaterial3: true,
+            fontFamily: 'IPAexGothic',
+          );
+        }
+        
+        return MaterialApp(
+          title: '販売アシスト 1 号',
+          theme: theme,
+          themeMode: themeString == 'system' ? ThemeMode.system : ThemeMode.light,
+          builder: (context, child) {
           // キーボード表示時のせり上がり問題を回避するため、InteractiveViewer は削除
           // ズーム機能が必要な画面のみに個別に適用する（必要に応じて）
           Widget widget = GestureDetector(
@@ -596,8 +656,9 @@ class _MyAppState extends State<MyApp> {
 
           return widget;
         },
-        home: const _HomeDecider(),
-      ),
+          home: const _HomeDecider(),
+        );
+      },
     );
   }
 }
