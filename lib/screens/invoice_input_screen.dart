@@ -592,7 +592,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text("A1:${_documentTypeLabel(_documentType)}"),
+            child: Text(_documentTypeLabel(_documentType)),
           ),
         ),
         actions: [

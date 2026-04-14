@@ -195,7 +195,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    "A1:請求書",
+                    "",
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),

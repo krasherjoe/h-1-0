@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/custom_field_model.dart';
 import '../services/custom_field_repository.dart';
+import '../widgets/zoomable_app_bar.dart';
 
 /// カスタムフィールド編集画面
 class CustomFieldEditScreen extends StatefulWidget {
@@ -173,7 +174,7 @@ class _CustomFieldEditScreenState extends State<CustomFieldEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ZoomableAppBar(
       appBar: AppBar(
         title: Text(widget.existingField != null ? 'C2:フィールド編集' : 'C2:フィールド追加'),
         actions: [
@@ -189,7 +190,7 @@ class _CustomFieldEditScreenState extends State<CustomFieldEditScreen> {
           ),
         ],
       ),
-      body: Form(
+      child: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),

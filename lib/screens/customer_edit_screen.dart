@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import '../models/customer_model.dart';
 import '../widgets/contact_picker_sheet.dart';
+import '../widgets/zoomable_app_bar.dart';
 import '../models/customer_model.dart' show HonorificCode;
 
 /// C2: 顧客 新規登録 / 編集 フルスクリーンフォーム
@@ -201,7 +202,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
+    return ZoomableAppBar(
       appBar: AppBar(
         leading: const BackButton(),
         title: Text(_isEdit ? 'C2:顧客を編集' : 'C2:顧客を新規登録'),
@@ -219,7 +220,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
           ),
         ],
       ),
-      body: Form(
+      child: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
