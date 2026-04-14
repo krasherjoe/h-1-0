@@ -158,7 +158,9 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                     if (companyInfo.fax != null && companyInfo.fax!.isNotEmpty) pw.Text("FAX: ${companyInfo.fax}"),
                     if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text("MAIL: ${companyInfo.email}"),
                     if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text("URL: ${companyInfo.url}"),
-                    if (companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty)
+                    if (companyInfo.registrationNumber != null && 
+                        companyInfo.registrationNumber!.isNotEmpty &&
+                        companyInfo.taxDisplayMode != 'hidden')
                       pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
