@@ -41,7 +41,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
           // テーマ選択セクション
           Container(
             padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(16),
+            margin: const  EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color(0xFF1E1E1E)
@@ -55,40 +55,41 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   'アプリテーマ',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                const SizedBox(height: 16),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                      value: 'system',
-                      label: Text('システム'),
-                      icon: Icon(Icons.brightness_auto),
-                    ),
-                    ButtonSegment(
-                      value: 'light',
-                      label: Text('ライト'),
-                      icon: Icon(Icons.light_mode),
-                    ),
-                    ButtonSegment(
-                      value: 'gray',
-                      label: Text('グレー'),
-                      icon: Icon(Icons.color_lens),
-                    ),
-                    ButtonSegment(
-                      value: 'dark-gray',
-                      label: Text('ダークグレー'),
-                      icon: Icon(Icons.nights_stay),
-                    ),
-                    ButtonSegment(
-                      value: 'dark',
-                      label: Text('ダーク'),
-                      icon: Icon(Icons.dark_mode),
-                    ),
-                  ],
-                  selected: {_theme},
-                  onSelectionChanged: (s) async {
-                    await AppThemeController.instance.setTheme(s.first);
-                    setState(() => _theme = s.first);
-                  },
+                const SizedBox(height: 8),
+                _buildThemeListTile(
+                  value: 'system',
+                  title: 'システム設定に従う',
+                  subtitle: '端末の設定に合わせて自動的に切り替え',
+                  icon: Icons.brightness_auto,
+                  color: Colors.blue,
+                ),
+                _buildThemeListTile(
+                  value: 'light',
+                  title: 'ライト',
+                  subtitle: '明るい白ベースのテーマ',
+                  icon: Icons.light_mode,
+                  color: Colors.orange,
+                ),
+                _buildThemeListTile(
+                  value: 'gray',
+                  title: 'グレー',
+                  subtitle: '落ち着いた灰色ベースのテーマ',
+                  icon: Icons.color_lens,
+                  color: Colors.grey,
+                ),
+                _buildThemeListTile(
+                  value: 'dark-gray',
+                  title: 'ダークグレー',
+                  subtitle: '落ち着いた濃い灰色のテーマ（明るめ）',
+                  icon: Icons.nights_stay,
+                  color: Colors.blueGrey,
+                ),
+                _buildThemeListTile(
+                  value: 'dark',
+                  title: 'ダーク',
+                  subtitle: '黒ベースのダークテーマ',
+                  icon: Icons.dark_mode,
+                  color: Colors.indigo,
                 ),
               ],
             ),
@@ -110,25 +111,20 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   'サマリーテーマ',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                const SizedBox(height: 16),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                      value: 'white',
-                      label: Text('ホワイト'),
-                      icon: Icon(Icons.brightness_7),
-                    ),
-                    ButtonSegment(
-                      value: 'gray',
-                      label: Text('グレー'),
-                      icon: Icon(Icons.color_lens),
-                    ),
-                  ],
-                  selected: {_summaryTheme},
-                  onSelectionChanged: (s) async {
-                    await _repo.setSummaryTheme(s.first);
-                    setState(() => _summaryTheme = s.first);
-                  },
+                const SizedBox(height: 8),
+                _buildSummaryThemeListTile(
+                  value: 'white',
+                  title: 'ホワイト',
+                  subtitle: '白背景で表示',
+                  icon: Icons.brightness_7,
+                  color: Colors.white,
+                ),
+                _buildSummaryThemeListTile(
+                  value: 'gray',
+                  title: 'グレー',
+                  subtitle: 'グレー背景で表示',
+                  icon: Icons.color_lens,
+                  color: Colors.grey.shade300,
                 ),
               ],
             ),
@@ -395,6 +391,64 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeListTile({
+    required String value,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isSelected = _theme == value;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: isSelected ? color.withOpacity(0.15) : null,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.2),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: isSelected
+            ? Icon(Icons.check_circle, color: color)
+            : const Icon(Icons.circle_outlined, color: Colors.grey),
+        onTap: () async {
+          await AppThemeController.instance.setTheme(value);
+          setState(() => _theme = value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryThemeListTile({
+    required String value,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isSelected = _summaryTheme == value;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: isSelected ? color.withOpacity(0.15) : null,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.2),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: isSelected
+            ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor)
+            : const Icon(Icons.circle_outlined, color: Colors.grey),
+        onTap: () async {
+          await _repo.setSummaryTheme(value);
+          setState(() => _summaryTheme = value);
+        },
       ),
     );
   }

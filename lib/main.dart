@@ -476,31 +476,32 @@ class _MyAppState extends State<MyApp> {
             fontFamily: 'IPAexGothic',
           );
         } else if (themeString == 'dark-gray') {
+          // より明るいダークグレーテーマ
           theme = ThemeData(
             brightness: Brightness.dark,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.grey.shade700,
+              seedColor: Colors.grey.shade600,
               brightness: Brightness.dark,
-              primary: Colors.grey.shade400,
-              secondary: Colors.blueGrey.shade400,
-              surface: Colors.grey.shade900,
+              primary: Colors.grey.shade300,
+              secondary: Colors.blueGrey.shade300,
+              surface: const Color(0xFF4A4A4A),
               onSurface: Colors.grey.shade100,
             ),
-            scaffoldBackgroundColor: const Color(0xFF1A1A1A),
-            appBarTheme: AppBarTheme(
-              backgroundColor: Colors.grey.shade900,
+            scaffoldBackgroundColor: const Color(0xFF3A3A3A),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF4A4A4A),
               foregroundColor: Colors.white,
               elevation: 0,
             ),
-            cardTheme: CardThemeData(
-              color: Colors.grey.shade900,
+            cardTheme: const CardThemeData(
+              color: Color(0xFF4A4A4A),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade700,
+                backgroundColor: const Color(0xFF5A5A5A),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -514,32 +515,32 @@ class _MyAppState extends State<MyApp> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                side: BorderSide(color: Colors.grey.shade400),
-                foregroundColor: Colors.grey.shade400,
+                side: const BorderSide(color: Color(0xFF6A6A6A)),
+                foregroundColor: Colors.grey.shade300,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: Colors.grey.shade800,
+              fillColor: const Color(0xFF4A4A4A),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade600),
+                borderSide: const BorderSide(color: Color(0xFF5A5A5A)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Colors.grey.shade400,
+                borderSide: const BorderSide(
+                  color: Color(0xFF7A7A7A),
                   width: 1.4,
                 ),
               ),
-              labelStyle: TextStyle(color: Colors.grey.shade400),
-              hintStyle: TextStyle(color: Colors.grey.shade600),
+              labelStyle: const TextStyle(color: Color(0xFFBBBBBB)),
+              hintStyle: const TextStyle(color: Color(0xFF888888)),
             ),
-            snackBarTheme: SnackBarThemeData(
-              backgroundColor: Colors.grey.shade800,
-              contentTextStyle: TextStyle(color: Colors.grey.shade100),
+            snackBarTheme: const SnackBarThemeData(
+              backgroundColor: Color(0xFF4A4A4A),
+              contentTextStyle: TextStyle(color: Colors.white),
             ),
             visualDensity: VisualDensity.adaptivePlatformDensity,
             useMaterial3: true,
