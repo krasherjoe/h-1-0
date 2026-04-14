@@ -70,10 +70,31 @@ class CompanyRepository {
   Future<void> saveCompanyInfo(CompanyInfo info) async {
     final db = await _dbHelper.database;
     await ensureCompanyColumns();
-    await db.insert(
-      'company_info',
-      info.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    
+    final map = info.toMap();
+    
+    // registrationNumberがnullの場合、明示的にNULLを設定するためにUPDATEを使用
+    if (info.registrationNumber == null) {
+      await db.update(
+        'company_info',
+        map,
+        where: 'id = ?',
+        whereArgs: [1],
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      // registration_numberカラムをNULLに設定
+      await db.update(
+        'company_info',
+        {'registration_number': null},
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+    } else {
+      await db.insert(
+        'company_info',
+        map,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 }

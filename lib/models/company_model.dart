@@ -26,7 +26,7 @@ class CompanyInfo {
   });
 
   Map<String, dynamic> toMap() {
-    return {
+    final map = {
       'id': 1, // 常に1行のみ保持
       'name': name,
       'zip_code': zipCode,
@@ -38,8 +38,12 @@ class CompanyInfo {
       'default_tax_rate': defaultTaxRate,
       'seal_path': sealPath,
       'tax_display_mode': taxDisplayMode,
-      'registration_number': registrationNumber, // 追加
     };
+    // registrationNumberがnullでない場合のみ追加
+    if (registrationNumber != null) {
+      map['registration_number'] = registrationNumber;
+    }
+    return map;
   }
 
   factory CompanyInfo.fromMap(Map<String, dynamic> map) {
