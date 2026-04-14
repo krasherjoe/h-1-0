@@ -135,18 +135,24 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   }
 
   Future<void> _save() async {
-    final updated = _info.copyWith(
+    // copyWithはnullを正しく扱えないため、直接CompanyInfoを作成
+    final updated = CompanyInfo(
       name: _nameController.text,
-      zipCode: _zipController.text,
-      address: _addressController.text,
-      tel: _telController.text,
-      email: _emailController.text,
-      fax: _faxController.text,
-      url: _urlController.text,
+      zipCode: _zipController.text.isEmpty ? null : _zipController.text,
+      address: _addressController.text.isEmpty ? null : _addressController.text,
+      tel: _telController.text.isEmpty ? null : _telController.text,
+      email: _emailController.text.isEmpty ? null : _emailController.text,
+      fax: _faxController.text.isEmpty ? null : _faxController.text,
+      url: _urlController.text.isEmpty ? null : _urlController.text,
       defaultTaxRate: _taxRate,
+      sealPath: _info.sealPath,
       taxDisplayMode: _taxDisplayMode,
-      registrationNumber: _hasRegistrationNumber ? 'T${_regNumberController.text.trim()}' : null,
+      registrationNumber: _hasRegistrationNumber && _regNumberController.text.isNotEmpty
+          ? 'T${_regNumberController.text.trim()}'
+          : null,
     );
+    print('DEBUG: _save() - _hasRegistrationNumber: $_hasRegistrationNumber');
+    print('DEBUG: _save() - registrationNumber: ${updated.registrationNumber}');
     await _companyRepo.saveCompanyInfo(updated);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("自社情報を保存しました")));
