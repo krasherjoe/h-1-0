@@ -618,11 +618,7 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
                       child: Container(
                         width: 350,
                         height: 350,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey, width: 2),
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.white,
-                        ),
+                        color: Colors.white,
                         child: GestureDetector(
                           onPanUpdate: (details) {
                             setState(() {
