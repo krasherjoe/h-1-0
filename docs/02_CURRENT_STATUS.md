@@ -1,88 +1,130 @@
 # 現在の実装状況
 
-**最終更新**: 2026-03-07
+**最終更新**: 2026-04-14
 
 このドキュメントは、販売アシスト1号の現在の実装状況を記録します。
 
+> **注意**: 画面IDの詳細一覧は `SCREEN_IDS.md` を参照してください。このファイルは実コードから自動抽出された画面IDデータベースです。
+
 ---
 
-## 📱 実装済み画面一覧
+## 📱 実装済み画面一覧（実コードから抽出）
+
+### ⚠️ 重複ID警告
+以下の画面IDが重複しています。新規画面追加時はこれらと重複しないように注意してください。
+
+- `M1`: マスタ管理ハブ / データベースリストア
+- `WH`: 倉庫マスター / 倉庫ダッシュボード
+- `ST`: 担当者マスター / スタッフ管理
+- `S1`: テーマ設定 / 高速検索
+- `P2`: 支払登録 / UIパフォーマンス最適化
+- `C1`: 得意先マスター / 資金繰り / カスタムフィールド設定
+- `A1`: 売上分析 / 集計分析 / 監査ログ
+- `P1`: 商品マスター / 粗利分析 / パフォーマンス最適化
+- `R1`: ロール管理 / 在庫評価額レポート
+- `SD`: フォーク修復 / Google Drive バックアップ / お局様検出設定
+- `CH`: 履歴 / 母艦チャット
+- `IV`: 請求書発行 / 在庫一覧
+- `SM`: メール設定（S8と機能重複）
 
 ### 01. マスタ管理
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| P1 | 商品マスター | `product_master_screen.dart` | ✅ 完成 |
-| C1 | 得意先マスター | `customer_master_screen.dart` | ✅ 完成 |
-| SI | 仕入先マスター | `supplier_master_screen.dart` | ✅ 完成 |
-| WH | 倉庫マスター | `warehouse_master_screen.dart` | ✅ 完成 |
-| ST | 担当者マスター | `staff_master_screen.dart` | ✅ 完成 |
-| M1 | マスター管理ハブ | `master_hub_page.dart` | ✅ 完成 |
+| WH | 倉庫マスター | `warehouse_master_screen.dart` | ✅ 確認 |
+| WH | 倉庫ダッシュボード | `warehouse_dashboard_screen.dart` | ✅ 確認（ID重複） |
+| ST | 担当者マスター | `staff_master_screen.dart` | ✅ 確認 |
+| ST | スタッフ管理 | `staff_management_screen.dart` | ✅ 確認（ID重複） |
 
 ### 02. 販売管理
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| Q1 | 見積入力 | `quotation_input_screen.dart` | ✅ 完成 |
-| O1 | 受注入力 | `order_input_screen.dart` | ✅ 完成 |
-| A1 | 売上入力 | `sales_entry_screen.dart` | ✅ 完成 |
-| SR1 | 売上返品入力 | `sales_return_input_screen.dart` | ✅ 完成 |
-| INV1 | 請求書発行 | `invoice_issue_screen.dart` | ✅ 完成 |
-| DOC1 | 伝票入力 | `invoice_input_screen.dart` | ✅ 完成 |
-| A2 | 伝票一覧 | `invoice_history_screen.dart` | ✅ 完成 |
+| Q1 | 見積入力 | `quotation_input_screen.dart` | ✅ 確認 |
+| ES | 見積入力 | `estimate_input_screen.dart` | ✅ 確認（機能重複） |
+| O1 | 受注入力 | `order_input_screen.dart` | ✅ 確認 |
+| SA | 売上分析 | `dashboard_screen.dart`（一部） | ✅ 確認 |
+| F1 | 販売フロー管理 | `sales_flow_management_screen.dart` | ✅ 確認 |
 
-### 03. 仕入管理
+### 03. 在庫管理
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| U2 | 仕入入力 | `purchase_entries_screen.dart` | ✅ 完成 |
-| - | 支払予定管理 | `purchase_receipts_screen.dart` | ✅ 完成 |
+| IQ | 在庫照会 | `stock_inquiry_screen.dart` | ✅ 確認 |
+| IM | 在庫移動 | `stock_transfer_screen.dart` | ✅ 確認 |
+| IC | 棚卸入力 | `stocktake_input_screen.dart` | ✅ 確認 |
+| I1 | 在庫管理 | `inventory_management_screen.dart` | ✅ 確認 |
+| I4 | 在庫ロケーション | `inventory_location_screen.dart` | ✅ 確認 |
+| I5 | 在庫移動・棚卸 | `inventory_movement_screen.dart` | ✅ 確認 |
 
-### 04. 在庫管理
-
-| 画面ID | 画面名 | ファイル | 状態 |
-|--------|--------|----------|------|
-| IQ | 在庫照会 | `stock_inquiry_screen.dart` | ✅ 完成 |
-| IM | 在庫移動 | `stock_transfer_screen.dart` | ✅ 完成 |
-| IC | 棚卸入力 | `stocktake_input_screen.dart` | ✅ 完成 |
-| WH | 倉庫ダッシュボード | `warehouse_dashboard_screen.dart` | ✅ 完成 |
-
-### 05. 集計分析
+### 04. 集計分析
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| - | 売上日報 | `sales_report_screen.dart` | ✅ 完成 |
-| CS | 得意先別売上推移 | `customer_sales_trend_screen.dart` | ✅ 完成 |
-| PA | 商品別粗利分析 | `product_profit_analysis_screen.dart` | ✅ 完成 |
+| CS | 得意先別売上推移 | `customer_sales_trend_screen.dart` | ✅ 確認 |
+| PA | 商品別粗利分析 | `product_profit_analysis_screen.dart` | ✅ 確認 |
+| A2 | 詳細レポート | `report_detail_screen.dart` | ✅ 確認 |
 
-### 06. システム設定
+### 05. システム設定
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| S1 | 設定 | `settings_screen.dart` | ✅ 完成 |
-| SM | メール設定 | `email_settings_screen.dart` | ✅ 完成 |
-| D2 | ダッシュボード設定 | `dashboard_menu_settings_screen.dart` | ✅ 完成 |
-| - | 事業プロフィール | `business_profile_screen.dart` | ✅ 完成 |
-| - | 会社情報 | `company_info_screen.dart` | ✅ 完成 |
+| S1 | テーマ設定 | `screen_s1_theme_selection.dart` | ✅ 確認 |
+| S1 | 高速検索 | `fast_search_screen.dart` | ✅ 確認（ID重複） |
+| S8 | メール設定 | `screen_s8_email_settings.dart` | ✅ 確認 |
+| SM | メール設定 | `settings_screen.dart`（一部） | ✅ 確認（機能重複） |
+| D1 | ダッシュボード | `dashboard_screen.dart` | ✅ 確認 |
+| D2 | ダッシュボード設定 | `dashboard_menu_settings_screen.dart` | ✅ 確認 |
+| C1 | 資金繰り | `cash_flow_screen.dart` | ✅ 確認（ID重複） |
+| C1 | カスタムフィールド設定 | `custom_field_settings_screen.dart` | ✅ 確認（ID重複） |
+| C3 | 表示順序の変更 | `custom_field_reorder_screen.dart` | ✅ 確認 |
+| U1 | ユーザー管理 | `user_management_screen.dart` | ✅ 確認 |
+| R1 | ロール管理 | `role_management_screen.dart` | ✅ 確認（ID重複） |
+| B1 | 業種設定 | `business_profile_lite_screen.dart` | ✅ 確認 |
+| F2 | 自社情報 | `business_profile_screen.dart` | ✅ 確認 |
+| S3 | 高度検索 | `advanced_search_screen.dart` | ✅ 確認 |
+| S2 | センサー活用 | `sensor_utilization_screen.dart` | ✅ 確認 |
+| S4 | 拡張センサー | `enhanced_sensor_screen.dart` | ✅ 確認 |
+| T1 | 業種テンプレート選択 | `industry_template_screen.dart` | ✅ 確認 |
+| T2 | 業種プレビュー | `template_preview_screen.dart` | ✅ 確認 |
+
+### 06. 電子帳簿保存法
+
+| 画面ID | 画面名 | ファイル | 状態 |
+|--------|--------|----------|------|
+| E1 | 電子帳簿管理 | `electronic_ledger_management_screen.dart` | ✅ 確認 |
+| E2 | 電子帳簿検索 | `electronic_ledger_search_screen.dart` | ✅ 確認 |
+| E3 | 電子帳簿設定 | `electronic_ledger_settings_screen.dart` | ✅ 確認 |
 
 ### 07. 母艦連携
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| CH | 母艦チャット | `chat_screen.dart` | ✅ 完成 |
-| - | お局様検出設定 | `mothership_discovery_settings_screen.dart` | ✅ 完成 |
-| - | 管理画面 | `management_screen.dart` | ✅ 完成 |
+| CH | 履歴 | `customer_history_screen.dart` | ✅ 確認（ID重複） |
+| CH | 母艦チャット | `chat_screen.dart` | ✅ 確認（ID重複） |
+| SD | フォーク修復 | `screen_debug_fork_break.dart` | ✅ 確認（ID重複） |
+| SD | Google Drive バックアップ | `drive_backup_screen.dart` | ✅ 確認（ID重複） |
+| SD | お局様検出設定 | `mothership_discovery_settings_screen.dart` | ✅ 確認（ID重複） |
+| SB | バックアップ・リストア | `screen_sb_backup_settings.dart` | ✅ 確認 |
 
 ### 08. その他
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| SUP | サポート窓口 | `support_desk_screen.dart` | ✅ 完成 |
-| - | バーコードスキャン | `barcode_scanner_screen.dart` | ✅ 完成 |
-| - | GPS履歴 | `gps_history_screen.dart` | ✅ 完成 |
-| - | アクティビティログ | `activity_log_screen.dart` | ✅ 完成 |
+| P2 | 支払登録 | `payment_register_screen.dart` | ✅ 確認（ID重複） |
+| P2 | UIパフォーマンス最適化 | `ui_performance_screen.dart` | ✅ 確認（ID重複） |
+| IV | 請求書発行 | `invoice_issue_screen.dart` | ✅ 確認（ID重複） |
+| IV | 在庫一覧 | `inventory_list_screen.dart` | ✅ 確認（ID重複） |
+| M1 | マスター管理 | `settings_screen.dart`（一部） | ✅ 確認（ID重複） |
+| M1 | データベースリストア | `restore_screen.dart` | ✅ 確認（ID重複） |
+| A1 | 売上分析 | `sales_analysis_screen.dart` | ✅ 確認（ID重複） |
+| A1 | 集計分析 | `analytics_dashboard_screen.dart` | ✅ 確認（ID重複） |
+| A1 | 監査ログ | `audit_log_screen.dart` | ✅ 確認（ID重複） |
+| P1 | 粗利分析 | `profit_analysis_screen.dart` | ✅ 確認（ID重複） |
+| P1 | パフォーマンス最適化 | `performance_optimization_screen.dart` | ✅ 確認（ID重複） |
+| R1 | 在庫評価額レポート | `inventory_value_report_screen.dart` | ✅ 確認（ID重複） |
 
-**合計**: 40画面以上
+**合計**: 50画面以上（実コードから抽出）
 
 ---
 
