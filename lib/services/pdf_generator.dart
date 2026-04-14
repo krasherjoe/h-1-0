@@ -5,7 +5,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:image/image.dart' as img;
 import '../models/invoice_models.dart';
 import 'company_repository.dart';
 import 'activity_log_repository.dart';
@@ -34,81 +33,7 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
   if (companyInfo.sealPath != null) {
     final file = File(companyInfo.sealPath!);
     if (await file.exists()) {
-      final imageBytes = await file.readAsBytes();
-      final image = img.decodeImage(imageBytes);
-      if (image != null) {
-        // 周辺の黒い枠をトリミング
-        int top = 0, bottom = image.height - 1, left = 0, right = image.width - 1;
-        
-        // 上から黒いピクセルでない場所を検索
-        for (int y = 0; y < image.height; y++) {
-          bool hasNonBlack = false;
-          for (int x = 0; x < image.width; x++) {
-            final pixel = image.getPixel(x, y);
-            if (pixel.r > 30 || pixel.g > 30 || pixel.b > 30) {
-              hasNonBlack = true;
-              break;
-            }
-          }
-          if (hasNonBlack) {
-            top = y;
-            break;
-          }
-        }
-        
-        // 下から黒いピクセルでない場所を検索
-        for (int y = image.height - 1; y >= 0; y--) {
-          bool hasNonBlack = false;
-          for (int x = 0; x < image.width; x++) {
-            final pixel = image.getPixel(x, y);
-            if (pixel.r > 30 || pixel.g > 30 || pixel.b > 30) {
-              hasNonBlack = true;
-              break;
-            }
-          }
-          if (hasNonBlack) {
-            bottom = y;
-            break;
-          }
-        }
-        
-        // 左から黒いピクセルでない場所を検索
-        for (int x = 0; x < image.width; x++) {
-          bool hasNonBlack = false;
-          for (int y = 0; y < image.height; y++) {
-            final pixel = image.getPixel(x, y);
-            if (pixel.r > 30 || pixel.g > 30 || pixel.b > 30) {
-              hasNonBlack = true;
-              break;
-            }
-          }
-          if (hasNonBlack) {
-            left = x;
-            break;
-          }
-        }
-        
-        // 右から黒いピクセルでない場所を検索
-        for (int x = image.width - 1; x >= 0; x--) {
-          bool hasNonBlack = false;
-          for (int y = 0; y < image.height; y++) {
-            final pixel = image.getPixel(x, y);
-            if (pixel.r > 30 || pixel.g > 30 || pixel.b > 30) {
-              hasNonBlack = true;
-              break;
-            }
-          }
-          if (hasNonBlack) {
-            right = x;
-            break;
-          }
-        }
-        
-        // トリミング
-        final croppedImage = img.copyCrop(image, x: left, y: top, width: right - left + 1, height: bottom - top + 1);
-        final croppedBytes = img.encodePng(croppedImage);
-        sealImage = pw.MemoryImage(croppedBytes);
-      }
+      sealImage = pw.MemoryImage(await file.readAsBytes());
     }
   }
 
