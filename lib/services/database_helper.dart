@@ -262,7 +262,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 45;
+  static const _databaseVersion = 46;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -1423,6 +1423,10 @@ class DatabaseHelper {
         SET is_current = 1, version = 1, valid_from = datetime('now'), valid_to = NULL
         WHERE is_current IS NULL
       ''');
+    }
+    if (oldVersion < 46) {
+      // v46: フォーク追跡用に次の世代のレコード番号を記録するカラムを追加
+      await _safeAddColumn(db, 'customers', 'next_version_id TEXT');
     }
   }
 

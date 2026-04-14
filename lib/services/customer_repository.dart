@@ -17,7 +17,7 @@ class CustomerRepository {
     final db = await _dbHelper.database;
     final filter = includeHidden
         ? 'WHERE c.is_current = 1'
-        : 'WHERE c.is_current = 1 AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
+        : 'WHERE c.is_current = 1 AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0 AND c.next_version_id IS NULL';
     List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
              COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
@@ -188,11 +188,11 @@ class CustomerRepository {
         );
       }
 
-      // フォークした場合、元のIDのすべてのレコード（履歴含む）を非表示にする
+      // フォークした場合、元のIDのすべてのレコード（履歴含む）を非表示にし、次の世代のレコード番号を記録
       if (originalId != null && originalId != customer.id) {
         await txn.update(
           'customers',
-          {'is_hidden': 1},
+          {'is_hidden': 1, 'next_version_id': customer.id},
           where: 'id = ?',
           whereArgs: [originalId],
         );

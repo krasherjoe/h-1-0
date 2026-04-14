@@ -85,6 +85,7 @@ class Customer {
   final int version; // バージョン番号
   final String? contentHash; // コンテンツハッシュ（改ざん検出用）
   final String? previousHash; // 前バージョンハッシュ（チェーンリンク）
+  final String? nextVersionId; // 次の世代のレコード番号（フォーク時に設定）
 
   Customer({
     required this.id,
@@ -109,6 +110,7 @@ class Customer {
     this.version = 1,
     this.contentHash,
     this.previousHash,
+    this.nextVersionId,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   String get invoiceName {
@@ -144,6 +146,7 @@ class Customer {
       'version': version,
       'content_hash': contentHash,
       'previous_hash': previousHash,
+      'next_version_id': nextVersionId,
     };
   }
 
@@ -184,6 +187,7 @@ class Customer {
       version: map['version'] ?? 1,
       contentHash: map['content_hash'],
       previousHash: map['previous_hash'],
+      nextVersionId: map['next_version_id'],
     );
   }
 
@@ -210,6 +214,7 @@ class Customer {
     int? version,
     String? contentHash,
     String? previousHash,
+    String? nextVersionId,
   }) {
     return Customer(
       id: id ?? this.id,
@@ -235,6 +240,7 @@ class Customer {
       version: version ?? this.version,
       contentHash: contentHash ?? this.contentHash,
       previousHash: previousHash ?? this.previousHash,
+      nextVersionId: nextVersionId ?? this.nextVersionId,
     );
   }
 }
