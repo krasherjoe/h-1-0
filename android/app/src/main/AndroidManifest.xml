@@ -42,7 +42,7 @@
     </queries>
 
     <application
-        android:label="h-1"
+        android:label="販売アシスト1号"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
