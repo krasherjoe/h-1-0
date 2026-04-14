@@ -37,10 +37,24 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
       final imageBytes = await file.readAsBytes();
       final image = img.decodeImage(imageBytes);
       if (image != null) {
-        // 画像の周辺の黒い枠をトリミング
-        final croppedImage = img.trim(image, mode: img.TrimMode.transparent);
-        final croppedBytes = img.encodePng(croppedImage);
-        sealImage = pw.MemoryImage(croppedBytes);
+        // 画像の周辺の黒いピクセルを透明に変換
+        final processedImage = img.Image(width: image.width, height: image.height);
+        for (int y = 0; y < image.height; y++) {
+          for (int x = 0; x < image.width; x++) {
+            final pixel = image.getPixel(x, y);
+            final r = pixel.r;
+            final g = pixel.g;
+            final b = pixel.b;
+            // 黒いピクセルを透明に変換
+            if (r < 50 && g < 50 && b < 50) {
+              processedImage.setPixelRgba(x, y, 0, 0, 0, 0);
+            } else {
+              processedImage.setPixelRgba(x, y, r, g, b, pixel.a);
+            }
+          }
+        }
+        final processedBytes = img.encodePng(processedImage);
+        sealImage = pw.MemoryImage(processedBytes);
       }
     }
   }
