@@ -840,6 +840,48 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     }
   }
 
+  /// 重複顧客を整理：同じ顧客名で複数レコードが存在する場合、古い方を非表示にする
+  Future<void> _cleanupDuplicateVersions() async {
+    if (_isLoading) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重複顧客を整理'),
+        content: const Text(
+          '同じ顧客名で複数のレコードが存在する場合、\n古い方を非表示にします。\n\nデータは削除されません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+            child: const Text('整理する'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final count = await _customerRepo.cleanupDuplicateVersions();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(count > 0 ? '$count件の古いレコードを非表示にしました' : '重複は見つかりませんでした'),
+          backgroundColor: count > 0 ? Colors.green : null,
+        ),
+      );
+      _loadCustomers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   /// 敬称スクリーニング：formalName/displayName に含まれる敬称を検出・修正
   Future<void> _showHonorificsScreening() async {
     if (_isLoading) return;
@@ -1127,6 +1169,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   _cleanDuplicateHonorific();
                 } else if (value == 'clean_name') {
                   _cleanHonorificFromName();
+                } else if (value == 'cleanup_versions') {
+                  _cleanupDuplicateVersions();
                 }
               },
               itemBuilder: (BuildContext context) => [
@@ -1158,6 +1202,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       Icon(Icons.edit, size: 18),
                       SizedBox(width: 8),
                       Text('名前から敬称を削除'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'cleanup_versions',
+                  child: Row(
+                    children: [
+                      Icon(Icons.merge_type, size: 18, color: Colors.indigo),
+                      SizedBox(width: 8),
+                      Text('重複顧客を整理'),
                     ],
                   ),
                 ),

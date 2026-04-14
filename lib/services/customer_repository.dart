@@ -415,6 +415,44 @@ class CustomerRepository {
     return Customer.fromMap(maps.first);
   }
 
+  /// 同じ顧客名で複数のレコードが存在する場合、古い方を非表示にする（再起動不要）
+  Future<int> cleanupDuplicateVersions() async {
+    final db = await _dbHelper.database;
+    final customers = await db.query(
+      'customers',
+      where: 'is_current = 1',
+    );
+
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
+    for (final c in customers) {
+      final name = c['display_name'] as String;
+      grouped.putIfAbsent(name, () => []).add(c);
+    }
+
+    int fixedCount = 0;
+    for (final entry in grouped.entries) {
+      if (entry.value.length <= 1) continue;
+      // バージョン番号でソート（古い順）
+      entry.value.sort((a, b) {
+        final va = (a['version'] as int?) ?? 1;
+        final vb = (b['version'] as int?) ?? 1;
+        return va.compareTo(vb);
+      });
+      for (int i = 0; i < entry.value.length - 1; i++) {
+        final old = entry.value[i];
+        final newer = entry.value[i + 1];
+        await db.update(
+          'customers',
+          {'next_version_id': newer['id'], 'is_hidden': 1},
+          where: 'id = ?',
+          whereArgs: [old['id']],
+        );
+        fixedCount++;
+      }
+    }
+    return fixedCount;
+  }
+
   Future<void> setHidden(String id, bool hidden) async {
     final db = await _dbHelper.database;
     await db.insert('master_hidden', {
