@@ -1089,6 +1089,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               value: _sortKey,
               icon: const Icon(Icons.sort, color: Colors.white),
               dropdownColor: Colors.white,
+              style: const TextStyle(color: Colors.black),
               items: const [
                 DropdownMenuItem(value: 'name_asc', child: Text('名前昇順')),
                 DropdownMenuItem(value: 'name_desc', child: Text('名前降順')),
