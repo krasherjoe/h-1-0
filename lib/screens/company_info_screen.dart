@@ -413,7 +413,14 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     title: const Text('適格請求書発行事業者'),
                     subtitle: const Text('T番号取得済みの場合はオン'),
                     value: _hasRegistrationNumber,
-                    onChanged: (v) => setState(() => _hasRegistrationNumber = v),
+                    onChanged: (v) {
+                      setState(() {
+                        _hasRegistrationNumber = v;
+                        if (!v) {
+                          _regNumberController.clear();
+                        }
+                      });
+                    },
                     contentPadding: EdgeInsets.zero,
                   ),
                   if (_hasRegistrationNumber) ...
