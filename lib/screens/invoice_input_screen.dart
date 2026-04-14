@@ -736,7 +736,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   ),
                                   SizedBox(height: 6),
                                   Text(
-                                    '暗号処理中',
+                                    '暗号コード生成中',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,
