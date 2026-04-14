@@ -137,7 +137,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     final newCustomer = Customer(
       id: newId,
       displayName: _displayNameCtl.text.trim(),
-      formalName: _formalNameCtl.text.trim(),
+      formalName: _stripHonorific(_formalNameCtl.text.trim()),
       title: _selectedTitle,
       department: _departmentCtl.text.trim().isEmpty ? null : _departmentCtl.text.trim(),
       address: _addressCtl.text.trim().isEmpty ? null : _addressCtl.text.trim(),
