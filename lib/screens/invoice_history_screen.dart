@@ -488,6 +488,22 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'A2:伝票選択',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
             ListTile(
               leading: CircleAvatar(backgroundColor: Colors.blue.withValues(alpha: 0.12), child: const Icon(Icons.request_quote, color: Colors.blue)),
               title: const Text('見積書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
