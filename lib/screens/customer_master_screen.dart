@@ -387,9 +387,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
     if (result != null) {
       try {
-        // ロックされた顧客を編集した場合、元のIDを除外して重複チェック
-        final originalId = customer?.id;
-        await _customerRepo.saveCustomer(result, excludeOriginalId: originalId);
+        // ロックされた顧客を編集した場合、重複チェックをスキップ
+        final isLocked = customer?.isLocked ?? false;
+        await _customerRepo.saveCustomer(result, force: isLocked);
         if (widget.selectionMode) {
           if (!mounted) return;
           Navigator.pop(context, result);
