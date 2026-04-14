@@ -15,9 +15,11 @@ class CustomerRepository {
 
   Future<List<Customer>> getAllCustomers({bool includeHidden = false}) async {
     final db = await _dbHelper.database;
+    // is_current=1 かつ valid_to=NULL（現在有効）のみを取得
+    // next_version_id はフォーク後のレコードを除外するためのフィルタ（既存データ対応）
     final filter = includeHidden
-        ? 'WHERE c.is_current = 1'
-        : 'WHERE c.is_current = 1 AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0 AND c.next_version_id IS NULL';
+        ? 'WHERE c.is_current = 1 AND COALESCE(c.valid_to, \'9999-12-31\') > datetime(\'now\')'
+        : 'WHERE c.is_current = 1 AND COALESCE(c.valid_to, \'9999-12-31\') > datetime(\'now\') AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
     List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
              COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
@@ -112,7 +114,8 @@ class CustomerRepository {
 
     // 社名（表示名・正式名称）で検索
     if (name != null && name.isNotEmpty) {
-      String where = '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0 AND is_current = 1';
+      String where =
+          '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0 AND is_current = 1';
       List<dynamic> whereArgs = ['%$name%', '%$name%'];
       if (excludeId != null) {
         where += ' AND id != ?';
@@ -152,7 +155,11 @@ class CustomerRepository {
     );
   }
 
-  Future<void> saveCustomer(Customer customer, {bool force = false, String? originalId}) async {
+  Future<void> saveCustomer(
+    Customer customer, {
+    bool force = false,
+    String? originalId,
+  }) async {
     final db = await _dbHelper.database;
 
     // 重複チェック（force=false の場合）
@@ -171,14 +178,43 @@ class CustomerRepository {
     }
 
     await db.transaction((txn) async {
-      // 既存の現行レコードを非現行化（履歴化）
+      // 既存の現行レコードを検索
       final existing = await txn.query(
         'customers',
         where: 'id = ? AND is_current = 1',
         whereArgs: [customer.id],
       );
 
-      if (existing.isNotEmpty) {
+      // HASH チェーンの構築
+      String previousHashValue = '';
+      int currentVersion = 0;
+
+      if (originalId != null && originalId != customer.id) {
+        // フォーク：元レコードの HASH を引き継ぐ
+        final originalRecord = await txn.query(
+          'customers',
+          where: 'id = ? AND is_current = 1',
+          whereArgs: [originalId],
+        );
+        if (originalRecord.isNotEmpty) {
+          previousHashValue =
+              (originalRecord.first['content_hash'] as String?) ?? '';
+          currentVersion =
+              (originalRecord.first['version'] as int?) ?? 0;
+        }
+        // 元レコードに次の世代のレコード番号を記録
+        await txn.update(
+          'customers',
+          {'next_version_id': customer.id},
+          where: 'id = ?',
+          whereArgs: [originalId],
+        );
+      } else if (existing.isNotEmpty) {
+        // 同じ ID の現行レコードが存在 → その HASH を引き継ぐ
+        previousHashValue =
+            (existing.first['content_hash'] as String?) ?? '';
+        currentVersion =
+            (existing.first['version'] as int?) ?? 0;
         // 既存レコードを非現行化
         await txn.update(
           'customers',
@@ -188,32 +224,39 @@ class CustomerRepository {
         );
       }
 
-      // フォークした場合、元のIDのすべてのレコード（履歴含む）を非表示にし、次の世代のレコード番号を記録
-      if (originalId != null && originalId != customer.id) {
-        await txn.update(
-          'customers',
-          {'is_hidden': 1, 'next_version_id': customer.id},
-          where: 'id = ?',
-          whereArgs: [originalId],
-        );
-      }
+      // 新しいバージョン情報
+      final newVersion = currentVersion + 1;
+      final newValidFrom = DateTime.now();
 
-      // 新しいバージョンとして INSERT（HASH チェーン計算）
+      // HASH 計算（実際に DB に格納する値と一致させる）
+      final contentHash = HashUtils.calculateCustomerHash(
+        id: customer.id,
+        displayName: customer.displayName,
+        formalName: customer.formalName,
+        title: customer.title,
+        department: customer.department,
+        address: customer.address,
+        tel: customer.tel,
+        email: customer.email,
+        contactVersionId: customer.contactVersionId,
+        odooId: customer.odooId,
+        isLocked: customer.isLocked,
+        isHidden: customer.isHidden,
+        headChar1: customer.headChar1,
+        headChar2: customer.headChar2,
+        validFrom: newValidFrom,
+        version: newVersion,
+        isCurrentFlag: true,
+        previousHash: previousHashValue,
+      );
+
+      // 新しいバージョンとして INSERT
       final customerMap = customer.toMap();
-      final previousHash = existing.isNotEmpty
-          ? existing.first['content_hash']
-          : null;
-
-      // HASH 計算
-      final contentHash = await _calculateContentHash(customer);
-
       customerMap['content_hash'] = contentHash;
-      customerMap['previous_hash'] = previousHash ?? '';
+      customerMap['previous_hash'] = previousHashValue;
       customerMap['is_current'] = 1;
-      final currentVersion =
-          (existing.isNotEmpty ? existing.first['version'] : 0) as int? ?? 0;
-      customerMap['version'] = currentVersion + 1;
-      customerMap['valid_from'] = DateTime.now().toIso8601String();
+      customerMap['version'] = newVersion;
+      customerMap['valid_from'] = newValidFrom.toIso8601String();
       customerMap['valid_to'] = null;
 
       await txn.insert(
@@ -228,7 +271,8 @@ class CustomerRepository {
       action: "SAVE_CUSTOMER",
       targetType: "CUSTOMER",
       targetId: customer.id,
-      details: "名称：${customer.formalName}, 敬称：${HonorificCode.toName(customer.title)} (version up)",
+      details:
+          "名称：${customer.formalName}, 敬称：${HonorificCode.toName(customer.title)} (version up)",
     );
   }
 

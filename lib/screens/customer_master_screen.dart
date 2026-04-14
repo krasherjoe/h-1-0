@@ -324,10 +324,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   String _normalizedName(String name) {
     var n = name.replaceAll(RegExp(r"\s+"), "");
-    
+
     // 敬称除去（様、御中、殿、先生）
     n = n.replaceAll(RegExp(r"[\s\u3000]*(様|御中|殿|先生)$"), "");
-    
+
     if (_ignoreCorpPrefix) {
       for (final token in [
         "株式会社",
@@ -397,10 +397,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
     if (result != null) {
       try {
-        // ロックされた顧客を編集した場合、重複チェックをスキップし、元のIDを渡して古いレコードを非表示にする
+        // ロックされた顧客を編集した場合、重複チェックをスキップし、フォーク元IDを渡す
         final isLocked = customer?.isLocked ?? false;
-        final originalId = customer?.id;
-        await _customerRepo.saveCustomer(result, force: isLocked, originalId: originalId);
+        await _customerRepo.saveCustomer(
+          result,
+          force: isLocked,
+          originalId: isLocked ? customer?.id : null,
+        );
         if (widget.selectionMode) {
           if (!mounted) return;
           Navigator.pop(context, result);
@@ -1274,7 +1277,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.edit),
-                                  onPressed: () => _addOrEditCustomer(customer: c),
+                                  onPressed: () =>
+                                      _addOrEditCustomer(customer: c),
                                   tooltip: "編集（電子帳簿保存法対応：ロック中も履歴保存して編集可能）",
                                 ),
                               ],

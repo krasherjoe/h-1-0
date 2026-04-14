@@ -258,7 +258,19 @@ adb uninstall com.example.h_1
 
 ## 🔴 緊急・高優先度
 
-### 進行中 - なし
+### 進行中
+
+- [ ] C2:顧客マスター HASH チェーンバグ修正 (2026-04-14, **修復画面テスト実行中**)
+  - 関連：`lib/screens/customer_edit_screen.dart`, `lib/services/customer_repository.dart`, `lib/screens/screen_debug_fork_break.dart`
+  - 内容:
+    - バグ原因特定：ロック時フォーク処理で新しい UUID を生成し、古いバージョンが is_current=1 のまま残る問題
+    - customer_edit_screen.dart 修正：ロック時 ID 生成ロジック変更（フォーク削除）
+    - customer_repository.dart saveCustomer() 修正：フォーク時に is_hidden=1 ではなく is_current=0 で履歴化
+    - customer_repository.dart getAllCustomers() 修正：WHERE 条件に valid_to > datetime('now') を追加
+    - フォーク時の previous_hash 設定ロジック追加（HASH チェーン接続）
+    - **修復画面実装完了**: `screen_debug_fork_break.dart`（事故物件検出・自動マージ機能付き）
+    - **現在**: 修復画面を実機でテスト実行中（スキャン→修復フロー検証）
+  - 関連ファイル：`lib/screens/screen_c2_customer_master.dart`, `lib/models/customer_model.dart`
 
 本セッション（2026-04-09）で以下のタスクを完了しました：
 - Google 統合の復元（drive_backup_service.dart, gmail_sync_client.dart）

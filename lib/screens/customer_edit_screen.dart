@@ -42,8 +42,12 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     _telCtl = TextEditingController(text: c?.tel ?? '');
     _emailCtl = TextEditingController(text: c?.email ?? '');
     _selectedTitle = c?.title ?? HonorificCode.san;
-    _isCompany = _selectedTitle == HonorificCode.onchu || _selectedTitle == HonorificCode.kisha;
-    _head1Ctl = TextEditingController(text: c?.headChar1 ?? _headKana(_displayNameCtl.text));
+    _isCompany =
+        _selectedTitle == HonorificCode.onchu ||
+        _selectedTitle == HonorificCode.kisha;
+    _head1Ctl = TextEditingController(
+      text: c?.headChar1 ?? _headKana(_displayNameCtl.text),
+    );
     _head2Ctl = TextEditingController(text: c?.headChar2 ?? '');
   }
 
@@ -67,14 +71,32 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
 
   String _headKana(String name) {
     var n = name.replaceAll(RegExp(r'\s+|\u3000'), '');
-    for (final token in ['株式会社', '（株）', '(株)', '有限会社', '（有）', '(有)', '合同会社', '（同）', '(同)']) {
+    for (final token in [
+      '株式会社',
+      '（株）',
+      '(株)',
+      '有限会社',
+      '（有）',
+      '(有)',
+      '合同会社',
+      '（同）',
+      '(同)',
+    ]) {
       if (n.startsWith(token)) n = n.substring(token.length);
     }
     if (n.isEmpty) return '';
     final first = n.characters.first;
     final kanaMap = {
-      '安': 'あ', '阿': 'あ', '浅': 'あ', '佐': 'さ', '田': 'た',
-      '中': 'な', '林': 'は', '松': 'ま', '山': 'や', '渡': 'わ',
+      '安': 'あ',
+      '阿': 'あ',
+      '浅': 'あ',
+      '佐': 'さ',
+      '田': 'た',
+      '中': 'な',
+      '林': 'は',
+      '松': 'ま',
+      '山': 'や',
+      '渡': 'わ',
     };
     return kanaMap[first] ?? first;
   }
@@ -82,26 +104,44 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
   Future<void> _prefillFromPhonebook() async {
     if (!await FlutterContacts.requestPermission(readonly: true)) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
       return;
     }
-    final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
+    final contacts = await FlutterContacts.getContacts(
+      withProperties: true,
+      withAccounts: true,
+      withPhoto: false,
+    );
     if (!mounted) return;
     if (contacts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('連絡先が見つかりません')));
       return;
     }
     final Contact? picked = await showModalBottomSheet<Contact>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => ContactPickerSheet(contacts: contacts, title: _isEdit ? '電話帳から上書き' : '電話帳から新規入力'),
+      builder: (ctx) => ContactPickerSheet(
+        contacts: contacts,
+        title: _isEdit ? '電話帳から上書き' : '電話帳から新規入力',
+      ),
     );
     if (!mounted || picked == null) return;
 
-    final orgCompanyRaw = picked.organizations.isNotEmpty ? picked.organizations.first.company : '';
-    final personParts = [picked.name.last, picked.name.first].where((v) => v.isNotEmpty).toList();
-    final personRaw = personParts.isNotEmpty ? personParts.join(' ').trim() : picked.displayName;
+    final orgCompanyRaw = picked.organizations.isNotEmpty
+        ? picked.organizations.first.company
+        : '';
+    final personParts = [
+      picked.name.last,
+      picked.name.first,
+    ].where((v) => v.isNotEmpty).toList();
+    final personRaw = personParts.isNotEmpty
+        ? personParts.join(' ').trim()
+        : picked.displayName;
     // 電話帳の生データに敬称が含まれる場合があるため除去
     final orgCompany = _stripHonorific(orgCompanyRaw);
     final person = _stripHonorific(personRaw);
@@ -112,9 +152,13 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
       _formalNameCtl.text = orgCompany.isNotEmpty ? orgCompany : person;
       final addr = picked.addresses.isNotEmpty ? picked.addresses.first : null;
       if (addr != null) {
-        _addressCtl.text = [addr.postalCode, addr.state, addr.city, addr.street, addr.country]
-            .where((v) => v.isNotEmpty)
-            .join(' ');
+        _addressCtl.text = [
+          addr.postalCode,
+          addr.state,
+          addr.city,
+          addr.street,
+          addr.country,
+        ].where((v) => v.isNotEmpty).join(' ');
       }
       if (picked.phones.isNotEmpty) {
         _telCtl.text = picked.phones.first.number;
@@ -133,20 +177,23 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
   void _save() {
     if (!_formKey.currentState!.validate()) return;
 
-    final locked = widget.customer?.isLocked ?? false;
-    final newId = locked ? Uuid().v4() : (widget.customer?.id ?? Uuid().v4());
+    // ロック中の顧客を編集 → 新 ID でフォーク（元レコードは保持）
+    final isLocked = widget.customer?.isLocked ?? false;
+    final newId = isLocked ? Uuid().v4() : (widget.customer?.id ?? Uuid().v4());
     final newCustomer = Customer(
       id: newId,
       displayName: _displayNameCtl.text.trim(),
       formalName: _stripHonorific(_formalNameCtl.text.trim()),
       title: _selectedTitle,
-      department: _departmentCtl.text.trim().isEmpty ? null : _departmentCtl.text.trim(),
+      department: _departmentCtl.text.trim().isEmpty
+          ? null
+          : _departmentCtl.text.trim(),
       address: _addressCtl.text.trim().isEmpty ? null : _addressCtl.text.trim(),
       tel: _telCtl.text.trim().isEmpty ? null : _telCtl.text.trim(),
       email: _emailCtl.text.trim().isEmpty ? null : _emailCtl.text.trim(),
       headChar1: _head1Ctl.text.trim().isEmpty ? null : _head1Ctl.text.trim(),
       headChar2: _head2Ctl.text.trim().isEmpty ? null : _head2Ctl.text.trim(),
-      isLocked: false,
+      isLocked: false, // ロック解除
     );
     Navigator.pop(context, newCustomer);
   }
@@ -162,7 +209,13 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
           TextButton.icon(
             onPressed: _save,
             icon: const Icon(Icons.check, color: Colors.white),
-            label: const Text('保存', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text(
+              '保存',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -174,14 +227,18 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
             // ── ヘッダーカード ──
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     CircleAvatar(
                       radius: 36,
-                      backgroundColor: _isCompany ? Colors.indigo.shade100 : Colors.teal.shade100,
+                      backgroundColor: _isCompany
+                          ? Colors.indigo.shade100
+                          : Colors.teal.shade100,
                       child: Icon(
                         _isCompany ? Icons.business : Icons.person,
                         size: 36,
@@ -191,12 +248,16 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _isEdit ? '顧客情報を編集' : '新しい顧客を登録',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '必須項目（*）を入力してください',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                      ),
                     ),
                   ],
                 ),
@@ -211,7 +272,9 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
               label: const Text('電話帳から引用'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -221,7 +284,9 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
             const SizedBox(height: 8),
             Card(
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -234,7 +299,8 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                         prefixIcon: Icon(Icons.short_text),
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? '表示名は必須です' : null,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '表示名は必須です' : null,
                       onChanged: (v) {
                         if (_head1Ctl.text.isEmpty) {
                           _head1Ctl.text = _headKana(v);
@@ -250,21 +316,32 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                         prefixIcon: Icon(Icons.text_fields),
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? '正式名称は必須です' : null,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '正式名称は必須です' : null,
                     ),
                     const SizedBox(height: 14),
                     // 会社 / 個人 切替
                     SegmentedButton<bool>(
                       segments: const [
-                        ButtonSegment(value: true, icon: Icon(Icons.business), label: Text('会社')),
-                        ButtonSegment(value: false, icon: Icon(Icons.person), label: Text('個人')),
+                        ButtonSegment(
+                          value: true,
+                          icon: Icon(Icons.business),
+                          label: Text('会社'),
+                        ),
+                        ButtonSegment(
+                          value: false,
+                          icon: Icon(Icons.person),
+                          label: Text('個人'),
+                        ),
                       ],
                       selected: {_isCompany},
                       onSelectionChanged: (values) {
                         if (values.isEmpty) return;
                         setState(() {
                           _isCompany = values.first;
-                          _selectedTitle = _isCompany ? HonorificCode.onchu : HonorificCode.san;
+                          _selectedTitle = _isCompany
+                              ? HonorificCode.onchu
+                              : HonorificCode.san;
                         });
                       },
                     ),
@@ -278,14 +355,28 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: HonorificCode.san, child: Text('様')),
-                        DropdownMenuItem(value: HonorificCode.onchu, child: Text('御中')),
-                        DropdownMenuItem(value: HonorificCode.dono, child: Text('殿')),
-                        DropdownMenuItem(value: HonorificCode.kisha, child: Text('貴社')),
+                        DropdownMenuItem(
+                          value: HonorificCode.san,
+                          child: Text('様'),
+                        ),
+                        DropdownMenuItem(
+                          value: HonorificCode.onchu,
+                          child: Text('御中'),
+                        ),
+                        DropdownMenuItem(
+                          value: HonorificCode.dono,
+                          child: Text('殿'),
+                        ),
+                        DropdownMenuItem(
+                          value: HonorificCode.kisha,
+                          child: Text('貴社'),
+                        ),
                       ],
                       onChanged: (val) => setState(() {
                         _selectedTitle = val ?? HonorificCode.san;
-                        _isCompany = _selectedTitle == HonorificCode.onchu || _selectedTitle == HonorificCode.kisha;
+                        _isCompany =
+                            _selectedTitle == HonorificCode.onchu ||
+                            _selectedTitle == HonorificCode.kisha;
                       }),
                     ),
                     const SizedBox(height: 14),
@@ -309,7 +400,9 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
             const SizedBox(height: 8),
             Card(
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -357,7 +450,9 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
             const SizedBox(height: 8),
             Card(
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -399,10 +494,18 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
             FilledButton.icon(
               onPressed: _save,
               icon: const Icon(Icons.check),
-              label: Text(_isEdit ? '変更を保存' : '顧客を登録', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: Text(
+                _isEdit ? '変更を保存' : '顧客を登録',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 40),
@@ -424,7 +527,13 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: Colors.indigo),
         const SizedBox(width: 8),
-        Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.indigo)),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.indigo,
+          ),
+        ),
       ],
     );
   }

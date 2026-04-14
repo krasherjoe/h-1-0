@@ -858,15 +858,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 ListTile(
                   leading: Icon(Icons.cleaning_services, color: Colors.orange),
-                  title: const Text('フォークされたレコードをクリーンアップ'),
-                  subtitle: const Text('古いフォークレコードを非表示に設定'),
+                  title: const Text('顧客データの重複を整理'),
+                  subtitle: const Text('同じ顧客が2つ以上表示されている場合、古い方を非表示にします'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('フォークされたレコードをクリーンアップ'),
-                        content: const Text('古いフォークレコードを非表示に設定します。データは削除されません。'),
+                        title: const Text('顧客データの重複を整理'),
+                        content: const Text('同じ顧客が2つ以上表示されている場合、古い方を非表示にします。\n\nデータは削除されず、履歴として保持されます。'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
@@ -874,7 +874,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           ElevatedButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text('クリーンアップ'),
+                            child: const Text('整理する'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange,
                             ),
@@ -888,7 +888,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('アプリを再起動してフォークされたレコードをクリーンアップします'),
+                          content: Text('アプリを再起動して顧客データを整理します'),
                           duration: Duration(seconds: 3),
                         ),
                       );
