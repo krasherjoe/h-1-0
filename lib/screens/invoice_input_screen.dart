@@ -7,6 +7,7 @@ import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
+import '../widgets/zoomable_app_bar.dart';
 import '../services/gps_service.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
@@ -567,9 +568,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final docColor = _documentTypeColor(_documentType);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Scaffold(
-      backgroundColor: themeColor,
-      resizeToAvoidBottomInset: false,
+    return ZoomableAppBar(
+      minScale: 0.5,
+      maxScale: 2.0,
       appBar: AppBar(
         backgroundColor: docColor,
         leading: const BackButton(),
@@ -665,7 +666,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ],
         ],
       ),
-      body: MediaQuery.removeViewInsets(
+      child: Scaffold(
+        backgroundColor: themeColor,
+        resizeToAvoidBottomInset: false,
+        body: MediaQuery.removeViewInsets(
         context: context,
         removeBottom: true,
         child: Stack(
@@ -755,8 +759,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDateSection() {
     final fmt = DateFormat('yyyy/MM/dd');
@@ -876,11 +881,20 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               ? _customerNameWithHonorific(_selectedCustomer!)
               : "取引先を選択してください",
           style: TextStyle(
-            color: _selectedCustomer == null ? Colors.grey : Colors.black87,
+            color: _selectedCustomer == null
+                ? Colors.grey
+                : (isDark ? Colors.white : Colors.black87),
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: _isViewMode ? null : const Text("顧客マスターから選択"),
+        subtitle: _isViewMode
+            ? null
+            : Text(
+                "顧客マスターから選択",
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
         trailing: (_isViewMode || _isLocked)
             ? null
             : const Icon(Icons.chevron_right),
@@ -1022,9 +1036,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
-                              style: const TextStyle(fontSize: 12.5),
+                            Expanded(
+                              child: Text(
+                                "￥${fmt.format(item.unitPrice)} × ${item.quantity} = ￥${fmt.format(item.unitPrice * item.quantity)}",
+                                style: const TextStyle(fontSize: 12.5),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             if (!_isViewMode && !_isLocked)
                               Row(

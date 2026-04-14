@@ -433,17 +433,30 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                         ],
                       ),
                     ),
-                    title: Text(
-                      p.name + (p.isHidden ? " (非表示)" : ""),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: p.isHidden
-                            ? Colors.grey
-                            : (p.isLocked ? Colors.grey : Colors.black87),
-                      ),
+                    title: Builder(
+                      builder: (context) {
+                        final isDark = Theme.of(context).brightness == Brightness.dark;
+                        return Text(
+                          p.name + (p.isHidden ? " (非表示)" : ""),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: p.isHidden || p.isLocked
+                                ? Colors.grey
+                                : (isDark ? Colors.white : Colors.black87),
+                          ),
+                        );
+                      }
                     ),
-                    subtitle: Text(
-                      "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})",
+                    subtitle: Builder(
+                      builder: (context) {
+                        final isDark = Theme.of(context).brightness == Brightness.dark;
+                        return Text(
+                          "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})",
+                          style: TextStyle(
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                          ),
+                        );
+                      }
                     ),
                     onTap: () {
                       if (widget.selectionMode) {
@@ -570,9 +583,10 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   Expanded(
                     child: Text(
                       p.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
+                        color: p.isLocked ? Colors.grey : null,
                       ),
                     ),
                   ),
@@ -580,10 +594,20 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text("単価: ￥${p.defaultUnitPrice}"),
-              Text("在庫: ${p.stockQuantity}"),
-              if (p.barcode != null && p.barcode!.isNotEmpty)
-                Text("バーコード: ${p.barcode}"),
+              Builder(
+                builder: (context) {
+                  final textColor = Theme.of(context).textTheme.bodyMedium?.color;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("単価: ￥${p.defaultUnitPrice}", style: TextStyle(color: textColor)),
+                      Text("在庫: ${p.stockQuantity}", style: TextStyle(color: textColor)),
+                      if (p.barcode != null && p.barcode!.isNotEmpty)
+                        Text("バーコード: ${p.barcode}", style: TextStyle(color: textColor)),
+                    ],
+                  );
+                }
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [

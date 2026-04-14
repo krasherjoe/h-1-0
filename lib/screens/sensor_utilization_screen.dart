@@ -363,37 +363,44 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
   }
   
   Widget _buildRecentActivity() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtitleColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
+    final hintColor = isDark ? Colors.grey.shade500 : Colors.grey;
+
     return Card(
+      color: cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '最近のアクティビティ',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
             ),
             const SizedBox(height: 16),
             if (_lastImagePath != null) ...[
-              const Text(
+              Text(
                 '最後の画像',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(fontWeight: FontWeight.w500, color: textColor),
               ),
               const SizedBox(height: 4),
-              Text(_lastImagePath!),
+              Text(_lastImagePath!, style: TextStyle(color: subtitleColor)),
               const SizedBox(height: 12),
             ],
             if (_lastRecordingPath != null) ...[
-              const Text(
+              Text(
                 '最後の録音',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(fontWeight: FontWeight.w500, color: textColor),
               ),
               const SizedBox(height: 4),
-              Text(_lastRecordingPath!),
+              Text(_lastRecordingPath!, style: TextStyle(color: subtitleColor)),
               const SizedBox(height: 12),
             ],
             if (_lastImagePath == null && _lastRecordingPath == null)
-              const Text('アクティビティがありません'),
+              Text('アクティビティがありません', style: TextStyle(color: hintColor)),
           ],
         ),
       ),
