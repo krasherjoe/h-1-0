@@ -56,7 +56,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       _taxRate = _info.defaultTaxRate;
       _taxDisplayMode = _info.taxDisplayMode;
       _hasRegistrationNumber = _info.registrationNumber != null && _info.registrationNumber!.isNotEmpty;
-      _regNumberController.text = _info.registrationNumber ?? '';
+      // Tプレフィックスがあれば除去して表示（TextFieldにprefixText: 'T'があるため）
+      _regNumberController.text = _info.registrationNumber?.replaceFirst('T', '') ?? '';
       setState(() => _isLoading = false);
     } catch (e) {
       print('F1 会社情報読み込みエラー: $e');
@@ -144,7 +145,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       url: _urlController.text,
       defaultTaxRate: _taxRate,
       taxDisplayMode: _taxDisplayMode,
-      registrationNumber: _hasRegistrationNumber ? _regNumberController.text.trim() : null,
+      registrationNumber: _hasRegistrationNumber ? 'T${_regNumberController.text.trim()}' : null,
     );
     await _companyRepo.saveCompanyInfo(updated);
     if (!mounted) return;
