@@ -140,7 +140,7 @@ class CustomerRepository {
     );
   }
 
-  Future<void> saveCustomer(Customer customer, {bool force = false}) async {
+  Future<void> saveCustomer(Customer customer, {bool force = false, String? originalId}) async {
     final db = await _dbHelper.database;
 
     // 重複チェック（force=false の場合）
@@ -173,6 +173,16 @@ class CustomerRepository {
           {'is_current': 0, 'valid_to': DateTime.now().toIso8601String()},
           where: 'id = ? AND is_current = 1',
           whereArgs: [customer.id],
+        );
+      }
+
+      // フォークした場合、元のIDのレコードを非表示にする
+      if (originalId != null && originalId != customer.id) {
+        await txn.update(
+          'customers',
+          {'is_hidden': 1},
+          where: 'id = ? AND is_current = 1',
+          whereArgs: [originalId],
         );
       }
 
