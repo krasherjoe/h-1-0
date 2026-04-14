@@ -71,29 +71,33 @@ class CompanyRepository {
     final db = await _dbHelper.database;
     await ensureCompanyColumns();
     
-    final map = info.toMap();
+    // 明示的に全カラムを設定したマップ
+    final map = {
+      'id': 1,
+      'name': info.name,
+      'zip_code': info.zipCode,
+      'address': info.address,
+      'tel': info.tel,
+      'fax': info.fax,
+      'email': info.email,
+      'url': info.url,
+      'default_tax_rate': info.defaultTaxRate,
+      'seal_path': info.sealPath,
+      'tax_display_mode': info.taxDisplayMode,
+      'registration_number': info.registrationNumber,
+    };
     
-    // registrationNumberがnullの場合、明示的にNULLを設定するためにUPDATEを使用
+    // INSERT OR REPLACEを使用
+    await db.insert(
+      'company_info',
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    
+    // registrationNumberがnullの場合、明示的にNULLを設定（SQLiteのINSERT OR REPLACEの挙動対策）
     if (info.registrationNumber == null) {
-      await db.update(
-        'company_info',
-        map,
-        where: 'id = ?',
-        whereArgs: [1],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      // registration_numberカラムをNULLに設定
-      await db.update(
-        'company_info',
-        {'registration_number': null},
-        where: 'id = ?',
-        whereArgs: [1],
-      );
-    } else {
-      await db.insert(
-        'company_info',
-        map,
-        conflictAlgorithm: ConflictAlgorithm.replace,
+      await db.rawUpdate(
+        'UPDATE company_info SET registration_number = NULL WHERE id = 1',
       );
     }
   }
