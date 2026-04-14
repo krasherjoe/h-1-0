@@ -80,7 +80,7 @@ class InvoiceHistoryItem extends StatelessWidget {
                     if (invoice.isLocked)
                       const Align(
                         alignment: Alignment.bottomRight,
-                        child: Icon(Icons.lock, size: 14, color: Colors.redAccent),
+                        child: Icon(Icons.link, size: 14, color: Colors.redAccent),
                       ),
                   ],
                 ),
