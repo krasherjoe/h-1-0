@@ -140,11 +140,12 @@ class CustomerRepository {
     );
   }
 
-  Future<void> saveCustomer(Customer customer, {bool force = false}) async {
+  Future<void> saveCustomer(Customer customer, {bool force = false, String? excludeOriginalId}) async {
     final db = await _dbHelper.database;
 
     // 重複チェック（force=false の場合）
     // 編集時は自分自身を除外してチェック
+    // ロックされた顧客を編集した場合、元のIDも除外
     if (!force) {
       final isDuplicate = await checkDuplicate(
         tel: customer.tel,
@@ -154,6 +155,19 @@ class CustomerRepository {
       );
 
       if (isDuplicate) {
+        // 元のIDが指定されている場合、元のIDと一致するレコードが重複の原因か確認
+        if (excludeOriginalId != null) {
+          final isDuplicateWithOriginal = await checkDuplicate(
+            tel: customer.tel,
+            email: customer.email,
+            name: customer.displayName,
+            excludeId: excludeOriginalId,
+          );
+          if (!isDuplicateWithOriginal) {
+            // 元のIDを除外したら重複しない場合、エラーをスローしない
+            return;
+          }
+        }
         throw DuplicateCustomerException(customer);
       }
     }
