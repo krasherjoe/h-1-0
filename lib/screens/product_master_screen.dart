@@ -416,7 +416,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                             const Align(
                               alignment: Alignment.bottomRight,
                               child: Icon(
-                                Icons.lock,
+                                Icons.link,
                                 size: 14,
                                 color: Colors.redAccent,
                               ),
@@ -554,7 +554,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               Row(
                 children: [
                   Icon(
-                    p.isLocked ? Icons.lock : Icons.inventory_2,
+                    p.isLocked ? Icons.link : Icons.inventory_2,
                     color: p.isLocked ? Colors.redAccent : Colors.indigo,
                   ),
                   const SizedBox(width: 8),
@@ -674,7 +674,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                       padding: const EdgeInsets.only(left: 8),
                       child: Chip(
                         label: const Text("ロック済み"),
-                        avatar: const Icon(Icons.lock, size: 16),
+                        avatar: const Icon(Icons.link, size: 16),
                       ),
                     ),
                 ],
