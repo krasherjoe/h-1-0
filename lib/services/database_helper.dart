@@ -328,6 +328,36 @@ class DatabaseHelper {
     // 既存のデータベースを新しいフォルダへ移行（初回のみ）
     await _migrateDatabaseIfNeeded();
 
+    // 古いデータベースファイルを検出して削除
+    try {
+      final dbFile = File(dbPath);
+      if (await dbFile.exists()) {
+        // データベースのバージョンを確認
+        final testDb = await openDatabase(dbPath);
+        final version = await testDb.getVersion();
+        await testDb.close();
+        
+        // バージョンが古い場合、ファイルを削除して新規作成
+        if (version < _databaseVersion) {
+          debugPrint('古いデータベースバージョン（$version）を検出。新しいバージョン（$_databaseVersion）に更新します');
+          await dbFile.delete();
+          debugPrint('古いデータベースファイルを削除しました');
+        }
+      }
+    } catch (e) {
+      debugPrint('データベースバージョン確認エラー：$e');
+      // エラーが発生した場合は、ファイルを削除して新規作成を試みる
+      try {
+        final dbFile = File(dbPath);
+        if (await dbFile.exists()) {
+          await dbFile.delete();
+          debugPrint('破損したデータベースファイルを削除しました');
+        }
+      } catch (deleteError) {
+        debugPrint('ファイル削除エラー：$deleteError');
+      }
+    }
+
     try {
       return await openDatabase(
         dbPath,
