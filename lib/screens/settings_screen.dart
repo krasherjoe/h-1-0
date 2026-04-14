@@ -21,6 +21,7 @@ import 'dashboard_menu_settings_screen.dart';
 import 'master_hub_page.dart';
 import 'mothership_discovery_settings_screen.dart';
 import 'product_master_screen.dart';
+import 'screen_s1_theme_selection.dart';
 import 'screen_s8_email_settings.dart';
 import 'db_debug_screen.dart' show DatabaseDebugScreen;
 import 'drive_backup_screen.dart';
@@ -61,6 +62,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _statusTextController = TextEditingController();
   bool _showCategoryDescriptions = true;
   GmailEnvelopeEncoding _encodingMode = GmailEnvelopeEncoding.gzipBase64;
+
+  String _getThemeLabel(String theme) {
+    switch (theme) {
+      case 'light':
+        return 'ライト';
+      case 'dark':
+        return 'ダーク';
+      default:
+        return 'システム';
+    }
+  }
   SyncTransportMode _transportMode = SyncTransportMode.gmailOnly;
   bool _googleFeaturesEnabled = false;
   bool _googleAuthLoading = false;
@@ -579,44 +591,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ThemeSelectionScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '現在のテーマ: ${_getThemeLabel(_theme)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.receipt_long, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        '伝票リストスタイル',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<InvoiceListStyle>(
+                  segments: const [
+                    ButtonSegment(
+                      value: InvoiceListStyle.legacy,
+                      label: Text('レガシー'),
+                    ),
+                    ButtonSegment(
+                      value: InvoiceListStyle.a2,
+                      label: Text('A2'),
+                    ),
+                  ],
+                  selected: {_invoiceListStyle},
+                  onSelectionChanged: (s) async {
+                    await _repo.setInvoiceListStyle(s.first);
+                    setState(() => _invoiceListStyle = s.first);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.home, color: Colors.green),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'ホーム画面',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment<String>(
-                      value: 'system',
-                      label: Text('システム'),
-                      icon: Icon(Icons.settings),
+                  segments: const [
+                    ButtonSegment(
+                      value: 'invoice_history',
+                      label: Text('伝票履歴'),
                     ),
-                    ButtonSegment<String>(
-                      value: 'light',
-                      label: Text('ライト'),
-                      icon: Icon(Icons.light_mode),
-                    ),
-                    ButtonSegment<String>(
-                      value: 'dark',
-                      label: Text('ダーク'),
-                      icon: Icon(Icons.dark_mode),
-                    ),
-                  ],
-                  selected: {_theme},
-                  onSelectionChanged: (s) async {
-                    await AppThemeController.instance.setTheme(s.first);
-                    setState(() => _theme = s.first);
-                  },
-                ),
-                const SizedBox(height: 16),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment<String>(
-                      value: 'white',
-                      label: Text('白'),
-                      icon: Icon(Icons.palette),
-                    ),
-                    ButtonSegment<String>(
-                      value: 'gray',
-                      label: Text('グレー'),
+                    ButtonSegment(
+                      value: 'dashboard',
+                      label: Text('ダッシュボード'),
                       icon: Icon(Icons.color_lens),
                     ),
                   ],
