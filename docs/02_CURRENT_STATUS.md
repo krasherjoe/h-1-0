@@ -10,31 +10,40 @@
 
 ## 📱 実装済み画面一覧（実コードから抽出）
 
-### ⚠️ 重複ID警告
-以下の画面IDが重複しています。新規画面追加時はこれらと重複しないように注意してください。
+### ⚠️ 重複ID警告（解決済み）
+以下の画面IDの重複を解決しました。新規画面追加時はこれらと重複しないように注意してください。
 
-- `M1`: マスタ管理ハブ / データベースリストア
-- `WH`: 倉庫マスター / 倉庫ダッシュボード
-- `ST`: 担当者マスター / スタッフ管理
-- `S1`: テーマ設定 / 高速検索
-- `P2`: 支払登録 / UIパフォーマンス最適化
-- `C1`: 得意先マスター / 資金繰り / カスタムフィールド設定
-- `A1`: 売上分析 / 集計分析 / 監査ログ
-- `P1`: 商品マスター / 粗利分析 / パフォーマンス最適化
-- `R1`: ロール管理 / 在庫評価額レポート
-- `SD`: フォーク修復 / Google Drive バックアップ / お局様検出設定
-- `CH`: 履歴 / 母艦チャット
-- `IV`: 請求書発行 / 在庫一覧
-- `SM`: メール設定（S8と機能重複）
+- ✅ `M1`: データベースリストア → `DB`:データベースリストア（解決済み）
+- ✅ `WH`: 倉庫ダッシュボード → `WD`:倉庫ダッシュボード（解決済み）
+- ✅ `ST`: スタッフ管理 → `SM`:スタッフ管理（解決済み）
+- ✅ `S1`: テーマ設定 → `TH`:テーマ設定（解決済み）
+- ✅ `S1`: 高速検索 → `FS`:高速検索（解決済み）
+- ✅ `P2`: UIパフォーマンス最適化 → `UP`:UIパフォーマンス最適化（解決済み）
+- ✅ `C1`: 資金繰り → `CF`:資金繰り（解決済み）
+- ✅ `C1`: カスタムフィールド設定 → `CS`:カスタムフィールド設定（解決済み）
+- ✅ `A1`: 売上分析 → `SA`:売上分析（解決済み）
+- ✅ `A1`: 集計分析 → `AA`:集計分析（解決済み）
+- ✅ `A1`: 監査ログ → `AL`:監査ログ（解決済み）
+- ✅ `P1`: 粗利分析 → `GP`:粗利分析（解決済み）
+- ✅ `P1`: パフォーマンス最適化 → `PO`:パフォーマンス最適化（解決済み）
+- ✅ `R1`: 在庫評価額レポート → `IR`:在庫評価額レポート（解決済み）
+- ✅ `SD`: フォーク修復 → `FK`:フォーク修復（解決済み）
+- ✅ `SD`: Google Drive バックアップ → `GD`:Google Drive バックアップ（解決済み）
+- ✅ `SD`: お局様検出設定 → `MD`:お局様検出設定（解決済み）
+- ✅ `CH`: 母艦チャット → `MC`:母艦チャット（解決済み）
+- ✅ `IV`: 在庫一覧 → `IL`:在庫一覧（解決済み）
+- ⚠️ `SM`: メール設定、`S8`:メール設定（機能重複、統合検討中）
+- ⚠️ `Q1`: 見積入力、`ES`:見積入力（機能重複、統合検討中）
 
 ### 01. マスタ管理
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
 | WH | 倉庫マスター | `warehouse_master_screen.dart` | ✅ 確認 |
-| WH | 倉庫ダッシュボード | `warehouse_dashboard_screen.dart` | ✅ 確認（ID重複） |
+| WD | 倉庫ダッシュボード | `warehouse_dashboard_screen.dart` | ✅ 確認（旧ID: WH） |
 | ST | 担当者マスター | `staff_master_screen.dart` | ✅ 確認 |
-| ST | スタッフ管理 | `staff_management_screen.dart` | ✅ 確認（ID重複） |
+| SM | スタッフ管理 | `staff_management_screen.dart` | ✅ 確認（旧ID: ST） |
+| DB | データベースリストア | `restore_screen.dart` | ✅ 確認（旧ID: M1） |
 
 ### 02. 販売管理
 
@@ -43,8 +52,15 @@
 | Q1 | 見積入力 | `quotation_input_screen.dart` | ✅ 確認 |
 | ES | 見積入力 | `estimate_input_screen.dart` | ✅ 確認（機能重複） |
 | O1 | 受注入力 | `order_input_screen.dart` | ✅ 確認 |
+| SA | 売上分析 | `sales_analysis_screen.dart` | ✅ 確認（旧ID: A1） |
+| AA | 集計分析 | `analytics_dashboard_screen.dart` | ✅ 確認（旧ID: A1） |
+| AL | 監査ログ | `audit_log_screen.dart` | ✅ 確認（旧ID: A1） |
 | SA | 売上分析 | `dashboard_screen.dart`（一部） | ✅ 確認 |
 | F1 | 販売フロー管理 | `sales_flow_management_screen.dart` | ✅ 確認 |
+| P2 | 支払登録 | `payment_register_screen.dart` | ✅ 確認 |
+| UP | UIパフォーマンス最適化 | `ui_performance_screen.dart` | ✅ 確認（旧ID: P2） |
+| IV | 請求書発行 | `invoice_issue_screen.dart` | ✅ 確認 |
+| IL | 在庫一覧 | `inventory_list_screen.dart` | ✅ 確認（旧ID: IV） |
 
 ### 03. 在庫管理
 
@@ -56,6 +72,7 @@
 | I1 | 在庫管理 | `inventory_management_screen.dart` | ✅ 確認 |
 | I4 | 在庫ロケーション | `inventory_location_screen.dart` | ✅ 確認 |
 | I5 | 在庫移動・棚卸 | `inventory_movement_screen.dart` | ✅ 確認 |
+| IR | 在庫評価額レポート | `inventory_value_report_screen.dart` | ✅ 確認（旧ID: R1） |
 
 ### 04. 集計分析
 
@@ -63,23 +80,25 @@
 |--------|--------|----------|------|
 | CS | 得意先別売上推移 | `customer_sales_trend_screen.dart` | ✅ 確認 |
 | PA | 商品別粗利分析 | `product_profit_analysis_screen.dart` | ✅ 確認 |
+| GP | 粗利分析 | `profit_analysis_screen.dart` | ✅ 確認（旧ID: P1） |
+| PO | パフォーマンス最適化 | `performance_optimization_screen.dart` | ✅ 確認（旧ID: P1） |
 | A2 | 詳細レポート | `report_detail_screen.dart` | ✅ 確認 |
 
 ### 05. システム設定
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| S1 | テーマ設定 | `screen_s1_theme_selection.dart` | ✅ 確認 |
-| S1 | 高速検索 | `fast_search_screen.dart` | ✅ 確認（ID重複） |
+| TH | テーマ設定 | `screen_s1_theme_selection.dart` | ✅ 確認（旧ID: S1） |
+| FS | 高速検索 | `fast_search_screen.dart` | ✅ 確認（旧ID: S1） |
 | S8 | メール設定 | `screen_s8_email_settings.dart` | ✅ 確認 |
 | SM | メール設定 | `settings_screen.dart`（一部） | ✅ 確認（機能重複） |
 | D1 | ダッシュボード | `dashboard_screen.dart` | ✅ 確認 |
 | D2 | ダッシュボード設定 | `dashboard_menu_settings_screen.dart` | ✅ 確認 |
-| C1 | 資金繰り | `cash_flow_screen.dart` | ✅ 確認（ID重複） |
-| C1 | カスタムフィールド設定 | `custom_field_settings_screen.dart` | ✅ 確認（ID重複） |
+| CF | 資金繰り | `cash_flow_screen.dart` | ✅ 確認（旧ID: C1） |
+| CS | カスタムフィールド設定 | `custom_field_settings_screen.dart` | ✅ 確認（旧ID: C1） |
 | C3 | 表示順序の変更 | `custom_field_reorder_screen.dart` | ✅ 確認 |
 | U1 | ユーザー管理 | `user_management_screen.dart` | ✅ 確認 |
-| R1 | ロール管理 | `role_management_screen.dart` | ✅ 確認（ID重複） |
+| R1 | ロール管理 | `role_management_screen.dart` | ✅ 確認 |
 | B1 | 業種設定 | `business_profile_lite_screen.dart` | ✅ 確認 |
 | F2 | 自社情報 | `business_profile_screen.dart` | ✅ 確認 |
 | S3 | 高度検索 | `advanced_search_screen.dart` | ✅ 確認 |
@@ -100,29 +119,12 @@
 
 | 画面ID | 画面名 | ファイル | 状態 |
 |--------|--------|----------|------|
-| CH | 履歴 | `customer_history_screen.dart` | ✅ 確認（ID重複） |
-| CH | 母艦チャット | `chat_screen.dart` | ✅ 確認（ID重複） |
-| SD | フォーク修復 | `screen_debug_fork_break.dart` | ✅ 確認（ID重複） |
-| SD | Google Drive バックアップ | `drive_backup_screen.dart` | ✅ 確認（ID重複） |
-| SD | お局様検出設定 | `mothership_discovery_settings_screen.dart` | ✅ 確認（ID重複） |
+| CH | 履歴 | `customer_history_screen.dart` | ✅ 確認 |
+| MC | 母艦チャット | `chat_screen.dart` | ✅ 確認（旧ID: CH） |
+| FK | フォーク修復 | `screen_debug_fork_break.dart` | ✅ 確認（旧ID: SD） |
+| GD | Google Drive バックアップ | `drive_backup_screen.dart` | ✅ 確認（旧ID: SD） |
+| MD | お局様検出設定 | `mothership_discovery_settings_screen.dart` | ✅ 確認（旧ID: SD） |
 | SB | バックアップ・リストア | `screen_sb_backup_settings.dart` | ✅ 確認 |
-
-### 08. その他
-
-| 画面ID | 画面名 | ファイル | 状態 |
-|--------|--------|----------|------|
-| P2 | 支払登録 | `payment_register_screen.dart` | ✅ 確認（ID重複） |
-| P2 | UIパフォーマンス最適化 | `ui_performance_screen.dart` | ✅ 確認（ID重複） |
-| IV | 請求書発行 | `invoice_issue_screen.dart` | ✅ 確認（ID重複） |
-| IV | 在庫一覧 | `inventory_list_screen.dart` | ✅ 確認（ID重複） |
-| M1 | マスター管理 | `settings_screen.dart`（一部） | ✅ 確認（ID重複） |
-| M1 | データベースリストア | `restore_screen.dart` | ✅ 確認（ID重複） |
-| A1 | 売上分析 | `sales_analysis_screen.dart` | ✅ 確認（ID重複） |
-| A1 | 集計分析 | `analytics_dashboard_screen.dart` | ✅ 確認（ID重複） |
-| A1 | 監査ログ | `audit_log_screen.dart` | ✅ 確認（ID重複） |
-| P1 | 粗利分析 | `profit_analysis_screen.dart` | ✅ 確認（ID重複） |
-| P1 | パフォーマンス最適化 | `performance_optimization_screen.dart` | ✅ 確認（ID重複） |
-| R1 | 在庫評価額レポート | `inventory_value_report_screen.dart` | ✅ 確認（ID重複） |
 
 **合計**: 50画面以上（実コードから抽出）
 

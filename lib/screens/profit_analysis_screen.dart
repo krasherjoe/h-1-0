@@ -108,7 +108,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('P1:粗利分析'),
+        title: const Text('GP:粗利分析'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [

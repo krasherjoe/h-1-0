@@ -155,7 +155,7 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('P2:UIパフォーマンス最適化'),
+        title: const Text('UP:UIパフォーマンス最適化'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [

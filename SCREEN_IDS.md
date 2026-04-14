@@ -35,28 +35,28 @@ screen_ids:
     file: lib/screens/warehouse_master_screen.dart
     status: 確認
     category: マスタ管理
-  WH_DASH:
+  WD:
     name: 倉庫ダッシュボード
     file: lib/screens/warehouse_dashboard_screen.dart
     status: 確認
-    note: "WHと重複ID"
+    note: "旧ID: WH"
     category: マスタ管理
   ST:
     name: 担当者マスター
     file: lib/screens/staff_master_screen.dart
     status: 確認
     category: マスタ管理
-  ST_MGMT:
+  SM:
     name: スタッフ管理
     file: lib/screens/staff_management_screen.dart
     status: 確認
-    note: "STと重複ID"
+    note: "旧ID: ST"
     category: マスタ管理
-  M1:
-    name: マスター管理ハブ
-    file: lib/screens/settings_screen.dart（一部）
+  DB:
+    name: データベースリストア
+    file: lib/screens/restore_screen.dart
     status: 確認
-    note: "restore_screen.dartでもM1:データベースリストアとして使用（重複ID）"
+    note: "旧ID: M1"
     category: マスタ管理
 
   # 販売管理
@@ -76,25 +76,25 @@ screen_ids:
     file: lib/screens/order_input_screen.dart
     status: 確認
     category: 販売管理
-  A1_SALES:
+  SA:
     name: 売上分析
     file: lib/screens/sales_analysis_screen.dart
     status: 確認
-    note: "他のA1と重複ID"
+    note: "旧ID: A1"
     category: 販売管理
-  A1_ANALYTICS:
+  AA:
     name: 集計分析
     file: lib/screens/analytics_dashboard_screen.dart
     status: 確認
-    note: "他のA1と重複ID"
+    note: "旧ID: A1"
     category: 販売管理
-  A1_AUDIT:
+  AL:
     name: 監査ログ
     file: lib/screens/audit_log_screen.dart
     status: 確認
-    note: "他のA1と重複ID"
+    note: "旧ID: A1"
     category: 販売管理
-  SA:
+  SA_DASH:
     name: 売上分析
     file: lib/screens/dashboard_screen.dart（一部）
     status: 確認
@@ -104,27 +104,27 @@ screen_ids:
     file: lib/screens/sales_flow_management_screen.dart
     status: 確認
     category: 販売管理
-  P2_PAY:
+  P2:
     name: 支払登録
     file: lib/screens/payment_register_screen.dart
     status: 確認
     category: 販売管理
-  P2_UI:
+  UP:
     name: UIパフォーマンス最適化
     file: lib/screens/ui_performance_screen.dart
     status: 確認
-    note: "P2_PAYと重複ID"
+    note: "旧ID: P2"
     category: 販売管理
-  IV_INV:
+  IV:
     name: 請求書発行
     file: lib/screens/invoice_issue_screen.dart
     status: 確認
     category: 販売管理
-  IV_INV_LIST:
+  IL:
     name: 在庫一覧
     file: lib/screens/inventory_list_screen.dart
     status: 確認
-    note: "IV_INVと重複ID"
+    note: "旧ID: IV"
     category: 販売管理
 
   # 仕入管理
@@ -165,11 +165,11 @@ screen_ids:
     file: lib/screens/inventory_movement_screen.dart
     status: 確認
     category: 在庫管理
-  R1_INV:
+  IR:
     name: 在庫評価額レポート
     file: lib/screens/inventory_value_report_screen.dart
     status: 確認
-    note: "他のR1と重複ID"
+    note: "旧ID: R1"
     category: 在庫管理
 
   # 集計分析
@@ -183,17 +183,17 @@ screen_ids:
     file: lib/screens/product_profit_analysis_screen.dart
     status: 確認
     category: 集計分析
-  P1_PROFIT:
+  GP:
     name: 粗利分析
     file: lib/screens/profit_analysis_screen.dart
     status: 確認
-    note: "他のP1と重複ID"
+    note: "旧ID: P1"
     category: 集計分析
-  P1_PERF:
+  PO:
     name: パフォーマンス最適化
     file: lib/screens/performance_optimization_screen.dart
     status: 確認
-    note: "他のP1と重複ID"
+    note: "旧ID: P1"
     category: 集計分析
   A2:
     name: 詳細レポート
@@ -202,17 +202,17 @@ screen_ids:
     category: 集計分析
 
   # システム設定
-  S1_THEME:
+  TH:
     name: テーマ設定
     file: lib/screens/screen_s1_theme_selection.dart
     status: 確認
-    note: "他のS1と重複ID"
+    note: "旧ID: S1"
     category: システム設定
-  S1_SEARCH:
+  FS:
     name: 高速検索
     file: lib/screens/fast_search_screen.dart
     status: 確認
-    note: "他のS1と重複ID"
+    note: "旧ID: S1"
     category: システム設定
   S8:
     name: メール設定
@@ -223,7 +223,7 @@ screen_ids:
     name: メール設定
     file: lib/screens/settings_screen.dart（一部）
     status: 確認
-    note: "S8と重複ID"
+    note: "S8と機能重複"
     category: システム設定
   D1:
     name: ダッシュボード
@@ -235,17 +235,17 @@ screen_ids:
     file: lib/screens/dashboard_menu_settings_screen.dart
     status: 確認
     category: システム設定
-  C1_CASH:
+  CF:
     name: 資金繰り
     file: lib/screens/cash_flow_screen.dart
     status: 確認
-    note: "他のC1と重複ID"
+    note: "旧ID: C1"
     category: システム設定
-  C1_CUSTOM:
+  CS:
     name: カスタムフィールド設定
     file: lib/screens/custom_field_settings_screen.dart
     status: 確認
-    note: "他のC1と重複ID"
+    note: "旧ID: C1"
     category: システム設定
   C3:
     name: 表示順序の変更
@@ -257,11 +257,10 @@ screen_ids:
     file: lib/screens/user_management_screen.dart
     status: 確認
     category: システム設定
-  R1_ROLE:
+  R1:
     name: ロール管理
     file: lib/screens/role_management_screen.dart
     status: 確認
-    note: "他のR1と重複ID"
     category: システム設定
   B1:
     name: 業種設定
@@ -317,35 +316,34 @@ screen_ids:
     category: 電子帳簿保存法
 
   # 母艦連携
-  CH_HIST:
+  CH:
     name: 履歴
     file: lib/screens/customer_history_screen.dart
     status: 確認
-    note: "CHと重複ID"
     category: 母艦連携
-  CH_CHAT:
+  MC:
     name: 母艦チャット
     file: lib/screens/chat_screen.dart
     status: 確認
-    note: "CH_HISTと重複ID"
+    note: "旧ID: CH"
     category: 母艦連携
-  SD_FORK:
+  FK:
     name: フォーク修復 - HASH チェーン管理
     file: lib/screens/screen_debug_fork_break.dart
     status: 確認
-    note: "他のSDと重複ID"
+    note: "旧ID: SD"
     category: 母艦連携
-  SD_DRIVE:
+  GD:
     name: Google Drive バックアップ
     file: lib/screens/drive_backup_screen.dart
     status: 確認
-    note: "他のSDと重複ID"
+    note: "旧ID: SD"
     category: 母艦連携
-  SD_DISCOVERY:
+  MD:
     name: お局様検出設定
     file: lib/screens/mothership_discovery_settings_screen.dart
     status: 確認
-    note: "他のSDと重複ID"
+    note: "旧ID: SD"
     category: 母艦連携
   SB:
     name: バックアップ・リストア
@@ -376,22 +374,22 @@ screen_ids:
     category: その他
 
 ---
-# 重複ID警告
+# 重複ID警告（解決済み）
 duplicate_warnings:
-  - "M1: マスター管理ハブ と M1:データベースリストア が重複"
-  - "WH: 倉庫マスター と WH:倉庫ダッシュボード が重複"
-  - "ST: 担当者マスター と ST:スタッフ管理 が重複"
-  - "S1: テーマ設定、S1:高速検索 が重複"
-  - "P2: 支払登録、P2:UIパフォーマンス最適化 が重複"
-  - "C1: 得意先マスター、C1:資金繰り、C1:カスタムフィールド設定 が重複"
-  - "A1: 売上分析、A1:集計分析、A1:監査ログ が重複"
-  - "P1: 商品マスター、P1:粗利分析、P1:パフォーマンス最適化 が重複"
-  - "R1: ロール管理、R1:在庫評価額レポート が重複"
-  - "Q1: 見積入力、ES:見積入力 が機能重複"
-  - "SD: フォーク修復、SD:Google Drive バックアップ、SD:お局様検出設定 が重複"
-  - "CH: 履歴、CH:母艦チャット が重複"
-  - "IV: 請求書発行、IV:在庫一覧 が重複"
-  - "SM: メール設定、S8:メール設定 が機能重複"
+  - "✅ M1: マスタ管理ハブ（維持）、M1:データベースリストア → DB:データベースリストア（解決済み）"
+  - "✅ WH: 倉庫マスター（維持）、WH:倉庫ダッシュボード → WD:倉庫ダッシュボード（解決済み）"
+  - "✅ ST: 担当者マスター（維持）、ST:スタッフ管理 → SM:スタッフ管理（解決済み）"
+  - "✅ S1: テーマ設定 → TH:テーマ設定（解決済み）、S1:高速検索 → FS:高速検索（解決済み）"
+  - "✅ P2: 支払登録（維持）、P2:UIパフォーマンス最適化 → UP:UIパフォーマンス最適化（解決済み）"
+  - "✅ C1: 得意先マスター（維持）、C1:資金繰り → CF:資金繰り（解決済み）、C1:カスタムフィールド設定 → CS:カスタムフィールド設定（解決済み）"
+  - "✅ A1: 売上分析 → SA:売上分析（解決済み）、A1:集計分析 → AA:集計分析（解決済み）、A1:監査ログ → AL:監査ログ（解決済み）"
+  - "✅ P1: 商品マスター（維持）、P1:粗利分析 → GP:粗利分析（解決済み）、P1:パフォーマンス最適化 → PO:パフォーマンス最適化（解決済み）"
+  - "✅ R1: ロール管理（維持）、R1:在庫評価額レポート → IR:在庫評価額レポート（解決済み）"
+  - "⚠️ Q1: 見積入力、ES:見積入力 が機能重複（未解決、統合検討中）"
+  - "✅ SD: フォーク修復 → FK:フォーク修復（解決済み）、SD:Google Drive バックアップ → GD:Google Drive バックアップ（解決済み）、SD:お局様検出設定 → MD:お局様検出設定（解決済み）"
+  - "✅ CH: 履歴（維持）、CH:母艦チャット → MC:母艦チャット（解決済み）"
+  - "✅ IV: 請求書発行（維持）、IV:在庫一覧 → IL:在庫一覧（解決済み）"
+  - "⚠️ SM: メール設定、S8:メール設定 が機能重複（未解決、統合検討中）"
 
 ---
 # 未確認ファイル（docs/02_CURRENT_STATUS.mdに記載されているが実ファイル未確認）

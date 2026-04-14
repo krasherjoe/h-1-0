@@ -92,7 +92,7 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('P1:パフォーマンス最適化'),
+        title: const Text('PO:パフォーマンス最適化'),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
         actions: [

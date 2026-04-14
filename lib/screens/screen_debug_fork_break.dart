@@ -432,7 +432,7 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SD:フォーク修復 - HASH チェーン管理'),
+        title: const Text('FK:フォーク修復 - HASH チェーン管理'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(

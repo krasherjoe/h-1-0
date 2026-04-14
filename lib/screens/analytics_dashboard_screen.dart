@@ -59,7 +59,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('A1:集計分析'),
+        title: const Text('AA:集計分析'),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),

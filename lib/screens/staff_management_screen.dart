@@ -84,7 +84,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('ST:スタッフ管理'),
+        title: const Text('SM:スタッフ管理'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),

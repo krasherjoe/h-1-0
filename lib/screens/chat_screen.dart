@@ -92,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CH:母艦チャット'),
+        title: const Text('MC:母艦チャット'),
         actions: [
           IconButton(
             tooltip: '再同期',

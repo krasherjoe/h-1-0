@@ -34,7 +34,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('S1:テーマ設定'),
+        title: const Text('TH:テーマ設定'),
       ),
       body: Column(
         children: [

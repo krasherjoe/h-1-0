@@ -38,7 +38,7 @@ class _RestoreScreenState extends State<RestoreScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('M1:データベースリストア'),
+        title: const Text('DB:データベースリストア'),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),

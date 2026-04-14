@@ -124,7 +124,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SD:Google Drive バックアップ'),
+        title: const Text('GD:Google Drive バックアップ'),
         backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
         actions: [

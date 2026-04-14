@@ -34,7 +34,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('A1:売上分析'),
+        title: const Text('SA:売上分析'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [

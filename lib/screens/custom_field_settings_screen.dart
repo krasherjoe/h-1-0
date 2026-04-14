@@ -185,7 +185,7 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('C1:カスタムフィールド設定'),
+        title: const Text('CS:カスタムフィールド設定'),
         actions: [
           IconButton(
             icon: const Icon(Icons.dashboard_customize),

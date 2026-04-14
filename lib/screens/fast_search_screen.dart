@@ -138,7 +138,7 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('S1:高速検索'),
+        title: const Text('FS:高速検索'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [

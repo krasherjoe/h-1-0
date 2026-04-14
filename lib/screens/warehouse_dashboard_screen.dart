@@ -56,7 +56,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('WH:倉庫ダッシュボード'),
+        title: const Text('WD:倉庫ダッシュボード'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

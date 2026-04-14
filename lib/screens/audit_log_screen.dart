@@ -150,7 +150,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('A1:監査ログ'),
+        title: const Text('AL:監査ログ'),
         backgroundColor: Colors.red,
         foregroundColor: Colors.white,
         actions: [

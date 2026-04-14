@@ -44,7 +44,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IV:在庫一覧'),
+        title: const Text('IL:在庫一覧'),
         backgroundColor: Colors.orange,
       ),
       body: _isLoading

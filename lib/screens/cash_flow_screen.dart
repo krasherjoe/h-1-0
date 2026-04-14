@@ -58,7 +58,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('C1:資金繰り'),
+        title: const Text('CF:資金繰り'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],

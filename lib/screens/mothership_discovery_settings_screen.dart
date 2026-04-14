@@ -89,7 +89,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SD:お局様検出設定'),
+        title: const Text('MD:お局様検出設定'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

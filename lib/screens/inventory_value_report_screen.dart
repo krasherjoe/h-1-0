@@ -99,7 +99,7 @@ class _InventoryValueReportScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('R1:在庫評価額レポート'),
+        title: const Text('IR:在庫評価額レポート'),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
         actions: [
