@@ -188,12 +188,12 @@ class CustomerRepository {
         );
       }
 
-      // フォークした場合、元のIDのレコードを非表示にする
+      // フォークした場合、元のIDのすべてのレコード（履歴含む）を非表示にする
       if (originalId != null && originalId != customer.id) {
         await txn.update(
           'customers',
           {'is_hidden': 1},
-          where: 'id = ? AND is_current = 1',
+          where: 'id = ?',
           whereArgs: [originalId],
         );
       }
