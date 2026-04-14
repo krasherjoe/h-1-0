@@ -55,6 +55,18 @@ class CustomerRepository {
     await _safeAddColumn(db, 'customers', 'head_char2 TEXT');
   }
 
+  /// 顧客の履歴を取得する（履歴テーブルのデータも含む）
+  Future<List<Customer>> getCustomerHistory(String customerId) async {
+    final db = await _dbHelper.database;
+    final maps = await db.query(
+      'customers',
+      where: 'id = ?',
+      whereArgs: [customerId],
+      orderBy: 'version DESC',
+    );
+    return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
+  }
+
   /// 重複チェック（電話番号・メール・社名）
   /// 削除フラグ（is_hidden = 1）のデータと履歴テーブル（is_current = 0）のデータは除外
   /// excludeIdを指定すると、そのIDの顧客を除外してチェックする（編集時用）

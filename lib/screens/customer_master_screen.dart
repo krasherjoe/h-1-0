@@ -11,6 +11,7 @@ import '../services/custom_field_repository.dart';
 import '../services/business_profile_repository.dart';
 import '../models/custom_field_model.dart';
 import 'phonebook_selection_screen.dart';
+import 'customer_history_screen.dart';
 
 class CustomerMasterScreen extends StatefulWidget {
   final bool selectionMode;
@@ -376,6 +377,15 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   };
 
   late final Map<String, String> _defaultKanaMap = _buildDefaultKanaMap();
+
+  Future<void> _showCustomerHistory(Customer customer) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CustomerHistoryScreen(customer: customer),
+      ),
+    );
+  }
 
   Future<void> _addOrEditCustomer({Customer? customer}) async {
     final result = await Navigator.push<Customer>(
@@ -1254,10 +1264,20 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           : () => _showDetailPane(c),
                       trailing: widget.selectionMode
                           ? null
-                          : IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _addOrEditCustomer(customer: c),
-                              tooltip: "編集（電子帳簿保存法対応：ロック中も履歴保存して編集可能）",
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.history),
+                                  onPressed: () => _showCustomerHistory(c),
+                                  tooltip: "履歴を表示",
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => _addOrEditCustomer(customer: c),
+                                  tooltip: "編集（電子帳簿保存法対応：ロック中も履歴保存して編集可能）",
+                                ),
+                              ],
                             ),
                       onLongPress: () => _showContextActions(c),
                     );
