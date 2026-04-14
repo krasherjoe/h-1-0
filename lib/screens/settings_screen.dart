@@ -856,6 +856,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
+                ListTile(
+                  leading: Icon(Icons.cleaning_services, color: Colors.orange),
+                  title: const Text('フォークされたレコードをクリーンアップ'),
+                  subtitle: const Text('古いフォークレコードを非表示に設定'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('フォークされたレコードをクリーンアップ'),
+                        content: const Text('古いフォークレコードを非表示に設定します。データは削除されません。'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('キャンセル'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('クリーンアップ'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('force_cleanup_forked_records', true);
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('アプリを再起動してフォークされたレコードをクリーンアップします'),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  },
+                ),
               ],
             ),
           ),

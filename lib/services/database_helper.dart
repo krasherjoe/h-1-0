@@ -328,33 +328,53 @@ class DatabaseHelper {
     // 既存のデータベースを新しいフォルダへ移行（初回のみ）
     await _migrateDatabaseIfNeeded();
 
-    // 古いデータベースファイルを検出して削除
-    try {
-      final dbFile = File(dbPath);
-      if (await dbFile.exists()) {
-        // データベースのバージョンを確認
-        final testDb = await openDatabase(dbPath);
-        final version = await testDb.getVersion();
-        await testDb.close();
-        
-        // バージョンが古い場合、ファイルを削除して新規作成
-        if (version < _databaseVersion) {
-          debugPrint('古いデータベースバージョン（$version）を検出。新しいバージョン（$_databaseVersion）に更新します');
-          await dbFile.delete();
-          debugPrint('古いデータベースファイルを削除しました');
-        }
-      }
-    } catch (e) {
-      debugPrint('データベースバージョン確認エラー：$e');
-      // エラーが発生した場合は、ファイルを削除して新規作成を試みる
+    // フォークされたレコードをクリーンアップ
+    final prefs = await SharedPreferences.getInstance();
+    final shouldCleanup = prefs.getBool('force_cleanup_forked_records') ?? false;
+    if (shouldCleanup) {
+      debugPrint('フォークされたレコードをクリーンアップします');
       try {
-        final dbFile = File(dbPath);
-        if (await dbFile.exists()) {
-          await dbFile.delete();
-          debugPrint('破損したデータベースファイルを削除しました');
+        final db = await openDatabase(dbPath);
+        // 同じdisplay_nameで複数のIDが存在する場合、古いバージョンに新しいIDを設定
+        final customers = await db.query('customers', where: 'is_current = 1');
+        final Map<String, List<Map<String, dynamic>>> grouped = {};
+        
+        for (final customer in customers) {
+          final displayName = customer['display_name'] as String;
+          if (!grouped.containsKey(displayName)) {
+            grouped[displayName] = [];
+          }
+          grouped[displayName]!.add(customer);
         }
-      } catch (deleteError) {
-        debugPrint('ファイル削除エラー：$deleteError');
+        
+        // 複数のIDが存在する場合、古いバージョンに新しいIDを設定
+        for (final entry in grouped.entries) {
+          if (entry.value.length > 1) {
+            // バージョン番号でソート（古い順）
+            entry.value.sort((a, b) {
+              final versionA = (a['version'] as int?) ?? 1;
+              final versionB = (b['version'] as int?) ?? 1;
+              return versionA.compareTo(versionB);
+            });
+            
+            // 最新バージョン以外に次の世代のIDを設定
+            for (int i = 0; i < entry.value.length - 1; i++) {
+              final oldRecord = entry.value[i];
+              final newRecord = entry.value[i + 1];
+              await db.update(
+                'customers',
+                {'next_version_id': newRecord['id'], 'is_hidden': 1},
+                where: 'id = ?',
+                whereArgs: [oldRecord['id']],
+              );
+            }
+          }
+        }
+        await db.close();
+        await prefs.setBool('force_cleanup_forked_records', false);
+        debugPrint('フォークされたレコードのクリーンアップが完了しました');
+      } catch (e) {
+        debugPrint('クリーンアップエラー：$e');
       }
     }
 
