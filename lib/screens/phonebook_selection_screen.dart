@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import '../models/customer_model.dart';
+import '../widgets/contact_picker_sheet.dart';
+import '../models/customer_model.dart' show HonorificCode;
 
 /// 電話帳から顧客を選択するための検索機能付き画面
 class PhonebookSelectionScreen extends StatefulWidget {
@@ -305,13 +307,13 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
 
     final formalName = selectedNameSource == 'company' && cleanOrg.isNotEmpty
         ? cleanOrg
-        : '$cleanPerson 様';
+        : cleanPerson;
 
     return Customer(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // 一時的 ID
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       displayName: displayName,
       formalName: formalName,
-      title: selectedNameSource == 'company' ? '' : '様',
+      title: selectedNameSource == 'company' ? HonorificCode.onchu : HonorificCode.san,
       department: null,
       address: address,
       tel: tel,

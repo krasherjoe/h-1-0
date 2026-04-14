@@ -1,9 +1,11 @@
+import 'dart:io';
+import 'package:flutter/material.dart' show debugPrint;
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
-import '../models/customer_model.dart'
-    show Customer, DuplicateCustomerException;
-import 'database_helper.dart';
-import 'activity_log_repository.dart';
+import '../models/customer_model.dart';
+import '../services/database_helper.dart';
+import '../services/activity_log_repository.dart';
+import '../models/customer_model.dart' show HonorificCode;
 import '../models/customer_contact.dart';
 import 'hash_utils.dart';
 
@@ -181,7 +183,7 @@ class CustomerRepository {
       action: "SAVE_CUSTOMER",
       targetType: "CUSTOMER",
       targetId: customer.id,
-      details: "名称：${customer.formalName}, 敬称：${customer.title} (version up)",
+      details: "名称：${customer.formalName}, 敬称：${HonorificCode.toName(customer.title)} (version up)",
     );
   }
 
@@ -281,7 +283,7 @@ class CustomerRepository {
         whereArgs: [customerId],
       );
       await txn.insert('customer_contacts', {
-        'id': const Uuid().v4(),
+        'id': Uuid().v4(),
         'customer_id': customerId,
         'email': email,
         'tel': tel,
@@ -363,7 +365,7 @@ class CustomerRepository {
       whereArgs: [customer.id],
     );
     await txn.insert('customer_contacts', {
-      'id': const Uuid().v4(),
+      'id': Uuid().v4(),
       'customer_id': customer.id,
       'email': customer.email,
       'tel': customer.tel,

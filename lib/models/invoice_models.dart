@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:intl/intl.dart';
-import 'customer_model.dart';
+import '../models/customer_model.dart';
+import '../models/customer_model.dart' show HonorificCode;
 
 class InvoiceItem {
   final String? id;
@@ -212,7 +214,7 @@ class Invoice {
   String get customerNameForDisplay {
     final base = customerFormalNameSnapshot ?? customer.formalName;
     final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
-    return hasHonorific ? base : '$base ${customer.title}';
+    return hasHonorific ? base : '$base ${HonorificCode.toName(customer.title)}';
   }
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
@@ -393,21 +395,5 @@ class Invoice {
       metaJson: metaJson ?? this.metaJson,
       metaHash: metaHash ?? this.metaHash,
     );
-  }
-
-  String toCsv() {
-    final buffer = StringBuffer();
-    buffer.writeln('伝票種別,伝票番号,日付,取引先,合計金額,緯度,経度');
-    buffer.writeln(
-      '$documentTypeName,$invoiceNumber,${DateFormat('yyyy/MM/dd').format(date)},$customerNameForDisplay,$totalAmount,${latitude ?? ""},${longitude ?? ""}',
-    );
-    buffer.writeln('');
-    buffer.writeln('品名,数量,単価,小計');
-    for (var item in items) {
-      buffer.writeln(
-        '${item.description},${item.quantity},${item.unitPrice},${item.subtotal}',
-      );
-    }
-    return buffer.toString();
   }
 }

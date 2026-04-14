@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/customer_model.dart';
+import '../models/customer_model.dart' show HonorificCode;
 import '../models/invoice_models.dart';
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
@@ -118,7 +119,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   String _customerNameWithHonorific(Customer customer) {
     final base = customer.formalName;
     final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
-    return hasHonorific ? base : "$base ${customer.title}";
+    return hasHonorific ? base : "$base ${HonorificCode.toName(customer.title)}";
   }
 
   String _ensureCurrentId() {

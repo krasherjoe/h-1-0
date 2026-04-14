@@ -14,6 +14,40 @@ class DuplicateCustomerException implements Exception {
   }
 }
 
+/// 敬称コード定義
+class HonorificCode {
+  static const int san = 1;
+  static const int onchu = 2;
+  static const int dono = 3;
+  static const int kisha = 4;
+
+  static String toName(int code) {
+    switch (code) {
+      case onchu:
+        return '御中';
+      case dono:
+        return '殿';
+      case kisha:
+        return '貴社';
+      default:
+        return '様';
+    }
+  }
+
+  static int toCode(String name) {
+    switch (name) {
+      case '御中':
+        return onchu;
+      case '殿':
+        return dono;
+      case '貴社':
+        return kisha;
+      default:
+        return san;
+    }
+  }
+}
+
 /// 電子帳簿保存法対応 - バージョン管理フィールド
 extension CustomerVersioning on Customer {
   /// 現在のバージョンか判定
@@ -30,7 +64,7 @@ class Customer {
   final String id;
   final String displayName; // 表示用（電話帳名など）
   final String formalName; // 請求書用正式名称
-  final String title; // 敬称（様、殿など）
+  final int title; // 敬称コード（1:様, 2:御中, 3:殿, 4:貴社）
   final String? department; // 部署名
   final String? address; // 住所（最新連絡先）
   final String? tel; // 電話番号（最新連絡先）
@@ -56,7 +90,7 @@ class Customer {
     required this.id,
     required this.displayName,
     required this.formalName,
-    this.title = "様",
+    this.title = HonorificCode.san,
     this.department,
     this.address,
     this.tel,
@@ -82,7 +116,7 @@ class Customer {
     if (department != null && department!.isNotEmpty) {
       name = "$formalName\n$department";
     }
-    return "$name $title";
+    return "$name ${HonorificCode.toName(title)}";
   }
 
   Map<String, dynamic> toMap() {
@@ -114,11 +148,21 @@ class Customer {
   }
 
   factory Customer.fromMap(Map<String, dynamic> map) {
+    final titleValue = map['title'];
+    int titleCode;
+    if (titleValue is int) {
+      titleCode = titleValue;
+    } else if (titleValue is String) {
+      titleCode = HonorificCode.toCode(titleValue);
+    } else {
+      titleCode = HonorificCode.san;
+    }
+
     return Customer(
       id: map['id'],
       displayName: map['display_name'],
       formalName: map['formal_name'],
-      title: map['title'] ?? "様",
+      title: titleCode,
       department: map['department'],
       address: map['contact_address'] ?? map['address'],
       tel: map['contact_tel'] ?? map['tel'],
@@ -147,7 +191,7 @@ class Customer {
     String? id,
     String? displayName,
     String? formalName,
-    String? title,
+    int? title,
     String? department,
     String? address,
     String? tel,

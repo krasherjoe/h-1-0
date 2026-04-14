@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import '../models/customer_model.dart';
 import '../widgets/contact_picker_sheet.dart';
+import '../models/customer_model.dart' show HonorificCode;
 
 /// C2: 顧客 新規登録 / 編集 フルスクリーンフォーム
 class CustomerEditScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
   late final TextEditingController _head1Ctl;
   late final TextEditingController _head2Ctl;
 
-  late String _selectedTitle;
+  late int _selectedTitle;
   late bool _isCompany;
   bool get _isEdit => widget.customer != null;
 
@@ -40,8 +41,8 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     _addressCtl = TextEditingController(text: c?.address ?? '');
     _telCtl = TextEditingController(text: c?.tel ?? '');
     _emailCtl = TextEditingController(text: c?.email ?? '');
-    _selectedTitle = c?.title ?? '様';
-    _isCompany = _selectedTitle == '御中' || _selectedTitle == '貴社';
+    _selectedTitle = c?.title ?? HonorificCode.san;
+    _isCompany = _selectedTitle == HonorificCode.onchu || _selectedTitle == HonorificCode.kisha;
     _head1Ctl = TextEditingController(text: c?.headChar1 ?? _headKana(_displayNameCtl.text));
     _head2Ctl = TextEditingController(text: c?.headChar2 ?? '');
   }
@@ -122,7 +123,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
         _emailCtl.text = picked.emails.first.address;
       }
       _isCompany = orgCompany.isNotEmpty;
-      _selectedTitle = _isCompany ? '御中' : '様';
+      _selectedTitle = _isCompany ? HonorificCode.onchu : HonorificCode.san;
       if (_head1Ctl.text.isEmpty) {
         _head1Ctl.text = _headKana(chosen);
       }
@@ -133,7 +134,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final locked = widget.customer?.isLocked ?? false;
-    final newId = locked ? const Uuid().v4() : (widget.customer?.id ?? const Uuid().v4());
+    final newId = locked ? Uuid().v4() : (widget.customer?.id ?? Uuid().v4());
     final newCustomer = Customer(
       id: newId,
       displayName: _displayNameCtl.text.trim(),
@@ -263,12 +264,12 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                         if (values.isEmpty) return;
                         setState(() {
                           _isCompany = values.first;
-                          _selectedTitle = _isCompany ? '御中' : '様';
+                          _selectedTitle = _isCompany ? HonorificCode.onchu : HonorificCode.san;
                         });
                       },
                     ),
                     const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
+                    DropdownButtonFormField<int>(
                       // ignore: deprecated_member_use
                       value: _selectedTitle,
                       decoration: const InputDecoration(
@@ -276,10 +277,15 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                         prefixIcon: Icon(Icons.title),
                         border: OutlineInputBorder(),
                       ),
-                      items: ['様', '御中', '殿', '貴社'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                      items: const [
+                        DropdownMenuItem(value: HonorificCode.san, child: Text('様')),
+                        DropdownMenuItem(value: HonorificCode.onchu, child: Text('御中')),
+                        DropdownMenuItem(value: HonorificCode.dono, child: Text('殿')),
+                        DropdownMenuItem(value: HonorificCode.kisha, child: Text('貴社')),
+                      ],
                       onChanged: (val) => setState(() {
-                        _selectedTitle = val ?? '様';
-                        _isCompany = _selectedTitle == '御中' || _selectedTitle == '貴社';
+                        _selectedTitle = val ?? HonorificCode.san;
+                        _isCompany = _selectedTitle == HonorificCode.onchu || _selectedTitle == HonorificCode.kisha;
                       }),
                     ),
                     const SizedBox(height: 14),

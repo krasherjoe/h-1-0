@@ -1,4 +1,5 @@
 import '../models/customer_model.dart';
+import '../models/customer_model.dart' show HonorificCode;
 
 /// 敬称スクリーニング結果
 class HonorificsIssue {
@@ -76,9 +77,10 @@ class CustomerDataCleaner {
 
   // ─── 後方互換メソッド（既存コードから呼ばれる） ──────────────────────
 
-  static String cleanTitle(String formalName, String title) {
+  static int cleanTitle(String formalName, int title) {
+    final titleStr = HonorificCode.toName(title);
     for (final h in ['様', '御中', '殿', '貴社']) {
-      if (formalName.endsWith(h) && title == h) return '様';
+      if (formalName.endsWith(h) && titleStr == h) return HonorificCode.san;
     }
     return title;
   }
@@ -93,9 +95,10 @@ class CustomerDataCleaner {
   static List<Customer> cleanCustomers(List<Customer> customers) =>
       customers.map(cleanCustomer).toList();
 
-  static bool hasDuplicateHonorific(String formalName, String title) {
+  static bool hasDuplicateHonorific(String formalName, int title) {
+    final titleStr = HonorificCode.toName(title);
     for (final h in ['様', '御中', '殿', '貴社']) {
-      if (formalName.endsWith(h) && title == h) return true;
+      if (formalName.endsWith(h) && titleStr == h) return true;
     }
     return false;
   }

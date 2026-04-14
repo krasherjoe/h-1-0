@@ -1,6 +1,6 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-04-09 15:30
+最終更新: 2026-04-13 23:57
 
 ## 🔴 緊急・高優先度
 
@@ -8,6 +8,15 @@
 - [x] Google 統合の復元とデータベース場所の変更 (2026-04-09, commit: fe6e875)
 
 - [x] S1:設定画面の LSP 構文エラー修正とバックアップ機能拡張 (2026-04-10, 完了，commit: f62b752)
+
+- [x] APK寿命設定機能の変更 (2026-04-13, commit: d4ee01a)
+  - 関連：`lib/main.dart`, `lib/utils/build_expiry_info.dart`, `scripts/build_with_expiry.sh`, `README.md`
+  - 内容:
+    - デフォルト寿命を90日に設定
+    - 寿命切れ時は新規登録のみ制限（アプリ全体は動作可能）
+    - APP_BUILD_LIFESPAN_DAYS環境変数で寿命設定可能
+    - ビルドスクリプトに寿命設定オプションを追加
+    - README.mdに寿命設定情報を記載
    - 関連：`lib/screens/settings_screen.dart`
   - 内容:
     - バックアップ状況表示 UI に `_localBackupStatus` と `_driveBackupStatus` を追加
