@@ -56,6 +56,7 @@ class CustomerRepository {
   }
 
   /// 重複チェック（電話番号・メール・社名）
+  /// 削除フラグ（is_hidden = 1）のデータは除外
   Future<bool> checkDuplicate({
     String? tel,
     String? email,
@@ -67,7 +68,7 @@ class CustomerRepository {
     if (tel != null && tel.isNotEmpty) {
       final result = await db.query(
         'customers',
-        where: 'tel = ?',
+        where: 'tel = ? AND is_hidden = 0',
         whereArgs: [tel],
       );
       if (result.isNotEmpty) return true;
@@ -77,7 +78,7 @@ class CustomerRepository {
     if (email != null && email.isNotEmpty) {
       final result = await db.query(
         'customers',
-        where: 'email = ?',
+        where: 'email = ? AND is_hidden = 0',
         whereArgs: [email],
       );
       if (result.isNotEmpty) return true;
@@ -87,7 +88,7 @@ class CustomerRepository {
     if (name != null && name.isNotEmpty) {
       final result = await db.query(
         'customers',
-        where: '(display_name LIKE ? OR formal_name LIKE ?)',
+        where: '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0',
         whereArgs: ['%$name%', '%$name%'],
       );
       if (result.isNotEmpty) return true;
