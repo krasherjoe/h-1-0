@@ -56,7 +56,7 @@ class CustomerRepository {
   }
 
   /// 重複チェック（電話番号・メール・社名）
-  /// 削除フラグ（is_hidden = 1）のデータは除外
+  /// 削除フラグ（is_hidden = 1）のデータと履歴テーブル（is_current = 0）のデータは除外
   /// excludeIdを指定すると、そのIDの顧客を除外してチェックする（編集時用）
   Future<bool> checkDuplicate({
     String? tel,
@@ -68,7 +68,7 @@ class CustomerRepository {
 
     // 電話番号で検索（customers テーブルの tel のみ参照）
     if (tel != null && tel.isNotEmpty) {
-      String where = 'tel = ? AND is_hidden = 0';
+      String where = 'tel = ? AND is_hidden = 0 AND is_current = 1';
       List<dynamic> whereArgs = [tel];
       if (excludeId != null) {
         where += ' AND id != ?';
@@ -84,7 +84,7 @@ class CustomerRepository {
 
     // メールで検索（customers テーブルの email のみ参照）
     if (email != null && email.isNotEmpty) {
-      String where = 'email = ? AND is_hidden = 0';
+      String where = 'email = ? AND is_hidden = 0 AND is_current = 1';
       List<dynamic> whereArgs = [email];
       if (excludeId != null) {
         where += ' AND id != ?';
@@ -100,7 +100,7 @@ class CustomerRepository {
 
     // 社名（表示名・正式名称）で検索
     if (name != null && name.isNotEmpty) {
-      String where = '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0';
+      String where = '(display_name LIKE ? OR formal_name LIKE ?) AND is_hidden = 0 AND is_current = 1';
       List<dynamic> whereArgs = ['%$name%', '%$name%'];
       if (excludeId != null) {
         where += ' AND id != ?';
