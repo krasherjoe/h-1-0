@@ -87,13 +87,33 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
                               ),
                           ],
                         ),
-                        trailing: isCurrent
-                            ? const Icon(Icons.star, color: Colors.amber)
-                            : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!isCurrent)
+                              IconButton(
+                                icon: const Icon(Icons.picture_as_pdf),
+                                onPressed: () => _generatePdf(customer),
+                                tooltip: "PDFを生成",
+                              ),
+                            if (isCurrent)
+                              const Icon(Icons.star, color: Colors.amber),
+                          ],
+                        ),
                       ),
                     );
                   },
                 ),
+    );
+  }
+
+  Future<void> _generatePdf(Customer customer) async {
+    // TODO: 履歴データを使ってPDFを生成する機能を実装
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('PDF生成機能は実装中です: ${customer.displayName}'),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 }
