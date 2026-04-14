@@ -561,7 +561,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
     final themeColor = Theme.of(context).scaffoldBackgroundColor;
-    final textColor = Colors.black87;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
 
     final docColor = _documentTypeColor(_documentType);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
@@ -688,7 +689,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         const SizedBox(height: 16),
                         _buildCustomerSection(),
                         const SizedBox(height: 16),
-                        _buildSubjectSection(textColor),
+                        _buildSubjectSection(),
                         const SizedBox(height: 20),
                         _buildItemsSection(fmt),
                         const SizedBox(height: 20),
@@ -776,83 +777,89 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             },
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+        child: Builder(
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
-              const SizedBox(width: 8),
-              Text(
-                "伝票日付: ${fmt.format(_selectedDate)}",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
+                  const SizedBox(width: 8),
+                  Text(
+                    "伝票日付: ${fmt.format(_selectedDate)}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (_showNewBadge)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        "新規",
+                        style: TextStyle(
+                          color: Colors.deepOrange,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  if (_showCopyBadge)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        "複写",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  if (!_isViewMode && !_isLocked) ...[
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right, size: 18, color: Colors.indigo),
+                  ],
+                ],
               ),
-              if (_showNewBadge)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    "新規",
-                    style: TextStyle(
-                      color: Colors.deepOrange,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              if (_showCopyBadge)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    "複写",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              if (!_isViewMode && !_isLocked) ...[
-                const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, size: 18, color: Colors.indigo),
-              ],
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildCustomerSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1161,12 +1168,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final int tax = _includeTax ? (subtotal * _taxRate).floor() : 0;
     final int total = subtotal + tax;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
     final useBlue = _summaryIsBlue;
-    final bgColor = useBlue ? Colors.indigo : Colors.white;
+    final bgColor = useBlue ? Colors.indigo : (isDark ? const Color(0xFF2C2C2C) : Colors.white);
     final borderColor = Colors.transparent;
-    final labelColor = useBlue ? Colors.white70 : Colors.black87;
-    final totalColor = useBlue ? Colors.white : Colors.black87;
-    final dividerColor = useBlue ? Colors.white24 : Colors.grey.shade300;
+    final labelColor = useBlue ? Colors.white70 : textColor;
+    final totalColor = useBlue ? Colors.white : textColor;
+    final dividerColor = useBlue ? Colors.white24 : (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
 
     // 数値をフォーマット（0 の場合も "0" として表示）
     String formatAmount(int amount) {
@@ -1266,10 +1275,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   Widget _buildBottomActionBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
@@ -1339,7 +1349,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  Widget _buildSubjectSection(Color textColor) {
+  Widget _buildSubjectSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1352,7 +1364,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(

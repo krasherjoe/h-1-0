@@ -159,7 +159,11 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   Widget _buildPreview() {
     // 伝票入力画面の簡易プレビュー
     final themeColor = Theme.of(context).scaffoldBackgroundColor;
-    final textColor = Colors.black87; // 実際の伝票入力画面と同じ固定値
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final borderColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final labelColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
 
     return Container(
       color: themeColor,
@@ -199,9 +203,9 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +214,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                           '得意先',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade700,
+                            color: labelColor,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -230,9 +234,9 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +245,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                           '品名',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade700,
+                            color: labelColor,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -260,7 +264,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                               '単価',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade700,
+                                color: labelColor,
                               ),
                             ),
                             Text(
@@ -280,7 +284,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                               '数量',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade700,
+                                color: labelColor,
                               ),
                             ),
                             Text(
@@ -293,7 +297,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Divider(),
+                        const Divider(color: Colors.grey),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -302,7 +306,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade700,
+                                color: labelColor,
                               ),
                             ),
                             Text(
@@ -323,7 +327,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: isDark ? const Color(0xFF3A3A3A) : Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
