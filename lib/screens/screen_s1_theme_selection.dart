@@ -74,6 +74,11 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                       icon: Icon(Icons.color_lens),
                     ),
                     ButtonSegment(
+                      value: 'dark-gray',
+                      label: Text('ダークグレー'),
+                      icon: Icon(Icons.nights_stay),
+                    ),
+                    ButtonSegment(
                       value: 'dark',
                       label: Text('ダーク'),
                       icon: Icon(Icons.dark_mode),

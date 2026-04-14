@@ -475,6 +475,76 @@ class _MyAppState extends State<MyApp> {
             useMaterial3: true,
             fontFamily: 'IPAexGothic',
           );
+        } else if (themeString == 'dark-gray') {
+          theme = ThemeData(
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.grey.shade700,
+              brightness: Brightness.dark,
+              primary: Colors.grey.shade400,
+              secondary: Colors.blueGrey.shade400,
+              surface: Colors.grey.shade900,
+              onSurface: Colors.grey.shade100,
+            ),
+            scaffoldBackgroundColor: const Color(0xFF1A1A1A),
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.grey.shade900,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            cardTheme: CardThemeData(
+              color: Colors.grey.shade900,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey.shade700,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(color: Colors.grey.shade400),
+                foregroundColor: Colors.grey.shade400,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: Colors.grey.shade800,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade600),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Colors.grey.shade400,
+                  width: 1.4,
+                ),
+              ),
+              labelStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: TextStyle(color: Colors.grey.shade600),
+            ),
+            snackBarTheme: SnackBarThemeData(
+              backgroundColor: Colors.grey.shade800,
+              contentTextStyle: TextStyle(color: Colors.grey.shade100),
+            ),
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            useMaterial3: true,
+            fontFamily: 'IPAexGothic',
+          );
         } else if (themeString == 'gray') {
           theme = ThemeData(
             brightness: Brightness.light,
