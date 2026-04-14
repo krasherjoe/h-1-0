@@ -1427,6 +1427,43 @@ class DatabaseHelper {
     if (oldVersion < 46) {
       // v46: フォーク追跡用に次の世代のレコード番号を記録するカラムを追加
       await _safeAddColumn(db, 'customers', 'next_version_id TEXT');
+      
+      // 既存のフォークされたレコードを検出して、next_version_idを設定
+      // 同じdisplay_nameで複数のIDが存在する場合、古いバージョンに新しいIDを設定
+      final customers = await db.query('customers', where: 'is_current = 1');
+      final Map<String, List<Map<String, dynamic>>> grouped = {};
+      
+      for (final customer in customers) {
+        final displayName = customer['display_name'] as String;
+        if (!grouped.containsKey(displayName)) {
+          grouped[displayName] = [];
+        }
+        grouped[displayName]!.add(customer);
+      }
+      
+      // 複数のIDが存在する場合、古いバージョンに新しいIDを設定
+      for (final entry in grouped.entries) {
+        if (entry.value.length > 1) {
+          // バージョン番号でソート（古い順）
+          entry.value.sort((a, b) {
+            final versionA = (a['version'] as int?) ?? 1;
+            final versionB = (b['version'] as int?) ?? 1;
+            return versionA.compareTo(versionB);
+          });
+          
+          // 最新バージョン以外に次の世代のIDを設定
+          for (int i = 0; i < entry.value.length - 1; i++) {
+            final oldRecord = entry.value[i];
+            final newRecord = entry.value[i + 1];
+            await db.update(
+              'customers',
+              {'next_version_id': newRecord['id'], 'is_hidden': 1},
+              where: 'id = ?',
+              whereArgs: [oldRecord['id']],
+            );
+          }
+        }
+      }
     }
   }
 
