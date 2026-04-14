@@ -16,8 +16,8 @@ class CustomerRepository {
   Future<List<Customer>> getAllCustomers({bool includeHidden = false}) async {
     final db = await _dbHelper.database;
     final filter = includeHidden
-        ? ''
-        : 'WHERE COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
+        ? 'WHERE c.is_current = 1'
+        : 'WHERE c.is_current = 1 AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
     List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
              COALESCE(mh.is_hidden, c.is_hidden, 0) AS is_hidden
