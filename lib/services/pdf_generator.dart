@@ -57,8 +57,7 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                   top: 50,
                   child: pw.Image(sealImage!, width: 100, height: 100),
                 ),
-              if (!invoice.isDraft) pw.SizedBox(),
-              if (invoice.isDraft)
+              if (invoice.isDraft && !invoice.isLocked)
                 pw.Center(
                   child: pw.Transform.rotate(
                     angle: -0.5,
