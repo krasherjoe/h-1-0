@@ -1128,9 +1128,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   ),
                                   IconButton(
                                     icon: const Icon(
-                                      Icons.remove_circle_outline,
+                                      Icons.delete_outline,
                                       color: Colors.redAccent,
-                                      size: 18,
+                                      size: 20,
                                     ),
                                     onPressed: () async {
                                       final removed = _items[idx];
@@ -1402,6 +1402,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (_currentId == null) {
       return const SizedBox.shrink();
     }
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtitleColor = isDark ? Colors.grey.shade400 : Colors.black54;
+    final hintColor = isDark ? Colors.grey.shade500 : Colors.grey;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1410,16 +1417,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0.5,
+          color: cardColor,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x22000000),
+                  color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.13),
                   blurRadius: 10,
                   spreadRadius: -4,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                   blurStyle: BlurStyle.inner,
                 ),
               ],
@@ -1428,15 +1435,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "編集ログ (直近1週間)",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textColor),
                 ),
                 const SizedBox(height: 8),
                 if (_editLogs.isEmpty)
-                  const Text(
+                  Text(
                     "編集ログはありません",
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(color: hintColor, fontSize: 12),
                   )
                 else
                   ..._editLogs.map(
@@ -1445,7 +1452,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.circle, size: 6, color: Colors.grey),
+                          Icon(Icons.circle, size: 6, color: hintColor),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
@@ -1455,14 +1462,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   DateFormat(
                                     'yyyy/MM/dd HH:mm',
                                   ).format(e.createdAt),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.black54,
+                                    color: subtitleColor,
                                   ),
                                 ),
                                 Text(
                                   e.message,
-                                  style: const TextStyle(fontSize: 13),
+                                  style: TextStyle(fontSize: 13, color: textColor),
                                 ),
                               ],
                             ),

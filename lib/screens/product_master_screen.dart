@@ -363,26 +363,35 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         backgroundColor: Colors.blueGrey,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: "商品名・バーコード・カテゴリで検索",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+          child: Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final fillColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+              final hintColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  controller: _searchController,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
+                    hintText: "商品名・バーコード・カテゴリで検索",
+                    hintStyle: TextStyle(color: hintColor),
+                    prefixIcon: Icon(Icons.search, color: hintColor),
+                    filled: true,
+                    fillColor: fillColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: (val) {
+                    _searchQuery = val;
+                    _applyFilter();
+                  },
                 ),
-                contentPadding: EdgeInsets.zero,
-              ),
-              onChanged: (val) {
-                _searchQuery = val;
-                _applyFilter();
-              },
-            ),
+              );
+            }
           ),
         ),
       ),

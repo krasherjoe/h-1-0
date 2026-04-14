@@ -25,10 +25,13 @@ class InvoiceHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = invoice.isDraft ? Colors.orange.shade50 : Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final draftTint = isDark ? const Color(0xFF3D3020) : Colors.orange.shade50;
+    final cardColor = invoice.isDraft ? draftTint : surfaceColor;
     final iconBg = isUnlocked
         ? _docTypeColor(invoice.documentType).withValues(alpha: 0.18)
-        : Colors.grey.shade200;
+        : (isDark ? Colors.grey.shade700 : Colors.grey.shade200);
     final iconColor = isUnlocked ? _docTypeColor(invoice.documentType) : Colors.grey;
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
@@ -41,9 +44,13 @@ class InvoiceHistoryItem extends StatelessWidget {
     final customerName = invoice.customerNameForDisplay.endsWith('様')
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
-    final subjectColor = invoice.isLocked ? Colors.grey.shade500 : Colors.indigo.shade700;
-    final amountColor = invoice.isLocked ? Colors.grey.shade500 : Colors.black87;
-    final dateColor = Colors.black87;
+    final subjectColor = invoice.isLocked
+        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade500)
+        : (isDark ? Colors.indigo.shade300 : Colors.indigo.shade700);
+    final amountColor = invoice.isLocked
+        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade500)
+        : (isDark ? Colors.white : Colors.black87);
+    final dateColor = isDark ? Colors.white70 : Colors.black87;
 
     return Card(
       color: cardColor,

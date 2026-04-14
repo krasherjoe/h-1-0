@@ -36,102 +36,103 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
       appBar: AppBar(
         title: const Text('TH:テーマ設定'),
       ),
-      body: Column(
-        children: [
-          // テーマ選択セクション
-          Container(
-            padding: const EdgeInsets.all(16),
-            margin: const  EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // テーマ選択セクション
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const  EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'アプリテーマ',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildThemeListTile(
+                    value: 'system',
+                    title: 'システム設定に従う',
+                    subtitle: '端末の設定に合わせて自動的に切り替え',
+                    icon: Icons.brightness_auto,
+                    color: Colors.blue,
+                  ),
+                  _buildThemeListTile(
+                    value: 'light',
+                    title: 'ライト',
+                    subtitle: '明るい白ベースのテーマ',
+                    icon: Icons.light_mode,
+                    color: Colors.orange,
+                  ),
+                  _buildThemeListTile(
+                    value: 'gray',
+                    title: 'グレー',
+                    subtitle: '落ち着いた灰色ベースのテーマ',
+                    icon: Icons.color_lens,
+                    color: Colors.grey,
+                  ),
+                  _buildThemeListTile(
+                    value: 'dark-gray',
+                    title: 'ダークグレー',
+                    subtitle: '落ち着いた濃い灰色のテーマ（明るめ）',
+                    icon: Icons.nights_stay,
+                    color: Colors.blueGrey,
+                  ),
+                  _buildThemeListTile(
+                    value: 'dark',
+                    title: 'ダーク',
+                    subtitle: '黒ベースのダークテーマ',
+                    icon: Icons.dark_mode,
+                    color: Colors.indigo,
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'アプリテーマ',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                _buildThemeListTile(
-                  value: 'system',
-                  title: 'システム設定に従う',
-                  subtitle: '端末の設定に合わせて自動的に切り替え',
-                  icon: Icons.brightness_auto,
-                  color: Colors.blue,
-                ),
-                _buildThemeListTile(
-                  value: 'light',
-                  title: 'ライト',
-                  subtitle: '明るい白ベースのテーマ',
-                  icon: Icons.light_mode,
-                  color: Colors.orange,
-                ),
-                _buildThemeListTile(
-                  value: 'gray',
-                  title: 'グレー',
-                  subtitle: '落ち着いた灰色ベースのテーマ',
-                  icon: Icons.color_lens,
-                  color: Colors.grey,
-                ),
-                _buildThemeListTile(
-                  value: 'dark-gray',
-                  title: 'ダークグレー',
-                  subtitle: '落ち着いた濃い灰色のテーマ（明るめ）',
-                  icon: Icons.nights_stay,
-                  color: Colors.blueGrey,
-                ),
-                _buildThemeListTile(
-                  value: 'dark',
-                  title: 'ダーク',
-                  subtitle: '黒ベースのダークテーマ',
-                  icon: Icons.dark_mode,
-                  color: Colors.indigo,
-                ),
-              ],
+            // サマリーテーマ選択セクション
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1E1E1E)
+                    : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'サマリーテーマ',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSummaryThemeListTile(
+                    value: 'white',
+                    title: 'ホワイト',
+                    subtitle: '白背景で表示',
+                    icon: Icons.brightness_7,
+                    color: Colors.white,
+                  ),
+                  _buildSummaryThemeListTile(
+                    value: 'gray',
+                    title: 'グレー',
+                    subtitle: 'グレー背景で表示',
+                    icon: Icons.color_lens,
+                    color: Colors.grey.shade300,
+                  ),
+                ],
+              ),
             ),
-          ),
-          // サマリーテーマ選択セクション
-          Container(
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'サマリーテーマ',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                _buildSummaryThemeListTile(
-                  value: 'white',
-                  title: 'ホワイト',
-                  subtitle: '白背景で表示',
-                  icon: Icons.brightness_7,
-                  color: Colors.white,
-                ),
-                _buildSummaryThemeListTile(
-                  value: 'gray',
-                  title: 'グレー',
-                  subtitle: 'グレー背景で表示',
-                  icon: Icons.color_lens,
-                  color: Colors.grey.shade300,
-                ),
-              ],
-            ),
-          ),
-          // プレビューセクション
-          Expanded(
-            child: Container(
+            // プレビューセクション
+            Container(
+              height: 400,
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Theme.of(context).brightness == Brightness.dark
@@ -156,8 +157,8 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

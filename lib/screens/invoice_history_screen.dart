@@ -369,44 +369,51 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  // outer shadow
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+          child: Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final bgColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade50;
+              final hintColor = isDark ? Colors.grey.shade400 : Colors.black54;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.9),
+                        blurRadius: 4,
+                        spreadRadius: -4,
+                        offset: const Offset(-1, -1),
+                      ),
+                    ],
                   ),
-                  // faux inset highlight
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    blurRadius: 4,
-                    spreadRadius: -4,
-                    offset: const Offset(-1, -1),
+                  child: TextField(
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                    decoration: InputDecoration(
+                      hintText: "検索 (顧客名、伝票番号...)",
+                      hintStyle: TextStyle(color: hintColor),
+                      prefixIcon: Icon(Icons.search, color: hintColor),
+                      filled: true,
+                      fillColor: bgColor,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    onChanged: (val) {
+                      _searchQuery = val;
+                      _applyFilterAndSort();
+                    },
                   ),
-                ],
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "検索 (顧客名、伝票番号...)",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
-                onChanged: (val) {
-                  _searchQuery = val;
-                  _applyFilterAndSort();
-                },
-              ),
-            ),
+              );
+            }
           ),
         ),
       ),
