@@ -1874,9 +1874,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final unitController = TextEditingController(
       text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000'
     );
-    final calculatedResult = ValueNotifier<Map<String, dynamic>>({});
+    final calculatedResult = ValueNotifier<Map<String, int>>({});
 
-    // 計算結果を更新する関数
     void updateCalculation() {
       final unit = int.tryParse(unitController.text);
       if (unit == null || unit <= 0) {
@@ -1907,204 +1906,194 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         results[type] = adjustedTotal;
       }
 
-      calculatedResult.value = {
-        'before': totalBeforeAdjustment,
-        'results': results,
-      };
+      calculatedResult.value = results;
     }
 
-    // 初期計算
     updateCalculation();
 
-    await showDialog(
+    if (!mounted) return;
+
+    showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('価格調整値引き設定'),
-        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '調整単位:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: unitController,
-                      keyboardType: TextInputType.none,
-                      decoration: InputDecoration(
-                        hintText: '単位を入力',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      onChanged: (_) => updateCalculation(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: IconButton(
-                      icon: const Icon(Icons.backspace),
-                      onPressed: () {
-                        if (unitController.text.isNotEmpty) {
-                          unitController.text = unitController.text
-                              .substring(0, unitController.text.length - 1);
-                          updateCalculation();
-                        }
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // 電卓キー
-              GridView.count(
-                crossAxisCount: 5,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.2,
-                mainAxisSpacing: 4,
-                crossAxisSpacing: 4,
-                children: [
-                  for (final num in ['1', '10', '100', '1000', '10000'])
-                    _buildCalcButton(num, () {
-                      unitController.text = num;
-                      updateCalculation();
-                    }),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '調整方法と結果:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ValueListenableBuilder<Map<String, dynamic>>(
-                valueListenable: calculatedResult,
-                builder: (context, result, _) {
-                  if (result.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  final fmt = NumberFormat('#,###');
-                  final results = result['results'] as Map<String, int>;
-                  return ValueListenableBuilder<String>(
-                    valueListenable: adjustmentType,
-                    builder: (context, selectedType, _) => Column(
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('価格調整値引き設定'),
+              content: SizedBox(
+                width: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('調整単位:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
                       children: [
-                        _buildAdjustmentCard(
-                          '切り捨て',
-                          'round_down',
-                          selectedType,
-                          fmt.format(results['round_down']),
-                          () {
-                            adjustmentType.value = 'round_down';
-                          },
+                        Expanded(
+                          child: TextField(
+                            controller: unitController,
+                            keyboardType: TextInputType.none,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            onChanged: (_) {
+                              updateCalculation();
+                              setState(() {});
+                            },
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        _buildAdjustmentCard(
-                          '切り上げ',
-                          'round_up',
-                          selectedType,
-                          fmt.format(results['round_up']),
-                          () {
-                            adjustmentType.value = 'round_up';
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        _buildAdjustmentCard(
-                          '四捨五入',
-                          'round_nearest',
-                          selectedType,
-                          fmt.format(results['round_nearest']),
-                          () {
-                            adjustmentType.value = 'round_nearest';
-                          },
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: IconButton(
+                            icon: const Icon(Icons.backspace),
+                            onPressed: () {
+                              if (unitController.text.isNotEmpty) {
+                                unitController.text = unitController.text
+                                    .substring(0, unitController.text.length - 1);
+                                updateCalculation();
+                                setState(() {});
+                              }
+                            },
+                            padding: EdgeInsets.zero,
+                          ),
                         ),
                       ],
                     ),
-                  );
-                },
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 50,
+                      child: GridView.count(
+                        crossAxisCount: 5,
+                        childAspectRatio: 1.2,
+                        mainAxisSpacing: 4,
+                        crossAxisSpacing: 4,
+                        children: [
+                          for (final num in ['1', '10', '100', '1000', '10000'])
+                            ElevatedButton(
+                              onPressed: () {
+                                unitController.text = num;
+                                updateCalculation();
+                                setState(() {});
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                backgroundColor: Colors.blue.shade100,
+                                foregroundColor: Colors.blue.shade900,
+                              ),
+                              child: Text(num, style: const TextStyle(fontSize: 11)),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('調整方法:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<Map<String, int>>(
+                      valueListenable: calculatedResult,
+                      builder: (context, results, _) {
+                        if (results.isEmpty) {
+                          return const Text('単位を入力してください');
+                        }
+                        final fmt = NumberFormat('#,###');
+                        return Column(
+                          children: [
+                            _buildSimpleAdjustmentCard(
+                              '切り捨て',
+                              'round_down',
+                              adjustmentType.value,
+                              fmt.format(results['round_down'] ?? 0),
+                              () {
+                                adjustmentType.value = 'round_down';
+                                setState(() {});
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildSimpleAdjustmentCard(
+                              '切り上げ',
+                              'round_up',
+                              adjustmentType.value,
+                              fmt.format(results['round_up'] ?? 0),
+                              () {
+                                adjustmentType.value = 'round_up';
+                                setState(() {});
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildSimpleAdjustmentCard(
+                              '四捨五入',
+                              'round_nearest',
+                              adjustmentType.value,
+                              fmt.format(results['round_nearest'] ?? 0),
+                              () {
+                                adjustmentType.value = 'round_nearest';
+                                setState(() {});
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (_currentInvoice != null) {
-                setState(() {
-                  _currentInvoice = _currentInvoice!.copyWith(
-                    priceAdjustmentType: null,
-                    priceAdjustmentUnit: null,
-                  );
-                });
-                _pushHistory();
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('クリア', style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final unit = int.tryParse(unitController.text);
-              if (unit != null && unit > 0 && _currentInvoice != null) {
-                setState(() {
-                  _currentInvoice = _currentInvoice!.copyWith(
-                    priceAdjustmentType: adjustmentType.value,
-                    priceAdjustmentUnit: unit,
-                  );
-                });
-                _pushHistory();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('設定'),
-          ),
-        ],
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('キャンセル'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (_currentInvoice != null) {
+                      this.setState(() {
+                        _currentInvoice = _currentInvoice!.copyWith(
+                          priceAdjustmentType: null,
+                          priceAdjustmentUnit: null,
+                        );
+                      });
+                      _pushHistory();
+                    }
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('クリア', style: TextStyle(color: Colors.red)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final unit = int.tryParse(unitController.text);
+                    if (unit != null && unit > 0 && _currentInvoice != null) {
+                      this.setState(() {
+                        _currentInvoice = _currentInvoice!.copyWith(
+                          priceAdjustmentType: adjustmentType.value,
+                          priceAdjustmentUnit: unit,
+                        );
+                      });
+                      _pushHistory();
+                      Navigator.pop(dialogContext);
+                    }
+                  },
+                  child: const Text('設定'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     unitController.dispose();
   }
 
-  /// 電卓ボタン
-  Widget _buildCalcButton(String label, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.zero,
-        backgroundColor: Colors.blue.shade100,
-        foregroundColor: Colors.blue.shade900,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  /// 調整方法のカード表示
-  Widget _buildAdjustmentCard(
+  /// シンプルな調整方法カード
+  Widget _buildSimpleAdjustmentCard(
     String label,
     String value,
     String selectedValue,
@@ -2138,7 +2127,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               '￥$amount',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 14,
                 color: isSelected ? Colors.blue.shade700 : Colors.black87,
               ),
             ),
@@ -2147,6 +2136,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       ),
     );
   }
+
 }
 
 class _DraftBadge extends StatelessWidget {
