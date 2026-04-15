@@ -143,6 +143,8 @@ class Invoice {
   final String? metaHash;
   final int? totalDiscountAmount; // 合計値引き額
   final double? totalDiscountRate; // 合計値引き率
+  final bool isReceiptIssued; // 領収証発行済みフラグ
+  final DateTime? receiptIssuedAt; // 領収証発行日時
 
   Invoice({
     String? id,
@@ -179,6 +181,8 @@ class Invoice {
     this.metaHash,
     this.totalDiscountAmount,
     this.totalDiscountRate,
+    this.isReceiptIssued = false,
+    this.receiptIssuedAt,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        terminalId = terminalId ?? "T1", // デフォルト端末ID
        updatedAt = updatedAt ?? DateTime.now();
@@ -372,6 +376,10 @@ class Invoice {
       'company_seal_hash': companySealHash,
       'meta_json': metaJsonValue,
       'meta_hash': metaHashValue,
+      'is_receipt_issued': isReceiptIssued ? 1 : 0,
+      'receipt_issued_at': receiptIssuedAt?.toIso8601String(),
+      'total_discount_amount': totalDiscountAmount,
+      'total_discount_rate': totalDiscountRate,
     };
   }
 
@@ -408,6 +416,10 @@ class Invoice {
     String? companySealHash,
     String? metaJson,
     String? metaHash,
+    int? totalDiscountAmount,
+    double? totalDiscountRate,
+    bool? isReceiptIssued,
+    DateTime? receiptIssuedAt,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -444,6 +456,10 @@ class Invoice {
       companySealHash: companySealHash ?? this.companySealHash,
       metaJson: metaJson ?? this.metaJson,
       metaHash: metaHash ?? this.metaHash,
+      totalDiscountAmount: totalDiscountAmount ?? this.totalDiscountAmount,
+      totalDiscountRate: totalDiscountRate ?? this.totalDiscountRate,
+      isReceiptIssued: isReceiptIssued ?? this.isReceiptIssued,
+      receiptIssuedAt: receiptIssuedAt ?? this.receiptIssuedAt,
     );
   }
 }

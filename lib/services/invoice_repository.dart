@@ -325,6 +325,10 @@ class InvoiceRepository {
         companySealHash: iMap['company_seal_hash'],
         metaJson: iMap['meta_json'],
         metaHash: iMap['meta_hash'],
+        totalDiscountAmount: iMap['total_discount_amount'],
+        totalDiscountRate: iMap['total_discount_rate'],
+        isReceiptIssued: (iMap['is_receipt_issued'] ?? 0) == 1,
+        receiptIssuedAt: iMap['receipt_issued_at'] != null ? DateTime.tryParse(iMap['receipt_issued_at']) : null,
       ));
     }
     return invoices;

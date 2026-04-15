@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 48;
+  static const _databaseVersion = 49;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -1543,6 +1543,18 @@ class DatabaseHelper {
     if (oldVersion < 48) {
       await _safeAddColumn(db, 'invoices', 'total_discount_amount INTEGER DEFAULT 0');
       await _safeAddColumn(db, 'invoices', 'total_discount_rate REAL DEFAULT 0');
+    }
+
+    // v49: 売上入金フラグ追加 - invoicesテーブルに領収証発行フラグを追加
+    if (oldVersion < 49) {
+      await _safeAddColumn(db, 'invoices', 'is_receipt_issued INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'invoices', 'receipt_issued_at TEXT');
+      
+      // インデックス作成（日次処理の高速化）
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_invoices_receipt_issued 
+        ON invoices(is_receipt_issued, fulfilled_date)
+      ''');
     }
   }
 
