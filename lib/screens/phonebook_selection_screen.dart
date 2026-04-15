@@ -149,6 +149,9 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
               .where((e) => e.trim().isNotEmpty)
               .toList();
 
+          // メールアドレスが複数ある場合は選択状態を管理
+          String? selectedEmail = emails.isNotEmpty ? emails.first : null;
+
           final tel = contact.phones.isNotEmpty
               ? contact.phones.first.number
               : null;
@@ -218,10 +221,33 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                     const SizedBox(height: 8),
                   ],
 
-                  // メールアドレス
+                  // メールアドレス（複数ある場合は選択）
                   if (emails.isNotEmpty) ...[
                     const Text('メールアドレス'),
-                    ...emails.map((e) => Text(e)),
+                    if (emails.length == 1)
+                      Text(emails.first)
+                    else
+                      DropdownButtonFormField<String>(
+                        value: selectedEmail,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: emails.map((email) =>
+                          DropdownMenuItem(
+                            value: email,
+                            child: Text(email, overflow: TextOverflow.ellipsis),
+                          ),
+                        ).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() {
+                              selectedEmail = value;
+                            });
+                          }
+                        },
+                      ),
                     const SizedBox(height: 8),
                   ],
 
@@ -248,7 +274,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                     orgCompany,
                     person,
                     addresses.firstOrNull,
-                    emails.firstOrNull,
+                    selectedEmail,
                     tel,
                   );
 
@@ -331,7 +357,8 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('電話帳から選択'),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        title: const Text('C4:電話帳から選択'),
         actions: [
           if (_filteredContacts.isNotEmpty)
             Padding(

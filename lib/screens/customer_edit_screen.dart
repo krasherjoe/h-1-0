@@ -205,7 +205,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     return ZoomableAppBar(
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text(_isEdit ? 'C2:顧客を編集' : 'C2:顧客を新規登録'),
+        title: Text(_isEdit ? 'C2:顧客を編集' : 'C3:顧客を新規登録'),
         actions: [
           TextButton.icon(
             onPressed: _save,

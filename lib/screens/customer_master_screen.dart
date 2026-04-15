@@ -1140,6 +1140,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: const BackButton(),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         title: Text(widget.selectionMode ? "C2:顧客選択" : "C1:顧客一覧"),
         actions: [
           DropdownButtonHideUnderline(
@@ -1295,7 +1296,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: c.isLocked
-                            ? Colors.grey.shade300
+                            ? (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey.shade700
+                                : Colors.grey.shade300)
                             : Colors.indigo.shade100,
                         child: Stack(
                           children: [
@@ -1315,14 +1318,31 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           ],
                         ),
                       ),
-                      title: Text(
-                        c.displayName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: c.isLocked ? Colors.grey : Colors.black87,
-                        ),
+                      title: Builder(
+                        builder: (context) {
+                          final isDark = Theme.of(context).brightness == Brightness.dark;
+                          return Text(
+                            c.displayName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: c.isLocked
+                                  ? Colors.grey
+                                  : (isDark ? Colors.white : Colors.black87),
+                            ),
+                          );
+                        }
                       ),
-                      subtitle: Text(c.formalName),
+                      subtitle: Builder(
+                        builder: (context) {
+                          final isDark = Theme.of(context).brightness == Brightness.dark;
+                          return Text(
+                            c.formalName,
+                            style: TextStyle(
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                            ),
+                          );
+                        }
+                      ),
                       onTap: widget.selectionMode
                           ? () {
                               if (c.isHidden) return; // do not select hidden

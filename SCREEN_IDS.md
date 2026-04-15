@@ -52,6 +52,11 @@ screen_ids:
     status: 確認
     note: "旧ID: ST"
     category: マスタ管理
+  C4:
+    name: 電話帳から選択
+    file: lib/screens/phonebook_selection_screen.dart
+    status: 確認
+    category: マスタ管理
   DB:
     name: データベースリストア
     file: lib/screens/restore_screen.dart
@@ -247,10 +252,11 @@ screen_ids:
     status: 確認
     note: "旧ID: C1"
     category: システム設定
-  C3:
+  CR:
     name: 表示順序の変更
     file: lib/screens/custom_field_reorder_screen.dart
     status: 確認
+    note: "旧ID: C3"
     category: システム設定
   U1:
     name: ユーザー管理
