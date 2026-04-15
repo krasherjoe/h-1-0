@@ -24,16 +24,35 @@ class LocalBackupService {
 
   /// バックアップディレクトリパス（Downloads フォルダに固定）
   Future<String> _getBackupDirectory() async {
-    // バックアップはDownloadsフォルダに保存
-    if (Platform.isAndroid) {
-      return '/storage/emulated/0/Download';
-    } else if (Platform.isIOS) {
-      // iOSではDocumentsフォルダ内のbackupsサブフォルダ
-      final dir = await getApplicationDocumentsDirectory();
-      return path.join(dir.path, 'backups');
+    try {
+      // バックアップはDownloadsフォルダに保存
+      if (Platform.isAndroid) {
+        final backupDir = Directory('/storage/emulated/0/Download');
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+          debugPrint('Downloadフォルダを作成：${backupDir.path}');
+        }
+        return backupDir.path;
+      } else if (Platform.isIOS) {
+        // iOSではDocumentsフォルダ内のbackupsサブフォルダ
+        final dir = await getApplicationDocumentsDirectory();
+        final backupDir = Directory(path.join(dir.path, 'backups'));
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+          debugPrint('backupsフォルダを作成：${backupDir.path}');
+        }
+        return backupDir.path;
+      }
+      // フォールバック
+      final fallbackDir = Directory(path.join(await getDatabasesPath(), 'backups'));
+      if (!await fallbackDir.exists()) {
+        await fallbackDir.create(recursive: true);
+      }
+      return fallbackDir.path;
+    } catch (e) {
+      debugPrint('バックアップディレクトリ取得エラー：$e');
+      return path.join(await getDatabasesPath(), 'backups');
     }
-    // フォールバック
-    return path.join(await getDatabasesPath(), 'backups');
   }
 
   /// 今日のバックアップ済みフラグ取得
@@ -300,8 +319,15 @@ class DatabaseHelper {
   /// iOS: Documents フォルダ
   static Future<String> _getDatabaseDirectory() async {
     try {
-      // Documents フォルダを使用
+      // Documents フォルダを取得
       final dir = await getApplicationDocumentsDirectory();
+      
+      // フォルダが存在しなければ作成
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+        debugPrint('Documentsフォルダを作成：${dir.path}');
+      }
+      
       return dir.path;
     } catch (e) {
       debugPrint('ドキュメントフォルダ取得エラー：$e');
@@ -2572,15 +2598,34 @@ class DatabaseHelper {
   /// ローカルバックアップディレクトリ取得（static メソッド）
   /// バックアップはDownloadsフォルダに固定
   static Future<String> _getBackupDirectory(String databasePath) async {
-    if (Platform.isAndroid) {
-      return '/storage/emulated/0/Download';
-    } else if (Platform.isIOS) {
-      // iOSではDocumentsフォルダ内のbackupsサブフォルダ
-      final dir = await getApplicationDocumentsDirectory();
-      return path.join(dir.path, 'backups');
+    try {
+      if (Platform.isAndroid) {
+        final backupDir = Directory('/storage/emulated/0/Download');
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+          debugPrint('Downloadフォルダを作成：${backupDir.path}');
+        }
+        return backupDir.path;
+      } else if (Platform.isIOS) {
+        // iOSではDocumentsフォルダ内のbackupsサブフォルダ
+        final dir = await getApplicationDocumentsDirectory();
+        final backupDir = Directory(path.join(dir.path, 'backups'));
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+          debugPrint('backupsフォルダを作成：${backupDir.path}');
+        }
+        return backupDir.path;
+      }
+      // フォールバック
+      final fallbackDir = Directory(path.join(await getDatabasesPath(), 'backups'));
+      if (!await fallbackDir.exists()) {
+        await fallbackDir.create(recursive: true);
+      }
+      return fallbackDir.path;
+    } catch (e) {
+      debugPrint('バックアップディレクトリ取得エラー：$e');
+      return path.join(await getDatabasesPath(), 'backups');
     }
-    // フォールバック
-    return path.join(await getDatabasesPath(), 'backups');
   }
 
   /// ファイルサイズフォーマット（static メソッド）
@@ -2860,15 +2905,34 @@ class BackupListDialog extends StatelessWidget {
   /// ローカルバックアップディレクトリ取得（static メソッド）
   /// バックアップはDownloadsフォルダに固定
   static Future<String> _getBackupDirectory(String databasePath) async {
-    if (Platform.isAndroid) {
-      return '/storage/emulated/0/Download';
-    } else if (Platform.isIOS) {
-      // iOSではDocumentsフォルダ内のbackupsサブフォルダ
-      final dir = await getApplicationDocumentsDirectory();
-      return path.join(dir.path, 'backups');
+    try {
+      if (Platform.isAndroid) {
+        final backupDir = Directory('/storage/emulated/0/Download');
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+          debugPrint('Downloadフォルダを作成：${backupDir.path}');
+        }
+        return backupDir.path;
+      } else if (Platform.isIOS) {
+        // iOSではDocumentsフォルダ内のbackupsサブフォルダ
+        final dir = await getApplicationDocumentsDirectory();
+        final backupDir = Directory(path.join(dir.path, 'backups'));
+        if (!await backupDir.exists()) {
+          await backupDir.create(recursive: true);
+          debugPrint('backupsフォルダを作成：${backupDir.path}');
+        }
+        return backupDir.path;
+      }
+      // フォールバック
+      final fallbackDir = Directory(path.join(await getDatabasesPath(), 'backups'));
+      if (!await fallbackDir.exists()) {
+        await fallbackDir.create(recursive: true);
+      }
+      return fallbackDir.path;
+    } catch (e) {
+      debugPrint('バックアップディレクトリ取得エラー：$e');
+      return path.join(await getDatabasesPath(), 'backups');
     }
-    // フォールバック
-    return path.join(await getDatabasesPath(), 'backups');
   }
 
   /// ファイルサイズフォーマット（static メソッド）
