@@ -1853,6 +1853,21 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   // 価格調整ダイアログ
   Future<void> _showPriceAdjustmentDialog() async {
+    // _currentInvoiceがnullの場合は初期化
+    if (_currentInvoice == null && _selectedCustomer != null) {
+      _currentInvoice = Invoice(
+        id: _currentId,
+        customer: _selectedCustomer!,
+        date: _selectedDate,
+        items: _items,
+        documentType: _documentType,
+        taxRate: _taxRate,
+        isDraft: _isDraft,
+        isLocked: _isLocked,
+        subject: _subjectController.text.isEmpty ? null : _subjectController.text,
+      );
+    }
+
     final adjustmentType = ValueNotifier<String>(
       _currentInvoice?.priceAdjustmentType ?? 'round_down'
     );
