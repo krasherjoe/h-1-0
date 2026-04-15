@@ -445,6 +445,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       isDraft: _isDraft,
       isLocked: _isLocked,
       includeTax: _includeTax,
+      priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
+      priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
     );
 
     Navigator.push(
