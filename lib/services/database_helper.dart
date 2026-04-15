@@ -22,11 +22,18 @@ class LocalBackupService {
   static const _lastBackupKey = 'last_backup_timestamp';
   static const _dailyBackupKey = 'backup_date_today';
 
-  /// バックアップディレクトリパス（メイン DB と同じフォルダ）
+  /// バックアップディレクトリパス（Downloads フォルダに固定）
   Future<String> _getBackupDirectory() async {
-    // メイン DB と同じフォルダを使用し、バックアップも保護されるようにする
-    final dbDir = await DatabaseHelper._getDatabaseDirectory();
-    return path.join(dbDir, 'backups');
+    // バックアップはDownloadsフォルダに保存
+    if (Platform.isAndroid) {
+      return '/storage/emulated/0/Download';
+    } else if (Platform.isIOS) {
+      // iOSではDocumentsフォルダ内のbackupsサブフォルダ
+      final dir = await getApplicationDocumentsDirectory();
+      return path.join(dir.path, 'backups');
+    }
+    // フォールバック
+    return path.join(await getDatabasesPath(), 'backups');
   }
 
   /// 今日のバックアップ済みフラグ取得
@@ -287,38 +294,20 @@ class DatabaseHelper {
     return path.join(dbDir, '販売アシスト 1 号.db');
   }
 
-  /// データベース保存ディレクトリを取得（販売アシスト 1 号専用フォルダ）
+  /// データベース保存ディレクトリを取得（Documents フォルダ）
   /// 再インストール時にもデータを保護するために、システム固有のフォルダを使用
-  /// Android: /storage/emulated/0/販売アシスト 1 号/
+  /// Android: Documents フォルダ
   /// iOS: Documents フォルダ
   static Future<String> _getDatabaseDirectory() async {
-    if (Platform.isAndroid) {
-      try {
-        // 権限を確認・取得し、バックアップディレクトリを作成
-        final storageService = StoragePermissionService();
-        await storageService.ensureBackupDirectory();
-
-        // 販売アシスト 1 号専用フォルダ（日本語名）
-        final dir = Directory('/storage/emulated/0/販売アシスト 1 号');
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        return dir.path;
-      } catch (e) {
-        debugPrint('販売アシスト 1 号フォルダへのアクセスエラー：$e');
-        // エラー時はフォールバックとして内部ストレージを使用
-      }
-    } else if (Platform.isIOS) {
-      try {
-        final dir = await getApplicationDocumentsDirectory();
-        return dir.path;
-      } catch (e) {
-        debugPrint('iOS ドキュメントフォルダ取得エラー：$e');
-      }
+    try {
+      // Documents フォルダを使用
+      final dir = await getApplicationDocumentsDirectory();
+      return dir.path;
+    } catch (e) {
+      debugPrint('ドキュメントフォルダ取得エラー：$e');
+      // フォールバック：内部ストレージ
+      return await getDatabasesPath();
     }
-
-    // フォールバック：内部ストレージ
-    return await getDatabasesPath();
   }
 
   Future<Database> _initDatabase() async {
@@ -440,9 +429,11 @@ class DatabaseHelper {
 
       // 古い形式の DB 位置の調査
       final oldLocations = [
-        // 1. Download フォルダ（旧実装）
+        // 1. root フォルダ（販売アシスト 1 号フォルダ）
+        path.join('/storage/emulated/0/販売アシスト 1 号', '販売アシスト 1 号.db'),
+        // 2. Download フォルダ（旧実装）
         path.join('/storage/emulated/0/Download', 'gemi_invoice.db'),
-        // 2. アプリ内部ストレージ（初期実装）
+        // 3. アプリ内部ストレージ（初期実装）
         path.join(await getDatabasesPath(), 'gemi_invoice.db'),
       ];
 
@@ -2579,10 +2570,17 @@ class DatabaseHelper {
   }
 
   /// ローカルバックアップディレクトリ取得（static メソッド）
+  /// バックアップはDownloadsフォルダに固定
   static Future<String> _getBackupDirectory(String databasePath) async {
-    final dbPath = databasePath;
-    final dbDir = path.dirname(dbPath);
-    return path.join(dbDir, 'backups');
+    if (Platform.isAndroid) {
+      return '/storage/emulated/0/Download';
+    } else if (Platform.isIOS) {
+      // iOSではDocumentsフォルダ内のbackupsサブフォルダ
+      final dir = await getApplicationDocumentsDirectory();
+      return path.join(dir.path, 'backups');
+    }
+    // フォールバック
+    return path.join(await getDatabasesPath(), 'backups');
   }
 
   /// ファイルサイズフォーマット（static メソッド）
@@ -2860,10 +2858,17 @@ class BackupListDialog extends StatelessWidget {
   }
 
   /// ローカルバックアップディレクトリ取得（static メソッド）
+  /// バックアップはDownloadsフォルダに固定
   static Future<String> _getBackupDirectory(String databasePath) async {
-    final dbPath = databasePath;
-    final dbDir = path.dirname(dbPath);
-    return path.join(dbDir, 'backups');
+    if (Platform.isAndroid) {
+      return '/storage/emulated/0/Download';
+    } else if (Platform.isIOS) {
+      // iOSではDocumentsフォルダ内のbackupsサブフォルダ
+      final dir = await getApplicationDocumentsDirectory();
+      return path.join(dir.path, 'backups');
+    }
+    // フォールバック
+    return path.join(await getDatabasesPath(), 'backups');
   }
 
   /// ファイルサイズフォーマット（static メソッド）
