@@ -1351,7 +1351,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       "価格調整",
                       style: TextStyle(
                         fontSize: 14,
-                        color: priceAdjustmentDiscount > 0 ? Colors.orange.shade300 : labelColor.withAlpha((0.5 * 255).round()),
+                        color: useBlue ? Colors.white : Colors.indigo.shade700,
                       ),
                     ),
                     Row(
@@ -1362,14 +1362,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade300,
+                              color: useBlue ? Colors.white : Colors.indigo.shade700,
                             ),
                           ),
                         const SizedBox(width: 8),
                         Icon(
                           Icons.settings,
                           size: 16,
-                          color: priceAdjustmentDiscount > 0 ? Colors.orange.shade300 : labelColor.withAlpha((0.5 * 255).round()),
+                          color: useBlue ? Colors.white : Colors.indigo.shade700,
                         ),
                       ],
                     ),
