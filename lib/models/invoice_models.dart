@@ -257,12 +257,12 @@ class Invoice {
     if (priceAdjustmentType == null || priceAdjustmentUnit == null) {
       return 0;
     }
-    
+
     final unit = priceAdjustmentUnit!;
     final baseAmount = subtotal - _regularDiscount;
     final taxAmount = (baseAmount * taxRate).floor();
     final totalBeforeAdjustment = baseAmount + taxAmount;
-    
+
     int adjustedTotal;
     switch (priceAdjustmentType) {
       case 'round_down':
@@ -280,8 +280,9 @@ class Invoice {
       default:
         return 0;
     }
-    
-    return totalBeforeAdjustment - adjustedTotal;
+
+    final discount = totalBeforeAdjustment - adjustedTotal;
+    return discount;
   }
   
   /// 通常の値引き額（明細単位 + 伝票全体）
