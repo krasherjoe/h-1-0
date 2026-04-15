@@ -223,12 +223,21 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
               }
             }(),
             data: invoice.items
-                .map((item) => [
-                      item.description,
-                      item.quantity.toString(),
-                      amountFormatter.format(item.unitPrice),
-                      amountFormatter.format(item.subtotal),
-                    ])
+                .map((item) {
+                      // 値引きがある場合は説明に追加
+                      String description = item.description;
+                      if (item.discountAmount != null && item.discountAmount! > 0) {
+                        description += ' (値引:-¥${amountFormatter.format(item.discountAmount)})';
+                      } else if (item.discountRate != null && item.discountRate! > 0) {
+                        description += ' (値引:${(item.discountRate! * 100).toStringAsFixed(0)}%OFF)';
+                      }
+                      return [
+                        description,
+                        item.quantity.toString(),
+                        amountFormatter.format(item.unitPrice),
+                        amountFormatter.format(item.subtotal),
+                      ];
+                    })
                 .toList(),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: ipaex),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
@@ -250,14 +259,19 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
                 child: pw.Column(
                   children: [
                     pw.SizedBox(height: 10),
+                    _buildSummaryRow("小計", amountFormatter.format(invoice.subtotal)),
+                    if (invoice.discountAmount > 0) ...[
+                      pw.Divider(),
+                      _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
+                    ],
                     if (invoice.tax > 0) ...[
-                      _buildSummaryRow("小計 (税抜)", amountFormatter.format(invoice.subtotal)),
+                      pw.Divider(),
                       if (companyInfo.taxDisplayMode == 'normal')
                         _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
                       if (companyInfo.taxDisplayMode == 'text_only')
                         _buildSummaryRow("消費税", "（税別）"),
-                      pw.Divider(),
                     ],
+                    pw.Divider(),
                     _buildSummaryRow(() {
                       switch (invoice.documentType) {
                         case DocumentType.estimation:

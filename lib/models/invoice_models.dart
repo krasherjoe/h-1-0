@@ -11,6 +11,8 @@ class InvoiceItem {
   String description;
   int quantity;
   int unitPrice;
+  int? discountAmount; // 値引き額
+  double? discountRate; // 値引き率
 
   InvoiceItem({
     this.id,
@@ -18,9 +20,20 @@ class InvoiceItem {
     required this.description,
     required this.quantity,
     required this.unitPrice,
+    this.discountAmount,
+    this.discountRate,
   });
 
-  int get subtotal => quantity * unitPrice;
+  int get subtotal {
+    int base = quantity * unitPrice;
+    if (discountAmount != null && discountAmount! > 0) {
+      return base - discountAmount!;
+    }
+    if (discountRate != null && discountRate! > 0) {
+      return (base * (1 - discountRate!)).round();
+    }
+    return base;
+  }
 
   Map<String, dynamic> toMap(String invoiceId) {
     return {
@@ -30,6 +43,8 @@ class InvoiceItem {
       'description': description,
       'quantity': quantity,
       'unit_price': unitPrice,
+      'discount_amount': discountAmount,
+      'discount_rate': discountRate,
     };
   }
 
@@ -40,6 +55,8 @@ class InvoiceItem {
       description: map['description'],
       quantity: map['quantity'],
       unitPrice: map['unit_price'],
+      discountAmount: map['discount_amount'] as int?,
+      discountRate: map['discount_rate'] as double?,
     );
   }
 
@@ -49,6 +66,8 @@ class InvoiceItem {
     int? quantity,
     int? unitPrice,
     String? productId,
+    int? discountAmount,
+    double? discountRate,
   }) {
     return InvoiceItem(
       id: id ?? this.id, // Added this to be complete
@@ -56,6 +75,8 @@ class InvoiceItem {
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       productId: productId ?? this.productId,
+      discountAmount: discountAmount ?? this.discountAmount,
+      discountRate: discountRate ?? this.discountRate,
     );
   }
 }
@@ -120,6 +141,8 @@ class Invoice {
   final String? companySealHash; // 追加: 角印画像ハッシュ
   final String? metaJson;
   final String? metaHash;
+  final int? totalDiscountAmount; // 合計値引き額
+  final double? totalDiscountRate; // 合計値引き率
 
   Invoice({
     String? id,
@@ -154,6 +177,8 @@ class Invoice {
     this.companySealHash,
     this.metaJson,
     this.metaHash,
+    this.totalDiscountAmount,
+    this.totalDiscountRate,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        terminalId = terminalId ?? "T1", // デフォルト端末ID
        updatedAt = updatedAt ?? DateTime.now();
@@ -218,8 +243,33 @@ class Invoice {
   }
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
-  int get tax => (subtotal * taxRate).floor();
-  int get totalAmount => subtotal + tax;
+  int get discountAmount {
+    // 明細単位の値引き合計
+    int itemDiscount = items.fold(0, (sum, item) {
+      if (item.discountAmount != null && item.discountAmount! > 0) {
+        return sum + item.discountAmount!;
+      }
+      if (item.discountRate != null && item.discountRate! > 0) {
+        int base = item.quantity * item.unitPrice;
+        return sum + (base * item.discountRate!).round();
+      }
+      return sum;
+    });
+
+    // 合計値引きが指定されている場合はそちらを優先
+    if (totalDiscountAmount != null && totalDiscountAmount! > 0) {
+      return totalDiscountAmount!;
+    }
+    if (totalDiscountRate != null && totalDiscountRate! > 0) {
+      return (subtotal * totalDiscountRate!).round();
+    }
+
+    return itemDiscount;
+  }
+
+  int get taxableAmount => subtotal - discountAmount;
+  int get tax => (taxableAmount * taxRate).floor();
+  int get totalAmount => taxableAmount + tax;
 
   String get _projectLabel {
     if (subject != null && subject!.trim().isNotEmpty) {
