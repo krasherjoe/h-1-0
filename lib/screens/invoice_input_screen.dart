@@ -73,6 +73,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _isLocked = false;
   final List<_InvoiceSnapshot> _undoStack = [];
   final List<_InvoiceSnapshot> _redoStack = [];
+  // タイトルバースワイプズーム用の状態
+  final _transformationController = TransformationController();
+  double _titleBarStartScale = 1.0;
+  double _titleBarStartX = 0.0;
   bool _isApplyingSnapshot = false;
   bool get _canUndo => _undoStack.length > 1;
   bool get _canRedo => _redoStack.isNotEmpty;
@@ -568,44 +572,42 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final docColor = _documentTypeColor(_documentType);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return ZoomableAppBar(
-      minScale: 0.5,
-      maxScale: 2.0,
-      appBar: AppBar(
-        backgroundColor: docColor,
-        leading: const BackButton(),
-        title: GestureDetector(
-          onTap: _isDraft && !_isLocked
-              ? () async {
-                  // タップエフェクト
-                  setState(() => _titleBarFlash = true);
-                  await Future.delayed(const Duration(milliseconds: 150));
-                  setState(() => _titleBarFlash = false);
-                  _showDocumentTypeChangeDialog();
-                }
-              : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _titleBarFlash
-                  ? Colors.white.withOpacity(0.3)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(_documentTypeLabel(_documentType)),
+    // 閲覧モードのみZoomableAppBarを使用（編集モードは入力フィールドと競合するため）
+    final appBar = AppBar(
+      backgroundColor: docColor,
+      leading: const BackButton(),
+      title: GestureDetector(
+        onTap: _isDraft && !_isLocked && _isViewMode
+            ? () async {
+                // タップエフェクト
+                setState(() => _titleBarFlash = true);
+                await Future.delayed(const Duration(milliseconds: 150));
+                setState(() => _titleBarFlash = false);
+                _showDocumentTypeChangeDialog();
+              }
+            : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: _titleBarFlash
+                ? Colors.white.withOpacity(0.3)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Text("${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}"),
         ),
-        actions: [
-          if (_isDraft)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              child: _DraftBadge(),
-            ),
-          IconButton(
-            icon: AnimatedScale(
-              scale: _showCopyBadge ? 1.3 : 1.0,
-              duration: const Duration(milliseconds: 150),
+      ),
+      actions: [
+        if (_isDraft && _isViewMode)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: _DraftBadge(),
+          ),
+        IconButton(
+          icon: AnimatedScale(
+            scale: _showCopyBadge ? 1.3 : 1.0,
+            duration: const Duration(milliseconds: 150),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: EdgeInsets.all(_showCopyBadge ? 8 : 0),
@@ -664,12 +666,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     : () => _saveInvoice(generatePdf: false),
               ),
           ],
-        ],
-      ),
-      child: Scaffold(
-        backgroundColor: themeColor,
-        resizeToAvoidBottomInset: false,
-        body: MediaQuery.removeViewInsets(
+    ],
+    );
+
+    // 閲覧モードのみZoomableAppBarでラップ（編集モードは入力フィールドと競合するため）
+    final content = Scaffold(
+      backgroundColor: themeColor,
+      resizeToAvoidBottomInset: false,
+      body: MediaQuery.removeViewInsets(
         context: context,
         removeBottom: true,
         child: Stack(
@@ -759,9 +763,47 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ],
         ),
       ),
-    ),
-  );
-}
+    );
+
+    // AppBarをジェスチャー検出領域（センサー）として使用
+    // ページコンテンツのみ拡大縮小、AppBar自体は通常表示
+    final sensorAppBar = PreferredSize(
+      preferredSize: appBar.preferredSize,
+      child: GestureDetector(
+        // タイトルバー左右スワイプでコンテンツをズーム
+        onHorizontalDragStart: (details) {
+          _titleBarStartScale = _transformationController.value.getMaxScaleOnAxis();
+          _titleBarStartX = details.globalPosition.dx;
+        },
+        onHorizontalDragUpdate: (details) {
+          final deltaX = details.globalPosition.dx - _titleBarStartX;
+          // 感度4倍（/50）でズーム変更
+          final scaleChange = deltaX / 50 * 0.1;
+          final newScale = (_titleBarStartScale + scaleChange).clamp(1.0, 2.0);
+          // InteractiveViewerのスケールを更新
+          _transformationController.value = Matrix4.identity()..scale(newScale);
+        },
+        onHorizontalDragEnd: (details) {
+          _titleBarStartScale = _transformationController.value.getMaxScaleOnAxis();
+        },
+        behavior: HitTestBehavior.translucent,
+        child: appBar, // AppBarはそのまま表示（拡大縮小しない）
+      ),
+    );
+
+    return Scaffold(
+      appBar: sensorAppBar,
+      backgroundColor: themeColor,
+      resizeToAvoidBottomInset: false,
+      body: InteractiveViewer(
+        transformationController: _transformationController,
+        minScale: 1.0,
+        maxScale: 2.0,
+        boundaryMargin: const EdgeInsets.all(100),
+        child: content.body!,
+      ),
+    );
+  }
 
   Widget _buildDateSection() {
     final fmt = DateFormat('yyyy/MM/dd');

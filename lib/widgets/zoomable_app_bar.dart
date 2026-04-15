@@ -38,12 +38,47 @@ class _ZoomableAppBarState extends State<ZoomableAppBar> {
   double _startScale = 1.0;
   double _startX = 0.0;
 
+  // 水平スワイプでのズーム処理
+  void _handleHorizontalDragStart(DragStartDetails details) {
+    _startScale = _scale;
+    _startX = details.globalPosition.dx;
+  }
+
+  void _handleHorizontalDragUpdate(DragUpdateDetails details) {
+    final deltaX = details.globalPosition.dx - _startX;
+    // 右スワイプ：ズームアップ、左スワイプ：ズームダウン（感度4倍）
+    final scaleChange = deltaX / 50 * widget.scaleStep;
+    _scale = (_startScale + scaleChange).clamp(
+      widget.minScale,
+      widget.maxScale,
+    );
+    setState(() {});
+  }
+
+  void _handleHorizontalDragEnd(DragEndDetails details) {
+    // スワイプ終了時にスケールを固定
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    // AppBarをGestureDetectorでラップしてタイトルバースワイプ対応
+    final wrappedAppBar = PreferredSize(
+      preferredSize: widget.appBar.preferredSize,
+      child: GestureDetector(
+        onHorizontalDragStart: _handleHorizontalDragStart,
+        onHorizontalDragUpdate: _handleHorizontalDragUpdate,
+        onHorizontalDragEnd: _handleHorizontalDragEnd,
+        behavior: HitTestBehavior.translucent,
+        child: widget.appBar,
+      ),
+    );
+
     return Scaffold(
-      appBar: widget.appBar,
+      appBar: wrappedAppBar,
       body: GestureDetector(
         // ピンチインアウト（拡大縮小）ジェスチャー
+        behavior: HitTestBehavior.translucent,
         onScaleStart: (details) {
           _startScale = _scale;
         },
@@ -57,25 +92,10 @@ class _ZoomableAppBarState extends State<ZoomableAppBar> {
         onScaleEnd: (details) {
           setState(() {});
         },
-        // タイトルバー左右スワイプでのズーム
-        onHorizontalDragStart: (details) {
-          _startScale = _scale;
-          _startX = details.globalPosition.dx;
-        },
-        onHorizontalDragUpdate: (details) {
-          final deltaX = details.globalPosition.dx - _startX;
-          // 右スワイプ：ズームアップ、左スワイプ：ズームダウン
-          final scaleChange = deltaX / 200 * widget.scaleStep;
-          _scale = (_startScale + scaleChange).clamp(
-            widget.minScale,
-            widget.maxScale,
-          );
-          setState(() {});
-        },
-        onHorizontalDragEnd: (details) {
-          // スワイプ終了時にスケールを固定
-          setState(() {});
-        },
+        // body左右スワイプでのズーム
+        onHorizontalDragStart: _handleHorizontalDragStart,
+        onHorizontalDragUpdate: _handleHorizontalDragUpdate,
+        onHorizontalDragEnd: _handleHorizontalDragEnd,
         child: Transform.scale(
           scale: _scale,
           child: widget.child,
