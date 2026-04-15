@@ -1340,36 +1340,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 Colors.red.shade300,
               ),
             ],
-            if (priceAdjustmentDiscount > 0) ...[
-              Divider(color: dividerColor),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "価格調整",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.orange.shade300,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        "-￥${formatAmount(priceAdjustmentDiscount)}",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.orange.shade300,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ] else if (!_isViewMode && !_isLocked) ...[
+            if (priceAdjustmentDiscount > 0 || (!_isViewMode && !_isLocked)) ...[
               Divider(color: dividerColor),
               GestureDetector(
-                onTap: () => _showPriceAdjustmentDialog(),
+                onTap: _isViewMode || _isLocked ? null : () => _showPriceAdjustmentDialog(),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1377,8 +1351,27 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       "価格調整",
                       style: TextStyle(
                         fontSize: 14,
-                        color: labelColor.withAlpha((0.5 * 255).round()),
+                        color: priceAdjustmentDiscount > 0 ? Colors.orange.shade300 : labelColor.withAlpha((0.5 * 255).round()),
                       ),
+                    ),
+                    Row(
+                      children: [
+                        if (priceAdjustmentDiscount > 0)
+                          Text(
+                            "-￥${formatAmount(priceAdjustmentDiscount)}",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange.shade300,
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.settings,
+                          size: 16,
+                          color: priceAdjustmentDiscount > 0 ? Colors.orange.shade300 : labelColor.withAlpha((0.5 * 255).round()),
+                        ),
+                      ],
                     ),
                   ],
                 ),
