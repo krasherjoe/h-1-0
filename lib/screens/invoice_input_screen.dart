@@ -1873,26 +1873,28 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
       final totalBeforeAdjustment = baseAmount + taxAmount;
 
-      int adjustedTotal;
-      switch (adjustmentType.value) {
-        case 'round_down':
-          adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
-          break;
-        case 'round_up':
-          adjustedTotal = ((totalBeforeAdjustment + unit - 1) ~/ unit) * unit;
-          break;
-        case 'round_nearest':
-          adjustedTotal = ((totalBeforeAdjustment + unit ~/ 2) ~/ unit) * unit;
-          break;
-        default:
-          adjustedTotal = totalBeforeAdjustment;
+      final results = <String, int>{};
+      for (final type in ['round_down', 'round_up', 'round_nearest']) {
+        int adjustedTotal;
+        switch (type) {
+          case 'round_down':
+            adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
+            break;
+          case 'round_up':
+            adjustedTotal = ((totalBeforeAdjustment + unit - 1) ~/ unit) * unit;
+            break;
+          case 'round_nearest':
+            adjustedTotal = ((totalBeforeAdjustment + unit ~/ 2) ~/ unit) * unit;
+            break;
+          default:
+            adjustedTotal = totalBeforeAdjustment;
+        }
+        results[type] = adjustedTotal;
       }
 
-      final discount = totalBeforeAdjustment - adjustedTotal;
       calculatedResult.value = {
         'before': totalBeforeAdjustment,
-        'after': adjustedTotal,
-        'discount': discount,
+        'results': results,
       };
     }
 
@@ -1903,66 +1905,78 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('価格調整値引き設定'),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('調整方法:'),
+              const Text(
+                '調整単位:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              ValueListenableBuilder<String>(
-                valueListenable: adjustmentType,
-                builder: (context, value, _) => ValueListenableBuilder<Map<String, dynamic>>(
-                  valueListenable: calculatedResult,
-                  builder: (context, result, _) => Column(
-                    children: [
-                      _buildAdjustmentOption(
-                        '切り捨て',
-                        'round_down',
-                        value,
-                        result,
-                        (v) {
-                          adjustmentType.value = v;
-                          updateCalculation();
-                        },
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: unitController,
+                      keyboardType: TextInputType.none,
+                      decoration: InputDecoration(
+                        hintText: '単位を入力',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
-                      _buildAdjustmentOption(
-                        '切り上げ',
-                        'round_up',
-                        value,
-                        result,
-                        (v) {
-                          adjustmentType.value = v;
-                          updateCalculation();
-                        },
-                      ),
-                      _buildAdjustmentOption(
-                        '四捨五入',
-                        'round_nearest',
-                        value,
-                        result,
-                        (v) {
-                          adjustmentType.value = v;
-                          updateCalculation();
-                        },
-                      ),
-                    ],
+                      onChanged: (_) => updateCalculation(),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      icon: const Icon(Icons.backspace),
+                      onPressed: () {
+                        if (unitController.text.isNotEmpty) {
+                          unitController.text = unitController.text
+                              .substring(0, unitController.text.length - 1);
+                          updateCalculation();
+                        }
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // 電卓キー
+              GridView.count(
+                crossAxisCount: 5,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 1.2,
+                mainAxisSpacing: 4,
+                crossAxisSpacing: 4,
+                children: [
+                  for (final num in ['1', '10', '100', '1000', '10000'])
+                    _buildCalcButton(num, () {
+                      unitController.text = num;
+                      updateCalculation();
+                    }),
+                ],
               ),
               const SizedBox(height: 16),
-              const Text('調整単位:'),
+              const Text(
+                '調整方法と結果:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              TextField(
-                controller: unitController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: '例: 1000, 100, 10',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => updateCalculation(),
-              ),
-              const SizedBox(height: 16),
               ValueListenableBuilder<Map<String, dynamic>>(
                 valueListenable: calculatedResult,
                 builder: (context, result, _) {
@@ -1970,61 +1984,39 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     return const SizedBox.shrink();
                   }
                   final fmt = NumberFormat('#,###');
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  final results = result['results'] as Map<String, int>;
+                  return ValueListenableBuilder<String>(
+                    valueListenable: adjustmentType,
+                    builder: (context, selectedType, _) => Column(
                       children: [
-                        Text(
-                          '計算結果:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade900,
-                          ),
+                        _buildAdjustmentCard(
+                          '切り捨て',
+                          'round_down',
+                          selectedType,
+                          fmt.format(results['round_down']),
+                          () {
+                            adjustmentType.value = 'round_down';
+                          },
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('調整前:'),
-                            Text(
-                              '￥${fmt.format(result['before'])}',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                        _buildAdjustmentCard(
+                          '切り上げ',
+                          'round_up',
+                          selectedType,
+                          fmt.format(results['round_up']),
+                          () {
+                            adjustmentType.value = 'round_up';
+                          },
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('調整後:'),
-                            Text(
-                              '￥${fmt.format(result['after'])}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('値引き額:'),
-                            Text(
-                              '-￥${fmt.format(result['discount'])}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange.shade700,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 8),
+                        _buildAdjustmentCard(
+                          '四捨五入',
+                          'round_nearest',
+                          selectedType,
+                          fmt.format(results['round_nearest']),
+                          () {
+                            adjustmentType.value = 'round_nearest';
+                          },
                         ),
                       ],
                     ),
@@ -2077,26 +2069,67 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     unitController.dispose();
   }
 
-  /// 調整方法のラジオボタンと計算結果を表示
-  Widget _buildAdjustmentOption(
+  /// 電卓ボタン
+  Widget _buildCalcButton(String label, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.blue.shade100,
+        foregroundColor: Colors.blue.shade900,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  /// 調整方法のカード表示
+  Widget _buildAdjustmentCard(
     String label,
     String value,
-    String groupValue,
-    Map<String, dynamic> result,
-    Function(String) onChanged,
+    String selectedValue,
+    String amount,
+    VoidCallback onTap,
   ) {
-    final fmt = NumberFormat('#,###');
-    String resultText = '';
-    
-    if (result.isNotEmpty) {
-      resultText = ' → ￥${fmt.format(result['after'])}';
-    }
-
-    return RadioListTile<String>(
-      title: Text('$label$resultText'),
-      value: value,
-      groupValue: groupValue,
-      onChanged: (v) => onChanged(v ?? value),
+    final isSelected = value == selectedValue;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.shade50 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.blue.shade400 : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.blue.shade900 : Colors.black87,
+              ),
+            ),
+            Text(
+              '￥$amount',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isSelected ? Colors.blue.shade700 : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
