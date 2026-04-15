@@ -276,15 +276,69 @@ class CustomerRepository {
     );
   }
 
+  /// 顧客が他の伝票から参照されているかチェック
+  Future<List<String>> _checkCustomerReferences(DatabaseExecutor txn, String customerId) async {
+    final references = <String>[];
+
+    // 請求書からの参照
+    final invoices = await txn.query(
+      'invoices',
+      where: 'customer_id = ?',
+      whereArgs: [customerId],
+      limit: 1,
+    );
+    if (invoices.isNotEmpty) references.add('請求書');
+
+    // 見積書からの参照
+    final quotations = await txn.query(
+      'quotations',
+      where: 'customer_id = ?',
+      whereArgs: [customerId],
+      limit: 1,
+    );
+    if (quotations.isNotEmpty) references.add('見積書');
+
+    // 売上からの参照
+    final sales = await txn.query(
+      'sales',
+      where: 'customer_id = ?',
+      whereArgs: [customerId],
+      limit: 1,
+    );
+    if (sales.isNotEmpty) references.add('売上');
+
+    // 納品書からの参照
+    final deliveries = await txn.query(
+      'deliveries',
+      where: 'customer_id = ?',
+      whereArgs: [customerId],
+      limit: 1,
+    );
+    if (deliveries.isNotEmpty) references.add('納品書');
+
+    return references;
+  }
+
   Future<void> deleteCustomer(String id) async {
     final db = await _dbHelper.database;
-    await db.delete('customers', where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      // 参照整合性チェック
+      final references = await _checkCustomerReferences(txn, id);
+      if (references.isNotEmpty) {
+        throw CustomerInUseException(id, references);
+      }
+
+      // 物理削除: 対象IDの全バージョンを削除（is_current関係なく）
+      await txn.delete('customers', where: 'id = ?', whereArgs: [id]);
+      // 連絡先データも削除
+      await txn.delete('customer_contacts', where: 'customer_id = ?', whereArgs: [id]);
+    });
 
     await _logRepo.logAction(
       action: "DELETE_CUSTOMER",
       targetType: "CUSTOMER",
       targetId: id,
-      details: "顧客を削除しました",
+      details: "顧客を完全削除しました",
     );
   }
 

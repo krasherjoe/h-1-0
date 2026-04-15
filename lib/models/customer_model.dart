@@ -14,6 +14,18 @@ class DuplicateCustomerException implements Exception {
   }
 }
 
+/// 顧客使用中例外（他の伝票から参照されている）
+class CustomerInUseException implements Exception {
+  final String customerId;
+  final List<String> references;
+
+  CustomerInUseException(this.customerId, this.references);
+
+  @override
+  String toString() =>
+      'CustomerInUseException: 顧客($customerId)は${references.join('、')}で使用されているため削除できません';
+}
+
 /// 敬称コード定義
 class HonorificCode {
   static const int san = 1;
