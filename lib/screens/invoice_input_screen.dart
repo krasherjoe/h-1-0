@@ -384,6 +384,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       latitude: pos?.latitude,
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
+      priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
+      priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
     );
     try {
       // PDF生成有無に関わらず、まずは保存
