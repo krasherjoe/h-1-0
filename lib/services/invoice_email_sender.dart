@@ -63,6 +63,12 @@ class InvoiceEmailSender {
     // 本文：請求書の mailBodyText を使用
     final body = invoice.mailBodyText;
 
+    // 送信先：顧客マスタのメールアドレスを設定
+    final customerEmail = invoice.customer.email;
+    final recipients = customerEmail != null && customerEmail.isNotEmpty
+        ? [customerEmail]
+        : <String>[];
+
     // BCC: 設定から取得（未設定の場合は空リスト）
     final bccAddress = await _settingsRepository.getGmailSyncBccAddress();
     final bcc = bccAddress != null && bccAddress.isNotEmpty
@@ -76,6 +82,8 @@ class InvoiceEmailSender {
     debugPrint('===== メール送信設定 =====');
     debugPrint('件名 (subject): $subject');
     debugPrint('本文 (body): $body');
+    debugPrint('送信先 (recipients): $recipients');
+    debugPrint('顧客メール：$customerEmail');
     debugPrint('BCC アドレス：$bccAddress');
     debugPrint('BCC リスト：$bcc');
     debugPrint('PDF ファイルパス：$pdfFilePath');
@@ -84,7 +92,7 @@ class InvoiceEmailSender {
     return Email(
       body: body,
       subject: subject,
-      recipients: [], // 送信先はユーザーが設定
+      recipients: recipients, // 顧客マスタのメールアドレスを設定
       bcc: bcc,
       attachmentPaths: attachmentPaths,
       isHTML: false,

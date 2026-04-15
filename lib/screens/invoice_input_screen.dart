@@ -682,6 +682,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
+                    physics: const PageScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(
                       16,
                       16,
@@ -1336,7 +1337,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Widget _buildBottomActionBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
         boxShadow: [
@@ -1348,60 +1349,97 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ],
       ),
       child: SafeArea(
+        top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _items.isEmpty ? null : _showPreview,
-                    icon: const Icon(Icons.picture_as_pdf), // アイコン変更
-                    label: const Text("PDFプレビュー"), // 名称変更
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.indigo),
+            // PDFプレビュー・編集/保存ボタン（スワイプ吸収）
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragUpdate: (_) {}, // 垂直スワイプを吸収
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _items.isEmpty ? null : _showPreview,
+                      icon: const Icon(Icons.picture_as_pdf), // アイコン変更
+                      label: const Text("PDFプレビュー"), // 名称変更
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: Colors.indigo),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _isLocked
-                      ? ElevatedButton.icon(
-                          onPressed: null,
-                          icon: const Icon(Icons.lock),
-                          label: const Text("ロック済み"),
-                        )
-                      : (_isViewMode
-                            ? ElevatedButton.icon(
-                                onPressed: () =>
-                                    setState(() => _isViewMode = false),
-                                icon: const Icon(Icons.edit),
-                                label: const Text("編集"),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.indigo,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _isLocked
+                        ? ElevatedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.lock),
+                            label: const Text("ロック済み"),
+                          )
+                        : (_isViewMode
+                              ? ElevatedButton.icon(
+                                  onPressed: () =>
+                                      setState(() => _isViewMode = false),
+                                  icon: const Icon(Icons.edit),
+                                  label: const Text("編集"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.indigo,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : ElevatedButton.icon(
-                                onPressed: () =>
-                                    _saveInvoice(generatePdf: false),
-                                icon: const Icon(Icons.save),
-                                label: const Text("保存"),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.indigo,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                )
+                              : ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _saveInvoice(generatePdf: false),
+                                  icon: const Icon(Icons.save),
+                                  label: const Text("保存"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.indigo,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
                                   ),
-                                ),
-                              )),
-                ),
-              ],
+                                )),
+                  ),
+                ],
+              ),
             ),
+            // 通知テロップ（閲覧モード時のみ表示）- ボタンの下に配置
+            if (_isViewMode)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.indigo.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.swipe,
+                      size: 16,
+                      color: Colors.indigo,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'タイトルバー横になぞると拡大縮小できます',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.indigo,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
