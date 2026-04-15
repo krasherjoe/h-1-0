@@ -70,6 +70,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     false,
   ); // 保存中フラグ（ValueNotifier 使用）
   String? _currentId; // 保存対象のID（コピー時に新規になる）
+  Invoice? _currentInvoice; // 現在編集中の伝票
   bool _isLocked = false;
   final List<_InvoiceSnapshot> _undoStack = [];
   final List<_InvoiceSnapshot> _redoStack = [];
@@ -277,6 +278,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _currentId = inv.id;
         _isLocked = inv.isLocked;
         if (inv.subject != null) _subjectController.text = inv.subject!;
+        _currentInvoice = inv;
       } else {
         _taxRate = 0;
         _includeTax = false;
@@ -284,6 +286,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _documentType = widget.initialDocumentType;
         _currentId = null;
         _isLocked = false;
+        _currentInvoice = null;
       }
     });
     _isViewMode = widget.startViewMode; // 指定に従う
@@ -1261,7 +1264,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Widget _buildSummarySection(NumberFormat formatter) {
     final int subtotal = _subTotal;
     final int itemDiscountAmount = _calculateItemDiscount();
-    final int taxableAmount = subtotal - itemDiscountAmount;
+    final int priceAdjustmentDiscount = _calculatePriceAdjustmentDiscount();
+    final int totalDiscountAmount = itemDiscountAmount + priceAdjustmentDiscount;
+    final int taxableAmount = subtotal - totalDiscountAmount;
     final int tax = _includeTax ? (taxableAmount * _taxRate).floor() : 0;
     final int total = taxableAmount + tax;
 
@@ -1329,6 +1334,64 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 Colors.red.shade300,
               ),
             ],
+            if (priceAdjustmentDiscount > 0) ...[
+              Divider(color: dividerColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "価格調整",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.orange.shade300,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        "-￥${formatAmount(priceAdjustmentDiscount)}",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade300,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _isViewMode || _isLocked ? null : () => _showPriceAdjustmentDialog(),
+                        child: Icon(
+                          Icons.edit,
+                          size: 16,
+                          color: _isViewMode || _isLocked ? Colors.grey : Colors.orange.shade300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ] else if (!_isViewMode && !_isLocked) ...[
+              Divider(color: dividerColor),
+              GestureDetector(
+                onTap: () => _showPriceAdjustmentDialog(),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "価格調整",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: labelColor.withAlpha((0.5 * 255).round()),
+                      ),
+                    ),
+                    Icon(
+                      Icons.add_circle_outline,
+                      size: 16,
+                      color: labelColor.withAlpha((0.5 * 255).round()),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             Divider(color: dividerColor),
             _buildSummaryRow("税抜金額", "￥${formatAmount(taxableAmount)}", labelColor),
             if (tax > 0) ...[
@@ -1360,6 +1423,38 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       }
       return sum;
     });
+  }
+
+  /// 価格調整値引きを計算
+  int _calculatePriceAdjustmentDiscount() {
+    final adjustmentType = _currentInvoice?.priceAdjustmentType;
+    final adjustmentUnit = _currentInvoice?.priceAdjustmentUnit;
+    
+    if (adjustmentType == null || adjustmentUnit == null) {
+      return 0;
+    }
+
+    final unit = adjustmentUnit;
+    final baseAmount = _subTotal - _calculateItemDiscount();
+    final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
+    final totalBeforeAdjustment = baseAmount + taxAmount;
+
+    int adjustedTotal;
+    switch (adjustmentType) {
+      case 'round_down':
+        adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
+        break;
+      case 'round_up':
+        adjustedTotal = ((totalBeforeAdjustment + unit - 1) ~/ unit) * unit;
+        break;
+      case 'round_nearest':
+        adjustedTotal = ((totalBeforeAdjustment + unit ~/ 2) ~/ unit) * unit;
+        break;
+      default:
+        return 0;
+    }
+
+    return totalBeforeAdjustment - adjustedTotal;
   }
 
   Widget _buildSummaryRow(
@@ -1754,6 +1849,108 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     amountController.dispose();
     rateController.dispose();
+  }
+
+  // 価格調整ダイアログ
+  Future<void> _showPriceAdjustmentDialog() async {
+    final adjustmentType = ValueNotifier<String>(
+      _currentInvoice?.priceAdjustmentType ?? 'round_down'
+    );
+    final unitController = TextEditingController(
+      text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000'
+    );
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('価格調整値引き設定'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('調整方法:'),
+              const SizedBox(height: 8),
+              ValueListenableBuilder<String>(
+                valueListenable: adjustmentType,
+                builder: (context, value, _) => Column(
+                  children: [
+                    RadioListTile<String>(
+                      title: const Text('切り捨て'),
+                      value: 'round_down',
+                      groupValue: value,
+                      onChanged: (v) => adjustmentType.value = v ?? 'round_down',
+                    ),
+                    RadioListTile<String>(
+                      title: const Text('切り上げ'),
+                      value: 'round_up',
+                      groupValue: value,
+                      onChanged: (v) => adjustmentType.value = v ?? 'round_up',
+                    ),
+                    RadioListTile<String>(
+                      title: const Text('四捨五入'),
+                      value: 'round_nearest',
+                      groupValue: value,
+                      onChanged: (v) => adjustmentType.value = v ?? 'round_nearest',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('調整単位:'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: unitController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: '例: 1000, 100, 10',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_currentInvoice != null) {
+                setState(() {
+                  _currentInvoice = _currentInvoice!.copyWith(
+                    priceAdjustmentType: null,
+                    priceAdjustmentUnit: null,
+                  );
+                });
+                _pushHistory();
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('クリア', style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final unit = int.tryParse(unitController.text);
+              if (unit != null && unit > 0 && _currentInvoice != null) {
+                setState(() {
+                  _currentInvoice = _currentInvoice!.copyWith(
+                    priceAdjustmentType: adjustmentType.value,
+                    priceAdjustmentUnit: unit,
+                  );
+                });
+                _pushHistory();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('設定'),
+          ),
+        ],
+      ),
+    );
+
+    unitController.dispose();
   }
 }
 

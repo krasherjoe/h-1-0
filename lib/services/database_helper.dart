@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 49;
+  static const _databaseVersion = 50;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Database? testDatabase; // For testing
@@ -1555,6 +1555,12 @@ class DatabaseHelper {
         CREATE INDEX IF NOT EXISTS idx_invoices_receipt_issued 
         ON invoices(is_receipt_issued, fulfilled_date)
       ''');
+    }
+
+    // v50: 価格調整値引き機能追加 - invoicesテーブルに価格調整フィールドを追加
+    if (oldVersion < 50) {
+      await _safeAddColumn(db, 'invoices', 'price_adjustment_type TEXT');
+      await _safeAddColumn(db, 'invoices', 'price_adjustment_unit INTEGER');
     }
   }
 

@@ -145,6 +145,8 @@ class Invoice {
   final double? totalDiscountRate; // 合計値引き率
   final bool isReceiptIssued; // 領収証発行済みフラグ
   final DateTime? receiptIssuedAt; // 領収証発行日時
+  final String? priceAdjustmentType; // 価格調整タイプ: 'round_down', 'round_up', 'round_nearest'
+  final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
 
   Invoice({
     String? id,
@@ -183,6 +185,8 @@ class Invoice {
     this.totalDiscountRate,
     this.isReceiptIssued = false,
     this.receiptIssuedAt,
+    this.priceAdjustmentType,
+    this.priceAdjustmentUnit,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        terminalId = terminalId ?? "T1", // デフォルト端末ID
        updatedAt = updatedAt ?? DateTime.now();
@@ -247,8 +251,41 @@ class Invoice {
   }
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.subtotal);
-  int get discountAmount {
-    // 明細単位の値引き合計
+  
+  /// 価格調整値引きを計算
+  int get priceAdjustmentDiscount {
+    if (priceAdjustmentType == null || priceAdjustmentUnit == null) {
+      return 0;
+    }
+    
+    final unit = priceAdjustmentUnit!;
+    final baseAmount = subtotal - _regularDiscount;
+    final taxAmount = (baseAmount * taxRate).floor();
+    final totalBeforeAdjustment = baseAmount + taxAmount;
+    
+    int adjustedTotal;
+    switch (priceAdjustmentType) {
+      case 'round_down':
+        // 切り捨て
+        adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
+        break;
+      case 'round_up':
+        // 切り上げ
+        adjustedTotal = ((totalBeforeAdjustment + unit - 1) ~/ unit) * unit;
+        break;
+      case 'round_nearest':
+        // 四捨五入
+        adjustedTotal = ((totalBeforeAdjustment + unit ~/ 2) ~/ unit) * unit;
+        break;
+      default:
+        return 0;
+    }
+    
+    return totalBeforeAdjustment - adjustedTotal;
+  }
+  
+  /// 通常の値引き額（明細単位 + 伝票全体）
+  int get _regularDiscount {
     int itemDiscount = items.fold(0, (sum, item) {
       if (item.discountAmount != null && item.discountAmount! > 0) {
         return sum + item.discountAmount!;
@@ -260,7 +297,6 @@ class Invoice {
       return sum;
     });
 
-    // 合計値引きが指定されている場合はそちらを優先
     if (totalDiscountAmount != null && totalDiscountAmount! > 0) {
       return totalDiscountAmount!;
     }
@@ -270,6 +306,8 @@ class Invoice {
 
     return itemDiscount;
   }
+
+  int get discountAmount => _regularDiscount + priceAdjustmentDiscount;
 
   int get taxableAmount => subtotal - discountAmount;
   int get tax => (taxableAmount * taxRate).floor();
@@ -380,6 +418,8 @@ class Invoice {
       'receipt_issued_at': receiptIssuedAt?.toIso8601String(),
       'total_discount_amount': totalDiscountAmount,
       'total_discount_rate': totalDiscountRate,
+      'price_adjustment_type': priceAdjustmentType,
+      'price_adjustment_unit': priceAdjustmentUnit,
     };
   }
 
@@ -420,6 +460,8 @@ class Invoice {
     double? totalDiscountRate,
     bool? isReceiptIssued,
     DateTime? receiptIssuedAt,
+    String? priceAdjustmentType,
+    int? priceAdjustmentUnit,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -460,6 +502,8 @@ class Invoice {
       totalDiscountRate: totalDiscountRate ?? this.totalDiscountRate,
       isReceiptIssued: isReceiptIssued ?? this.isReceiptIssued,
       receiptIssuedAt: receiptIssuedAt ?? this.receiptIssuedAt,
+      priceAdjustmentType: priceAdjustmentType ?? this.priceAdjustmentType,
+      priceAdjustmentUnit: priceAdjustmentUnit ?? this.priceAdjustmentUnit,
     );
   }
 }
