@@ -384,6 +384,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       latitude: pos?.latitude,
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
+      includeTax: _includeTax,
       priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
       priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
     );
@@ -443,6 +444,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
       isDraft: _isDraft,
       isLocked: _isLocked,
+      includeTax: _includeTax,
     );
 
     Navigator.push(
@@ -1867,6 +1869,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         isDraft: _isDraft,
         isLocked: _isLocked,
         subject: _subjectController.text.isEmpty ? null : _subjectController.text,
+        includeTax: _includeTax,
       );
     }
 

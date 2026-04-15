@@ -54,6 +54,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
       items: [],
       documentType: DocumentType.estimation,
       isDraft: true,
+      includeTax: false,
     );
 
     await _repo.saveInvoice(newEstimate);

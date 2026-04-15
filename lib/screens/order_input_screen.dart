@@ -82,6 +82,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
       items: [],
       documentType: DocumentType.order,
       isDraft: true,
+      includeTax: false,
     );
 
     await _repo.saveInvoice(newOrder);

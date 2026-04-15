@@ -145,6 +145,7 @@ class Invoice {
   final double? totalDiscountRate; // 合計値引き率
   final bool isReceiptIssued; // 領収証発行済みフラグ
   final DateTime? receiptIssuedAt; // 領収証発行日時
+  final bool includeTax; // 税込みフラグ
   final String? priceAdjustmentType; // 価格調整タイプ: 'round_down', 'round_up', 'round_nearest'
   final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
 
@@ -185,6 +186,7 @@ class Invoice {
     this.totalDiscountRate,
     this.isReceiptIssued = false,
     this.receiptIssuedAt,
+    this.includeTax = false,
     this.priceAdjustmentType,
     this.priceAdjustmentUnit,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -260,7 +262,7 @@ class Invoice {
 
     final unit = priceAdjustmentUnit!;
     final baseAmount = subtotal - _regularDiscount;
-    final taxAmount = (baseAmount * taxRate).floor();
+    final taxAmount = includeTax ? (baseAmount * taxRate).floor() : 0;
     final totalBeforeAdjustment = baseAmount + taxAmount;
 
     int adjustedTotal;
@@ -461,6 +463,7 @@ class Invoice {
     double? totalDiscountRate,
     bool? isReceiptIssued,
     DateTime? receiptIssuedAt,
+    bool? includeTax,
     String? priceAdjustmentType,
     int? priceAdjustmentUnit,
   }) {
@@ -503,6 +506,7 @@ class Invoice {
       totalDiscountRate: totalDiscountRate ?? this.totalDiscountRate,
       isReceiptIssued: isReceiptIssued ?? this.isReceiptIssued,
       receiptIssuedAt: receiptIssuedAt ?? this.receiptIssuedAt,
+      includeTax: includeTax ?? this.includeTax,
       priceAdjustmentType: priceAdjustmentType ?? this.priceAdjustmentType,
       priceAdjustmentUnit: priceAdjustmentUnit ?? this.priceAdjustmentUnit,
     );
