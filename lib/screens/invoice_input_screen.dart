@@ -78,6 +78,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final _transformationController = TransformationController();
   double _titleBarStartScale = 1.0;
   double _titleBarStartX = 0.0;
+  bool _panEnabled = false;
   bool _isApplyingSnapshot = false;
   bool get _canUndo => _undoStack.length > 1;
   bool get _canRedo => _redoStack.isNotEmpty;
@@ -240,6 +241,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   void initState() {
     super.initState();
+    _transformationController.addListener(_onTransformationChanged);
     _subjectController.addListener(_onSubjectChanged);
     _subjectFocusNode.addListener(() {
       if (!_subjectFocusNode.hasFocus) {
@@ -301,8 +303,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   @override
   void dispose() {
+    _transformationController.removeListener(_onTransformationChanged);
     _subjectFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onTransformationChanged() {
+    final scale = _transformationController.value.getMaxScaleOnAxis();
+    final shouldPan = scale > 1.01;
+    if (shouldPan != _panEnabled) {
+      setState(() => _panEnabled = shouldPan);
+    }
   }
 
   Future<void> _loadEditLogs() async {
@@ -810,6 +821,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         minScale: 1.0,
         maxScale: 2.0,
         boundaryMargin: const EdgeInsets.all(100),
+        panEnabled: _panEnabled,
         child: content.body!,
       ),
     );
@@ -1794,9 +1806,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             onPressed: () {
               // 値引きをクリア
               setState(() {
-                _items[index] = item.copyWith(
-                  discountAmount: null,
-                  discountRate: null,
+                _items[index] = InvoiceItem(
+                  id: item.id,
+                  productId: item.productId,
+                  description: item.description,
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
                 );
               });
               _pushHistory();
@@ -1809,16 +1824,24 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               if (discountType.value == 'amount') {
                 final amount = int.tryParse(amountController.text);
                 setState(() {
-                  _items[index] = item.copyWith(
+                  _items[index] = InvoiceItem(
+                    id: item.id,
+                    productId: item.productId,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
                     discountAmount: amount,
-                    discountRate: null,
                   );
                 });
               } else {
                 final rate = double.tryParse(rateController.text);
                 setState(() {
-                  _items[index] = item.copyWith(
-                    discountAmount: null,
+                  _items[index] = InvoiceItem(
+                    id: item.id,
+                    productId: item.productId,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
                     discountRate: rate != null ? rate / 100 : null,
                   );
                 });
