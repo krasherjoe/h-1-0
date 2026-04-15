@@ -1362,15 +1362,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           color: Colors.orange.shade300,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: _isViewMode || _isLocked ? null : () => _showPriceAdjustmentDialog(),
-                        child: Icon(
-                          Icons.edit,
-                          size: 16,
-                          color: _isViewMode || _isLocked ? Colors.grey : Colors.orange.shade300,
-                        ),
-                      ),
                     ],
                   ),
                 ],
@@ -1388,11 +1379,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         fontSize: 14,
                         color: labelColor.withAlpha((0.5 * 255).round()),
                       ),
-                    ),
-                    Icon(
-                      Icons.add_circle_outline,
-                      size: 16,
-                      color: labelColor.withAlpha((0.5 * 255).round()),
                     ),
                   ],
                 ),
