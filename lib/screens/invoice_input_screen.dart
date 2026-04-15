@@ -682,7 +682,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    physics: const PageScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(
                       16,
                       16,
