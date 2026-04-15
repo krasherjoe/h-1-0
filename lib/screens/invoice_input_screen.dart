@@ -1859,6 +1859,45 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final unitController = TextEditingController(
       text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000'
     );
+    final calculatedResult = ValueNotifier<Map<String, dynamic>>({});
+
+    // 計算結果を更新する関数
+    void updateCalculation() {
+      final unit = int.tryParse(unitController.text);
+      if (unit == null || unit <= 0) {
+        calculatedResult.value = {};
+        return;
+      }
+
+      final baseAmount = _subTotal - _calculateItemDiscount();
+      final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
+      final totalBeforeAdjustment = baseAmount + taxAmount;
+
+      int adjustedTotal;
+      switch (adjustmentType.value) {
+        case 'round_down':
+          adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
+          break;
+        case 'round_up':
+          adjustedTotal = ((totalBeforeAdjustment + unit - 1) ~/ unit) * unit;
+          break;
+        case 'round_nearest':
+          adjustedTotal = ((totalBeforeAdjustment + unit ~/ 2) ~/ unit) * unit;
+          break;
+        default:
+          adjustedTotal = totalBeforeAdjustment;
+      }
+
+      final discount = totalBeforeAdjustment - adjustedTotal;
+      calculatedResult.value = {
+        'before': totalBeforeAdjustment,
+        'after': adjustedTotal,
+        'discount': discount,
+      };
+    }
+
+    // 初期計算
+    updateCalculation();
 
     await showDialog(
       context: context,
@@ -1873,27 +1912,42 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               const SizedBox(height: 8),
               ValueListenableBuilder<String>(
                 valueListenable: adjustmentType,
-                builder: (context, value, _) => Column(
-                  children: [
-                    RadioListTile<String>(
-                      title: const Text('切り捨て'),
-                      value: 'round_down',
-                      groupValue: value,
-                      onChanged: (v) => adjustmentType.value = v ?? 'round_down',
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('切り上げ'),
-                      value: 'round_up',
-                      groupValue: value,
-                      onChanged: (v) => adjustmentType.value = v ?? 'round_up',
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('四捨五入'),
-                      value: 'round_nearest',
-                      groupValue: value,
-                      onChanged: (v) => adjustmentType.value = v ?? 'round_nearest',
-                    ),
-                  ],
+                builder: (context, value, _) => ValueListenableBuilder<Map<String, dynamic>>(
+                  valueListenable: calculatedResult,
+                  builder: (context, result, _) => Column(
+                    children: [
+                      _buildAdjustmentOption(
+                        '切り捨て',
+                        'round_down',
+                        value,
+                        result,
+                        (v) {
+                          adjustmentType.value = v;
+                          updateCalculation();
+                        },
+                      ),
+                      _buildAdjustmentOption(
+                        '切り上げ',
+                        'round_up',
+                        value,
+                        result,
+                        (v) {
+                          adjustmentType.value = v;
+                          updateCalculation();
+                        },
+                      ),
+                      _buildAdjustmentOption(
+                        '四捨五入',
+                        'round_nearest',
+                        value,
+                        result,
+                        (v) {
+                          adjustmentType.value = v;
+                          updateCalculation();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1906,6 +1960,76 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   hintText: '例: 1000, 100, 10',
                   border: OutlineInputBorder(),
                 ),
+                onChanged: (_) => updateCalculation(),
+              ),
+              const SizedBox(height: 16),
+              ValueListenableBuilder<Map<String, dynamic>>(
+                valueListenable: calculatedResult,
+                builder: (context, result, _) {
+                  if (result.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  final fmt = NumberFormat('#,###');
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '計算結果:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('調整前:'),
+                            Text(
+                              '￥${fmt.format(result['before'])}',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('調整後:'),
+                            Text(
+                              '￥${fmt.format(result['after'])}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('値引き額:'),
+                            Text(
+                              '-￥${fmt.format(result['discount'])}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -1951,6 +2075,29 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
 
     unitController.dispose();
+  }
+
+  /// 調整方法のラジオボタンと計算結果を表示
+  Widget _buildAdjustmentOption(
+    String label,
+    String value,
+    String groupValue,
+    Map<String, dynamic> result,
+    Function(String) onChanged,
+  ) {
+    final fmt = NumberFormat('#,###');
+    String resultText = '';
+    
+    if (result.isNotEmpty) {
+      resultText = ' → ￥${fmt.format(result['after'])}';
+    }
+
+    return RadioListTile<String>(
+      title: Text('$label$resultText'),
+      value: value,
+      groupValue: groupValue,
+      onChanged: (v) => onChanged(v ?? value),
+    );
   }
 }
 
