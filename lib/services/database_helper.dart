@@ -324,8 +324,14 @@ class DatabaseHelper {
       
       // フォルダが存在しなければ作成
       if (!await dir.exists()) {
-        await dir.create(recursive: true);
-        debugPrint('Documentsフォルダを作成：${dir.path}');
+        try {
+          await dir.create(recursive: true);
+          debugPrint('Documentsフォルダを作成：${dir.path}');
+        } catch (createError) {
+          debugPrint('Documentsフォルダ作成エラー：$createError');
+          // 作成に失敗した場合はフォールバック
+          return await getDatabasesPath();
+        }
       }
       
       return dir.path;
