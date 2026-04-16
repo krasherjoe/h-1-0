@@ -1853,281 +1853,299 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: null,
-              contentPadding: const EdgeInsets.all(16),
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              content: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // モード切り替え
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                          value: 'round_down',
-                          label: Text('切り捨て計算'),
-                        ),
-                        ButtonSegment(
-                          value: 'manual',
-                          label: Text('手動入力'),
-                        ),
-                      ],
-                      selected: {mode.value},
-                      onSelectionChanged: (Set<String> newSelection) {
-                        mode.value = newSelection.first;
-                        updateCalculation();
-                        setState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // 切り捨て計算モード
-                    if (mode.value == 'round_down') ...[
-                      const Text(
-                        '切り捨て単位:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: unitController,
-                              keyboardType: TextInputType.none,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+            return Dialog(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: SizedBox(
+                  width: 360,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // モード切り替え
+                            SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: 'round_down',
+                                  label: Text('切り捨て計算'),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                                ButtonSegment(
+                                  value: 'manual',
+                                  label: Text('手動入力'),
                                 ),
-                              ),
-                              onChanged: (_) {
+                              ],
+                              selected: {mode.value},
+                              onSelectionChanged: (Set<String> newSelection) {
+                                mode.value = newSelection.first;
                                 updateCalculation();
                                 setState(() {});
                               },
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: IconButton(
-                              icon: const Icon(Icons.backspace),
-                              onPressed: () {
-                                if (unitController.text.isNotEmpty) {
-                                  unitController.text = unitController.text
-                                      .substring(
-                                        0,
-                                        unitController.text.length - 1,
-                                      );
-                                  updateCalculation();
-                                  setState(() {});
-                                }
-                              },
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    
-                    // 手動入力モード
-                    if (mode.value == 'manual') ...[
-                      const Text(
-                        '値引き額:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: manualDiscountController,
-                              keyboardType: TextInputType.none,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              onChanged: (_) {
-                                updateCalculation();
-                                setState(() {});
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: IconButton(
-                              icon: const Icon(Icons.backspace),
-                              onPressed: () {
-                                if (manualDiscountController.text.isNotEmpty) {
-                                  manualDiscountController.text = manualDiscountController.text
-                                      .substring(
-                                        0,
-                                        manualDiscountController.text.length - 1,
-                                      );
-                                  updateCalculation();
-                                  setState(() {});
-                                }
-                              },
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    
-                    const SizedBox(height: 16),
-                    ValueListenableBuilder<Map<String, int>>(
-                      valueListenable: calculatedResult,
-                      builder: (context, result, _) {
-                        if (result.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        final fmt = NumberFormat('#,###');
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue.shade200),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            const SizedBox(height: 16),
+                            
+                            // 切り捨て計算モード
+                            if (mode.value == 'round_down') ...[
                               const Text(
-                                '計算結果:',
+                                '切り捨て単位:',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 8),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('調整前:'),
-                                  Text(
-                                    '￥${fmt.format(result['before'])}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                  Expanded(
+                                    child: TextField(
+                                      controller: unitController,
+                                      keyboardType: TextInputType.none,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                      onChanged: (_) {
+                                        updateCalculation();
+                                        setState(() {});
+                                      },
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    mode.value == 'round_down' ? '切り捨て後:' : '調整後:',
-                                  ),
-                                  Text(
-                                    '￥${fmt.format(result['after'])}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('値引き額:'),
-                                  Text(
-                                    '-￥${fmt.format(result['discount'])}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.orange.shade700,
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.backspace),
+                                      onPressed: () {
+                                        if (unitController.text.isNotEmpty) {
+                                          unitController.text = unitController.text
+                                              .substring(
+                                                0,
+                                                unitController.text.length - 1,
+                                              );
+                                          updateCalculation();
+                                          setState(() {});
+                                        }
+                                      },
+                                      padding: EdgeInsets.zero,
                                     ),
                                   ),
                                 ],
                               ),
                             ],
-                          ),
-                        );
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // テンキー（一番下に配置）
-                    _buildCalculatorKeypad(
-                      controller: mode.value == 'round_down' ? unitController : manualDiscountController,
-                      onUpdate: () {
-                        updateCalculation();
-                        setState(() {});
-                      },
-                    ),
-                  ],
+                            
+                            // 手動入力モード
+                            if (mode.value == 'manual') ...[
+                              const Text(
+                                '値引き額:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: manualDiscountController,
+                                      keyboardType: TextInputType.none,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                      onChanged: (_) {
+                                        updateCalculation();
+                                        setState(() {});
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.backspace),
+                                      onPressed: () {
+                                        if (manualDiscountController.text.isNotEmpty) {
+                                          manualDiscountController.text = manualDiscountController.text
+                                              .substring(
+                                                0,
+                                                manualDiscountController.text.length - 1,
+                                              );
+                                          updateCalculation();
+                                          setState(() {});
+                                        }
+                                      },
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            
+                            const SizedBox(height: 16),
+                            ValueListenableBuilder<Map<String, int>>(
+                              valueListenable: calculatedResult,
+                              builder: (context, result, _) {
+                                if (result.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                final fmt = NumberFormat('#,###');
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.blue.shade200),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '計算結果:',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('調整前:'),
+                                          Text(
+                                            '￥${fmt.format(result['before'])}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            mode.value == 'round_down' ? '切り捨て後:' : '調整後:',
+                                          ),
+                                          Text(
+                                            '￥${fmt.format(result['after'])}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.green.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('値引き額:'),
+                                          Text(
+                                            '-￥${fmt.format(result['discount'])}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.orange.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // テンキー（一番下に配置）
+                            _buildCalculatorKeypad(
+                              controller: mode.value == 'round_down' ? unitController : manualDiscountController,
+                              onUpdate: () {
+                                updateCalculation();
+                                setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      // アクションボタン
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text('キャンセル'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                if (_currentInvoice != null) {
+                                  this.setState(() {
+                                    _currentInvoice = _currentInvoice!.copyWith(
+                                      priceAdjustmentType: null,
+                                      priceAdjustmentUnit: null,
+                                    );
+                                  });
+                                  _pushHistory();
+                                }
+                                Navigator.pop(dialogContext);
+                              },
+                              child: const Text('クリア', style: TextStyle(color: Colors.red)),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (_currentInvoice != null) {
+                                  if (mode.value == 'round_down') {
+                                    final unit = int.tryParse(unitController.text);
+                                    if (unit != null && unit > 0) {
+                                      this.setState(() {
+                                        _currentInvoice = _currentInvoice!.copyWith(
+                                          priceAdjustmentType: 'round_down',
+                                          priceAdjustmentUnit: unit,
+                                        );
+                                      });
+                                      _pushHistory();
+                                      Navigator.pop(dialogContext);
+                                    }
+                                  } else {
+                                    final discount = int.tryParse(manualDiscountController.text);
+                                    if (discount != null && discount >= 0) {
+                                      this.setState(() {
+                                        _currentInvoice = _currentInvoice!.copyWith(
+                                          priceAdjustmentType: 'manual',
+                                          priceAdjustmentUnit: discount,
+                                        );
+                                      });
+                                      _pushHistory();
+                                      Navigator.pop(dialogContext);
+                                    }
+                                  }
+                                }
+                              },
+                              child: const Text('設定'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('キャンセル'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (_currentInvoice != null) {
-                      this.setState(() {
-                        _currentInvoice = _currentInvoice!.copyWith(
-                          priceAdjustmentType: null,
-                          priceAdjustmentUnit: null,
-                        );
-                      });
-                      _pushHistory();
-                    }
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text('クリア', style: TextStyle(color: Colors.red)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_currentInvoice != null) {
-                      if (mode.value == 'round_down') {
-                        final unit = int.tryParse(unitController.text);
-                        if (unit != null && unit > 0) {
-                          this.setState(() {
-                            _currentInvoice = _currentInvoice!.copyWith(
-                              priceAdjustmentType: 'round_down',
-                              priceAdjustmentUnit: unit,
-                            );
-                          });
-                          _pushHistory();
-                          Navigator.pop(dialogContext);
-                        }
-                      } else {
-                        final discount = int.tryParse(manualDiscountController.text);
-                        if (discount != null && discount >= 0) {
-                          this.setState(() {
-                            _currentInvoice = _currentInvoice!.copyWith(
-                              priceAdjustmentType: 'manual',
-                              priceAdjustmentUnit: discount,
-                            );
-                          });
-                          _pushHistory();
-                          Navigator.pop(dialogContext);
-                        }
-                      }
-                    }
-                  },
-                  child: const Text('設定'),
-                ),
-              ],
             );
           },
         );
@@ -2145,7 +2163,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     required VoidCallback onUpdate,
   }) {
     return SizedBox(
-      height: 180,
+      height: 160,
       child: GridView.count(
         crossAxisCount: 4,
         childAspectRatio: 1.3,
