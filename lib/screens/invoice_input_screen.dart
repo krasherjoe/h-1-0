@@ -1467,6 +1467,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       return 0;
     }
 
+    if (adjustmentType == 'manual') {
+      return adjustmentUnit;
+    }
+
     final unit = adjustmentUnit;
     final baseAmount = _subTotal - _calculateItemDiscount();
     final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
