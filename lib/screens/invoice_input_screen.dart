@@ -125,7 +125,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   String _customerNameWithHonorific(Customer customer) {
     final base = customer.formalName;
     final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
-    return hasHonorific ? base : "$base ${HonorificCode.toName(customer.title)}";
+    return hasHonorific
+        ? base
+        : "$base ${HonorificCode.toName(customer.title)}";
   }
 
   String _ensureCurrentId() {
@@ -150,11 +152,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     String _typeLabel(DocumentType t) {
       switch (t) {
-        case DocumentType.estimation: return '見積書';
-        case DocumentType.order:      return '受注伝票';
-        case DocumentType.delivery:   return '納品書';
-        case DocumentType.invoice:    return '請求書';
-        case DocumentType.receipt:    return '領収書';
+        case DocumentType.estimation:
+          return '見積書';
+        case DocumentType.order:
+          return '受注伝票';
+        case DocumentType.delivery:
+          return '納品書';
+        case DocumentType.invoice:
+          return '請求書';
+        case DocumentType.receipt:
+          return '領収書';
       }
     }
 
@@ -171,7 +178,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 '現在: ${_typeLabel(currentType)}  →  変更先を選択',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const Divider(),
@@ -213,7 +223,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final clonedItems = _cloneItems(_items, resetIds: true);
     // 案件名に「複写」接頭辞を追加
     final originalSubject = _subjectController.text;
-    final newSubject = originalSubject.isNotEmpty ? '[複写]$originalSubject' : '[複写]';
+    final newSubject = originalSubject.isNotEmpty
+        ? '[複写]$originalSubject'
+        : '[複写]';
 
     setState(() {
       _currentId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -604,7 +616,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text("${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}"),
+          child: Text(
+            "${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}",
+          ),
         ),
       ),
       actions: [
@@ -617,65 +631,65 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           icon: AnimatedScale(
             scale: _showCopyBadge ? 1.3 : 1.0,
             duration: const Duration(milliseconds: 150),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.all(_showCopyBadge ? 8 : 0),
-                decoration: BoxDecoration(
-                  color: _showCopyBadge
-                      ? Colors.green.withOpacity(0.3)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                  border: _showCopyBadge
-                      ? Border.all(color: Colors.green, width: 2)
-                      : null,
-                ),
-                child: Icon(
-                  _showCopyBadge ? Icons.check : Icons.copy,
-                  color: _showCopyBadge ? Colors.green : null,
-                ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.all(_showCopyBadge ? 8 : 0),
+              decoration: BoxDecoration(
+                color: _showCopyBadge
+                    ? Colors.green.withOpacity(0.3)
+                    : Colors.transparent,
+                shape: BoxShape.circle,
+                border: _showCopyBadge
+                    ? Border.all(color: Colors.green, width: 2)
+                    : null,
+              ),
+              child: Icon(
+                _showCopyBadge ? Icons.check : Icons.copy,
+                color: _showCopyBadge ? Colors.green : null,
               ),
             ),
-            tooltip: "コピーして新規",
-            onPressed: () async {
-              // コピーエフェクト（派手に）
-              setState(() => _showCopyBadge = true);
-              await Future.delayed(const Duration(milliseconds: 500));
-              setState(() => _showCopyBadge = false);
-              _copyAsNew();
-            },
           ),
-          if (_isLocked)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Icon(Icons.lock, color: Colors.white),
-            )
-          else if (_isViewMode)
+          tooltip: "コピーして新規",
+          onPressed: () async {
+            // コピーエフェクト（派手に）
+            setState(() => _showCopyBadge = true);
+            await Future.delayed(const Duration(milliseconds: 500));
+            setState(() => _showCopyBadge = false);
+            _copyAsNew();
+          },
+        ),
+        if (_isLocked)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(Icons.lock, color: Colors.white),
+          )
+        else if (_isViewMode)
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: "編集モードにする",
+            onPressed: () => setState(() => _isViewMode = false),
+          )
+        else ...[
+          IconButton(
+            icon: const Icon(Icons.undo),
+            onPressed: _canUndo ? _undo : null,
+            tooltip: "元に戻す",
+          ),
+          IconButton(
+            icon: const Icon(Icons.redo),
+            onPressed: _canRedo ? _redo : null,
+            tooltip: "やり直す",
+          ),
+          if (!_isLocked)
             IconButton(
-              icon: const Icon(Icons.edit),
-              tooltip: "編集モードにする",
-              onPressed: () => setState(() => _isViewMode = false),
-            )
-          else ...[
-            IconButton(
-              icon: const Icon(Icons.undo),
-              onPressed: _canUndo ? _undo : null,
-              tooltip: "元に戻す",
+              icon: const Icon(Icons.save),
+              tooltip: "保存",
+              onPressed: _savingNotifier.value
+                  ? null
+                  : () => _saveInvoice(generatePdf: false),
             ),
-            IconButton(
-              icon: const Icon(Icons.redo),
-              onPressed: _canRedo ? _redo : null,
-              tooltip: "やり直す",
-            ),
-            if (!_isLocked)
-              IconButton(
-                icon: const Icon(Icons.save),
-                tooltip: "保存",
-                onPressed: _savingNotifier.value
-                    ? null
-                    : () => _saveInvoice(generatePdf: false),
-              ),
-          ],
-    ],
+        ],
+      ],
     );
 
     // 閲覧モードのみZoomableAppBarでラップ（編集モードは入力フィールドと競合するため）
@@ -782,7 +796,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       child: GestureDetector(
         // タイトルバー左右スワイプでコンテンツをズーム
         onHorizontalDragStart: (details) {
-          _titleBarStartScale = _transformationController.value.getMaxScaleOnAxis();
+          _titleBarStartScale = _transformationController.value
+              .getMaxScaleOnAxis();
           _titleBarStartX = details.globalPosition.dx;
         },
         onHorizontalDragUpdate: (details) {
@@ -794,7 +809,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           _transformationController.value = Matrix4.identity()..scale(newScale);
         },
         onHorizontalDragEnd: (details) {
-          _titleBarStartScale = _transformationController.value.getMaxScaleOnAxis();
+          _titleBarStartScale = _transformationController.value
+              .getMaxScaleOnAxis();
         },
         behavior: HitTestBehavior.translucent,
         child: appBar, // AppBarはそのまま表示（拡大縮小しない）
@@ -854,7 +870,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 18,
+                    color: Colors.indigo,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     "伝票日付: ${fmt.format(_selectedDate)}",
@@ -902,7 +922,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     ),
                   if (!_isViewMode && !_isLocked) ...[
                     const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right, size: 18, color: Colors.indigo),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: Colors.indigo,
+                    ),
                   ],
                 ],
               ),
@@ -1004,13 +1028,19 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     margin: const EdgeInsets.only(bottom: 6),
                     elevation: 0.5,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             item.description,
-                            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Row(
@@ -1036,7 +1066,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                               const Spacer(flex: 1),
                               Text(
                                 "= ￥${fmt.format(item.unitPrice * item.quantity)}",
-                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -1077,13 +1110,19 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   margin: const EdgeInsets.only(bottom: 6),
                   elevation: 0.5,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           item.description,
-                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -1099,7 +1138,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   // 値引き表示
-                                  if (item.discountAmount != null && item.discountAmount! > 0)
+                                  if (item.discountAmount != null &&
+                                      item.discountAmount! > 0)
                                     Text(
                                       "値引: -￥${fmt.format(item.discountAmount)}",
                                       style: const TextStyle(
@@ -1108,7 +1148,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                         fontWeight: FontWeight.w500,
                                       ),
                                     )
-                                  else if (item.discountRate != null && item.discountRate! > 0)
+                                  else if (item.discountRate != null &&
+                                      item.discountRate! > 0)
                                     Text(
                                       "値引: ${(item.discountRate! * 100).toStringAsFixed(0)}%",
                                       style: const TextStyle(
@@ -1126,8 +1167,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 children: [
                                   // 値引き入力ボタン
                                   IconButton(
-                                    icon: const Icon(Icons.local_offer, size: 18, color: Colors.orange),
-                                    onPressed: () => _showDiscountDialog(idx, item),
+                                    icon: const Icon(
+                                      Icons.local_offer,
+                                      size: 18,
+                                      color: Colors.orange,
+                                    ),
+                                    onPressed: () =>
+                                        _showDiscountDialog(idx, item),
                                     constraints: const BoxConstraints.tightFor(
                                       width: 32,
                                       height: 32,
@@ -1175,18 +1221,23 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                             ),
                                             onSubmitted: (v) {
                                               final n = int.tryParse(v);
-                                              if (n != null && n >= 1) Navigator.pop(ctx, n);
+                                              if (n != null && n >= 1)
+                                                Navigator.pop(ctx, n);
                                             },
                                           ),
                                           actions: [
                                             TextButton(
-                                              onPressed: () => Navigator.pop(ctx),
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx),
                                               child: const Text('キャンセル'),
                                             ),
                                             TextButton(
                                               onPressed: () {
-                                                final n = int.tryParse(ctrl.text);
-                                                if (n != null && n >= 1) Navigator.pop(ctx, n);
+                                                final n = int.tryParse(
+                                                  ctrl.text,
+                                                );
+                                                if (n != null && n >= 1)
+                                                  Navigator.pop(ctx, n);
                                               },
                                               child: const Text('OK'),
                                             ),
@@ -1194,10 +1245,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                         ),
                                       );
                                       if (result != null) {
-                                        setState(() => _items[idx] = item.copyWith(quantity: result));
+                                        setState(
+                                          () => _items[idx] = item.copyWith(
+                                            quantity: result,
+                                          ),
+                                        );
                                         _pushHistory();
                                         final id = _ensureCurrentId();
-                                        await _editLogRepo.addLog(id, '${item.description} の数量を $result に変更しました');
+                                        await _editLogRepo.addLog(
+                                          id,
+                                          '${item.description} の数量を $result に変更しました',
+                                        );
                                         await _loadEditLogs();
                                       }
                                     },
@@ -1242,7 +1300,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                       setState(() => _items.removeAt(idx));
                                       _pushHistory();
                                       final id = _ensureCurrentId();
-                                      final msg = "商品「${removed.description}」を削除しました";
+                                      final msg =
+                                          "商品「${removed.description}」を削除しました";
                                       await _editLogRepo.addLog(id, msg);
                                       await _loadEditLogs();
                                     },
@@ -1272,7 +1331,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final int subtotal = _subTotal;
     final int itemDiscountAmount = _calculateItemDiscount();
     final int priceAdjustmentDiscount = _calculatePriceAdjustmentDiscount();
-    final int totalDiscountAmount = itemDiscountAmount + priceAdjustmentDiscount;
+    final int totalDiscountAmount =
+        itemDiscountAmount + priceAdjustmentDiscount;
     final int taxableAmount = subtotal - totalDiscountAmount;
     final int tax = _includeTax ? (taxableAmount * _taxRate).floor() : 0;
     final int total = taxableAmount + tax;
@@ -1280,11 +1340,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final useBlue = _summaryIsBlue;
-    final bgColor = useBlue ? Colors.indigo : (isDark ? const Color(0xFF2C2C2C) : Colors.white);
+    final bgColor = useBlue
+        ? Colors.indigo
+        : (isDark ? const Color(0xFF2C2C2C) : Colors.white);
     final borderColor = Colors.transparent;
     final labelColor = useBlue ? Colors.white70 : textColor;
     final totalColor = useBlue ? Colors.white : textColor;
-    final dividerColor = useBlue ? Colors.white24 : (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
+    final dividerColor = useBlue
+        ? Colors.white24
+        : (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
 
     // 数値をフォーマット（0 の場合も "0" として表示）
     String formatAmount(int amount) {
@@ -1341,10 +1405,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 Colors.red.shade300,
               ),
             ],
-            if (priceAdjustmentDiscount > 0 || (!_isViewMode && !_isLocked)) ...[
+            if (priceAdjustmentDiscount > 0 ||
+                (!_isViewMode && !_isLocked)) ...[
               Divider(color: dividerColor),
               GestureDetector(
-                onTap: _isViewMode || _isLocked ? null : () => _showPriceAdjustmentDialog(),
+                onTap: _isViewMode || _isLocked
+                    ? null
+                    : () => _showPriceAdjustmentDialog(),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1363,14 +1430,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: useBlue ? Colors.white : Colors.indigo.shade700,
+                              color: useBlue
+                                  ? Colors.white
+                                  : Colors.indigo.shade700,
                             ),
                           ),
                         const SizedBox(width: 8),
                         Icon(
                           Icons.settings,
                           size: 16,
-                          color: useBlue ? Colors.white : Colors.indigo.shade700,
+                          color: useBlue
+                              ? Colors.white
+                              : Colors.indigo.shade700,
                         ),
                       ],
                     ),
@@ -1379,7 +1450,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               ),
             ],
             Divider(color: dividerColor),
-            _buildSummaryRow("税抜金額", "￥${formatAmount(taxableAmount)}", labelColor),
+            _buildSummaryRow(
+              "税抜金額",
+              "￥${formatAmount(taxableAmount)}",
+              labelColor,
+            ),
             if (tax > 0) ...[
               Divider(color: dividerColor),
               _buildSummaryRow("消費税", "￥${formatAmount(tax)}", labelColor),
@@ -1415,7 +1490,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   int _calculatePriceAdjustmentDiscount() {
     final adjustmentType = _currentInvoice?.priceAdjustmentType;
     final adjustmentUnit = _currentInvoice?.priceAdjustmentUnit;
-    
+
     if (adjustmentType == null || adjustmentUnit == null) {
       return 0;
     }
@@ -1555,7 +1630,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.indigo.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -1564,11 +1642,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.swipe,
-                      size: 16,
-                      color: Colors.indigo,
-                    ),
+                    Icon(Icons.swipe, size: 16, color: Colors.indigo),
                     const SizedBox(width: 6),
                     Text(
                       'タイトルバー横になぞると拡大縮小できます',
@@ -1661,7 +1735,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.13),
+                  color: isDark
+                      ? Colors.black.withOpacity(0.3)
+                      : Colors.black.withOpacity(0.13),
                   blurRadius: 10,
                   spreadRadius: -4,
                   offset: const Offset(0, 2),
@@ -1675,7 +1751,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               children: [
                 Text(
                   "編集ログ (直近1週間)",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textColor),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: textColor,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (_editLogs.isEmpty)
@@ -1707,7 +1787,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 ),
                                 Text(
                                   e.message,
-                                  style: TextStyle(fontSize: 13, color: textColor),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: textColor,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1727,125 +1810,136 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   // 値引き設定ダイアログ
   Future<void> _showDiscountDialog(int index, InvoiceItem item) async {
     final discountType = ValueNotifier<String>(
-      item.discountAmount != null && item.discountAmount! > 0 ? 'amount' : 
-      item.discountRate != null && item.discountRate! > 0 ? 'rate' : 'amount'
+      item.discountAmount != null && item.discountAmount! > 0
+          ? 'amount'
+          : item.discountRate != null && item.discountRate! > 0
+          ? 'rate'
+          : 'amount',
     );
     final amountController = TextEditingController(
-      text: item.discountAmount != null && item.discountAmount! > 0 
-        ? item.discountAmount.toString() 
-        : ''
+      text: item.discountAmount != null && item.discountAmount! > 0
+          ? item.discountAmount.toString()
+          : '',
     );
     final rateController = TextEditingController(
-      text: item.discountRate != null && item.discountRate! > 0 
-        ? (item.discountRate! * 100).toStringAsFixed(0) 
-        : ''
+      text: item.discountRate != null && item.discountRate! > 0
+          ? (item.discountRate! * 100).toStringAsFixed(0)
+          : '',
     );
 
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${item.description}の値引き'),
-        content: ValueListenableBuilder<String>(
-          valueListenable: discountType,
-          builder: (context, type, child) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 値引きタイプ選択
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'amount', label: Text('定額')),
-                  ButtonSegment(value: 'rate', label: Text('割合')),
-                ],
-                selected: {type},
-                onSelectionChanged: (Set<String> newSelection) {
-                  discountType.value = newSelection.first;
-                },
-              ),
-              const SizedBox(height: 16),
-              // 定額値引き入力
-              if (type == 'amount')
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: '値引き額',
-                    suffixText: '円',
-                    border: OutlineInputBorder(),
-                  ),
-                )
-              else
-                TextField(
-                  controller: rateController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: '割引率',
-                    suffixText: '%',
-                    border: OutlineInputBorder(),
-                  ),
+    try {
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('${item.description}の値引き'),
+          content: ValueListenableBuilder<String>(
+            valueListenable: discountType,
+            builder: (context, type, child) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 値引きタイプ選択
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'amount', label: Text('定額')),
+                    ButtonSegment(value: 'rate', label: Text('割合')),
+                  ],
+                  selected: {type},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    discountType.value = newSelection.first;
+                  },
                 ),
-            ],
+                const SizedBox(height: 16),
+                // 定額値引き入力
+                if (type == 'amount')
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: '値引き額',
+                      suffixText: '円',
+                      border: OutlineInputBorder(),
+                    ),
+                  )
+                else
+                  TextField(
+                    controller: rateController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: '割引率',
+                      suffixText: '%',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (!mounted) return;
+                Navigator.pop(context);
+              },
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (!mounted) return;
+                Navigator.pop(context);
+                // 値引きをクリア
+                setState(() {
+                  _items[index] = InvoiceItem(
+                    id: item.id,
+                    productId: item.productId,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                  );
+                });
+                _pushHistory();
+              },
+              child: const Text('クリア', style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (!mounted) return;
+                Navigator.pop(context);
+                if (discountType.value == 'amount') {
+                  final amount = int.tryParse(amountController.text);
+                  setState(() {
+                    _items[index] = InvoiceItem(
+                      id: item.id,
+                      productId: item.productId,
+                      description: item.description,
+                      quantity: item.quantity,
+                      unitPrice: item.unitPrice,
+                      discountAmount: amount,
+                    );
+                  });
+                } else {
+                  final rate = double.tryParse(rateController.text);
+                  setState(() {
+                    _items[index] = InvoiceItem(
+                      id: item.id,
+                      productId: item.productId,
+                      description: item.description,
+                      quantity: item.quantity,
+                      unitPrice: item.unitPrice,
+                      discountRate: rate != null ? rate / 100 : null,
+                    );
+                  });
+                }
+                _pushHistory();
+              },
+              child: const Text('設定'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // 値引きをクリア
-              setState(() {
-                _items[index] = InvoiceItem(
-                  id: item.id,
-                  productId: item.productId,
-                  description: item.description,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                );
-              });
-              _pushHistory();
-            },
-            child: const Text('クリア', style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (discountType.value == 'amount') {
-                final amount = int.tryParse(amountController.text);
-                setState(() {
-                  _items[index] = InvoiceItem(
-                    id: item.id,
-                    productId: item.productId,
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    discountAmount: amount,
-                  );
-                });
-              } else {
-                final rate = double.tryParse(rateController.text);
-                setState(() {
-                  _items[index] = InvoiceItem(
-                    id: item.id,
-                    productId: item.productId,
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    discountRate: rate != null ? rate / 100 : null,
-                  );
-                });
-              }
-              _pushHistory();
-            },
-            child: const Text('設定'),
-          ),
-        ],
-      ),
-    );
-
-    amountController.dispose();
-    rateController.dispose();
+      );
+    } finally {
+      amountController.dispose();
+      rateController.dispose();
+      discountType.dispose();
+    }
   }
 
   // 価格調整ダイアログ
@@ -1861,13 +1955,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         taxRate: _taxRate,
         isDraft: _isDraft,
         isLocked: _isLocked,
-        subject: _subjectController.text.isEmpty ? null : _subjectController.text,
+        subject: _subjectController.text.isEmpty
+            ? null
+            : _subjectController.text,
         includeTax: _includeTax,
       );
     }
 
     final unitController = TextEditingController(
-      text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000'
+      text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000',
     );
     final calculatedResult = ValueNotifier<Map<String, int>>({});
 
@@ -1910,7 +2006,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('切り捨て単位:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        '切り捨て単位:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -1942,7 +2041,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                               onPressed: () {
                                 if (unitController.text.isNotEmpty) {
                                   unitController.text = unitController.text
-                                      .substring(0, unitController.text.length - 1);
+                                      .substring(
+                                        0,
+                                        unitController.text.length - 1,
+                                      );
                                   updateCalculation();
                                   setState(() {});
                                 }
@@ -1961,7 +2063,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           mainAxisSpacing: 4,
                           crossAxisSpacing: 4,
                           children: [
-                            for (final num in ['1', '10', '100', '1000', '10000'])
+                            for (final num in [
+                              '1',
+                              '10',
+                              '100',
+                              '1000',
+                              '10000',
+                            ])
                               ElevatedButton(
                                 onPressed: () {
                                   unitController.text = num;
@@ -1973,7 +2081,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   backgroundColor: Colors.blue.shade100,
                                   foregroundColor: Colors.blue.shade900,
                                 ),
-                                child: Text(num, style: const TextStyle(fontSize: 11)),
+                                child: Text(
+                                  num,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
                               ),
                           ],
                         ),
@@ -2002,18 +2113,22 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text('調整前:'),
                                     Text(
                                       '￥${fmt.format(result['before'])}',
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text('切り捨て後:'),
                                     Text(
@@ -2027,7 +2142,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text('値引き額:'),
                                     Text(
