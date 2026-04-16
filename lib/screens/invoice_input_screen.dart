@@ -1137,27 +1137,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                     style: const TextStyle(fontSize: 12.5),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  // 値引き表示
-                                  if (item.discountAmount != null &&
-                                      item.discountAmount! > 0)
-                                    Text(
-                                      "値引: -￥${fmt.format(item.discountAmount)}",
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    )
-                                  else if (item.discountRate != null &&
-                                      item.discountRate! > 0)
-                                    Text(
-                                      "値引: ${(item.discountRate! * 100).toStringAsFixed(0)}%",
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
                                 ],
                               ),
                             ),
@@ -1165,22 +1144,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // 値引き入力ボタン
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.local_offer,
-                                      size: 18,
-                                      color: Colors.orange,
-                                    ),
-                                    onPressed: () =>
-                                        _showDiscountDialog(idx, item),
-                                    constraints: const BoxConstraints.tightFor(
-                                      width: 32,
-                                      height: 32,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    tooltip: '値引き設定',
-                                  ),
                                   IconButton(
                                     icon: const Icon(Icons.remove, size: 18),
                                     onPressed: () async {
@@ -1805,141 +1768,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ),
       ],
     );
-  }
-
-  // 値引き設定ダイアログ
-  Future<void> _showDiscountDialog(int index, InvoiceItem item) async {
-    final discountType = ValueNotifier<String>(
-      item.discountAmount != null && item.discountAmount! > 0
-          ? 'amount'
-          : item.discountRate != null && item.discountRate! > 0
-          ? 'rate'
-          : 'amount',
-    );
-    final amountController = TextEditingController(
-      text: item.discountAmount != null && item.discountAmount! > 0
-          ? item.discountAmount.toString()
-          : '',
-    );
-    final rateController = TextEditingController(
-      text: item.discountRate != null && item.discountRate! > 0
-          ? (item.discountRate! * 100).toStringAsFixed(0)
-          : '',
-    );
-
-    try {
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('${item.description}の値引き'),
-          content: ValueListenableBuilder<String>(
-            valueListenable: discountType,
-            builder: (context, type, child) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 値引きタイプ選択
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'amount', label: Text('定額')),
-                    ButtonSegment(value: 'rate', label: Text('割合')),
-                  ],
-                  selected: {type},
-                  onSelectionChanged: (Set<String> newSelection) {
-                    discountType.value = newSelection.first;
-                  },
-                ),
-                const SizedBox(height: 16),
-                // 定額値引き入力
-                if (type == 'amount')
-                  TextField(
-                    controller: amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: '値引き額',
-                      suffixText: '円',
-                      border: OutlineInputBorder(),
-                    ),
-                  )
-                else
-                  TextField(
-                    controller: rateController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: '割引率',
-                      suffixText: '%',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (!mounted) return;
-                Navigator.pop(context);
-              },
-              child: const Text('キャンセル'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (!mounted) return;
-                Navigator.pop(context);
-                // 値引きをクリア
-                setState(() {
-                  _items[index] = InvoiceItem(
-                    id: item.id,
-                    productId: item.productId,
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                  );
-                });
-                _pushHistory();
-              },
-              child: const Text('クリア', style: TextStyle(color: Colors.red)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (!mounted) return;
-                Navigator.pop(context);
-                if (discountType.value == 'amount') {
-                  final amount = int.tryParse(amountController.text);
-                  setState(() {
-                    _items[index] = InvoiceItem(
-                      id: item.id,
-                      productId: item.productId,
-                      description: item.description,
-                      quantity: item.quantity,
-                      unitPrice: item.unitPrice,
-                      discountAmount: amount,
-                    );
-                  });
-                } else {
-                  final rate = double.tryParse(rateController.text);
-                  setState(() {
-                    _items[index] = InvoiceItem(
-                      id: item.id,
-                      productId: item.productId,
-                      description: item.description,
-                      quantity: item.quantity,
-                      unitPrice: item.unitPrice,
-                      discountRate: rate != null ? rate / 100 : null,
-                    );
-                  });
-                }
-                _pushHistory();
-              },
-              child: const Text('設定'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      amountController.dispose();
-      rateController.dispose();
-      discountType.dispose();
-    }
   }
 
   // 価格調整ダイアログ
