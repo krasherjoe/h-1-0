@@ -1799,29 +1799,48 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       );
     }
 
+    final mode = ValueNotifier<String>(_currentInvoice?.priceAdjustmentType ?? 'round_down'); // 'round_down' or 'manual'
     final unitController = TextEditingController(
       text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000',
+    );
+    final manualDiscountController = TextEditingController(
+      text: (_currentInvoice?.priceAdjustmentType == 'manual' ? _currentInvoice?.priceAdjustmentUnit?.toString() : '0') ?? '0',
     );
     final calculatedResult = ValueNotifier<Map<String, int>>({});
 
     void updateCalculation() {
-      final unit = int.tryParse(unitController.text);
-      if (unit == null || unit <= 0) {
-        calculatedResult.value = {};
-        return;
+      if (mode.value == 'round_down') {
+        final unit = int.tryParse(unitController.text);
+        if (unit == null || unit <= 0) {
+          calculatedResult.value = {};
+          return;
+        }
+
+        final baseAmount = _subTotal - _calculateItemDiscount();
+        final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
+        final totalBeforeAdjustment = baseAmount + taxAmount;
+        final adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
+        final discount = totalBeforeAdjustment - adjustedTotal;
+
+        calculatedResult.value = {
+          'before': totalBeforeAdjustment,
+          'after': adjustedTotal,
+          'discount': discount,
+        };
+      } else {
+        // Manual mode
+        final discount = int.tryParse(manualDiscountController.text) ?? 0;
+        final baseAmount = _subTotal - _calculateItemDiscount();
+        final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
+        final totalBeforeAdjustment = baseAmount + taxAmount;
+        final adjustedTotal = totalBeforeAdjustment - discount;
+
+        calculatedResult.value = {
+          'before': totalBeforeAdjustment,
+          'after': adjustedTotal,
+          'discount': discount,
+        };
       }
-
-      final baseAmount = _subTotal - _calculateItemDiscount();
-      final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
-      final totalBeforeAdjustment = baseAmount + taxAmount;
-      final adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
-      final discount = totalBeforeAdjustment - adjustedTotal;
-
-      calculatedResult.value = {
-        'before': totalBeforeAdjustment,
-        'after': adjustedTotal,
-        'discount': discount,
-      };
     }
 
     updateCalculation();
@@ -1837,95 +1856,153 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             return AlertDialog(
               title: const Text('価格調整値引き設定'),
               content: SizedBox(
-                width: 300,
+                width: 320,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '切り捨て単位:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: unitController,
-                              keyboardType: TextInputType.none,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              onChanged: (_) {
-                                updateCalculation();
-                                setState(() {});
-                              },
-                            ),
+                      // モード切り替え
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'round_down',
+                            label: Text('切り捨て計算'),
                           ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: IconButton(
-                              icon: const Icon(Icons.backspace),
-                              onPressed: () {
-                                if (unitController.text.isNotEmpty) {
-                                  unitController.text = unitController.text
-                                      .substring(
-                                        0,
-                                        unitController.text.length - 1,
-                                      );
-                                  updateCalculation();
-                                  setState(() {});
-                                }
-                              },
-                              padding: EdgeInsets.zero,
-                            ),
+                          ButtonSegment(
+                            value: 'manual',
+                            label: Text('手動入力'),
                           ),
                         ],
+                        selected: {mode.value},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          mode.value = newSelection.first;
+                          updateCalculation();
+                          setState(() {});
+                        },
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 50,
-                        child: GridView.count(
-                          crossAxisCount: 5,
-                          childAspectRatio: 1.2,
-                          mainAxisSpacing: 4,
-                          crossAxisSpacing: 4,
+                      const SizedBox(height: 16),
+                      
+                      // 切り捨て計算モード
+                      if (mode.value == 'round_down') ...[
+                        const Text(
+                          '切り捨て単位:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
                           children: [
-                            for (final num in [
-                              '1',
-                              '10',
-                              '100',
-                              '1000',
-                              '10000',
-                            ])
-                              ElevatedButton(
-                                onPressed: () {
-                                  unitController.text = num;
+                            Expanded(
+                              child: TextField(
+                                controller: unitController,
+                                keyboardType: TextInputType.none,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onChanged: (_) {
                                   updateCalculation();
                                   setState(() {});
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  backgroundColor: Colors.blue.shade100,
-                                  foregroundColor: Colors.blue.shade900,
-                                ),
-                                child: Text(
-                                  num,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
                               ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: IconButton(
+                                icon: const Icon(Icons.backspace),
+                                onPressed: () {
+                                  if (unitController.text.isNotEmpty) {
+                                    unitController.text = unitController.text
+                                        .substring(
+                                          0,
+                                          unitController.text.length - 1,
+                                        );
+                                    updateCalculation();
+                                    setState(() {});
+                                  }
+                                },
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        _buildCalculatorKeypad(
+                          controller: unitController,
+                          onUpdate: () {
+                            updateCalculation();
+                            setState(() {});
+                          },
+                        ),
+                      ],
+                      
+                      // 手動入力モード
+                      if (mode.value == 'manual') ...[
+                        const Text(
+                          '値引き額:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: manualDiscountController,
+                                keyboardType: TextInputType.none,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onChanged: (_) {
+                                  updateCalculation();
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: IconButton(
+                                icon: const Icon(Icons.backspace),
+                                onPressed: () {
+                                  if (manualDiscountController.text.isNotEmpty) {
+                                    manualDiscountController.text = manualDiscountController.text
+                                        .substring(
+                                          0,
+                                          manualDiscountController.text.length - 1,
+                                        );
+                                    updateCalculation();
+                                    setState(() {});
+                                  }
+                                },
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildCalculatorKeypad(
+                          controller: manualDiscountController,
+                          onUpdate: () {
+                            updateCalculation();
+                            setState(() {});
+                          },
+                        ),
+                      ],
+                      
                       const SizedBox(height: 16),
                       ValueListenableBuilder<Map<String, int>>(
                         valueListenable: calculatedResult,
@@ -1967,7 +2044,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text('切り捨て後:'),
+                                    Text(
+                                      mode.value == 'round_down' ? '切り捨て後:' : '調整後:',
+                                    ),
                                     Text(
                                       '￥${fmt.format(result['after'])}',
                                       style: TextStyle(
@@ -2023,16 +2102,32 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final unit = int.tryParse(unitController.text);
-                    if (unit != null && unit > 0 && _currentInvoice != null) {
-                      this.setState(() {
-                        _currentInvoice = _currentInvoice!.copyWith(
-                          priceAdjustmentType: 'round_down',
-                          priceAdjustmentUnit: unit,
-                        );
-                      });
-                      _pushHistory();
-                      Navigator.pop(dialogContext);
+                    if (_currentInvoice != null) {
+                      if (mode.value == 'round_down') {
+                        final unit = int.tryParse(unitController.text);
+                        if (unit != null && unit > 0) {
+                          this.setState(() {
+                            _currentInvoice = _currentInvoice!.copyWith(
+                              priceAdjustmentType: 'round_down',
+                              priceAdjustmentUnit: unit,
+                            );
+                          });
+                          _pushHistory();
+                          Navigator.pop(dialogContext);
+                        }
+                      } else {
+                        final discount = int.tryParse(manualDiscountController.text);
+                        if (discount != null && discount >= 0) {
+                          this.setState(() {
+                            _currentInvoice = _currentInvoice!.copyWith(
+                              priceAdjustmentType: 'manual',
+                              priceAdjustmentUnit: discount,
+                            );
+                          });
+                          _pushHistory();
+                          Navigator.pop(dialogContext);
+                        }
+                      }
                     }
                   },
                   child: const Text('設定'),
@@ -2046,7 +2141,93 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     if (mounted) {
       unitController.dispose();
+      manualDiscountController.dispose();
     }
+  }
+
+  Widget _buildCalculatorKeypad({
+    required TextEditingController controller,
+    required VoidCallback onUpdate,
+  }) {
+    return SizedBox(
+      height: 180,
+      child: GridView.count(
+        crossAxisCount: 4,
+        childAspectRatio: 1.3,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        children: [
+          for (final num in ['7', '8', '9', 'C'])
+            ElevatedButton(
+              onPressed: () {
+                if (num == 'C') {
+                  controller.text = '';
+                } else {
+                  controller.text += num;
+                }
+                onUpdate();
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                backgroundColor: num == 'C' ? Colors.red.shade100 : Colors.blue.shade100,
+                foregroundColor: num == 'C' ? Colors.red.shade900 : Colors.blue.shade900,
+              ),
+              child: Text(
+                num,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          for (final num in ['4', '5', '6', '00'])
+            ElevatedButton(
+              onPressed: () {
+                controller.text += num;
+                onUpdate();
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                backgroundColor: Colors.blue.shade100,
+                foregroundColor: Colors.blue.shade900,
+              ),
+              child: Text(
+                num,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          for (final num in ['1', '2', '3', '000'])
+            ElevatedButton(
+              onPressed: () {
+                controller.text += num;
+                onUpdate();
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                backgroundColor: Colors.blue.shade100,
+                foregroundColor: Colors.blue.shade900,
+              ),
+              child: Text(
+                num,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          for (final num in ['0', '0000'])
+            ElevatedButton(
+              onPressed: () {
+                controller.text += num;
+                onUpdate();
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                backgroundColor: Colors.blue.shade100,
+                foregroundColor: Colors.blue.shade900,
+              ),
+              child: Text(
+                num,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

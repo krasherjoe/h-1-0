@@ -260,6 +260,11 @@ class Invoice {
       return 0;
     }
 
+    // 手動入力モードの場合はpriceAdjustmentUnitをそのまま値引き額として返す
+    if (priceAdjustmentType == 'manual') {
+      return priceAdjustmentUnit!;
+    }
+
     final unit = priceAdjustmentUnit!;
     final baseAmount = subtotal - _regularDiscount;
     final taxAmount = includeTax ? (baseAmount * taxRate).floor() : 0;
