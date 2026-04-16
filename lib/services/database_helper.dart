@@ -1591,7 +1591,14 @@ class DatabaseHelper {
         is_locked INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
         is_synced INTEGER DEFAULT 0,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        valid_from TEXT,
+        valid_to TEXT,
+        is_current INTEGER DEFAULT 1,
+        version INTEGER DEFAULT 1,
+        content_hash TEXT,
+        previous_hash TEXT,
+        next_version_id TEXT
       )
     ''');
 
@@ -1651,6 +1658,14 @@ class DatabaseHelper {
         is_locked INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
         odoo_id TEXT,
+        description TEXT,
+        tags TEXT,
+        valid_from TEXT,
+        valid_to TEXT,
+        is_current INTEGER DEFAULT 1,
+        version INTEGER DEFAULT 1,
+        content_hash TEXT,
+        previous_hash TEXT,
         FOREIGN KEY(category_id) REFERENCES product_categories(id)
       )
     ''');
@@ -1708,6 +1723,12 @@ class DatabaseHelper {
         company_seal_hash TEXT,
         meta_json TEXT,
         meta_hash TEXT,
+        is_receipt_issued INTEGER DEFAULT 0,
+        receipt_issued_at TEXT,
+        total_discount_amount INTEGER DEFAULT 0,
+        total_discount_rate REAL DEFAULT 0,
+        price_adjustment_type TEXT,
+        price_adjustment_unit INTEGER,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
@@ -1730,6 +1751,8 @@ class DatabaseHelper {
         description TEXT NOT NULL,
         quantity INTEGER NOT NULL,
         unit_price INTEGER NOT NULL,
+        discount_amount INTEGER DEFAULT 0,
+        discount_rate REAL DEFAULT 0,
         FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE
       )
     ''');
