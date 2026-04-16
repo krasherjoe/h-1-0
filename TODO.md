@@ -258,6 +258,26 @@ adb uninstall com.example.h_1
 
 ## 🔴 緊急・高優先度
 
+### 完了
+
+- [x] IV:請求書入力画面の個別商品値引き機能削除 (2026-04-16, commit: df976bc)
+  - 関連：`lib/screens/invoice_input_screen.dart`
+  - 内容:
+    - `_showDiscountDialog()` 関数全体（1811 行目〜）を削除
+    - 個別商品の値引き表示 UI（discountAmount/discountRate）を削除
+    - LocalOffer アイコンボタン（値引き設定）を削除
+    - 全体的な値引き機能は既存動作のまま維持
+    - `flutter analyze --no-fatal-infos` 実行（エラーなし）
+
+### 完了 (直近 7 日)
+  - 関連：`lib/screens/invoice_input_screen.dart`
+  - 内容:
+    - `_showDiscountDialog()` 関数全体（1811 行目〜）を削除
+    - 個別商品の値引き表示 UI（discountAmount/discountRate）を削除
+    - LocalOffer アイコンボタン（値引き設定）を削除
+    - 全体的な値引き機能は既存動作のまま維持
+    - `flutter analyze --no-fatal-infos` 実行（エラーなし）
+
 ### 進行中
 
 - [ ] C2:顧客マスター HASH チェーンバグ修正 (2026-04-14, **修復画面テスト実行中**)
