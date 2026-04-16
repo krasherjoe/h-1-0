@@ -1854,18 +1854,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Dialog(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.85,
-                ),
-                child: SizedBox(
-                  width: 360,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: 360,
+                height: MediaQuery.of(context).size.height * 0.8,
+                child: Column(
+                  children: [
+                    // 上部：スクロール可能なコンテンツ
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1889,7 +1886,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 setState(() {});
                               },
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             
                             // 切り捨て計算モード
                             if (mode.value == 'round_down') ...[
@@ -1995,7 +1992,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                               ),
                             ],
                             
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             ValueListenableBuilder<Map<String, int>>(
                               valueListenable: calculatedResult,
                               builder: (context, result, _) {
@@ -2004,7 +2001,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 }
                                 final fmt = NumberFormat('#,###');
                                 return Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(8),
@@ -2013,11 +2010,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        '計算結果:',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 8),
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -2068,82 +2060,82 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 );
                               },
                             ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            // テンキー（一番下に配置）
-                            _buildCalculatorKeypad(
-                              controller: mode.value == 'round_down' ? unitController : manualDiscountController,
-                              onUpdate: () {
-                                updateCalculation();
-                                setState(() {});
-                              },
-                            ),
                           ],
                         ),
                       ),
-                      // アクションボタン
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dialogContext),
-                              child: const Text('キャンセル'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                if (_currentInvoice != null) {
-                                  this.setState(() {
-                                    _currentInvoice = _currentInvoice!.copyWith(
-                                      priceAdjustmentType: null,
-                                      priceAdjustmentUnit: null,
-                                    );
-                                  });
-                                  _pushHistory();
-                                }
-                                Navigator.pop(dialogContext);
-                              },
-                              child: const Text('クリア', style: TextStyle(color: Colors.red)),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (_currentInvoice != null) {
-                                  if (mode.value == 'round_down') {
-                                    final unit = int.tryParse(unitController.text);
-                                    if (unit != null && unit > 0) {
-                                      this.setState(() {
-                                        _currentInvoice = _currentInvoice!.copyWith(
-                                          priceAdjustmentType: 'round_down',
-                                          priceAdjustmentUnit: unit,
-                                        );
-                                      });
-                                      _pushHistory();
-                                      Navigator.pop(dialogContext);
-                                    }
-                                  } else {
-                                    final discount = int.tryParse(manualDiscountController.text);
-                                    if (discount != null && discount >= 0) {
-                                      this.setState(() {
-                                        _currentInvoice = _currentInvoice!.copyWith(
-                                          priceAdjustmentType: 'manual',
-                                          priceAdjustmentUnit: discount,
-                                        );
-                                      });
-                                      _pushHistory();
-                                      Navigator.pop(dialogContext);
-                                    }
+                    ),
+                    // 中部：テンキー（固定・スクロールしない）
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildCalculatorKeypad(
+                        controller: mode.value == 'round_down' ? unitController : manualDiscountController,
+                        onUpdate: () {
+                          updateCalculation();
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    // 下部：アクションボタン（固定）
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('キャンセル'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              if (_currentInvoice != null) {
+                                this.setState(() {
+                                  _currentInvoice = _currentInvoice!.copyWith(
+                                    priceAdjustmentType: null,
+                                    priceAdjustmentUnit: null,
+                                  );
+                                });
+                                _pushHistory();
+                              }
+                              Navigator.pop(dialogContext);
+                            },
+                            child: const Text('クリア', style: TextStyle(color: Colors.red)),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              if (_currentInvoice != null) {
+                                if (mode.value == 'round_down') {
+                                  final unit = int.tryParse(unitController.text);
+                                  if (unit != null && unit > 0) {
+                                    this.setState(() {
+                                      _currentInvoice = _currentInvoice!.copyWith(
+                                        priceAdjustmentType: 'round_down',
+                                        priceAdjustmentUnit: unit,
+                                      );
+                                    });
+                                    _pushHistory();
+                                    Navigator.pop(dialogContext);
+                                  }
+                                } else {
+                                  final discount = int.tryParse(manualDiscountController.text);
+                                  if (discount != null && discount >= 0) {
+                                    this.setState(() {
+                                      _currentInvoice = _currentInvoice!.copyWith(
+                                        priceAdjustmentType: 'manual',
+                                        priceAdjustmentUnit: discount,
+                                      );
+                                    });
+                                    _pushHistory();
+                                    Navigator.pop(dialogContext);
                                   }
                                 }
-                              },
-                              child: const Text('設定'),
-                            ),
-                          ],
-                        ),
+                              }
+                            },
+                            child: const Text('設定'),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -2151,22 +2143,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         );
       },
     );
-
-    if (mounted) {
-      unitController.dispose();
-      manualDiscountController.dispose();
-    }
   }
 
   Widget _buildCalculatorKeypad({
     required TextEditingController controller,
     required VoidCallback onUpdate,
   }) {
-    return SizedBox(
-      height: 160,
-      child: GridView.count(
+    return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: 4,
-        childAspectRatio: 1.3,
+        childAspectRatio: 2.0,
         mainAxisSpacing: 4,
         crossAxisSpacing: 4,
         children: [
@@ -2239,7 +2226,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               ),
             ),
         ],
-      ),
     );
   }
 }
