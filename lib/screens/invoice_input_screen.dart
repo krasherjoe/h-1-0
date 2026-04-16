@@ -810,6 +810,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         minScale: 1.0,
         maxScale: 2.0,
         boundaryMargin: const EdgeInsets.all(100),
+        constrained: true,
         child: content.body!,
       ),
     );
