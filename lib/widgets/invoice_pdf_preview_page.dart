@@ -135,6 +135,41 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     }
   }
 
+  Widget _ppButton({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    VoidCallback? onPressed,
+    VoidCallback? onLongPress,
+    Color? color,
+  }) {
+    final bg = color ?? Colors.blue;
+    return Expanded(
+      child: ElevatedButton(
+        onPressed: enabled ? onPressed : null,
+        onLongPress: enabled ? onLongPress : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: enabled ? bg : null,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveIsLocked = widget.isLocked || _issued;
@@ -191,112 +226,81 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Row(
                     children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _canFormalIssue
-                              ? () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('正式発行するには長押ししてください'),
-                                    ),
-                                  );
-                                }
-                              : null,
-                          onLongPress: _canFormalIssue
-                              ? () async {
-                                  final confirmed = await _showFormalIssueWarning(
-                                    context,
-                                  );
-                                  if (!confirmed) return;
-                                  final ok = await widget.onFormalIssue!();
-                                  if (ok && mounted) {
-                                    setState(() => _issued = true);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('正式発行が完了しました'),
-                                        ),
-                                      );
-                                    }
+                      _ppButton(
+                        icon: Icons.check_circle_outline,
+                        label: (!isDraft || effectiveIsLocked) ? '正式発行🔒' : '正式発行',
+                        color: Colors.orange,
+                        enabled: _canFormalIssue,
+                        onPressed: _canFormalIssue
+                            ? () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('正式発行するには長押ししてください'),
+                                  ),
+                                );
+                              }
+                            : null,
+                        onLongPress: _canFormalIssue
+                            ? () async {
+                                final confirmed =
+                                    await _showFormalIssueWarning(context);
+                                if (!confirmed) return;
+                                final ok = await widget.onFormalIssue!();
+                                if (ok && mounted) {
+                                  setState(() => _issued = true);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('正式発行が完了しました'),
+                                      ),
+                                    );
                                   }
                                 }
-                              : null,
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Text("正式発行"),
-                              if (!isDraft || effectiveIsLocked)
-                                const Positioned(
-                                  right: 0,
-                                  child: Icon(
-                                    Icons.lock,
-                                    size: 16,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
+                              }
+                            : null,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              (widget.showShare && (!isDraft || effectiveIsLocked))
-                              ? () async {
-                                  final bytes = await _buildPdfBytes();
-                                  final fileName =
-                                      widget.invoice.mailAttachmentFileName;
-                                  await Printing.sharePdf(
-                                    bytes: bytes,
-                                    filename: fileName,
-                                  );
-                                }
-                              : null,
-                          icon: const Icon(Icons.share),
-                          label: const Text("共有"),
-                        ),
+                      _ppButton(
+                        icon: Icons.share,
+                        label: '共有',
+                        enabled: widget.showShare && (!isDraft || effectiveIsLocked),
+                        onPressed: (widget.showShare && (!isDraft || effectiveIsLocked))
+                            ? () async {
+                                final bytes = await _buildPdfBytes();
+                                await Printing.sharePdf(
+                                  bytes: bytes,
+                                  filename: widget.invoice.mailAttachmentFileName,
+                                );
+                              }
+                            : null,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              (widget.showEmail && (!isDraft || effectiveIsLocked))
-                              ? () async {
-                                  await _sendMail(context);
-                                }
-                              : null,
-                          icon: const Icon(Icons.mail_outline),
-                          label: const Text("メール"),
-                        ),
+                      _ppButton(
+                        icon: Icons.mail_outline,
+                        label: 'メール',
+                        enabled: widget.showEmail && (!isDraft || effectiveIsLocked),
+                        onPressed: (widget.showEmail && (!isDraft || effectiveIsLocked))
+                            ? () async => _sendMail(context)
+                            : null,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: widget.showPrint
-                              ? () async {
-                                  await Printing.layoutPdf(
-                                    onLayout: (format) async =>
-                                        await _buildPdfBytes(),
-                                  );
-                                }
-                              : null,
-                          icon: const Icon(Icons.print),
-                          label: const Text("印刷"),
-                        ),
+                      _ppButton(
+                        icon: Icons.print,
+                        label: '印刷',
+                        enabled: widget.showPrint,
+                        onPressed: widget.showPrint
+                            ? () async {
+                                await Printing.layoutPdf(
+                                  onLayout: (_) async => _buildPdfBytes(),
+                                );
+                              }
+                            : null,
                       ),
                     ],
                   ),
-                ),
+                )
               ),
             ),
         ],
