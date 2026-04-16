@@ -78,6 +78,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final _transformationController = TransformationController();
   double _titleBarStartScale = 1.0;
   double _titleBarStartX = 0.0;
+  bool _panEnabled = false;
   bool _isApplyingSnapshot = false;
   bool get _canUndo => _undoStack.length > 1;
   bool get _canRedo => _redoStack.isNotEmpty;
@@ -807,6 +808,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           final newScale = (_titleBarStartScale + scaleChange).clamp(1.0, 2.0);
           // InteractiveViewerのスケールを更新
           _transformationController.value = Matrix4.identity()..scale(newScale);
+          // スケール1.01以上でパン有効化
+          final shouldPan = newScale > 1.01;
+          if (shouldPan != _panEnabled) {
+            setState(() => _panEnabled = shouldPan);
+          }
         },
         onHorizontalDragEnd: (details) {
           _titleBarStartScale = _transformationController.value
@@ -828,6 +834,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               maxScale: 2.0,
               boundaryMargin: const EdgeInsets.all(100),
               constrained: true,
+              panEnabled: _panEnabled,
               child: content.body!,
             )
           : content.body!,
