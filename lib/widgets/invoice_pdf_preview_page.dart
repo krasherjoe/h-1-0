@@ -191,108 +191,111 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _canFormalIssue
-                            ? () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('正式発行するには長押ししてください'),
-                                  ),
-                                );
-                              }
-                            : null,
-                        onLongPress: _canFormalIssue
-                            ? () async {
-                                final confirmed = await _showFormalIssueWarning(
-                                  context,
-                                );
-                                if (!confirmed) return;
-                                final ok = await widget.onFormalIssue!();
-                                if (ok && mounted) {
-                                  setState(() => _issued = true);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('正式発行が完了しました'),
-                                      ),
-                                    );
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _canFormalIssue
+                              ? () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('正式発行するには長押ししてください'),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          onLongPress: _canFormalIssue
+                              ? () async {
+                                  final confirmed = await _showFormalIssueWarning(
+                                    context,
+                                  );
+                                  if (!confirmed) return;
+                                  final ok = await widget.onFormalIssue!();
+                                  if (ok && mounted) {
+                                    setState(() => _issued = true);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('正式発行が完了しました'),
+                                        ),
+                                      );
+                                    }
                                   }
                                 }
-                              }
-                            : null,
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Text("正式発行"),
-                            if (!isDraft || effectiveIsLocked)
-                              const Positioned(
-                                right: 0,
-                                child: Icon(
-                                  Icons.lock,
-                                  size: 16,
-                                  color: Colors.white70,
+                              : null,
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Text("正式発行"),
+                              if (!isDraft || effectiveIsLocked)
+                                const Positioned(
+                                  right: 0,
+                                  child: Icon(
+                                    Icons.lock,
+                                    size: 16,
+                                    color: Colors.white70,
+                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              (widget.showShare && (!isDraft || effectiveIsLocked))
+                              ? () async {
+                                  final bytes = await _buildPdfBytes();
+                                  final fileName =
+                                      widget.invoice.mailAttachmentFileName;
+                                  await Printing.sharePdf(
+                                    bytes: bytes,
+                                    filename: fileName,
+                                  );
+                                }
+                              : null,
+                          icon: const Icon(Icons.share),
+                          label: const Text("共有"),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            (widget.showShare && (!isDraft || effectiveIsLocked))
-                            ? () async {
-                                final bytes = await _buildPdfBytes();
-                                final fileName =
-                                    widget.invoice.mailAttachmentFileName;
-                                await Printing.sharePdf(
-                                  bytes: bytes,
-                                  filename: fileName,
-                                );
-                              }
-                            : null,
-                        icon: const Icon(Icons.share),
-                        label: const Text("共有"),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              (widget.showEmail && (!isDraft || effectiveIsLocked))
+                              ? () async {
+                                  await _sendMail(context);
+                                }
+                              : null,
+                          icon: const Icon(Icons.mail_outline),
+                          label: const Text("メール"),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            (widget.showEmail && (!isDraft || effectiveIsLocked))
-                            ? () async {
-                                await _sendMail(context);
-                              }
-                            : null,
-                        icon: const Icon(Icons.mail_outline),
-                        label: const SizedBox.shrink(),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: widget.showPrint
+                              ? () async {
+                                  await Printing.layoutPdf(
+                                    onLayout: (format) async =>
+                                        await _buildPdfBytes(),
+                                  );
+                                }
+                              : null,
+                          icon: const Icon(Icons.print),
+                          label: const Text("印刷"),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: widget.showPrint
-                            ? () async {
-                                await Printing.layoutPdf(
-                                  onLayout: (format) async =>
-                                      await _buildPdfBytes(),
-                                );
-                              }
-                            : null,
-                        icon: const Icon(Icons.print),
-                        label: const SizedBox.shrink(),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
