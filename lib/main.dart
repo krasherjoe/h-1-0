@@ -98,9 +98,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _backupProgressNotifier = BackupProgressNotifier();
     _backupProgressNotifier.addListener(_onBackupProgressChanged);
-    _sendHeartbeat();
-    _chatSyncScheduler?.start();
-    // データベース初期化を非同期で開始
+    // データベース初期化を非同期で開始（権限チェック後にDBアクセス）
     _initialize();
   }
 
@@ -123,7 +121,9 @@ class _MyAppState extends State<MyApp> {
         _isInitialized = true;
         _homeMode = mode;
       });
-      // 非同期で実行してデータベース初期化がブロックされないようにする
+      // DB初期化完了後にハートビートと同期を開始
+      _sendHeartbeat();
+      _chatSyncScheduler?.start();
       _checkFirstLaunchRestore();
     } catch (e) {
       debugPrint('初期化エラー: $e');

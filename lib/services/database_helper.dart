@@ -306,7 +306,13 @@ class DatabaseHelper {
     if (_database != null) return _database!;
     // Futureをキャッシュして複数の同時呼び出しが別々に_initDatabase()を起動しないようにする
     _databaseFuture ??= _initDatabase();
-    _database = await _databaseFuture!;
+    try {
+      _database = await _databaseFuture!;
+    } catch (e) {
+      // 失敗時はFutureをリセットして再試行可能にする
+      _databaseFuture = null;
+      rethrow;
+    }
     return _database!;
   }
 
