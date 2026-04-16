@@ -312,7 +312,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final scale = _transformationController.value.getMaxScaleOnAxis();
     final shouldPan = scale > 1.01;
     if (shouldPan != _panEnabled) {
-      setState(() => _panEnabled = shouldPan);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _panEnabled = shouldPan);
+        }
+      });
     }
   }
 
