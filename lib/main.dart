@@ -1,10 +1,12 @@
 // lib/main.dart
 // version: 1.5.02 (Update: Date selection & Tax fix)
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // --- 独自モジュールのインポート ---
 import 'models/invoice_models.dart'; // Invoice, InvoiceItem モデル
@@ -104,6 +106,13 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initialize() async {
     try {
+      // Android: 共有ストレージへのアクセス権限をリクエスト
+      if (!kIsWeb && Platform.isAndroid) {
+        final status = await Permission.manageExternalStorage.status;
+        if (!status.isGranted) {
+          await Permission.manageExternalStorage.request();
+        }
+      }
       // データベース初期化を待機（マイグレーションが発生する可能性あり）
       await _dbHelper.database;
       if (!mounted) return;
