@@ -821,14 +821,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       appBar: sensorAppBar,
       backgroundColor: themeColor,
       resizeToAvoidBottomInset: false,
-      body: InteractiveViewer(
-        transformationController: _transformationController,
-        minScale: 1.0,
-        maxScale: 2.0,
-        boundaryMargin: const EdgeInsets.all(100),
-        constrained: true,
-        child: content.body!,
-      ),
+      body: _isViewMode
+          ? InteractiveViewer(
+              transformationController: _transformationController,
+              minScale: 1.0,
+              maxScale: 2.0,
+              boundaryMargin: const EdgeInsets.all(100),
+              constrained: true,
+              child: content.body!,
+            )
+          : content.body!,
     );
   }
 
