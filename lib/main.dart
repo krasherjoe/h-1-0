@@ -818,6 +818,7 @@ class _HomeDeciderState extends State<_HomeDecider> {
   final _settings = AppSettingsRepository();
   StreamSubscription<String>? _homeSub;
   String? _mode;
+  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -830,9 +831,21 @@ class _HomeDeciderState extends State<_HomeDecider> {
   }
 
   Future<void> _loadHome() async {
-    final mode = await _settings.getHomeMode();
-    if (!mounted) return;
-    setState(() => _mode = mode);
+    try {
+      // データベース初期化を待機（マイグレーションが発生する可能性あり）
+      final mode = await _settings.getHomeMode();
+      if (!mounted) return;
+      setState(() {
+        _mode = mode;
+        _isInitializing = false;
+      });
+    } catch (e) {
+      debugPrint('ホームモード読み込みエラー: $e');
+      if (!mounted) return;
+      setState(() {
+        _isInitializing = false;
+      });
+    }
   }
 
   @override
@@ -843,9 +856,35 @@ class _HomeDeciderState extends State<_HomeDecider> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('データベースを初期化中...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     final mode = _mode;
     if (mode == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('データを読み込み中...'),
+            ],
+          ),
+        ),
+      );
     }
     if (mode == 'dashboard') {
       return const DashboardScreen();
