@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 50;
+  static const _databaseVersion = 51;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1570,6 +1570,37 @@ class DatabaseHelper {
     if (oldVersion < 50) {
       await _safeAddColumn(db, 'invoices', 'price_adjustment_type TEXT');
       await _safeAddColumn(db, 'invoices', 'price_adjustment_unit INTEGER');
+    }
+
+    // v51: _onCreate スキーマ不整合修正 - 新規インストール時に不足していたカラムを補完
+    if (oldVersion < 51) {
+      // customers
+      await _safeAddColumn(db, 'customers', 'valid_from TEXT');
+      await _safeAddColumn(db, 'customers', 'valid_to TEXT');
+      await _safeAddColumn(db, 'customers', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'customers', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'customers', 'content_hash TEXT');
+      await _safeAddColumn(db, 'customers', 'previous_hash TEXT');
+      await _safeAddColumn(db, 'customers', 'next_version_id TEXT');
+      // products
+      await _safeAddColumn(db, 'products', 'description TEXT');
+      await _safeAddColumn(db, 'products', 'tags TEXT');
+      await _safeAddColumn(db, 'products', 'valid_from TEXT');
+      await _safeAddColumn(db, 'products', 'valid_to TEXT');
+      await _safeAddColumn(db, 'products', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'products', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'products', 'content_hash TEXT');
+      await _safeAddColumn(db, 'products', 'previous_hash TEXT');
+      // invoices
+      await _safeAddColumn(db, 'invoices', 'is_receipt_issued INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'invoices', 'receipt_issued_at TEXT');
+      await _safeAddColumn(db, 'invoices', 'total_discount_amount INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'invoices', 'total_discount_rate REAL DEFAULT 0');
+      await _safeAddColumn(db, 'invoices', 'price_adjustment_type TEXT');
+      await _safeAddColumn(db, 'invoices', 'price_adjustment_unit INTEGER');
+      // invoice_items
+      await _safeAddColumn(db, 'invoice_items', 'discount_amount INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'invoice_items', 'discount_rate REAL DEFAULT 0');
     }
   }
 
