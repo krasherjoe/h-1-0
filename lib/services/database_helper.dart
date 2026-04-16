@@ -316,27 +316,30 @@ class DatabaseHelper {
     return path.join(dbDir, '販売アシスト 1 号.db');
   }
 
-  /// データベース保存ディレクトリを取得（Documents フォルダ）
-  /// 再インストール時にもデータを保護するために、システム固有のフォルダを使用
-  /// Android: Documents フォルダ
-  /// iOS: Documents フォルダ
+  /// データベース保存ディレクトリを取得（共有 Documents フォルダ）
+  /// アンインストールしてもデータが消えないように、共有ストレージを使用
+  /// Android: /storage/emulated/0/Documents/販売アシスト 1 号/
+  /// iOS: アプリ内 Documents フォルダ
   static Future<String> _getDatabaseDirectory() async {
     try {
-      // Documents フォルダを取得
-      final dir = await getApplicationDocumentsDirectory();
-      
-      // フォルダが存在しなければ作成
-      if (!await dir.exists()) {
-        try {
-          await dir.create(recursive: true);
-          debugPrint('Documentsフォルダを作成：${dir.path}');
-        } catch (createError) {
-          debugPrint('Documentsフォルダ作成エラー：$createError');
-          // 作成に失敗した場合はフォールバック
-          return await getDatabasesPath();
+      if (Platform.isAndroid) {
+        // 共有 Documents フォルダ（アンインストールでも消えない）
+        final dir = Directory('/storage/emulated/0/Documents/販売アシスト 1 号');
+        if (!await dir.exists()) {
+          try {
+            await dir.create(recursive: true);
+            debugPrint('共有Documentsフォルダを作成：${dir.path}');
+          } catch (createError) {
+            debugPrint('共有Documentsフォルダ作成エラー：$createError');
+            // フォールバック：アプリ内部ストレージ
+            final appDir = await getApplicationDocumentsDirectory();
+            return appDir.path;
+          }
         }
+        return dir.path;
       }
-      
+      // iOS: アプリ内 Documents フォルダ
+      final dir = await getApplicationDocumentsDirectory();
       return dir.path;
     } catch (e) {
       debugPrint('ドキュメントフォルダ取得エラー：$e');
@@ -463,12 +466,15 @@ class DatabaseHelper {
       }
 
       // 古い形式の DB 位置の調査
+      final appDocDir = await getApplicationDocumentsDirectory();
       final oldLocations = [
-        // 1. root フォルダ（販売アシスト 1 号フォルダ）
+        // 1. アプリ内部 Documents（前回の誤移行先）
+        path.join(appDocDir.path, '販売アシスト 1 号.db'),
+        // 2. root フォルダ（販売アシスト 1 号フォルダ）
         path.join('/storage/emulated/0/販売アシスト 1 号', '販売アシスト 1 号.db'),
-        // 2. Download フォルダ（旧実装）
+        // 3. Download フォルダ（旧実装）
         path.join('/storage/emulated/0/Download', 'gemi_invoice.db'),
-        // 3. アプリ内部ストレージ（初期実装）
+        // 4. アプリ内部ストレージ（初期実装）
         path.join(await getDatabasesPath(), 'gemi_invoice.db'),
       ];
 
