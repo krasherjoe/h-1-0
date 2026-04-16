@@ -823,7 +823,10 @@ class _HomeDeciderState extends State<_HomeDecider> {
   @override
   void initState() {
     super.initState();
-    _loadHome();
+    // 最初にプログレスサークルを表示してからデータベース初期化を開始
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHome();
+    });
     _homeSub = _settings.watchHomeMode().listen((mode) {
       if (!mounted) return;
       setState(() => _mode = mode);
