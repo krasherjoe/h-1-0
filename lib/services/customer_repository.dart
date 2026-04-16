@@ -202,10 +202,14 @@ class CustomerRepository {
           currentVersion =
               (originalRecord.first['version'] as int?) ?? 0;
         }
-        // 元レコードに次の世代のレコード番号を記録
+        // 元レコードに次の世代のレコード番号を記録し、非現行化する
         await txn.update(
           'customers',
-          {'next_version_id': customer.id},
+          {
+            'next_version_id': customer.id,
+            'is_current': 0,
+            'valid_to': DateTime.now().toIso8601String(),
+          },
           where: 'id = ?',
           whereArgs: [originalId],
         );
