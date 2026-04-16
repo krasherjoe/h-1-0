@@ -291,6 +291,7 @@ class DatabaseHelper {
   static const _databaseVersion = 50;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
+  static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
   static Database? testDatabase; // For testing
 
   factory DatabaseHelper() => _instance;
@@ -303,7 +304,9 @@ class DatabaseHelper {
       throw UnsupportedError('WebプラットフォームではDatabaseは使用できません');
     }
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    // Futureをキャッシュして複数の同時呼び出しが別々に_initDatabase()を起動しないようにする
+    _databaseFuture ??= _initDatabase();
+    _database = await _databaseFuture!;
     return _database!;
   }
 
