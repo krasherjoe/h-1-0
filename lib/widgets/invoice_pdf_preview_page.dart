@@ -302,7 +302,6 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                   ),
                 ),
               ),
-            ),
         ],
       ),
     );
