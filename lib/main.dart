@@ -20,6 +20,7 @@ import 'services/mothership_client.dart';
 import 'services/theme_controller.dart';
 import 'services/auto_backup_service.dart';
 import 'services/backup_progress_notifier.dart';
+import 'services/database_helper.dart';
 import 'utils/build_expiry_info.dart';
 
 // --- バックアップ進捗状態のデータクラス ---
@@ -59,12 +60,7 @@ class BackupProgressState {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppThemeController.instance.load();
   final expiryInfo = BuildExpiryInfo.fromEnvironment();
-  // 起動時に自動バックアップチェック（非同期、アプリ起動を妨げない）
-  if (!kIsWeb) {
-    AutoBackupService.checkAndBackupOnStartup();
-  }
   runApp(MyApp(expiryInfo: expiryInfo));
 }
 
@@ -96,7 +92,10 @@ class _MyAppState extends State<MyApp> {
     _backupProgressNotifier.addListener(_onBackupProgressChanged);
     _sendHeartbeat();
     _chatSyncScheduler?.start();
-    _checkFirstLaunchRestore();
+    // 非同期で実行してデータベース初期化がブロックされないようにする
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstLaunchRestore();
+    });
   }
 
   void _onBackupProgressChanged() {
@@ -816,6 +815,7 @@ class _HomeDecider extends StatefulWidget {
 
 class _HomeDeciderState extends State<_HomeDecider> {
   final _settings = AppSettingsRepository();
+  final _dbHelper = DatabaseHelper();
   StreamSubscription<String>? _homeSub;
   String? _mode;
   bool _isInitializing = true;
@@ -823,19 +823,32 @@ class _HomeDeciderState extends State<_HomeDecider> {
   @override
   void initState() {
     super.initState();
-    // 最初にプログレスサークルを表示してからデータベース初期化を開始
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadHome();
-    });
+    // データベース初期化を即座に非同期で開始
+    _initializeDatabase();
     _homeSub = _settings.watchHomeMode().listen((mode) {
       if (!mounted) return;
       setState(() => _mode = mode);
     });
   }
 
-  Future<void> _loadHome() async {
+  Future<void> _initializeDatabase() async {
     try {
       // データベース初期化を待機（マイグレーションが発生する可能性あり）
+      await _dbHelper.database;
+      if (!mounted) return;
+      // データベース初期化完了後、ホームモードをロード
+      _loadHome();
+    } catch (e) {
+      debugPrint('データベース初期化エラー: $e');
+      if (!mounted) return;
+      setState(() {
+        _isInitializing = false;
+      });
+    }
+  }
+
+  Future<void> _loadHome() async {
+    try {
       final mode = await _settings.getHomeMode();
       if (!mounted) return;
       setState(() {
