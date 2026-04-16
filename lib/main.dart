@@ -80,10 +80,16 @@ class _MyAppState extends State<MyApp> {
   final ChatSyncScheduler? _chatSyncScheduler = kIsWeb
       ? null
       : ChatSyncScheduler();
+  final _dbHelper = DatabaseHelper();
+  final _settings = AppSettingsRepository();
   late BackupProgressNotifier _backupProgressNotifier;
 
   // バックアップ進捗表示用の状態管理
   BackupProgressState? _backupProgressState;
+  
+  // データベース初期化状態
+  bool _isInitialized = false;
+  String? _homeMode;
 
   @override
   void initState() {
@@ -92,10 +98,31 @@ class _MyAppState extends State<MyApp> {
     _backupProgressNotifier.addListener(_onBackupProgressChanged);
     _sendHeartbeat();
     _chatSyncScheduler?.start();
-    // 非同期で実行してデータベース初期化がブロックされないようにする
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // データベース初期化を非同期で開始
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      // データベース初期化を待機（マイグレーションが発生する可能性あり）
+      await _dbHelper.database;
+      if (!mounted) return;
+      // ホームモードをロード
+      final mode = await _settings.getHomeMode();
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+        _homeMode = mode;
+      });
+      // 非同期で実行してデータベース初期化がブロックされないようにする
       _checkFirstLaunchRestore();
-    });
+    } catch (e) {
+      debugPrint('初期化エラー: $e');
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
+      });
+    }
   }
 
   void _onBackupProgressChanged() {
@@ -727,10 +754,47 @@ class _MyAppState extends State<MyApp> {
 
           return widget;
         },
-          home: const _HomeDecider(),
+          home: _buildHome(),
         );
       },
     );
+  }
+
+  Widget _buildHome() {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('データベースを初期化中...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final mode = _homeMode;
+    if (mode == null) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('データを読み込み中...'),
+            ],
+          ),
+        ),
+      );
+    }
+    if (mode == 'dashboard') {
+      return const DashboardScreen();
+    }
+    return const InvoiceHistoryScreen();
   }
 }
 
@@ -803,109 +867,6 @@ class ExpiredApp extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _HomeDecider extends StatefulWidget {
-  const _HomeDecider();
-
-  @override
-  State<_HomeDecider> createState() => _HomeDeciderState();
-}
-
-class _HomeDeciderState extends State<_HomeDecider> {
-  final _settings = AppSettingsRepository();
-  final _dbHelper = DatabaseHelper();
-  StreamSubscription<String>? _homeSub;
-  String? _mode;
-  bool _isInitializing = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // データベース初期化を即座に非同期で開始
-    _initializeDatabase();
-    _homeSub = _settings.watchHomeMode().listen((mode) {
-      if (!mounted) return;
-      setState(() => _mode = mode);
-    });
-  }
-
-  Future<void> _initializeDatabase() async {
-    try {
-      // データベース初期化を待機（マイグレーションが発生する可能性あり）
-      await _dbHelper.database;
-      if (!mounted) return;
-      // データベース初期化完了後、ホームモードをロード
-      _loadHome();
-    } catch (e) {
-      debugPrint('データベース初期化エラー: $e');
-      if (!mounted) return;
-      setState(() {
-        _isInitializing = false;
-      });
-    }
-  }
-
-  Future<void> _loadHome() async {
-    try {
-      final mode = await _settings.getHomeMode();
-      if (!mounted) return;
-      setState(() {
-        _mode = mode;
-        _isInitializing = false;
-      });
-    } catch (e) {
-      debugPrint('ホームモード読み込みエラー: $e');
-      if (!mounted) return;
-      setState(() {
-        _isInitializing = false;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _homeSub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isInitializing) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('データベースを初期化中...'),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final mode = _mode;
-    if (mode == null) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('データを読み込み中...'),
-            ],
-          ),
-        ),
-      );
-    }
-    if (mode == 'dashboard') {
-      return const DashboardScreen();
-    }
-    return const InvoiceHistoryScreen();
   }
 }
 
