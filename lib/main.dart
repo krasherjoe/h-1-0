@@ -775,23 +775,8 @@ class _MyAppState extends State<MyApp> {
         ),
       );
     }
-
-    final mode = _homeMode;
-    if (mode == null) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('データを読み込み中...'),
-            ],
-          ),
-        ),
-      );
-    }
-    if (mode == 'dashboard') {
+    // _homeMode が null（未設定）の場合はデフォルトで請求書一覧を表示
+    if (_homeMode == 'dashboard') {
       return const DashboardScreen();
     }
     return const InvoiceHistoryScreen();
