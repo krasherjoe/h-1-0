@@ -1792,6 +1792,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ),
           TextButton(
             onPressed: () {
+              Navigator.pop(context);
               // 値引きをクリア
               setState(() {
                 _items[index] = InvoiceItem(
@@ -1803,12 +1804,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 );
               });
               _pushHistory();
-              Navigator.pop(context);
             },
             child: const Text('クリア', style: TextStyle(color: Colors.red)),
           ),
           ElevatedButton(
             onPressed: () {
+              Navigator.pop(context);
               if (discountType.value == 'amount') {
                 final amount = int.tryParse(amountController.text);
                 setState(() {
@@ -1835,7 +1836,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 });
               }
               _pushHistory();
-              Navigator.pop(context);
             },
             child: const Text('設定'),
           ),
