@@ -6,9 +6,14 @@ import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 import '../models/company_model.dart';
+import '../models/customer_model.dart';
+import '../models/invoice_models.dart';
 import '../services/company_repository.dart';
 import '../services/company_info_export_import.dart';
+import '../services/pdf_generator.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
 class CompanyInfoScreen extends StatefulWidget {
@@ -146,6 +151,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       url: _urlController.text.isEmpty ? null : _urlController.text,
       defaultTaxRate: _taxRate,
       sealPath: _info.sealPath,
+      sealOffsetX: _info.sealOffsetX,
+      sealOffsetY: _info.sealOffsetY,
       taxDisplayMode: _taxDisplayMode,
       registrationNumber: _hasRegistrationNumber && _regNumberController.text.isNotEmpty
           ? 'T${_regNumberController.text.trim()}'
@@ -490,6 +497,36 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                         : "ギャラリーから読み込むか、カメラで撮影してください",
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
+                  if (_info.sealPath != null) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.push<Map<String, double>>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => _SealOffsetAdjustPage(
+                              sealPath: _info.sealPath!,
+                              initialOffsetX: _info.sealOffsetX,
+                              initialOffsetY: _info.sealOffsetY,
+                              companyInfo: _info,
+                            ),
+                          ),
+                        );
+                        if (result != null && mounted) {
+                          setState(() {
+                            _info = _info.copyWith(
+                              sealOffsetX: result['x'],
+                              sealOffsetY: result['y'],
+                            );
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.tune),
+                      label: Text(
+                        '角印位置調整  X:${_info.sealOffsetX.toStringAsFixed(1)}  Y:${_info.sealOffsetY.toStringAsFixed(1)}',
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -766,4 +803,194 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 角印オフセット調整ページ
+// ─────────────────────────────────────────────────────────────────
+class _SealOffsetAdjustPage extends StatefulWidget {
+  final String sealPath;
+  final double initialOffsetX;
+  final double initialOffsetY;
+  final CompanyInfo companyInfo;
+
+  const _SealOffsetAdjustPage({
+    required this.sealPath,
+    required this.initialOffsetX,
+    required this.initialOffsetY,
+    required this.companyInfo,
+  });
+
+  @override
+  State<_SealOffsetAdjustPage> createState() => _SealOffsetAdjustPageState();
+}
+
+class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
+  late double _offsetX;
+  late double _offsetY;
+  int _rebuildKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _offsetX = widget.initialOffsetX;
+    _offsetY = widget.initialOffsetY;
+  }
+
+  void _nudge(bool isX, double delta) {
+    setState(() {
+      if (isX) {
+        _offsetX = (_offsetX + delta).clamp(-200.0, 500.0);
+      } else {
+        _offsetY = (_offsetY + delta).clamp(-200.0, 700.0);
+      }
+      _rebuildKey++;
+    });
+  }
+
+  Future<Uint8List> _buildPreviewBytes(PdfPageFormat _) async {
+    final doc = await buildInvoiceDocument(
+      _dummyInvoiceForSealPreview(widget.companyInfo),
+      sealOffsetXOverride: _offsetX,
+      sealOffsetYOverride: _offsetY,
+    );
+    return Uint8List.fromList(await doc.save());
+  }
+
+  Widget _nudgeRow({
+    required String label,
+    required double value,
+    required bool isX,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: () => _nudge(isX, -5),
+            tooltip: '-5',
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove),
+            onPressed: () => _nudge(isX, -1),
+            tooltip: '-1',
+          ),
+          SizedBox(
+            width: 56,
+            child: Center(
+              child: Text(
+                value.toStringAsFixed(1),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _nudge(isX, 1),
+            tooltip: '+1',
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => _nudge(isX, 5),
+            tooltip: '+5',
+          ),
+          Expanded(
+            child: Slider(
+              value: isX ? _offsetX.clamp(0.0, 300.0) : _offsetY.clamp(0.0, 600.0),
+              min: 0,
+              max: isX ? 300 : 600,
+              divisions: isX ? 60 : 120,
+              onChanged: (v) => _nudge(isX, v - (isX ? _offsetX : _offsetY)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('F1:角印位置調整'),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pop(context, {'x': _offsetX, 'y': _offsetY}),
+            icon: const Icon(Icons.check, color: Colors.white),
+            label: const Text('確定', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: PdfPreview(
+              key: ValueKey(_rebuildKey),
+              build: _buildPreviewBytes,
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+              canDebug: false,
+              actions: const [],
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Container(
+              color: Colors.grey.shade50,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _nudgeRow(label: '右 (X)', value: _offsetX, isX: true),
+                  _nudgeRow(label: '上 (Y)', value: _offsetY, isX: false),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'X: 右端からの距離  Y: 上端からの距離（単位: PDF pt）',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 角印オフセット調整プレビュー用のダミー請求書
+Invoice _dummyInvoiceForSealPreview(CompanyInfo info) {
+  final customer = Customer(
+    id: '__preview__',
+    displayName: 'サンプル得意先',
+    formalName: 'サンプル株式会社',
+    title: HonorificCode.onchu,
+  );
+  return Invoice(
+    id: '__preview__',
+    customer: customer,
+    date: DateTime.now(),
+    items: [
+      InvoiceItem(
+        productId: 'p1',
+        description: 'サンプル商品',
+        quantity: 1,
+        unitPrice: 10000,
+      ),
+    ],
+    documentType: DocumentType.invoice,
+    taxRate: info.defaultTaxRate,
+    isDraft: false,
+    isLocked: false,
+    includeTax: true,
+  );
 }

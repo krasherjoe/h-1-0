@@ -8,6 +8,8 @@ class CompanyInfo {
   final String? url;
   final double defaultTaxRate;
   final String? sealPath; // 角印（印鑑）の画像パス
+  final double sealOffsetX; // 角印の右端からのオフセット（PDF座標）
+  final double sealOffsetY; // 角印の上端からのオフセット（PDF座標）
   final String taxDisplayMode; // 'normal', 'hidden', 'text_only'
   final String? registrationNumber; // 追加: インボイス登録番号 (T番号)
 
@@ -21,6 +23,8 @@ class CompanyInfo {
     this.url,
     this.defaultTaxRate = 0.10,
     this.sealPath,
+    this.sealOffsetX = 10.0,
+    this.sealOffsetY = 50.0,
     this.taxDisplayMode = 'normal',
     this.registrationNumber, // 追加
   });
@@ -37,6 +41,8 @@ class CompanyInfo {
       'url': url,
       'default_tax_rate': defaultTaxRate,
       'seal_path': sealPath,
+      'seal_offset_x': sealOffsetX,
+      'seal_offset_y': sealOffsetY,
       'tax_display_mode': taxDisplayMode,
       'registration_number': registrationNumber, // 追加
     };
@@ -53,6 +59,8 @@ class CompanyInfo {
       url: map['url'],
       defaultTaxRate: (map['default_tax_rate'] ?? 0.10).toDouble(),
       sealPath: map['seal_path'],
+      sealOffsetX: (map['seal_offset_x'] as num?)?.toDouble() ?? 10.0,
+      sealOffsetY: (map['seal_offset_y'] as num?)?.toDouble() ?? 50.0,
       taxDisplayMode: map['tax_display_mode'] ?? 'normal',
       registrationNumber: map['registration_number'], // 追加
     );
@@ -68,6 +76,8 @@ class CompanyInfo {
     String? url,
     double? defaultTaxRate,
     String? sealPath,
+    double? sealOffsetX,
+    double? sealOffsetY,
     String? taxDisplayMode,
     String? registrationNumber, // 追加
   }) {
@@ -81,6 +91,8 @@ class CompanyInfo {
       url: url ?? this.url,
       defaultTaxRate: defaultTaxRate ?? this.defaultTaxRate,
       sealPath: sealPath ?? this.sealPath,
+      sealOffsetX: sealOffsetX ?? this.sealOffsetX,
+      sealOffsetY: sealOffsetY ?? this.sealOffsetY,
       taxDisplayMode: taxDisplayMode ?? this.taxDisplayMode,
       registrationNumber: registrationNumber ?? this.registrationNumber, // 追加
     );

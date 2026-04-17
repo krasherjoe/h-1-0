@@ -10,7 +10,12 @@ import 'company_repository.dart';
 import 'activity_log_repository.dart';
 
 /// PDFドキュメントの構築（プレビューと実保存の両方で使用）
-Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
+/// [sealOffsetXOverride]/[sealOffsetYOverride]: 角印オフセット調整画面用の一時オーバーライド
+Future<pw.Document> buildInvoiceDocument(
+  Invoice invoice, {
+  double? sealOffsetXOverride,
+  double? sealOffsetYOverride,
+}) async {
   final metaJson = invoice.metaJsonValue;
   final metaHash = invoice.metaHashValue;
 
@@ -53,8 +58,8 @@ Future<pw.Document> buildInvoiceDocument(Invoice invoice) async {
             children: [
               if (sealImage != null)
                 pw.Positioned(
-                  right: 10,
-                  top: 50,
+                  right: sealOffsetXOverride ?? companyInfo.sealOffsetX,
+                  top: sealOffsetYOverride ?? companyInfo.sealOffsetY,
                   child: pw.Image(sealImage!, width: 100, height: 100),
                 ),
               if (invoice.isDraft && !invoice.isLocked)
