@@ -325,7 +325,7 @@ class Invoice {
     if (subject != null && subject!.trim().isNotEmpty) {
       return subject!.trim();
     }
-    return '案件';
+    return '';
   }
 
   String get mailTitleCore {
