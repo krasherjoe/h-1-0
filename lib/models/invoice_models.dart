@@ -325,6 +325,10 @@ class Invoice {
     if (subject != null && subject!.trim().isNotEmpty) {
       return subject!.trim();
     }
+    if (items.isNotEmpty) {
+      final first = items.first.description.trim();
+      return items.length > 1 ? '$first他' : first;
+    }
     return '';
   }
 
