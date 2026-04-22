@@ -14,7 +14,7 @@ import 'settings_screen.dart';
 import 'company_info_screen.dart';
 import 'dashboard_screen.dart';
 import '../services/app_settings_repository.dart';
-import '../widgets/slide_to_unlock.dart';
+import '../widgets/swipe_to_unlock.dart';
 // InvoiceFlowScreen import removed; using inline type picker
 import 'package:package_info_plus/package_info_plus.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
@@ -423,9 +423,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
             if (!_useDashboardHome)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: SlideToUnlock(
+                child: SwipeToUnlock(
                   isLocked: !_isUnlocked,
-                  lockedText: "A2をロック解除",
+                  lockedText: "画面を上にスワイプしてA2解除",
                   unlockedText: "解除済",
                   onUnlocked: _toggleUnlock,
                 ),

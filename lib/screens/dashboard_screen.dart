@@ -42,7 +42,7 @@ import 'purchase_payment_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
-import '../widgets/slide_to_unlock.dart';
+import '../widgets/swipe_to_unlock.dart';
 import '../constants/menu_catalog.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -372,9 +372,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ],
                           )
-                        : SlideToUnlock(
+                        : SwipeToUnlock(
                             isLocked: !_historyUnlocked,
-                            lockedText: 'スライドでロック解除 (A2)',
+                            lockedText: '画面を上にスワイプしてA2解除',
                             unlockedText: 'A2 解除済',
                             onUnlocked: () async {
                               setState(() => _historyUnlocked = true);
