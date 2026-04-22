@@ -1861,16 +1861,21 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     void updateCalculation() {
       final discount = int.tryParse(manualDiscountController.text) ?? 0;
-      final baseAmount = _subTotal - _calculateItemDiscount();
-      final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
-      final totalBeforeAdjustment = baseAmount + taxAmount;
-      final adjustedTotal = totalBeforeAdjustment - discount;
+      final subtotal = _subTotal;
+      final itemDiscount = _calculateItemDiscount();
+      final baseAmount = subtotal - itemDiscount;
+      final taxableAmount = baseAmount - discount;
+      final taxAmount = _includeTax ? (taxableAmount * _taxRate).floor() : 0;
+      final adjustedTotal = taxableAmount + taxAmount;
 
       calculatedResult.value = {
-        'before': totalBeforeAdjustment,
-        'after': adjustedTotal,
+        'subtotal': subtotal,
+        'itemDiscount': itemDiscount,
+        'baseAmount': baseAmount,
         'discount': discount,
+        'taxableAmount': taxableAmount,
         'tax': taxAmount,
+        'total': adjustedTotal,
       };
     }
 
@@ -1971,11 +1976,43 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text('調整前:'),
+                                          const Text('小計:'),
                                           Text(
-                                            '￥${fmt.format(result['before'])}',
+                                            '￥${fmt.format(result['subtotal'])}',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (result['itemDiscount']! > 0)
+                                        const SizedBox(height: 4),
+                                      if (result['itemDiscount']! > 0)
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text('明細値引き:'),
+                                            Text(
+                                              '-￥${fmt.format(result['itemDiscount'])}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.orange,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('値引き額:'),
+                                          Text(
+                                            '-￥${fmt.format(result['discount'])}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.orange.shade700,
                                             ),
                                           ),
                                         ],
@@ -1998,32 +2035,22 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 8),
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text('調整後:'),
-                                          Text(
-                                            '￥${fmt.format(result['after'])}',
+                                          const Text(
+                                            '合計:',
                                             style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text('値引き額:'),
                                           Text(
-                                            '-￥${fmt.format(result['discount'])}',
+                                            '￥${fmt.format(result['total'])}',
                                             style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.orange.shade700,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green.shade700,
                                             ),
                                           ),
                                         ],
