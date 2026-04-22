@@ -318,7 +318,7 @@ Future<pw.Document> buildInvoiceDocument(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(8),
               decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
-              child: pw.Text(invoice.subject!),
+              child: pw.Text(invoice.subject!, textAlign: pw.TextAlign.left),
             ),
           ],
           pw.SizedBox(height: 20),
