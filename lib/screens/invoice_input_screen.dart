@@ -1410,14 +1410,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             color: useBlue ? Colors.white : Colors.indigo.shade700,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.settings,
-                          size: 16,
-                          color: useBlue
-                              ? Colors.white
-                              : Colors.indigo.shade700,
-                        ),
+                        if (!_isViewMode && !_isLocked) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.settings,
+                            size: 16,
+                            color: useBlue
+                                ? Colors.white
+                                : Colors.indigo.shade700,
+                          ),
+                        ],
                       ],
                     ),
                     if (priceAdjustmentDiscount > 0)
