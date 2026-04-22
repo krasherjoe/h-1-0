@@ -31,6 +31,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   final _nameController = TextEditingController();
   final _zipController = TextEditingController();
   final _addressController = TextEditingController();
+  final _address2Controller = TextEditingController();
   final _telController = TextEditingController();
   final _emailController = TextEditingController();
   final _faxController = TextEditingController();
@@ -54,6 +55,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       _nameController.text = _info.name;
       _zipController.text = _info.zipCode ?? "";
       _addressController.text = _info.address ?? "";
+      _address2Controller.text = _info.address2 ?? "";
       _telController.text = _info.tel ?? "";
       _emailController.text = _info.email ?? "";
       _faxController.text = _info.fax ?? "";
@@ -145,6 +147,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       name: _nameController.text,
       zipCode: _zipController.text.isEmpty ? null : _zipController.text,
       address: _addressController.text.isEmpty ? null : _addressController.text,
+      address2: _address2Controller.text.isEmpty ? null : _address2Controller.text,
       tel: _telController.text.isEmpty ? null : _telController.text,
       email: _emailController.text.isEmpty ? null : _emailController.text,
       fax: _faxController.text.isEmpty ? null : _faxController.text,
@@ -266,6 +269,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         _nameController.text = imported.name;
         _zipController.text = imported.zipCode ?? '';
         _addressController.text = imported.address ?? '';
+        _address2Controller.text = imported.address2 ?? '';
         _telController.text = imported.tel ?? '';
         _emailController.text = imported.email ?? '';
         _faxController.text = imported.fax ?? '';
@@ -358,7 +362,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                   const SizedBox(height: 12),
                   _buildTextField("郵便番号", _zipController),
                   const SizedBox(height: 12),
-                  _buildTextField("住所", _addressController),
+                  _buildTextField("住所1", _addressController),
+                  const SizedBox(height: 12),
+                  _buildTextField("住所2", _address2Controller),
                   const SizedBox(height: 12),
                   _buildTextField("電話番号", _telController),
                   const SizedBox(height: 12),

@@ -2,6 +2,7 @@ class CompanyInfo {
   final String name;
   final String? zipCode;
   final String? address;
+  final String? address2;
   final String? tel;
   final String? fax;
   final String? email;
@@ -17,6 +18,7 @@ class CompanyInfo {
     required this.name,
     this.zipCode,
     this.address,
+    this.address2,
     this.tel,
     this.fax,
     this.email,
@@ -35,6 +37,7 @@ class CompanyInfo {
       'name': name,
       'zip_code': zipCode,
       'address': address,
+      'address2': address2,
       'tel': tel,
       'fax': fax,
       'email': email,
@@ -53,6 +56,7 @@ class CompanyInfo {
       name: map['name'] ?? "",
       zipCode: map['zip_code'],
       address: map['address'],
+      address2: map['address2'],
       tel: map['tel'],
       fax: map['fax'],
       email: map['email'],
@@ -70,6 +74,7 @@ class CompanyInfo {
     String? name,
     String? zipCode,
     String? address,
+    String? address2,
     String? tel,
     String? fax,
     String? email,
@@ -85,6 +90,7 @@ class CompanyInfo {
       name: name ?? this.name,
       zipCode: zipCode ?? this.zipCode,
       address: address ?? this.address,
+      address2: address2 ?? this.address2,
       tel: tel ?? this.tel,
       fax: fax ?? this.fax,
       email: email ?? this.email,

@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 52;
+  static const _databaseVersion = 53;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1619,6 +1619,11 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'invoice_items', 'discount_amount INTEGER DEFAULT 0');
       await _safeAddColumn(db, 'invoice_items', 'discount_rate REAL DEFAULT 0');
     }
+
+    // v53: 自社住所を address + address2 の2行に拡張
+    if (oldVersion < 53) {
+      await _safeAddColumn(db, 'company_info', 'address2 TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -1812,6 +1817,7 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         zip_code TEXT,
         address TEXT,
+        address2 TEXT,
         tel TEXT,
         default_tax_rate REAL DEFAULT 0.10,
         seal_path TEXT,

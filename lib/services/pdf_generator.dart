@@ -159,10 +159,11 @@ Future<pw.Document> buildInvoiceDocument(
                     pw.Text(companyInfo.name, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
                     if (companyInfo.zipCode != null) pw.Text("〒${companyInfo.zipCode}"),
                     if (companyInfo.address != null) pw.Text(companyInfo.address!),
+                    if (companyInfo.address2 != null && companyInfo.address2!.isNotEmpty) pw.Text(companyInfo.address2!),
                     if (companyInfo.tel != null) pw.Text("TEL: ${companyInfo.tel}"),
                     if (companyInfo.fax != null && companyInfo.fax!.isNotEmpty) pw.Text("FAX: ${companyInfo.fax}"),
-                    if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text("MAIL: ${companyInfo.email}"),
-                    if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text("URL: ${companyInfo.url}"),
+                    if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text(companyInfo.email!),
+                    if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text(companyInfo.url!),
                     if (companyInfo.registrationNumber != null && 
                         companyInfo.registrationNumber!.isNotEmpty &&
                         companyInfo.taxDisplayMode != 'hidden')
@@ -353,7 +354,7 @@ Future<pw.Document> buildInvoiceDocument(
             pw.Container(
               margin: const pw.EdgeInsets.only(bottom: 4),
               child: pw.Text(
-                "この見積書の有効期限は発行日から30日間です",
+                "この見積書の有効期限は発行日から2週間です",
                 style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
               ),
             ),

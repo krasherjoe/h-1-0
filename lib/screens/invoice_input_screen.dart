@@ -411,6 +411,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
       includeTax: _includeTax,
+      promisedDate: _documentType == DocumentType.estimation
+          ? _selectedDate.add(const Duration(days: 14))
+          : null,
       priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
       priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
     );
@@ -471,6 +474,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       isDraft: _isDraft,
       isLocked: _isLocked,
       includeTax: _includeTax,
+      promisedDate: _documentType == DocumentType.estimation
+          ? _selectedDate.add(const Duration(days: 14))
+          : null,
       priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
       priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
     );
