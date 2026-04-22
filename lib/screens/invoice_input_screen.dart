@@ -1443,7 +1443,44 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             ),
             if (tax > 0) ...[
               Divider(color: dividerColor),
-              _buildSummaryRow("消費税", "￥${formatAmount(tax)}", labelColor),
+              GestureDetector(
+                onTap: _isViewMode || _isLocked
+                    ? null
+                    : () => _showTaxRatePicker(),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "消費税 (${(_taxRate * 100).toInt()}%)",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: labelColor,
+                          ),
+                        ),
+                        if (!(_isViewMode || _isLocked)) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.edit,
+                            size: 14,
+                            color: labelColor.withOpacity(0.7),
+                          ),
+                        ],
+                      ],
+                    ),
+                    Text(
+                      "￥${formatAmount(tax)}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: labelColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
             Divider(color: dividerColor),
             _buildSummaryRow(
@@ -2161,6 +2198,47 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         );
       },
     );
+  }
+
+  /// 消費税率を変更するダイアログ
+  Future<void> _showTaxRatePicker() async {
+    final selected = await showDialog<double>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('消費税率を選択'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 0.10),
+            child: const ListTile(
+              leading: Icon(Icons.percent),
+              title: Text('10%'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 0.08),
+            child: const ListTile(
+              leading: Icon(Icons.percent),
+              title: Text('8%'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 0.0),
+            child: const ListTile(
+              leading: Icon(Icons.money_off),
+              title: Text('非課税 (0%)'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null && mounted) {
+      setState(() {
+        _taxRate = selected;
+        _includeTax = selected > 0;
+      });
+      _pushHistory();
+    }
   }
 
   Widget _buildCalculatorKeypad({
