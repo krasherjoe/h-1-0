@@ -363,6 +363,48 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     }
   }
 
+  /// 重複商品（同名で複数の現行レコードが存在するケース）を整理するリカバリー処理
+  Future<void> _cleanupDuplicateVersions() async {
+    if (_isLoading) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重複商品を整理'),
+        content: const Text(
+          '同じ商品名で複数のレコードが存在する場合、\n古い方を非現行化＆非表示にします。\n\nデータは削除されません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+            child: const Text('整理する'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final count = await _productRepo.cleanupDuplicateVersions();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(count > 0 ? '$count件の古いレコードを非表示にしました' : '重複は見つかりませんでした'),
+          backgroundColor: count > 0 ? Colors.green : null,
+        ),
+      );
+      await _loadProducts();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -395,6 +437,26 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               },
             ),
           ),
+          if (!widget.selectionMode)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'cleanup_versions') {
+                  _cleanupDuplicateVersions();
+                }
+              },
+              itemBuilder: (BuildContext context) => const [
+                PopupMenuItem(
+                  value: 'cleanup_versions',
+                  child: Row(
+                    children: [
+                      Icon(Icons.merge_type, size: 18, color: Colors.indigo),
+                      SizedBox(width: 8),
+                      Text('重複商品を整理'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
