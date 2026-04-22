@@ -1387,27 +1387,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "価格調整",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: useBlue ? Colors.white : Colors.indigo.shade700,
-                      ),
-                    ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (priceAdjustmentDiscount > 0)
-                          Text(
-                            "-￥${formatAmount(priceAdjustmentDiscount)}",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: useBlue
-                                  ? Colors.white
-                                  : Colors.indigo.shade700,
-                            ),
+                        Text(
+                          "価格調整",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: useBlue ? Colors.white : Colors.indigo.shade700,
                           ),
-                        const SizedBox(width: 8),
+                        ),
+                        const SizedBox(width: 6),
                         Icon(
                           Icons.settings,
                           size: 16,
@@ -1417,6 +1407,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         ),
                       ],
                     ),
+                    if (priceAdjustmentDiscount > 0)
+                      Text(
+                        "-￥${formatAmount(priceAdjustmentDiscount)}",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: useBlue
+                              ? Colors.white
+                              : Colors.indigo.shade700,
+                        ),
+                      ),
                   ],
                 ),
               ),
