@@ -269,10 +269,6 @@ Future<pw.Document> buildInvoiceDocument(
                       pw.Divider(),
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
                     ],
-                    if (invoice.priceAdjustmentDiscount > 0) ...[
-                      pw.Divider(),
-                      _buildSummaryRow("価格調整値引き", "-${amountFormatter.format(invoice.priceAdjustmentDiscount)}"),
-                    ],
                     if (invoice.tax > 0) ...[
                       pw.Divider(),
                       ...(() {
