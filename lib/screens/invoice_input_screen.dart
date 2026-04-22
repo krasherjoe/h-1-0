@@ -13,6 +13,7 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import '../models/product_model.dart';
 import '../services/app_settings_repository.dart';
+import '../services/company_repository.dart';
 import '../services/edit_log_repository.dart';
 
 class InvoiceInputForm extends StatefulWidget {
@@ -85,6 +86,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _isViewMode = true; // デフォルトでビューワ
   bool _summaryIsBlue = false; // デフォルトは白
   final AppSettingsRepository _settingsRepo = AppSettingsRepository();
+  final CompanyRepository _companyRepo = CompanyRepository();
   bool _showNewBadge = false;
   bool _showCopyBadge = false;
   bool _titleBarFlash = false; // タイトルバータップエフェクト用
@@ -277,14 +279,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final savedSummary = await _settingsRepo.getSummaryTheme();
     _summaryIsBlue = savedSummary == 'blue';
 
+    // 会社設定のデフォルト消費税率を取得（新規伝票に使用）
+    final company = await _companyRepo.getCompanyInfo();
+    final defaultTaxRate = company.defaultTaxRate;
+
     setState(() {
       // 既存伝票がある場合は初期値を上書き
       if (widget.existingInvoice != null) {
         final inv = widget.existingInvoice!;
         _selectedCustomer = inv.customer;
         _items.addAll(inv.items);
-        _taxRate = inv.taxRate;
-        _includeTax = inv.taxRate > 0;
+        _taxRate = inv.taxRate > 0 ? inv.taxRate : defaultTaxRate;
+        _includeTax = inv.taxRate > 0 || inv.includeTax;
         _documentType = inv.documentType;
         _selectedDate = inv.date;
         _isDraft = inv.isDraft;
@@ -293,8 +299,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         if (inv.subject != null) _subjectController.text = inv.subject!;
         _currentInvoice = inv;
       } else {
-        _taxRate = 0;
-        _includeTax = false;
+        _taxRate = defaultTaxRate > 0 ? defaultTaxRate : 0.10;
+        _includeTax = true;
         _isDraft = true;
         _documentType = widget.initialDocumentType;
         _currentId = null;
