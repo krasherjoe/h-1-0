@@ -88,10 +88,11 @@ class ProductPreviewCard extends StatelessWidget {
                   label: '単価',
                   value: unitPrice.isEmpty ? '未設定' : '￥$unitPrice',
                 ),
-                _ProductInfoChip(
-                  label: '在庫',
-                  value: stockQuantity.isEmpty ? '0' : stockQuantity,
-                ),
+                if (!const ['サポート', 'サービス'].contains(category))
+                  _ProductInfoChip(
+                    label: '在庫',
+                    value: stockQuantity.isEmpty ? '0' : stockQuantity,
+                  ),
                 _ProductInfoChip(
                   label: 'バーコード',
                   value: barcode.isEmpty ? '未登録' : barcode,
@@ -551,7 +552,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                       builder: (context) {
                         final isDark = Theme.of(context).brightness == Brightness.dark;
                         return Text(
-                          "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice} (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})",
+                          "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice}${p.isNonStockCategory ? '' : ' (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})'}",
                           style: TextStyle(
                             color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                           ),
@@ -701,7 +702,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text("単価: ￥${p.defaultUnitPrice}", style: TextStyle(color: textColor)),
-                      Text("在庫: ${p.stockQuantity}", style: TextStyle(color: textColor)),
+                      if (!p.isNonStockCategory)
+                        Text("在庫: ${p.stockQuantity}", style: TextStyle(color: textColor)),
                       if (p.barcode != null && p.barcode!.isNotEmpty)
                         Text("バーコード: ${p.barcode}", style: TextStyle(color: textColor)),
                     ],

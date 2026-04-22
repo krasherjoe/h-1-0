@@ -99,6 +99,13 @@ class Product {
     );
   }
 
+  /// 在庫管理対象外カテゴリー（サービス・サポート）か判定
+  bool get isNonStockCategory {
+    if (category == null || category!.isEmpty) return false;
+    const nonStock = ['サポート', 'サービス'];
+    return nonStock.contains(category!.trim());
+  }
+
   Product copyWith({
     String? id,
     String? name,
