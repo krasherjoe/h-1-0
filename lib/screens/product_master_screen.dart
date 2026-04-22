@@ -147,6 +147,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   List<ProductCategory> _categories = [];
   bool _isLoading = true;
   String _searchQuery = "";
+  String _sortKey = 'name_asc';
 
   @override
   void initState() {
@@ -184,6 +185,15 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       }
       if (widget.showHidden) {
         _filteredProducts.sort((a, b) => b.id.compareTo(a.id));
+      } else {
+        switch (_sortKey) {
+          case 'name_desc':
+            _filteredProducts.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+            break;
+          default:
+            _filteredProducts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+            break;
+        }
       }
     });
   }
@@ -361,6 +371,31 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         leading: const BackButton(),
         title: const Text("P1:商品マスター"),
         backgroundColor: Colors.blueGrey,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        actions: [
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _sortKey,
+              icon: Icon(Icons.sort, color: Theme.of(context).colorScheme.onPrimary),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+              selectedItemBuilder: (context) => [
+                Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
+                Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
+              ],
+              items: [
+                DropdownMenuItem(value: 'name_asc', child: Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+                DropdownMenuItem(value: 'name_desc', child: Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+              ],
+              onChanged: (v) {
+                setState(() {
+                  _sortKey = v ?? 'name_asc';
+                  _applyFilter();
+                });
+              },
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Builder(
