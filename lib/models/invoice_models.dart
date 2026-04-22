@@ -318,7 +318,7 @@ class Invoice {
   int get discountAmount => _regularDiscount + priceAdjustmentDiscount;
 
   int get taxableAmount => subtotal - discountAmount;
-  int get tax => (taxableAmount * taxRate).floor();
+  int get tax => includeTax ? (taxableAmount * taxRate).floor() : 0;
   int get totalAmount => taxableAmount + tax;
 
   String get _projectLabel {
