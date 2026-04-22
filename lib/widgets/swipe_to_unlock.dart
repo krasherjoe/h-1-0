@@ -1,5 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
+/// 画面全体を覆うすりガラス（フロストガラス）スワイプアンロックオーバーレイ。
+/// 子ウィジェット（コンテンツ）の上に重ねて使用し、
+/// ロック中は画面全体を覆い、上にスワイプで解除する。
 class SwipeToUnlock extends StatefulWidget {
   final VoidCallback onUnlocked;
   final String lockedText;
@@ -58,7 +62,7 @@ class _SwipeToUnlockState extends State<SwipeToUnlock>
     }
 
     final Color accent = widget.accentColor ?? Colors.indigo.shade400;
-    final double opacity = (0.55 - (_dragProgress * 0.55)).clamp(0.0, 0.55);
+    final double opacity = (0.35 - (_dragProgress * 0.25)).clamp(0.05, 0.35);
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -90,97 +94,135 @@ class _SwipeToUnlockState extends State<SwipeToUnlock>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
-        color: Colors.black.withOpacity(opacity),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: _showSuccessOverlay
-                        ? Column(
-                            mainAxisSize: MainAxisSize.min,
-                            key: const ValueKey('unlocked'),
-                            children: [
-                              Icon(widget.unlockedIcon, color: Colors.green, size: 64),
-                              const SizedBox(height: 16),
-                              Text(
-                                widget.unlockedText,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+        color: Colors.transparent,
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: 12 + _dragProgress * 18,
+              sigmaY: 12 + _dragProgress * 18,
+            ),
+            child: Container(
+              color: Colors.black.withOpacity(opacity),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: _showSuccessOverlay
+                              ? Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  key: const ValueKey('unlocked'),
+                                  children: [
+                                    Icon(widget.unlockedIcon, color: Colors.green, size: 64),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      widget.unlockedText,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(24),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.15),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        widget.lockedIcon,
+                                        color: Colors.white.withOpacity(
+                                          (0.85 - _dragProgress * 0.4).clamp(0.4, 0.85),
+                                        ),
+                                        size: 48 + _dragProgress * 24,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      transform: Matrix4.translationValues(0, -_dragProgress * 80, 0),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 48),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _bounceController,
+                              builder: (context, child) {
+                                return Transform.translate(
+                                  offset: Offset(
+                                    0,
+                                    -14 * (1 - _bounceController.value) - _dragProgress * 50,
+                                  ),
+                                  child: Icon(
+                                    Icons.keyboard_arrow_up,
+                                    color: Colors.white.withOpacity(
+                                      (0.7 + _dragProgress * 0.3).clamp(0.0, 1.0),
+                                    ),
+                                    size: 44 + _dragProgress * 16,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: accent.withOpacity(0.3 + _dragProgress * 0.4),
+                                  width: 1.5,
                                 ),
                               ),
-                            ],
-                          )
-                        : Icon(
-                            widget.lockedIcon,
-                            color: Colors.white.withOpacity(
-                              (0.8 - _dragProgress * 0.5).clamp(0.3, 0.8),
-                            ),
-                            size: 48 + _dragProgress * 24,
-                          ),
-                  ),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                transform: Matrix4.translationValues(0, -_dragProgress * 80, 0),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 48),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedBuilder(
-                        animation: _bounceController,
-                        builder: (context, child) {
-                          return Transform.translate(
-                            offset: Offset(
-                              0,
-                              -14 * (1 - _bounceController.value) - _dragProgress * 50,
-                            ),
-                            child: Icon(
-                              Icons.keyboard_arrow_up,
-                              color: Colors.white.withOpacity(
-                                (0.7 + _dragProgress * 0.3).clamp(0.0, 1.0),
+                              child: Text(
+                                widget.lockedText,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(
+                                    (0.9 + _dragProgress * 0.1).clamp(0.0, 1.0),
+                                  ),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                              size: 44 + _dragProgress * 16,
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.lockedText,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(
-                            (0.85 + _dragProgress * 0.15).clamp(0.0, 1.0),
-                          ),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: 160,
+                              child: LinearProgressIndicator(
+                                value: _dragProgress.clamp(0, 1),
+                                backgroundColor: Colors.white.withOpacity(0.15),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  accent.withOpacity(0.9),
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                minHeight: 4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: 160,
-                        child: LinearProgressIndicator(
-                          value: _dragProgress.clamp(0, 1),
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            accent.withOpacity(0.9),
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                          minHeight: 4,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
