@@ -716,6 +716,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('削除'),
             ),
           ],
@@ -857,7 +861,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('整理する'),
           ),
         ],
