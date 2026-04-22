@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import '../models/sales_flow_models.dart';
 import 'database_helper.dart';
+import 'invoice_repository.dart' show kNonStockCategories;
 
 /// 販売フローリポジトリ
 class SalesFlowRepository {
@@ -248,7 +249,22 @@ class SalesFlowRepository {
     for (final item in orderItems) {
       final productId = item['product_id'] as String;
       final requiredQuantity = item['quantity'] as int;
-      
+
+      // サポート/サービスカテゴリの商品は在庫対象外のため引当処理をスキップ
+      final categoryRows = await txn.query(
+        'products',
+        columns: ['category'],
+        where: 'id = ?',
+        whereArgs: [productId],
+        limit: 1,
+      );
+      if (categoryRows.isNotEmpty) {
+        final category = (categoryRows.first['category'] as String?)?.trim();
+        if (category != null && kNonStockCategories.contains(category)) {
+          continue;
+        }
+      }
+
       // 在庫確認
       final stockResult = await txn.rawQuery('''
         SELECT SUM(quantity) as total_quantity 

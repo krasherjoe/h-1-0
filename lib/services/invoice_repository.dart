@@ -13,12 +13,32 @@ import 'activity_log_repository.dart';
 import 'company_repository.dart';
 import 'storage_monitor.dart';
 
+/// 在庫処理の除外対象とする商品カテゴリ名
+/// サービスやサポート系の有形財でない品目は在庫引当/減算を行わない
+const List<String> kNonStockCategories = <String>['サポート', 'サービス'];
+
 class InvoiceRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
   final CompanyRepository _companyRepo = CompanyRepository();
   final StorageMonitor _storageMonitor = StorageMonitor();
   final StreamController<List<Invoice>> _orderStreamController = StreamController.broadcast();
+
+  /// 指定された商品が在庫処理除外カテゴリに属するか判定
+  /// （カテゴリ名が「サポート」「サービス」の場合はtrue）
+  Future<bool> _isNonStockProduct(DatabaseExecutor txn, String productId) async {
+    final rows = await txn.query(
+      'products',
+      columns: ['category'],
+      where: 'id = ?',
+      whereArgs: [productId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return false;
+    final category = (rows.first['category'] as String?)?.trim();
+    if (category == null || category.isEmpty) return false;
+    return kNonStockCategories.contains(category);
+  }
 
   Future<void> saveInvoice(Invoice invoice) async {
     // 容量チェック
@@ -83,14 +103,15 @@ class InvoiceRepository {
           whereArgs: [invoice.id],
         );
 
-        // 旧在庫を戻す
+        // 旧在庫を戻す（サポート/サービスカテゴリは在庫対象外のためスキップ）
         for (var item in oldItems) {
-          if (item['product_id'] != null) {
-            await txn.execute(
-              'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
-              [item['quantity'], item['product_id']],
-            );
-          }
+          final pid = item['product_id'] as String?;
+          if (pid == null) continue;
+          if (await _isNonStockProduct(txn, pid)) continue;
+          await txn.execute(
+            'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
+            [item['quantity'], pid],
+          );
         }
       }
 
@@ -108,14 +129,17 @@ class InvoiceRepository {
         whereArgs: [invoice.id],
       );
 
-      // 新しい明細の保存と在庫の減算
+      // 新しい明細の保存と在庫の減算（サポート/サービスカテゴリは在庫対象外）
       for (var item in invoice.items) {
         await txn.insert('invoice_items', item.toMap(invoice.id));
         if (adjustStockOnSave && item.productId != null) {
-          await txn.execute(
-            'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
-            [item.quantity, item.productId],
-          );
+          final bool isNonStock = await _isNonStockProduct(txn, item.productId!);
+          if (!isNonStock) {
+            await txn.execute(
+              'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+              [item.quantity, item.productId],
+            );
+          }
           if (!invoice.isDraft) {
             await txn.execute('UPDATE products SET is_locked = 1 WHERE id = ?', [item.productId]);
           }
@@ -196,10 +220,13 @@ class InvoiceRepository {
           if (productId == null) continue;
           final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
           if (quantity == 0) continue;
-          await txn.execute(
-            'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
-            [quantity, productId],
-          );
+          // サポート/サービスカテゴリは在庫対象外のため減算しない
+          if (!await _isNonStockProduct(txn, productId)) {
+            await txn.execute(
+              'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+              [quantity, productId],
+            );
+          }
           await txn.execute('UPDATE products SET is_locked = 1 WHERE id = ?', [productId]);
         }
         await txn.execute('UPDATE customers SET is_locked = 1 WHERE id = ?', [row['customer_id']]);
@@ -347,12 +374,14 @@ class InvoiceRepository {
       );
 
       for (var item in items) {
-        if (item['product_id'] != null) {
-          await txn.execute(
-            'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
-            [item['quantity'], item['product_id']],
-          );
-        }
+        final pid = item['product_id'] as String?;
+        if (pid == null) continue;
+        // サポート/サービスカテゴリは在庫対象外のため復元しない
+        if (await _isNonStockProduct(txn, pid)) continue;
+        await txn.execute(
+          'UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?',
+          [item['quantity'], pid],
+        );
       }
 
       // PDFパスの取得（削除用）
