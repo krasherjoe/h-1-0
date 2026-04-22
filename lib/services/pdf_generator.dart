@@ -266,11 +266,9 @@ Future<pw.Document> buildInvoiceDocument(
                     pw.SizedBox(height: 10),
                     _buildSummaryRow("小計", amountFormatter.format(invoice.subtotal)),
                     if (invoice.discountAmount > 0) ...[
-                      pw.Divider(),
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
                     ],
                     if (invoice.tax > 0) ...[
-                      pw.Divider(),
                       ...(() {
                         final mode = companyInfo.taxDisplayMode.isNotEmpty ? companyInfo.taxDisplayMode : 'normal';
                         return [
