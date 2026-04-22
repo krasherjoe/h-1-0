@@ -406,7 +406,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       subject: _subjectController.text.isNotEmpty
           ? _subjectController.text
           : null, // 追加
-      notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : null,
+      notes: null,
       latitude: pos?.latitude,
       longitude: pos?.longitude,
       isDraft: _isDraft, // 追加
@@ -467,7 +467,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
-      notes: _includeTax ? "（消費税 ${(_taxRate * 100).toInt()}% 込み）" : "（非課税）",
+      notes: null,
       isDraft: _isDraft,
       isLocked: _isLocked,
       includeTax: _includeTax,
