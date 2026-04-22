@@ -397,7 +397,7 @@ class CustomerRepository {
     final db = await _dbHelper.database;
     final where = includeHidden
         ? ''
-        : 'AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0';
+        : "AND COALESCE(mh.is_hidden, c.is_hidden, 0) = 0";
     final List<Map<String, dynamic>> maps = await db.rawQuery(
       '''
       SELECT c.*, cc.address AS contact_address, cc.tel AS contact_tel, cc.email AS contact_email,
@@ -405,7 +405,9 @@ class CustomerRepository {
       FROM customers c
       LEFT JOIN customer_contacts cc ON cc.customer_id = c.id AND cc.is_active = 1
       LEFT JOIN master_hidden mh ON mh.master_type = 'customer' AND mh.master_id = c.id
-      WHERE (c.display_name LIKE ? OR c.formal_name LIKE ?) $where
+      WHERE c.is_current = 1
+        AND COALESCE(c.valid_to, '9999-12-31') > datetime('now')
+        AND (c.display_name LIKE ? OR c.formal_name LIKE ?) $where
       ORDER BY ${includeHidden ? 'c.id DESC' : 'c.display_name ASC'}
       LIMIT 50
     ''',
@@ -463,12 +465,23 @@ class CustomerRepository {
 
   Future<Customer?> getById(String id) async {
     final db = await _dbHelper.database;
+    // 現行バージョンを優先的に返す。見つからない場合は最新バージョンにフォールバック。
+    final List<Map<String, dynamic>> currentMaps = await db.query(
+      'customers',
+      where: 'id = ? AND is_current = 1',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (currentMaps.isNotEmpty) {
+      return Customer.fromMap(currentMaps.first);
+    }
     final List<Map<String, dynamic>> maps = await db.query(
       'customers',
       where: 'id = ?',
       whereArgs: [id],
+      orderBy: 'version DESC',
+      limit: 1,
     );
-
     if (maps.isEmpty) return null;
     return Customer.fromMap(maps.first);
   }
@@ -496,17 +509,37 @@ class CustomerRepository {
         final vb = (b['version'] as int?) ?? 1;
         return va.compareTo(vb);
       });
+      final Map<String, dynamic> newest = entry.value.last;
       for (int i = 0; i < entry.value.length - 1; i++) {
         final old = entry.value[i];
         final newer = entry.value[i + 1];
         await db.update(
           'customers',
-          {'next_version_id': newer['id'], 'is_hidden': 1},
+          {
+            'next_version_id': newer['id'],
+            'is_current': 0,
+            'is_hidden': 1,
+            'valid_to': DateTime.now().toIso8601String(),
+          },
           where: 'id = ?',
           whereArgs: [old['id']],
         );
         fixedCount++;
       }
+      // master_hiddenは最新バージョンを表示状態に保つ
+      await db.insert('master_hidden', {
+        'master_type': 'customer',
+        'master_id': newest['id'],
+        'is_hidden': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    if (fixedCount > 0) {
+      await _logRepo.logAction(
+        action: 'CLEANUP_CUSTOMER_DUPLICATES',
+        targetType: 'CUSTOMER',
+        targetId: null,
+        details: '重複顧客バージョンを$fixedCount件整理しました',
+      );
     }
     return fixedCount;
   }
