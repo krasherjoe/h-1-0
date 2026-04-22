@@ -290,7 +290,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _selectedCustomer = inv.customer;
         _items.addAll(inv.items);
         _taxRate = inv.taxRate > 0 ? inv.taxRate : defaultTaxRate;
-        _includeTax = inv.taxRate > 0 || inv.includeTax;
+        // 既存伝票: 税率が保存済 or includeTaxフラグon or 会社のデフォルト税率>0 なら課税表示
+        _includeTax = inv.taxRate > 0 || inv.includeTax || defaultTaxRate > 0;
         _documentType = inv.documentType;
         _selectedDate = inv.date;
         _isDraft = inv.isDraft;
