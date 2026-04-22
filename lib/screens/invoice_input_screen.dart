@@ -1870,6 +1870,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         'before': totalBeforeAdjustment,
         'after': adjustedTotal,
         'discount': discount,
+        'tax': taxAmount,
       };
     }
 
@@ -1973,6 +1974,24 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                           const Text('調整前:'),
                                           Text(
                                             '￥${fmt.format(result['before'])}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _includeTax
+                                                ? '消費税 (${(_taxRate * 100).toInt()}%):'
+                                                : '消費税 (非課税):',
+                                          ),
+                                          Text(
+                                            '￥${fmt.format(result['tax'])}',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w600,
                                             ),
