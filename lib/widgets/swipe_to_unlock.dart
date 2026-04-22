@@ -37,7 +37,7 @@ class _SwipeToUnlockState extends State<SwipeToUnlock>
   bool _isDismissed = false;
   late AnimationController _bounceController;
 
-  static const double _unlockThreshold = 0.25;
+  static const double _unlockThreshold = 0.6;
 
   @override
   void initState() {
@@ -70,7 +70,7 @@ class _SwipeToUnlockState extends State<SwipeToUnlock>
         if (_showSuccessOverlay) return;
         final screenHeight = MediaQuery.of(context).size.height;
         setState(() {
-          _dragProgress += (-details.delta.dy) / (screenHeight * 0.4);
+          _dragProgress += (-details.delta.dy) / (screenHeight * 0.6);
           if (_dragProgress < 0) _dragProgress = 0;
           if (_dragProgress > 1.5) _dragProgress = 1.5;
         });
