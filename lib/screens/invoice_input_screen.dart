@@ -1327,7 +1327,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final useBlue = _summaryIsBlue;
     final bgColor = useBlue
         ? Colors.indigo
-        : (isDark ? const Color(0xFF2C2C2C) : Colors.white);
+        : (isDark ? const Color(0xFF2C2C2C) : Colors.indigo.shade50);
     final borderColor = Colors.transparent;
     final labelColor = useBlue ? Colors.white70 : textColor;
     final totalColor = useBlue ? Colors.white : textColor;
