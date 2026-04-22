@@ -108,7 +108,7 @@ class Invoice {
   static const String lockStatement =
       '正式発行ボタン押下時にこの伝票はロックされ、以後の編集・削除はできません。ロック状態はハッシュチェーンで保護されます。';
   static const String hashDescription =
-      'metaJson = JSON.stringify({id, invoiceNumber, customer, date, total, documentType, hash, lockStatement, companySnapshot, companySealHash}); metaHash = SHA-256(metaJson).';
+      'metaJson = JSON.stringify({id, invoiceNumber, customer, date, total, documentType, hash, lockStatement, companySnapshot, companySealHash, items:[{productId, productName, quantity, unitPrice, subtotal, taxRate}]}); metaHash = SHA-256(metaJson).';
   final String id;
   final Customer customer;
   final DateTime date;
@@ -383,6 +383,16 @@ class Invoice {
       'hashDescription': hashDescription,
       'companySnapshot': companySnapshot,
       'companySealHash': companySealHash,
+      'items': items.map((e) => {
+        'id': e.id,
+        'productId': e.productId,
+        'productName': e.description,
+        'quantity': e.quantity,
+        'unitPrice': e.unitPrice,
+        'subtotal': e.subtotal,
+        'discountAmount': e.discountAmount,
+        'discountRate': e.discountRate,
+      }).toList(),
     };
   }
 
