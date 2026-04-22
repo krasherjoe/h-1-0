@@ -358,6 +358,7 @@ class InvoiceRepository {
         receiptIssuedAt: iMap['receipt_issued_at'] != null ? DateTime.tryParse(iMap['receipt_issued_at']) : null,
         priceAdjustmentType: iMap['price_adjustment_type'] as String?,
         priceAdjustmentUnit: iMap['price_adjustment_unit'] as int?,
+        includeTax: (iMap['include_tax'] ?? 1) == 1,
       ));
     }
     return invoices;

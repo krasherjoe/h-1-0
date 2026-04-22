@@ -290,13 +290,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _selectedCustomer = inv.customer;
         _items.addAll(inv.items);
         // HASHチェーンでロック済み伝票は保存時点の税率・課税状態を完全に維持（不変）
-        // 下書き伝票のみF1(会社設定)のデフォルト税率を反映
+        // 下書き伝票はF1(会社設定)のデフォルト税率を反映するがincludeTaxフラグはDB値を尊重
         if (inv.isLocked) {
           _taxRate = inv.taxRate;
           _includeTax = inv.taxRate > 0 || inv.includeTax;
         } else {
-          _taxRate = inv.taxRate > 0 ? inv.taxRate : defaultTaxRate;
-          _includeTax = inv.taxRate > 0 || inv.includeTax || defaultTaxRate > 0;
+          _taxRate = inv.includeTax ? (inv.taxRate > 0 ? inv.taxRate : defaultTaxRate) : 0.0;
+          _includeTax = inv.includeTax;
         }
         _documentType = inv.documentType;
         _selectedDate = inv.date;

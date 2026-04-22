@@ -432,6 +432,7 @@ class Invoice {
       'total_discount_rate': totalDiscountRate,
       'price_adjustment_type': priceAdjustmentType,
       'price_adjustment_unit': priceAdjustmentUnit,
+      'include_tax': includeTax ? 1 : 0,
     };
   }
 

@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 51;
+  static const _databaseVersion = 52;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1584,6 +1584,11 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'invoices', 'price_adjustment_unit INTEGER');
     }
 
+    // v52: 伝票の課税フラグ永続化
+    if (oldVersion < 52) {
+      await _safeAddColumn(db, 'invoices', 'include_tax INTEGER DEFAULT 1');
+    }
+
     // v51: _onCreate スキーマ不整合修正 - 新規インストール時に不足していたカラムを補完
     if (oldVersion < 51) {
       // customers
@@ -1772,6 +1777,7 @@ class DatabaseHelper {
         total_discount_rate REAL DEFAULT 0,
         price_adjustment_type TEXT,
         price_adjustment_unit INTEGER,
+        include_tax INTEGER DEFAULT 1,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
