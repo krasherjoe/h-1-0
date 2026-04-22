@@ -832,6 +832,9 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         : _currentInvoice.subtotal;
     final int tax = (subtotal * currentTaxRate).floor();
     final int total = subtotal + tax;
+    final String taxMode = _companyInfo?.taxDisplayMode?.isNotEmpty == true
+        ? _companyInfo!.taxDisplayMode
+        : 'normal';
 
     final bool useBlue = _summaryIsBlue;
     final Color bgColor = useBlue ? Colors.indigo : Colors.white;
@@ -860,15 +863,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               "￥${formatter.format(subtotal)}",
               labelColor,
             ),
-            if (currentTaxRate > 0) ...[
+            if (currentTaxRate > 0 && taxMode != 'hidden') ...[
               Divider(color: dividerColor),
-              if (_companyInfo?.taxDisplayMode == 'normal')
+              if (taxMode == 'normal')
                 _buildSummaryRow(
                   "消費税 (${(currentTaxRate * 100).toInt()}%)",
                   "￥${formatter.format(tax)}",
                   labelColor,
                 ),
-              if (_companyInfo?.taxDisplayMode == 'text_only')
+              if (taxMode == 'text_only')
                 _buildSummaryRow("消費税", "（税別）", labelColor),
             ],
             Divider(color: dividerColor),

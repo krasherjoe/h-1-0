@@ -275,10 +275,15 @@ Future<pw.Document> buildInvoiceDocument(
                     ],
                     if (invoice.tax > 0) ...[
                       pw.Divider(),
-                      if (companyInfo.taxDisplayMode == 'normal')
-                        _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
-                      if (companyInfo.taxDisplayMode == 'text_only')
-                        _buildSummaryRow("消費税", "（税別）"),
+                      ...(() {
+                        final mode = companyInfo.taxDisplayMode.isNotEmpty ? companyInfo.taxDisplayMode : 'normal';
+                        return [
+                          if (mode == 'normal')
+                            _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
+                          if (mode == 'text_only')
+                            _buildSummaryRow("消費税", "（税別）"),
+                        ];
+                      }()),
                     ],
                     pw.Divider(),
                     _buildSummaryRow(() {
