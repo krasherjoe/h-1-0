@@ -418,19 +418,11 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            if (!_useDashboardHome)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: SwipeToUnlock(
-                  isLocked: !_isUnlocked,
-                  lockedText: "画面を上にスワイプしてA2解除",
-                  unlockedText: "解除済",
-                  onUnlocked: _toggleUnlock,
-                ),
-              ),
-            Expanded(
+            Column(
+              children: [
+                Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : InvoiceHistoryList(
@@ -465,7 +457,15 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         _loadData();
                       },
                     ),
+                ),
+              ],
             ),
+            if (!_useDashboardHome && !_isUnlocked)
+              Positioned.fill(
+                child: SwipeToUnlock(
+                  onUnlocked: _toggleUnlock,
+                ),
+              ),
           ],
         ),
       ),
