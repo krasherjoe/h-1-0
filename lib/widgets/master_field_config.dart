@@ -17,6 +17,7 @@ class MasterFieldConfig {
     void Function(String value) updateValue,
   )? suffixBuilder; // 動的サフィックス（例: スキャナ）
   final String? Function(String)? validator; // カスタムバリデーション
+  final List<String>? dropdownOptions; // ドロップダウン選択肢（指定時はDropdownButtonFormFieldを描画）
 
   const MasterFieldConfig({
     required this.key,
@@ -30,6 +31,7 @@ class MasterFieldConfig {
     this.suffixWidget,
     this.suffixBuilder,
     this.validator,
+    this.dropdownOptions,
   });
 }
 

@@ -220,49 +220,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             MasterFieldConfig(
               key: 'category',
               label: 'カテゴリ',
-              hint: '例: 周辺機器',
-              suffixBuilder: (controller, setDialogState, updateValue) {
-                return IconButton(
-                  icon: const Icon(Icons.category),
-                  onPressed: () async {
-                    final selected = await showDialog<ProductCategory>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('カテゴリを選択'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _categories.length + 1,
-                            itemBuilder: (ctx, i) {
-                              if (i == 0) {
-                                return ListTile(
-                                  title: const Text('未分類'),
-                                  onTap: () => Navigator.pop(ctx),
-                                );
-                              }
-                              final cat = _categories[i - 1];
-                              return ListTile(
-                                title: Text(cat.name),
-                                onTap: () => Navigator.pop(ctx, cat),
-                              );
-                            },
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('キャンセル'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (selected != null) {
-                      updateValue(selected.name);
-                    }
-                  },
-                );
-              },
+              hint: 'カテゴリを選択',
+              dropdownOptions: ['', ..._categories.map((c) => c.name)],
             ),
             MasterFieldConfig(
               key: 'barcode',

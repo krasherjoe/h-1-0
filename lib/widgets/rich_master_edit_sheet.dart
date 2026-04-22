@@ -160,6 +160,64 @@ class _RichMasterEditDialogState<T>
     MasterFieldConfig field,
     RichMasterEditController controller,
   ) {
+    final label = field.required ? '${field.label} *' : field.label;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? colorScheme.surfaceContainerHighest : Colors.white;
+    final borderColor = isDark ? colorScheme.outline : Colors.grey.shade300;
+    final focusedBorderColor = colorScheme.primary;
+    final shadowColor = isDark ? Colors.transparent : Colors.black.withOpacity(0.08);
+
+    // ドロップダウン選択肢が指定されている場合は DropdownButtonFormField を描画
+    if (field.dropdownOptions != null && field.dropdownOptions!.isNotEmpty) {
+      final currentValue = controller.valueOf(field.key);
+      final effectiveValue = field.dropdownOptions!.contains(currentValue) ? currentValue : null;
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: DropdownButtonFormField<String>(
+          value: effectiveValue,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: field.hint,
+            filled: true,
+            fillColor: fillColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: focusedBorderColor, width: 2),
+            ),
+          ),
+          items: field.dropdownOptions!
+              .map((option) => DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(option.isEmpty ? '未分類' : option),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            if (value != null) {
+              controller.updateValue(field.key, value, refresh: true);
+            }
+          },
+        ),
+      );
+    }
+
     final textController = _controllers[field.key]!;
     Widget? suffix = field.suffixWidget;
     if (suffix == null && field.suffixBuilder != null) {
@@ -172,14 +230,6 @@ class _RichMasterEditDialogState<T>
         },
       );
     }
-
-    final label = field.required ? '${field.label} *' : field.label;
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor = isDark ? colorScheme.surfaceContainerHighest : Colors.white;
-    final borderColor = isDark ? colorScheme.outline : Colors.grey.shade300;
-    final focusedBorderColor = colorScheme.primary;
-    final shadowColor = isDark ? Colors.transparent : Colors.black.withOpacity(0.08);
 
     return Container(
       decoration: BoxDecoration(
