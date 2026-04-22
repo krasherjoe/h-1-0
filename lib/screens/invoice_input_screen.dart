@@ -1854,48 +1854,23 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       );
     }
 
-    final mode = ValueNotifier<String>(_currentInvoice?.priceAdjustmentType ?? 'round_down'); // 'round_down' or 'manual'
-    final unitController = TextEditingController(
-      text: _currentInvoice?.priceAdjustmentUnit?.toString() ?? '1000',
-    );
     final manualDiscountController = TextEditingController(
       text: (_currentInvoice?.priceAdjustmentType == 'manual' ? _currentInvoice?.priceAdjustmentUnit?.toString() : '0') ?? '0',
     );
     final calculatedResult = ValueNotifier<Map<String, int>>({});
 
     void updateCalculation() {
-      if (mode.value == 'round_down') {
-        final unit = int.tryParse(unitController.text);
-        if (unit == null || unit <= 0) {
-          calculatedResult.value = {};
-          return;
-        }
+      final discount = int.tryParse(manualDiscountController.text) ?? 0;
+      final baseAmount = _subTotal - _calculateItemDiscount();
+      final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
+      final totalBeforeAdjustment = baseAmount + taxAmount;
+      final adjustedTotal = totalBeforeAdjustment - discount;
 
-        final baseAmount = _subTotal - _calculateItemDiscount();
-        final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
-        final totalBeforeAdjustment = baseAmount + taxAmount;
-        final adjustedTotal = (totalBeforeAdjustment ~/ unit) * unit;
-        final discount = totalBeforeAdjustment - adjustedTotal;
-
-        calculatedResult.value = {
-          'before': totalBeforeAdjustment,
-          'after': adjustedTotal,
-          'discount': discount,
-        };
-      } else {
-        // Manual mode
-        final discount = int.tryParse(manualDiscountController.text) ?? 0;
-        final baseAmount = _subTotal - _calculateItemDiscount();
-        final taxAmount = _includeTax ? (baseAmount * _taxRate).floor() : 0;
-        final totalBeforeAdjustment = baseAmount + taxAmount;
-        final adjustedTotal = totalBeforeAdjustment - discount;
-
-        calculatedResult.value = {
-          'before': totalBeforeAdjustment,
-          'after': adjustedTotal,
-          'discount': discount,
-        };
-      }
+      calculatedResult.value = {
+        'before': totalBeforeAdjustment,
+        'after': adjustedTotal,
+        'discount': discount,
+      };
     }
 
     updateCalculation();
@@ -1908,10 +1883,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+            final dialogHeight = MediaQuery.of(context).size.height * 0.8;
             return Dialog(
               child: SizedBox(
                 width: 360,
-                height: MediaQuery.of(context).size.height * 0.8,
+                height: dialogHeight,
                 child: Column(
                   children: [
                     // 上部：スクロール可能なコンテンツ
@@ -1922,131 +1898,54 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // モード切り替え
-                            SegmentedButton<String>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: 'round_down',
-                                  label: Text('切り捨て計算'),
+                            const Text(
+                              '値引き額:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: manualDiscountController,
+                                    keyboardType: TextInputType.none,
+                                    decoration: InputDecoration(
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    onChanged: (_) {
+                                      updateCalculation();
+                                      setState(() {});
+                                    },
+                                  ),
                                 ),
-                                ButtonSegment(
-                                  value: 'manual',
-                                  label: Text('手動入力'),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.backspace),
+                                    onPressed: () {
+                                      if (manualDiscountController.text.isNotEmpty) {
+                                        manualDiscountController.text = manualDiscountController.text
+                                            .substring(
+                                              0,
+                                              manualDiscountController.text.length - 1,
+                                            );
+                                        updateCalculation();
+                                        setState(() {});
+                                      }
+                                    },
+                                    padding: EdgeInsets.zero,
+                                  ),
                                 ),
                               ],
-                              selected: {mode.value},
-                              onSelectionChanged: (Set<String> newSelection) {
-                                mode.value = newSelection.first;
-                                updateCalculation();
-                                setState(() {});
-                              },
                             ),
-                            const SizedBox(height: 12),
-                            
-                            // 切り捨て計算モード
-                            if (mode.value == 'round_down') ...[
-                              const Text(
-                                '切り捨て単位:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: unitController,
-                                      keyboardType: TextInputType.none,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
-                                      ),
-                                      onChanged: (_) {
-                                        updateCalculation();
-                                        setState(() {});
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 40,
-                                    height: 40,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.backspace),
-                                      onPressed: () {
-                                        if (unitController.text.isNotEmpty) {
-                                          unitController.text = unitController.text
-                                              .substring(
-                                                0,
-                                                unitController.text.length - 1,
-                                              );
-                                          updateCalculation();
-                                          setState(() {});
-                                        }
-                                      },
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            
-                            // 手動入力モード
-                            if (mode.value == 'manual') ...[
-                              const Text(
-                                '値引き額:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: manualDiscountController,
-                                      keyboardType: TextInputType.none,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
-                                      ),
-                                      onChanged: (_) {
-                                        updateCalculation();
-                                        setState(() {});
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 40,
-                                    height: 40,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.backspace),
-                                      onPressed: () {
-                                        if (manualDiscountController.text.isNotEmpty) {
-                                          manualDiscountController.text = manualDiscountController.text
-                                              .substring(
-                                                0,
-                                                manualDiscountController.text.length - 1,
-                                              );
-                                          updateCalculation();
-                                          setState(() {});
-                                        }
-                                      },
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            
                             const SizedBox(height: 12),
                             ValueListenableBuilder<Map<String, int>>(
                               valueListenable: calculatedResult,
@@ -2083,9 +1982,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(
-                                            mode.value == 'round_down' ? '切り捨て後:' : '調整後:',
-                                          ),
+                                          const Text('調整後:'),
                                           Text(
                                             '￥${fmt.format(result['after'])}',
                                             style: TextStyle(
@@ -2119,15 +2016,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         ),
                       ),
                     ),
-                    // 中部：テンキー（固定・スクロールしない）
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildCalculatorKeypad(
-                        controller: mode.value == 'round_down' ? unitController : manualDiscountController,
-                        onUpdate: () {
-                          updateCalculation();
-                          setState(() {});
-                        },
+                    // 中部：テンキー（ダイアログ高さの50%）
+                    SizedBox(
+                      height: dialogHeight * 0.5,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildCalculatorKeypad(
+                          controller: manualDiscountController,
+                          onUpdate: () {
+                            updateCalculation();
+                            setState(() {});
+                          },
+                        ),
                       ),
                     ),
                     // 下部：アクションボタン（固定）
@@ -2158,30 +2058,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           ElevatedButton(
                             onPressed: () {
                               if (_currentInvoice != null) {
-                                if (mode.value == 'round_down') {
-                                  final unit = int.tryParse(unitController.text);
-                                  if (unit != null && unit > 0) {
-                                    this.setState(() {
-                                      _currentInvoice = _currentInvoice!.copyWith(
-                                        priceAdjustmentType: 'round_down',
-                                        priceAdjustmentUnit: unit,
-                                      );
-                                    });
-                                    _pushHistory();
-                                    Navigator.pop(dialogContext);
-                                  }
-                                } else {
-                                  final discount = int.tryParse(manualDiscountController.text);
-                                  if (discount != null && discount >= 0) {
-                                    this.setState(() {
-                                      _currentInvoice = _currentInvoice!.copyWith(
-                                        priceAdjustmentType: 'manual',
-                                        priceAdjustmentUnit: discount,
-                                      );
-                                    });
-                                    _pushHistory();
-                                    Navigator.pop(dialogContext);
-                                  }
+                                final discount = int.tryParse(manualDiscountController.text);
+                                if (discount != null && discount >= 0) {
+                                  this.setState(() {
+                                    _currentInvoice = _currentInvoice!.copyWith(
+                                      priceAdjustmentType: 'manual',
+                                      priceAdjustmentUnit: discount,
+                                    );
+                                  });
+                                  _pushHistory();
+                                  Navigator.pop(dialogContext);
                                 }
                               }
                             },
