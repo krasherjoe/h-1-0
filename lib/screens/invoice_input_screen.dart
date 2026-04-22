@@ -289,9 +289,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         final inv = widget.existingInvoice!;
         _selectedCustomer = inv.customer;
         _items.addAll(inv.items);
-        _taxRate = inv.taxRate > 0 ? inv.taxRate : defaultTaxRate;
-        // 既存伝票: 税率が保存済 or includeTaxフラグon or 会社のデフォルト税率>0 なら課税表示
-        _includeTax = inv.taxRate > 0 || inv.includeTax || defaultTaxRate > 0;
+        // HASHチェーンでロック済み伝票は保存時点の税率・課税状態を完全に維持（不変）
+        // 下書き伝票のみF1(会社設定)のデフォルト税率を反映
+        if (inv.isLocked) {
+          _taxRate = inv.taxRate;
+          _includeTax = inv.taxRate > 0 || inv.includeTax;
+        } else {
+          _taxRate = inv.taxRate > 0 ? inv.taxRate : defaultTaxRate;
+          _includeTax = inv.taxRate > 0 || inv.includeTax || defaultTaxRate > 0;
+        }
         _documentType = inv.documentType;
         _selectedDate = inv.date;
         _isDraft = inv.isDraft;
