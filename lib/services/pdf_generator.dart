@@ -307,7 +307,7 @@ Future<pw.Document> buildInvoiceDocument(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(8),
               decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
-              child: pw.Text(invoice.notes!),
+              child: pw.Text(invoice.notes!, textAlign: pw.TextAlign.left),
             ),
           ],
           // 領収書の但し書き
