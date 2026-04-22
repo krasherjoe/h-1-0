@@ -1910,6 +1910,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                     controller: manualDiscountController,
                                     keyboardType: TextInputType.none,
                                     decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
