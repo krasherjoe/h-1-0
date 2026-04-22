@@ -2073,7 +2073,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 }
                               }
                             },
-                            child: const Text('設定'),
+                            child: const Text('登録'),
                           ),
                         ],
                       ),
@@ -2137,7 +2137,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: 4,
-        childAspectRatio: 2.0,
+        childAspectRatio: 1.0,
         mainAxisSpacing: 4,
         crossAxisSpacing: 4,
         children: [
