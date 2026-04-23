@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'product_master_screen.dart';
+import 'screen_pc_product_category_master.dart';
 import 'customer_master_screen.dart';
 import 'activity_log_screen.dart';
 import 'sales_report_screen.dart';
@@ -43,6 +44,18 @@ class _ManagementScreenState extends State<ManagementScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => const ProductMasterScreen(),
+              ),
+            ),
+          ),
+          _buildMenuTile(
+            context,
+            Icons.category,
+            "PC:商品カテゴリーマスター",
+            "商品カテゴリーの追加・編集・非表示を管理します",
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProductCategoryMasterScreen(),
               ),
             ),
           ),
