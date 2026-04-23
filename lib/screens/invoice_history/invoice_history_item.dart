@@ -91,44 +91,36 @@ class InvoiceHistoryItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            customerName,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: invoice.isLocked ? Colors.grey : Colors.black87,
+                        if (invoice.isDraft)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade100,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            child: const Text(
+                              '下書き',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (invoice.isDraft)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                margin: const EdgeInsets.only(right: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade100,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  '下書き',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
-                                ),
-                              ),
-                            Text(
-                              dateFormatter.format(invoice.date),
-                              style: TextStyle(fontSize: 12, color: dateColor),
-                            ),
-                          ],
+                        Text(
+                          dateFormatter.format(invoice.date),
+                          style: TextStyle(fontSize: 12, color: dateColor),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      customerName,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: invoice.isLocked ? Colors.grey : Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
