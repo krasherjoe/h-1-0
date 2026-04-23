@@ -11,6 +11,7 @@ import '../widgets/zoomable_app_bar.dart';
 import '../services/gps_service.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
+import 'product_picker_modal.dart';
 import '../models/product_model.dart';
 import '../services/app_settings_repository.dart';
 import '../services/company_repository.dart';
@@ -1025,24 +1026,30 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Future<void> _showItemEditSheet(int idx) async {
     if (_isLocked) return;
     final item = _items[idx];
-    final product = await Navigator.push<Product>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProductMasterScreen(selectionMode: true),
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => ProductPickerModal(
+        onProductSelected: (product) {
+          if (!mounted) return;
+          setState(() {
+            _items[idx] = item.copyWith(
+              productId: product.id,
+              description: product.name,
+              unitPrice: product.defaultUnitPrice,
+            );
+          });
+          _pushHistory();
+          final id = _ensureCurrentId();
+          _editLogRepo.addLog(id, '明細「${product.name}」を商品マスターから変更しました')
+              .then((_) => _loadEditLogs());
+        },
       ),
     );
-    if (product == null || !mounted) return;
-    setState(() {
-      _items[idx] = item.copyWith(
-        productId: product.id,
-        description: product.name,
-        unitPrice: product.defaultUnitPrice,
-      );
-    });
-    _pushHistory();
-    final id = _ensureCurrentId();
-    await _editLogRepo.addLog(id, '明細「${product.name}」を商品マスターから変更しました');
-    await _loadEditLogs();
   }
 
   Widget _buildItemsSection(NumberFormat fmt) {
