@@ -1214,21 +1214,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                     await _loadEditLogs();
                                   }
                                 },
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.description,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              if (!_isLocked)
-                                const Icon(Icons.edit,
-                                    size: 14, color: Colors.grey),
-                            ],
+                          child: Text(
+                            item.description,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
