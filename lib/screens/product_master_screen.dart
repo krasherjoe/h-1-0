@@ -613,10 +613,15 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 itemBuilder: (context, index) {
                   final p = _filteredProducts[index];
                   return Card(
-                    color: Colors.white,
+                    color: p.isHidden ? Colors.red.shade50 : Colors.white,
                     margin: const EdgeInsets.only(bottom: 8),
                     elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: p.isHidden
+                          ? BorderSide(color: Colors.red.shade200, width: 1)
+                          : BorderSide.none,
+                    ),
                     child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: p.isLocked
@@ -650,9 +655,11 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                           p.name + (p.isHidden ? " (非表示)" : ""),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: p.isHidden || p.isLocked
-                                ? Colors.grey
-                                : (isDark ? Colors.white : Colors.black87),
+                            color: p.isHidden
+                                ? Colors.red.shade700
+                                : (p.isLocked
+                                    ? Colors.grey
+                                    : (isDark ? Colors.white : Colors.black87)),
                           ),
                         );
                       }
