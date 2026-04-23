@@ -199,6 +199,102 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     });
   }
 
+  Future<String?> _showCategoryPicker() async {
+    await _loadProducts(); // カテゴリリストを最新化
+    if (!mounted) return null;
+    final TextEditingController newCatCtrl = TextEditingController();
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.6,
+              maxChildSize: 0.9,
+              minChildSize: 0.4,
+              builder: (_, scrollCtrl) => Column(
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('カテゴリを選択',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: newCatCtrl,
+                            decoration: InputDecoration(
+                              hintText: '新規カテゴリ名',
+                              isDense: true,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final name = newCatCtrl.text.trim();
+                            if (name.isEmpty) return;
+                            await _categoryRepo.getOrCreateCategoryId(name);
+                            await _loadProducts();
+                            if (ctx.mounted) Navigator.pop(ctx, name);
+                          },
+                          child: const Text('追加'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 16),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollCtrl,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.clear, size: 18),
+                          title: const Text('未分類（クリア）'),
+                          onTap: () => Navigator.pop(ctx, ''),
+                        ),
+                        ..._categories.map((c) => ListTile(
+                          leading: const Icon(Icons.label_outline, size: 18),
+                          title: Text(c.name),
+                          onTap: () => Navigator.pop(ctx, c.name),
+                        )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _showEditDialog({Product? product}) async {
     final result = await showRichMasterEditSheet<Product>(
       context: context,
@@ -220,8 +316,20 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             MasterFieldConfig(
               key: 'category',
               label: 'カテゴリ',
-              hint: 'カテゴリを選択',
-              dropdownOptions: ['', ..._categories.map((c) => c.name)],
+              hint: 'カテゴリを選択または入力',
+              suffixBuilder: (ctrl, setDialogState, updateValue) {
+                return IconButton(
+                  icon: const Icon(Icons.list_alt),
+                  tooltip: 'カテゴリマスターから選択',
+                  onPressed: () async {
+                    final selected = await _showCategoryPicker();
+                    if (selected != null) {
+                      ctrl.text = selected;
+                      updateValue(selected);
+                    }
+                  },
+                );
+              },
             ),
             MasterFieldConfig(
               key: 'barcode',
