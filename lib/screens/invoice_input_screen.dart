@@ -1163,7 +1163,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                         children: [
                                           TextField(
                                             controller: descCtrl,
-                                            autofocus: true,
                                             decoration: const InputDecoration(
                                                 labelText: '品名 / 項目'),
                                           ),
