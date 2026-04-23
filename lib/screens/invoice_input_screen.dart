@@ -1022,6 +1022,85 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
+  Future<void> _showItemEditSheet(int idx) async {
+    if (_isLocked) return;
+    final item = _items[idx];
+    final descCtrl = TextEditingController(text: item.description);
+    final priceCtrl = TextEditingController(text: item.unitPrice.toString());
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 20,
+          bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '明細の編集',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: '品名 / 項目'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: priceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: '単価'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('キャンセル'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, {
+                    'description': descCtrl.text,
+                    'unitPrice': int.tryParse(priceCtrl.text),
+                  }),
+                  child: const Text('更新'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ],
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _items[idx] = item.copyWith(
+          description: result['description'] as String,
+          unitPrice: result['unitPrice'] as int? ?? item.unitPrice,
+        );
+      });
+      _pushHistory();
+      final id = _ensureCurrentId();
+      await _editLogRepo.addLog(
+        id,
+        '明細「${result['description']}」を更新しました',
+      );
+      await _loadEditLogs();
+    }
+  }
+
   Widget _buildItemsSection(NumberFormat fmt) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1137,127 +1216,24 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Card(
                   margin: const EdgeInsets.only(bottom: 6),
                   elevation: 0.5,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: _isLocked
-                              ? null
-                              : () async {
-                                  final descCtrl = TextEditingController(
-                                      text: item.description);
-                                  final priceCtrl = TextEditingController(
-                                      text: item.unitPrice.toString());
-                                  final result = await showModalBottomSheet<
-                                      Map<String, dynamic>>(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    useSafeArea: true,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(12)),
-                                    ),
-                                    builder: (ctx) => Padding(
-                                      padding: EdgeInsets.only(
-                                        left: 16,
-                                        right: 16,
-                                        top: 20,
-                                        bottom:
-                                            MediaQuery.viewInsetsOf(ctx)
-                                                    .bottom +
-                                                16,
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          const Text(
-                                            '明細の編集',
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight:
-                                                    FontWeight.bold),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          TextField(
-                                            controller: descCtrl,
-                                            autofocus: true,
-                                            decoration:
-                                                const InputDecoration(
-                                                    labelText: '品名 / 項目'),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          TextField(
-                                            controller: priceCtrl,
-                                            keyboardType:
-                                                TextInputType.number,
-                                            decoration:
-                                                const InputDecoration(
-                                                    labelText: '単価'),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            children: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(ctx),
-                                                child:
-                                                    const Text('キャンセル'),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              ElevatedButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(ctx, {
-                                                  'description':
-                                                      descCtrl.text,
-                                                  'unitPrice': int.tryParse(
-                                                      priceCtrl.text),
-                                                }),
-                                                child: const Text('更新'),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                  if (result != null && mounted) {
-                                    setState(() {
-                                      _items[idx] = item.copyWith(
-                                        description:
-                                            result['description'] as String,
-                                        unitPrice:
-                                            result['unitPrice'] as int? ??
-                                                item.unitPrice,
-                                      );
-                                    });
-                                    _pushHistory();
-                                    final id = _ensureCurrentId();
-                                    await _editLogRepo.addLog(
-                                      id,
-                                      '明細「${result['description']}」を更新しました',
-                                    );
-                                    await _loadEditLogs();
-                                  }
-                                },
-                          child: Text(
+                  child: GestureDetector(
+                    onTap: () => _showItemEditSheet(idx),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             item.description,
                             style: const TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
+                          const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1413,6 +1389,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           ],
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),
