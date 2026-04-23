@@ -1178,6 +1178,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                             const SizedBox(height: 12),
                                             TextField(
                                               controller: descCtrl,
+                                              autofocus: true,
                                               decoration:
                                                   const InputDecoration(
                                                       labelText:
