@@ -98,31 +98,92 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                   itemCount: _estimates.length,
                   itemBuilder: (context, index) {
                     final est = _estimates[index];
+                    final subjectText =
+                        (est.subject?.isNotEmpty == true)
+                            ? est.subject!
+                            : (est.items.isNotEmpty
+                                ? est.items.first.description
+                                : '（明細なし）');
+                    final amountText =
+                        '¥${est.totalAmount.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},')}';
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: est.isDraft ? Colors.orange.shade100 : Colors.blue.shade100,
-                          child: Icon(
-                            est.isDraft ? Icons.edit_note : Icons.description,
-                            color: est.isDraft ? Colors.orange : Colors.blue,
-                          ),
-                        ),
-                        title: Text(
-                          est.customer.displayName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          '${est.date.year}/${est.date.month}/${est.date.day} - ${est.isDraft ? '下書き' : '確定'}\n'
-                          '合計: ¥${est.totalAmount}',
-                        ),
-                        isThreeLine: true,
-                        trailing: const Icon(Icons.chevron_right),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('見積詳細画面は今後実装予定です')),
+                            const SnackBar(
+                                content: Text('見積詳細画面は今後実装予定です')),
                           );
                         },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: est.isDraft
+                                    ? Colors.orange.shade100
+                                    : Colors.blue.shade100,
+                                child: Icon(
+                                  est.isDraft
+                                      ? Icons.edit_note
+                                      : Icons.description,
+                                  color: est.isDraft
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      est.customer.displayName,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${est.date.year}/${est.date.month.toString().padLeft(2, '0')}/${est.date.day.toString().padLeft(2, '0')}　${est.isDraft ? '下書き' : '確定'}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            subjectText,
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade700),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          amountText,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right,
+                                  color: Colors.grey),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },
