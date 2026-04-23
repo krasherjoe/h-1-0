@@ -40,9 +40,9 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -55,7 +55,7 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 4),
-                const Text("商品・サービス選択", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text("PS:商品・サービス選択", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -71,14 +71,20 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                   icon: const Icon(Icons.clear),
                   onPressed: () { _searchController.clear(); _onSearch(""); },
                 ),
+                filled: true,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
               onChanged: _onSearch,
             ),
           ),
           const SizedBox(height: 8),
-          const Divider(),
+          const Divider(height: 1),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -99,10 +105,16 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                         ),
                       )
                     : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         itemCount: _products.length,
                         itemBuilder: (context, index) {
                           final product = _products[index];
-                          return ListTile(
+                          return Card(
+                            color: Colors.white,
+                            margin: const EdgeInsets.only(bottom: 8),
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
                             leading: const Icon(Icons.inventory_2_outlined),
                             title: Text(product.name),
                             subtitle: Text("￥${product.defaultUnitPrice} (在庫: ${product.stockQuantity})"),
@@ -167,6 +179,7 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                                 ),
                               );
                             },
+                          ),
                           );
                         },
                       ),
