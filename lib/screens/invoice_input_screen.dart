@@ -1762,12 +1762,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   children: [
                     Icon(Icons.swipe, size: 16, color: Colors.indigo),
                     const SizedBox(width: 6),
-                    Text(
-                      'タイトルバー横になぞると拡大縮小できます',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.indigo,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        'タイトルバー横になぞると拡大縮小できます',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.indigo,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
