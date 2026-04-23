@@ -87,42 +87,23 @@ class InvoiceHistoryItem extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Row(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
                             customerName,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: invoice.isLocked ? Colors.grey : Colors.black87,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            subjectDisplay,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: subjectColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                        ),
+                        const SizedBox(width: 6),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -145,22 +126,37 @@ class InvoiceHistoryItem extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 140),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      invoice.invoiceNumber,
+                      style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
                           child: Text(
-                            invoice.invoiceNumber,
-                            style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                            subjectDisplay,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: subjectColor,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(width: 8),
                         Text(
                           "￥${amountFormatter.format(invoice.totalAmount)}",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: amountColor),
-                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: amountColor),
                         ),
                       ],
                     ),
