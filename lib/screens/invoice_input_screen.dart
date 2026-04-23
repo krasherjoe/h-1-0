@@ -1145,11 +1145,90 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item.description,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w500,
+                        GestureDetector(
+                          onTap: _isLocked
+                              ? null
+                              : () async {
+                                  final descCtrl = TextEditingController(
+                                      text: item.description);
+                                  final priceCtrl = TextEditingController(
+                                      text: item.unitPrice.toString());
+                                  final result =
+                                      await showDialog<Map<String, dynamic>>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('明細の編集'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: descCtrl,
+                                            autofocus: true,
+                                            decoration: const InputDecoration(
+                                                labelText: '品名 / 項目'),
+                                          ),
+                                          TextField(
+                                            controller: priceCtrl,
+                                            keyboardType:
+                                                TextInputType.number,
+                                            decoration: const InputDecoration(
+                                                labelText: '単価'),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx),
+                                          child: const Text('キャンセル'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.pop(ctx, {
+                                              'description': descCtrl.text,
+                                              'unitPrice': int.tryParse(
+                                                  priceCtrl.text),
+                                            });
+                                          },
+                                          child: const Text('更新'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (result != null && mounted) {
+                                    setState(() {
+                                      _items[idx] = item.copyWith(
+                                        description:
+                                            result['description'] as String,
+                                        unitPrice:
+                                            result['unitPrice'] as int? ??
+                                                item.unitPrice,
+                                      );
+                                    });
+                                    _pushHistory();
+                                    final id = _ensureCurrentId();
+                                    await _editLogRepo.addLog(
+                                      id,
+                                      '明細「${result['description']}」を更新しました',
+                                    );
+                                    await _loadEditLogs();
+                                  }
+                                },
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.description,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (!_isLocked)
+                                const Icon(Icons.edit,
+                                    size: 14, color: Colors.grey),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 4),
