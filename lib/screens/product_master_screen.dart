@@ -206,6 +206,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.grey.shade100,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -247,8 +248,13 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                             decoration: InputDecoration(
                               hintText: '新規カテゴリ名',
                               isDense: true,
+                              filled: true,
+                              fillColor: Colors.white,
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8)),
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.grey.shade300)),
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
                             ),
@@ -272,16 +278,27 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   Expanded(
                     child: ListView(
                       controller: scrollCtrl,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.clear, size: 18),
-                          title: const Text('未分類（クリア）'),
-                          onTap: () => Navigator.pop(ctx, ''),
+                        Card(
+                          color: Colors.white,
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: ListTile(
+                            leading: const Icon(Icons.clear, size: 18),
+                            title: const Text('未分類（クリア）'),
+                            onTap: () => Navigator.pop(ctx, ''),
+                          ),
                         ),
-                        ..._categories.map((c) => ListTile(
-                          leading: const Icon(Icons.label_outline, size: 18),
-                          title: Text(c.name),
-                          onTap: () => Navigator.pop(ctx, c.name),
+                        ..._categories.map((c) => Card(
+                          color: Colors.white,
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: ListTile(
+                            leading: const Icon(Icons.label_outline, size: 18),
+                            title: Text(c.name),
+                            onTap: () => Navigator.pop(ctx, c.name),
+                          ),
                         )),
                       ],
                     ),
@@ -480,6 +497,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("P1:商品マスター"),
@@ -571,11 +589,16 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             ? const Center(child: Text("商品が見つかりません"))
             : ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 80, top: 8),
+                padding: const EdgeInsets.only(bottom: 80, top: 4, left: 12, right: 12),
                 itemCount: _filteredProducts.length,
                 itemBuilder: (context, index) {
                   final p = _filteredProducts[index];
-                  return ListTile(
+                  return Card(
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: p.isLocked
                           ? Colors.grey.shade300
@@ -714,6 +737,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                             onPressed: () => _showEditDialog(product: p),
                             tooltip: "編集（電子帳簿保存法対応：ロック中も履歴保存して編集可能）",
                           ),
+                    ),
                   );
                 },
               ),
