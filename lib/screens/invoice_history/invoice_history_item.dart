@@ -101,6 +101,8 @@ class InvoiceHistoryItem extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               color: invoice.isLocked ? Colors.grey : Colors.black87,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
