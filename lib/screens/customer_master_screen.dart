@@ -1145,6 +1145,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         leading: const BackButton(),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -1299,12 +1300,17 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.only(bottom: 80, top: 4),
+                padding: const EdgeInsets.only(bottom: 80, top: 4, left: 12, right: 12),
                 sliver: SliverList.builder(
                   itemCount: _filtered.length,
                   itemBuilder: (context, index) {
                     final c = _filtered[index];
-                    return ListTile(
+                    return Card(
+                      color: Colors.white,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: c.isLocked
                             ? (Theme.of(context).brightness == Brightness.dark
@@ -1379,6 +1385,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                               ],
                             ),
                       onLongPress: () => _showContextActions(c),
+                      ),
                     );
                   },
                 ),
