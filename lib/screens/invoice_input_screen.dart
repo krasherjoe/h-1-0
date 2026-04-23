@@ -1216,6 +1216,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Card(
                   margin: const EdgeInsets.only(bottom: 6),
                   elevation: 0.5,
+                  color: Colors.white,
                   child: GestureDetector(
                     onTap: () => _showItemEditSheet(idx),
                     child: Padding(
