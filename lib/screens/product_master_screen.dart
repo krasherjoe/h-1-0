@@ -149,17 +149,19 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   bool _isLoading = true;
   String _searchQuery = "";
   String _sortKey = 'name_asc';
+  bool _showHidden = false;
 
   @override
   void initState() {
     super.initState();
+    _showHidden = widget.showHidden;
     _loadProducts();
   }
 
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
     final products = await _productRepo.getAllProducts(
-      includeHidden: widget.showHidden,
+      includeHidden: _showHidden,
     );
     final categories = await _categoryRepo.getAllCategories();
     if (!mounted) return;
@@ -179,12 +181,12 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             (p.barcode?.toLowerCase().contains(query) ?? false) ||
             (p.category?.toLowerCase().contains(query) ?? false);
       }).toList();
-      if (!widget.showHidden) {
+      if (!_showHidden) {
         _filteredProducts = _filteredProducts
             .where((p) => !p.isHidden)
             .toList();
       }
-      if (widget.showHidden) {
+      if (_showHidden) {
         _filteredProducts.sort((a, b) => b.id.compareTo(a.id));
       } else {
         switch (_sortKey) {
@@ -531,9 +533,12 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               onSelected: (value) {
                 if (value == 'cleanup_versions') {
                   _cleanupDuplicateVersions();
+                } else if (value == 'toggle_hidden') {
+                  setState(() => _showHidden = !_showHidden);
+                  _loadProducts();
                 }
               },
-              itemBuilder: (BuildContext context) => const [
+              itemBuilder: (BuildContext context) => [
                 PopupMenuItem(
                   value: 'cleanup_versions',
                   child: Row(
@@ -541,6 +546,20 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                       Icon(Icons.merge_type, size: 18, color: Colors.indigo),
                       SizedBox(width: 8),
                       Text('重複商品を整理'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'toggle_hidden',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showHidden ? Icons.visibility_off : Icons.visibility,
+                        size: 18,
+                        color: Colors.indigo,
+                      ),
+                      SizedBox(width: 8),
+                      Text(_showHidden ? '非表示商品を隠す' : '非表示商品を表示'),
                     ],
                   ),
                 ),
