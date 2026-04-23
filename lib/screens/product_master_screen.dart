@@ -193,6 +193,15 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           case 'name_desc':
             _filteredProducts.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
             break;
+          case 'category_asc':
+            _filteredProducts.sort((a, b) {
+              final catA = (a.category ?? '').toLowerCase();
+              final catB = (b.category ?? '').toLowerCase();
+              final cmp = catA.compareTo(catB);
+              if (cmp != 0) return cmp;
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
+            break;
           default:
             _filteredProducts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
             break;
@@ -515,10 +524,12 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               selectedItemBuilder: (context) => [
                 Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
+                Text('カテゴリ昇順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
               ],
               items: [
                 DropdownMenuItem(value: 'name_asc', child: Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
                 DropdownMenuItem(value: 'name_desc', child: Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+                DropdownMenuItem(value: 'category_asc', child: Text('カテゴリ昇順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
               ],
               onChanged: (v) {
                 setState(() {
