@@ -1025,80 +1025,24 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   Future<void> _showItemEditSheet(int idx) async {
     if (_isLocked) return;
     final item = _items[idx];
-    final descCtrl = TextEditingController(text: item.description);
-    final priceCtrl = TextEditingController(text: item.unitPrice.toString());
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 20,
-          bottom: MediaQuery.viewInsetsOf(ctx).bottom + 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              '明細の編集',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descCtrl,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: '品名 / 項目'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: priceCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: '単価'),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('キャンセル'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, {
-                    'description': descCtrl.text,
-                    'unitPrice': int.tryParse(priceCtrl.text),
-                  }),
-                  child: const Text('更新'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-          ],
-        ),
+    final product = await Navigator.push<Product>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ProductMasterScreen(selectionMode: true),
       ),
     );
-    if (result != null && mounted) {
-      setState(() {
-        _items[idx] = item.copyWith(
-          description: result['description'] as String,
-          unitPrice: result['unitPrice'] as int? ?? item.unitPrice,
-        );
-      });
-      _pushHistory();
-      final id = _ensureCurrentId();
-      await _editLogRepo.addLog(
-        id,
-        '明細「${result['description']}」を更新しました',
+    if (product == null || !mounted) return;
+    setState(() {
+      _items[idx] = item.copyWith(
+        productId: product.id,
+        description: product.name,
+        unitPrice: product.defaultUnitPrice,
       );
-      await _loadEditLogs();
-    }
+    });
+    _pushHistory();
+    final id = _ensureCurrentId();
+    await _editLogRepo.addLog(id, '明細「${product.name}」を商品マスターから変更しました');
+    await _loadEditLogs();
   }
 
   Widget _buildItemsSection(NumberFormat fmt) {
