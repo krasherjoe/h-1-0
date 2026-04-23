@@ -298,7 +298,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       title: const Text("設定"),
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
+                            .then((_) { if (mounted) _loadInvoiceNumberSetting(); });
                       },
                     ),
                     ListTile(
