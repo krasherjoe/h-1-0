@@ -8,6 +8,7 @@ class InvoiceHistoryItem extends StatelessWidget {
   final bool isUnlocked;
   final NumberFormat amountFormatter;
   final DateFormat dateFormatter;
+  final bool showInvoiceNumber;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onEdit;
@@ -18,6 +19,7 @@ class InvoiceHistoryItem extends StatelessWidget {
     required this.isUnlocked,
     required this.amountFormatter,
     required this.dateFormatter,
+    this.showInvoiceNumber = true,
     this.onTap,
     this.onLongPress,
     this.onEdit,
@@ -122,13 +124,14 @@ class InvoiceHistoryItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      invoice.invoiceNumber,
-                      style: const TextStyle(fontSize: 10.5, color: Colors.grey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    if (showInvoiceNumber) ...[                      const SizedBox(height: 2),
+                      Text(
+                        invoice.invoiceNumber,
+                        style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Row(
                       children: [

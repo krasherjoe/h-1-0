@@ -75,6 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
   SyncTransportMode _transportMode = SyncTransportMode.gmailOnly;
   bool _googleFeaturesEnabled = false;
+  bool _useDashboardHome = false;
+  bool _showHistoryInvoiceNumber = true;
   bool _googleAuthLoading = false;
   GoogleSignInAccount? _currentGoogleAccount;
 
@@ -321,6 +323,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final showCategoryDesc = await _repo
           .getDashboardShowCategoryDescriptions();
       setState(() => _showCategoryDescriptions = showCategoryDesc);
+      final showInvNum = await _repo.getShowHistoryInvoiceNumber();
+      setState(() => _showHistoryInvoiceNumber = showInvNum);
       final encoding = await _repo.getGmailEnvelopeEncoding();
       setState(() => _encodingMode = encoding);
       final transport = await _repo.getSyncTransportMode();
@@ -465,6 +469,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 builder: (_) => const DashboardMenuSettingsScreen(),
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile.adaptive(
+            secondary: const Icon(Icons.tag),
+            title: const Text('A2:伝票番号を表示'),
+            subtitle: const Text('履歴リストのカードに伝票番号を表示します'),
+            value: _showHistoryInvoiceNumber,
+            onChanged: (v) async {
+              setState(() => _showHistoryInvoiceNumber = v);
+              await _repo.setShowHistoryInvoiceNumber(v);
+            },
           ),
           const SizedBox(height: 12),
 

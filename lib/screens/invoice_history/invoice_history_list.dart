@@ -9,6 +9,7 @@ class InvoiceHistoryList extends StatelessWidget {
   final bool isUnlocked;
   final NumberFormat amountFormatter;
   final DateFormat dateFormatter;
+  final bool showInvoiceNumber;
   final void Function(Invoice) onTap;
   final void Function(Invoice) onLongPress;
   final void Function(Invoice) onEdit;
@@ -19,6 +20,7 @@ class InvoiceHistoryList extends StatelessWidget {
     required this.isUnlocked,
     required this.amountFormatter,
     required this.dateFormatter,
+    this.showInvoiceNumber = true,
     required this.onTap,
     required this.onLongPress,
     required this.onEdit,
@@ -50,6 +52,7 @@ class InvoiceHistoryList extends StatelessWidget {
           isUnlocked: isUnlocked,
           amountFormatter: amountFormatter,
           dateFormatter: dateFormatter,
+          showInvoiceNumber: showInvoiceNumber,
           onTap: () => onTap(invoice),
           onLongPress: () => onLongPress(invoice),
           onEdit: () => onEdit(invoice),

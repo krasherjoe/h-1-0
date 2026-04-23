@@ -43,6 +43,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   DateTime? _endDate;
   String _appVersion = "1.0.0";
   bool _useDashboardHome = false;
+  bool _showInvoiceNumber = true;
 
   @override
   void initState() {
@@ -51,6 +52,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
     _loadData();
     _loadVersion();
     _loadHomeMode();
+    _loadInvoiceNumberSetting();
     _homeModeSub = _settingsRepo.watchHomeMode().listen((mode) {
       if (!mounted) return;
       setState(() {
@@ -66,6 +68,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   void dispose() {
     _homeModeSub.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadInvoiceNumberSetting() async {
+    final v = await _settingsRepo.getShowHistoryInvoiceNumber();
+    if (!mounted) return;
+    setState(() => _showInvoiceNumber = v);
   }
 
   Future<void> _loadHomeMode() async {
@@ -430,6 +438,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       isUnlocked: _isUnlocked,
                       amountFormatter: amountFormatter,
                       dateFormatter: dateFormatter,
+                      showInvoiceNumber: _showInvoiceNumber,
                       onTap: (invoice) async {
                         await Navigator.push(
                           context,

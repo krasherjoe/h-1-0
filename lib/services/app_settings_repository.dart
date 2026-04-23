@@ -22,6 +22,7 @@ class AppSettingsRepository {
   static const _kTheme = 'app_theme';
   static const _kSummaryTheme = 'summary_theme';
   static const _kInvoiceListStyle = 'invoice_list_style';
+  static const _kShowHistoryInvoiceNumber = 'history_show_invoice_number';
   static const _kForceInvoiceTaxInclusiveLabels =
       'invoice_force_tax_inclusive_labels';
   static const _kShowInvoiceTaxExceptionNote =
@@ -158,6 +159,12 @@ class AppSettingsRepository {
 
   Future<void> setInvoiceListStyle(InvoiceListStyle style) async =>
       setString(_kInvoiceListStyle, style.storageValue);
+
+  Future<bool> getShowHistoryInvoiceNumber() async =>
+      getBool(_kShowHistoryInvoiceNumber, defaultValue: true);
+
+  Future<void> setShowHistoryInvoiceNumber(bool value) async =>
+      setBool(_kShowHistoryInvoiceNumber, value);
 
   Future<bool> getForceInvoiceTaxInclusiveLabels() async =>
       getBool(_kForceInvoiceTaxInclusiveLabels, defaultValue: false);
