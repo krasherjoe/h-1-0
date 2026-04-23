@@ -94,10 +94,14 @@ class InvoiceHistoryItem extends StatelessWidget {
                   children: [
                     Row(
                       children: [
+                        Text(
+                          dateFormatter.format(invoice.date),
+                          style: TextStyle(fontSize: 12, color: dateColor),
+                        ),
                         if (invoice.isDraft)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            margin: const EdgeInsets.only(right: 6),
+                            margin: const EdgeInsets.only(left: 6),
                             decoration: BoxDecoration(
                               color: Colors.orange.shade100,
                               borderRadius: BorderRadius.circular(10),
@@ -107,10 +111,6 @@ class InvoiceHistoryItem extends StatelessWidget {
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
                             ),
                           ),
-                        Text(
-                          dateFormatter.format(invoice.date),
-                          style: TextStyle(fontSize: 12, color: dateColor),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 2),
