@@ -55,7 +55,26 @@ Future<pw.Document> buildInvoiceDocument(
           italic: ipaex,
           boldItalic: ipaex,
         ).copyWith(defaultTextStyle: pw.TextStyle(fontFallback: [ipaex])),
-        buildBackground: (context) => pw.SizedBox(),
+        buildBackground: (context) {
+          // 角印のみを背景に配置。透かしは別途 buildForeground で処理し、
+          // Stack の子要素構成を F1（ダミー）/PP（実請求書）で完全一致させる。
+          if (sealImage == null) return pw.SizedBox();
+          final sealX = sealOffsetXOverride ?? companyInfo.sealOffsetX;
+          final sealY = sealOffsetYOverride ?? companyInfo.sealOffsetY;
+          return pw.Stack(
+            fit: pw.StackFit.expand,
+            children: [
+              pw.Positioned(
+                right: sealX,
+                top: sealY,
+                child: pw.Transform.rotate(
+                  angle: (sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,
+                  child: pw.Image(sealImage!, width: 100, height: 100),
+                ),
+              ),
+            ],
+          );
+        },
         buildForeground: (context) {
           if (!(invoice.isDraft && !invoice.isLocked)) return pw.SizedBox();
           return pw.Center(
@@ -335,28 +354,7 @@ Future<pw.Document> buildInvoiceDocument(
           ),
         ];
 
-        final sealX = sealOffsetXOverride ?? companyInfo.sealOffsetX;
-        final sealY = sealOffsetYOverride ?? companyInfo.sealOffsetY;
-        return [
-          pw.SizedBox(
-            width: PdfPageFormat.a4.availableWidth,
-            height: PdfPageFormat.a4.availableHeight,
-            child: pw.Stack(
-              children: [
-                pw.Column(children: content),
-                if (sealImage != null)
-                  pw.Positioned(
-                    right: sealX,
-                    top: sealY,
-                    child: pw.Transform.rotate(
-                      angle: (sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,
-                      child: pw.Image(sealImage, width: 100, height: 100),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ];
+        return [pw.Column(children: content)];
       },
       footer: (context) => pw.Column(
         mainAxisSize: pw.MainAxisSize.min,
