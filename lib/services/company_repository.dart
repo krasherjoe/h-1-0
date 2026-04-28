@@ -22,6 +22,9 @@ class CompanyRepository {
     try {
       await db.execute('ALTER TABLE company_info ADD COLUMN seal_offset_y REAL DEFAULT 50.0');
     } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE company_info ADD COLUMN seal_rotation REAL DEFAULT 0.0');
+    } catch (_) {}
   }
 
   Future<CompanyInfo> getCompanyInfo() async {
@@ -59,6 +62,7 @@ class CompanyRepository {
         sealPath: map['seal_path'],
         sealOffsetX: (map['seal_offset_x'] as num?)?.toDouble() ?? 10.0,
         sealOffsetY: (map['seal_offset_y'] as num?)?.toDouble() ?? 50.0,
+        sealRotation: (map['seal_rotation'] as num?)?.toDouble() ?? 0.0,
         taxDisplayMode: map['tax_display_mode'] ?? 'normal',
         registrationNumber: map['registration_number'],
       );
@@ -99,6 +103,7 @@ class CompanyRepository {
       'seal_path': info.sealPath,
       'seal_offset_x': info.sealOffsetX,
       'seal_offset_y': info.sealOffsetY,
+      'seal_rotation': info.sealRotation,
       'tax_display_mode': info.taxDisplayMode,
       'registration_number': info.registrationNumber,
     };

@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 53;
+  static const _databaseVersion = 54;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1623,6 +1623,11 @@ class DatabaseHelper {
     // v53: 自社住所を address + address2 の2行に拡張
     if (oldVersion < 53) {
       await _safeAddColumn(db, 'company_info', 'address2 TEXT');
+    }
+
+    // v54: 角印の回転角度
+    if (oldVersion < 54) {
+      await _safeAddColumn(db, 'company_info', 'seal_rotation REAL DEFAULT 0.0');
     }
   }
 

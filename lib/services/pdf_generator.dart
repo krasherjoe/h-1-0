@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -60,7 +61,10 @@ Future<pw.Document> buildInvoiceDocument(
                 pw.Positioned(
                   right: sealOffsetXOverride ?? companyInfo.sealOffsetX,
                   top: sealOffsetYOverride ?? companyInfo.sealOffsetY,
-                  child: pw.Image(sealImage!, width: 100, height: 100),
+                  child: pw.Transform.rotate(
+                    angle: companyInfo.sealRotation * math.pi / 180,
+                    child: pw.Image(sealImage!, width: 100, height: 100),
+                  ),
                 ),
               if (invoice.isDraft && !invoice.isLocked)
                 pw.Center(

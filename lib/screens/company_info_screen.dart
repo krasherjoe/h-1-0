@@ -156,6 +156,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       sealPath: _info.sealPath,
       sealOffsetX: _info.sealOffsetX,
       sealOffsetY: _info.sealOffsetY,
+      sealRotation: _info.sealRotation,
       taxDisplayMode: _taxDisplayMode,
       registrationNumber: _hasRegistrationNumber && _regNumberController.text.isNotEmpty
           ? 'T${_regNumberController.text.trim()}'
@@ -549,6 +550,42 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                   ),
                   if (_info.sealPath != null) ...[
                     const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          tooltip: '左回転',
+                          icon: const Icon(Icons.rotate_left),
+                          onPressed: () => setState(() {
+                            _info = _info.copyWith(
+                              sealRotation: _info.sealRotation - 1.0,
+                            );
+                          }),
+                        ),
+                        Text(
+                          '${_info.sealRotation.toStringAsFixed(0)}°',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          tooltip: '右回転',
+                          icon: const Icon(Icons.rotate_right),
+                          onPressed: () => setState(() {
+                            _info = _info.copyWith(
+                              sealRotation: _info.sealRotation + 1.0,
+                            );
+                          }),
+                        ),
+                        TextButton(
+                          onPressed: _info.sealRotation == 0.0
+                              ? null
+                              : () => setState(() {
+                                    _info = _info.copyWith(sealRotation: 0.0);
+                                  }),
+                          child: const Text('リセット'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     OutlinedButton.icon(
                       onPressed: () async {
                         final result = await Navigator.push<Map<String, double>>(
@@ -562,6 +599,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                             ),
                           ),
                         );
+
                         if (result != null && mounted) {
                           setState(() {
                             _info = _info.copyWith(

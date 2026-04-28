@@ -11,6 +11,7 @@ class CompanyInfo {
   final String? sealPath; // 角印（印鑑）の画像パス
   final double sealOffsetX; // 角印の右端からのオフセット（PDF座標）
   final double sealOffsetY; // 角印の上端からのオフセット（PDF座標）
+  final double sealRotation; // 角印の回転角度（度数）
   final String taxDisplayMode; // 'normal', 'hidden', 'text_only'
   final String? registrationNumber; // 追加: インボイス登録番号 (T番号)
 
@@ -27,6 +28,7 @@ class CompanyInfo {
     this.sealPath,
     this.sealOffsetX = 10.0,
     this.sealOffsetY = 50.0,
+    this.sealRotation = 0.0,
     this.taxDisplayMode = 'normal',
     this.registrationNumber, // 追加
   });
@@ -46,6 +48,7 @@ class CompanyInfo {
       'seal_path': sealPath,
       'seal_offset_x': sealOffsetX,
       'seal_offset_y': sealOffsetY,
+      'seal_rotation': sealRotation,
       'tax_display_mode': taxDisplayMode,
       'registration_number': registrationNumber, // 追加
     };
@@ -65,6 +68,7 @@ class CompanyInfo {
       sealPath: map['seal_path'],
       sealOffsetX: (map['seal_offset_x'] as num?)?.toDouble() ?? 10.0,
       sealOffsetY: (map['seal_offset_y'] as num?)?.toDouble() ?? 50.0,
+      sealRotation: (map['seal_rotation'] as num?)?.toDouble() ?? 0.0,
       taxDisplayMode: map['tax_display_mode'] ?? 'normal',
       registrationNumber: map['registration_number'], // 追加
     );
@@ -83,6 +87,7 @@ class CompanyInfo {
     String? sealPath,
     double? sealOffsetX,
     double? sealOffsetY,
+    double? sealRotation,
     String? taxDisplayMode,
     String? registrationNumber, // 追加
   }) {
@@ -99,6 +104,7 @@ class CompanyInfo {
       sealPath: sealPath ?? this.sealPath,
       sealOffsetX: sealOffsetX ?? this.sealOffsetX,
       sealOffsetY: sealOffsetY ?? this.sealOffsetY,
+      sealRotation: sealRotation ?? this.sealRotation,
       taxDisplayMode: taxDisplayMode ?? this.taxDisplayMode,
       registrationNumber: registrationNumber ?? this.registrationNumber, // 追加
     );
