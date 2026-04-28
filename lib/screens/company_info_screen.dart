@@ -1004,15 +1004,19 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
       child: Row(
         children: [
           SizedBox(
-            width: 80,
+            width: 72,
             child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
             icon: Icon(decBig),
             onPressed: () => _moveSeal(isX, toIncreaseDirection: false, amount: 5),
             tooltip: decBigTip,
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
             icon: Icon(decOne),
             onPressed: () => _moveSeal(isX, toIncreaseDirection: false, amount: 1),
             tooltip: decOneTip,
@@ -1027,11 +1031,15 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
             ),
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
             icon: Icon(incOne),
             onPressed: () => _moveSeal(isX, toIncreaseDirection: true, amount: 1),
             tooltip: incOneTip,
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
             icon: Icon(incBig),
             onPressed: () => _moveSeal(isX, toIncreaseDirection: true, amount: 5),
             tooltip: incBigTip,
@@ -1051,13 +1059,13 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
         actions: [
           TextButton.icon(
             onPressed: () async {
+              final nav = Navigator.of(context);
               final updated = widget.companyInfo.copyWith(
                 sealOffsetX: _offsetX,
                 sealOffsetY: _offsetY,
               );
               await _companyRepo.saveCompanyInfo(updated);
               if (!mounted) return;
-              final nav = Navigator.of(context);
               nav.pop({'x': _offsetX, 'y': _offsetY});
             },
             icon: const Icon(Icons.check, color: Colors.white),
@@ -1123,10 +1131,22 @@ Invoice _dummyInvoiceForSealPreview(CompanyInfo info) {
         quantity: 1,
         unitPrice: 10000,
       ),
+      InvoiceItem(
+        productId: 'p2',
+        description: 'サンプル商品2',
+        quantity: 1,
+        unitPrice: 10000,
+      ),
+      InvoiceItem(
+        productId: 'p3',
+        description: 'サンプル商品3',
+        quantity: 1,
+        unitPrice: 10000,
+      ),
     ],
-    documentType: DocumentType.invoice,
+    documentType: DocumentType.estimation,
     taxRate: info.defaultTaxRate,
-    isDraft: false,
+    isDraft: true,
     isLocked: false,
     includeTax: true,
   );
