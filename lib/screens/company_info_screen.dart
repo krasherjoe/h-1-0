@@ -170,6 +170,52 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     Navigator.pop(context);
   }
 
+  Future<void> _showSealPdfPreview() async {
+    if (_info.sealPath == null) return;
+
+    int rebuildKey = 0;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<Uint8List> buildPreviewBytes(PdfPageFormat _) async {
+            final doc = await buildInvoiceDocument(
+              _dummyInvoiceForSealPreview(_info),
+              sealOffsetXOverride: _info.sealOffsetX,
+              sealOffsetYOverride: _info.sealOffsetY,
+            );
+            return Uint8List.fromList(await doc.save());
+          }
+
+          return AlertDialog(
+            title: const Text('角印 PDF プレビュー'),
+            content: SizedBox(
+              width: 600,
+              height: 800,
+              child: PdfPreview(
+                key: ValueKey(rebuildKey),
+                build: buildPreviewBytes,
+                allowPrinting: false,
+                allowSharing: false,
+                canChangePageFormat: false,
+                canChangeOrientation: false,
+                canDebug: false,
+                actions: const [],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('閉じる'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _exportToJson() async {
     try {
       final file = await CompanyInfoExportImport.exportToJson(_info);
@@ -613,6 +659,12 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                       label: Text(
                         '角印位置調整  X:${_info.sealOffsetX.toStringAsFixed(1)}  Y:${_info.sealOffsetY.toStringAsFixed(1)}',
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _showSealPdfPreview(),
+                      icon: const Icon(Icons.picture_as_pdf),
+                      label: const Text('PDFプレビュー'),
                     ),
                   ],
                 ],
