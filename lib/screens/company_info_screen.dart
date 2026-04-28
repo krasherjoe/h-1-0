@@ -184,6 +184,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               _dummyInvoiceForSealPreview(_info),
               sealOffsetXOverride: _info.sealOffsetX,
               sealOffsetYOverride: _info.sealOffsetY,
+              sealRotationOverride: _info.sealRotation,
             );
             return Uint8List.fromList(await doc.save());
           }
@@ -996,6 +997,7 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
       _dummyInvoiceForSealPreview(widget.companyInfo),
       sealOffsetXOverride: _offsetX,
       sealOffsetYOverride: _offsetY,
+      sealRotationOverride: widget.companyInfo.sealRotation,
     );
     return Uint8List.fromList(await doc.save());
   }

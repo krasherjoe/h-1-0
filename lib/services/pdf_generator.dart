@@ -11,11 +11,12 @@ import 'company_repository.dart';
 import 'activity_log_repository.dart';
 
 /// PDFドキュメントの構築（プレビューと実保存の両方で使用）
-/// [sealOffsetXOverride]/[sealOffsetYOverride]: 角印オフセット調整画面用の一時オーバーライド
+/// [sealOffsetXOverride]/[sealOffsetYOverride]/[sealRotationOverride]: 角印調整画面用の一時オーバーライド
 Future<pw.Document> buildInvoiceDocument(
   Invoice invoice, {
   double? sealOffsetXOverride,
   double? sealOffsetYOverride,
+  double? sealRotationOverride,
 }) async {
   final metaJson = invoice.metaJsonValue;
   final metaHash = invoice.metaHashValue;
@@ -62,7 +63,7 @@ Future<pw.Document> buildInvoiceDocument(
                   right: sealOffsetXOverride ?? companyInfo.sealOffsetX,
                   top: sealOffsetYOverride ?? companyInfo.sealOffsetY,
                   child: pw.Transform.rotate(
-                    angle: companyInfo.sealRotation * math.pi / 180,
+                    angle: (sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,
                     child: pw.Image(sealImage!, width: 100, height: 100),
                   ),
                 ),
