@@ -173,22 +173,39 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   Future<void> _showSealPdfPreview() async {
     if (_info.sealPath == null) return;
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _SealOffsetAdjustPage(
-          sealPath: _info.sealPath!,
-          initialOffsetX: _info.sealOffsetX,
-          initialOffsetY: _info.sealOffsetY,
-          companyInfo: _info,
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('角印 PDF プレビュー'),
+        content: SizedBox(
+          width: 600,
+          height: 800,
+          child: PdfPreview(
+            build: (PdfPageFormat _) async {
+              final doc = await buildInvoiceDocument(
+                _dummyInvoiceForSealPreview(_info),
+                sealOffsetXOverride: _info.sealOffsetX,
+                sealOffsetYOverride: _info.sealOffsetY,
+                sealRotationOverride: _info.sealRotation,
+              );
+              return Uint8List.fromList(await doc.save());
+            },
+            allowPrinting: false,
+            allowSharing: false,
+            canChangePageFormat: false,
+            canChangeOrientation: false,
+            canDebug: false,
+            actions: const [],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('閉じる'),
+          ),
+        ],
       ),
     );
-
-    // Reload to get any changes from the offset adjust page
-    if (mounted) {
-      _loadInfo();
-    }
   }
 
   Future<void> _exportToJson() async {
