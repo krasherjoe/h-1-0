@@ -382,13 +382,57 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 title: '税設定',
                 icon: Icons.percent,
                 children: [
-                  const Text("デフォルト消費税率", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      ChoiceChip(label: const Text("10%"), selected: _taxRate == 0.10, onSelected: (_) => setState(() => _taxRate = 0.10)),
-                      const SizedBox(width: 8),
-                      ChoiceChip(label: const Text("8%"), selected: _taxRate == 0.08, onSelected: (_) => setState(() => _taxRate = 0.08)),
+                      const Text("デフォルト消費税率", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(width: 12),
+                      Text(
+                        "${(_taxRate * 100).round()}%",
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: (_taxRate * 100).round() <= 0
+                            ? null
+                            : () => setState(() => _taxRate = ((_taxRate * 100).round() - 1) / 100.0),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: (_taxRate * 100).roundToDouble().clamp(0, 25),
+                          min: 0,
+                          max: 25,
+                          divisions: 25,
+                          label: "${(_taxRate * 100).round()}%",
+                          onChanged: (v) => setState(() => _taxRate = v.round() / 100.0),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: (_taxRate * 100).round() >= 25
+                            ? null
+                            : () => setState(() => _taxRate = ((_taxRate * 100).round() + 1) / 100.0),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text("8%"),
+                        selected: (_taxRate * 100).round() == 8,
+                        onSelected: (_) => setState(() => _taxRate = 0.08),
+                      ),
+                      ChoiceChip(
+                        label: const Text("10%"),
+                        selected: (_taxRate * 100).round() == 10,
+                        onSelected: (_) => setState(() => _taxRate = 0.10),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
