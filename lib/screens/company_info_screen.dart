@@ -173,7 +173,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   Future<void> _showSealPdfPreview() async {
     if (_info.sealPath == null) return;
 
-    int rebuildKey = 0;
+    final rotationNotifier = ValueNotifier<double>(_info.sealRotation);
 
     await showDialog(
       context: context,
@@ -184,7 +184,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               _dummyInvoiceForSealPreview(_info),
               sealOffsetXOverride: _info.sealOffsetX,
               sealOffsetYOverride: _info.sealOffsetY,
-              sealRotationOverride: _info.sealRotation,
+              sealRotationOverride: rotationNotifier.value,
             );
             return Uint8List.fromList(await doc.save());
           }
@@ -194,15 +194,20 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
             content: SizedBox(
               width: 600,
               height: 800,
-              child: PdfPreview(
-                key: ValueKey(rebuildKey),
-                build: buildPreviewBytes,
-                allowPrinting: false,
-                allowSharing: false,
-                canChangePageFormat: false,
-                canChangeOrientation: false,
-                canDebug: false,
-                actions: const [],
+              child: ValueListenableBuilder<double>(
+                valueListenable: rotationNotifier,
+                builder: (context, rotation, _) {
+                  return PdfPreview(
+                    key: ValueKey(rotation),
+                    build: buildPreviewBytes,
+                    allowPrinting: false,
+                    allowSharing: false,
+                    canChangePageFormat: false,
+                    canChangeOrientation: false,
+                    canDebug: false,
+                    actions: const [],
+                  );
+                },
               ),
             ),
             actions: [
@@ -215,6 +220,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         },
       ),
     );
+
+    rotationNotifier.dispose();
   }
 
   Future<void> _exportToJson() async {
@@ -575,7 +582,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Transform.rotate(
-                                angle: _info.sealRotation * 3.14159265359 / 180,
+                                angle: -_info.sealRotation * 3.14159265359 / 180,
                                 child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
                               ),
                             )
