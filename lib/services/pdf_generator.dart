@@ -56,10 +56,10 @@ Future<pw.Document> buildInvoiceDocument(
           boldItalic: ipaex,
         ).copyWith(defaultTextStyle: pw.TextStyle(fontFallback: [ipaex])),
         buildBackground: (context) {
-          return pw.SizedBox(
-            width: PdfPageFormat.a4.width,
-            height: PdfPageFormat.a4.height,
+          return pw.FullPage(
+            ignoreMargins: true,
             child: pw.Stack(
+            fit: pw.StackFit.expand,
             children: [
               if (sealImage != null)
                 pw.Positioned(
