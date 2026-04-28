@@ -549,7 +549,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Transform.rotate(
-                                angle: -_info.sealRotation * 3.14159265359 / 180,
+                                angle: _info.sealRotation * 3.14159265359 / 180,
                                 child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
                               ),
                             )
@@ -582,7 +582,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           icon: const Icon(Icons.rotate_left),
                           onPressed: () => setState(() {
                             _info = _info.copyWith(
-                              sealRotation: _info.sealRotation - 1.0,
+                              sealRotation: _info.sealRotation + 1.0,
                             );
                           }),
                         ),
@@ -595,7 +595,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           icon: const Icon(Icons.rotate_right),
                           onPressed: () => setState(() {
                             _info = _info.copyWith(
-                              sealRotation: _info.sealRotation + 1.0,
+                              sealRotation: _info.sealRotation - 1.0,
                             );
                           }),
                         ),

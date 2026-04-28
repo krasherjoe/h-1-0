@@ -63,7 +63,7 @@ Future<pw.Document> buildInvoiceDocument(
                   right: sealOffsetXOverride ?? companyInfo.sealOffsetX,
                   top: sealOffsetYOverride ?? companyInfo.sealOffsetY,
                   child: pw.Transform.rotate(
-                    angle: -(sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,
+                    angle: (sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,
                     child: pw.Image(sealImage!, width: 100, height: 100),
                   ),
                 ),
