@@ -958,17 +958,6 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
     _offsetY = widget.initialOffsetY;
   }
 
-  void _nudge(bool isX, double delta) {
-    setState(() {
-      if (isX) {
-        _offsetX = (_offsetX + delta).clamp(-200.0, 500.0);
-      } else {
-        _offsetY = (_offsetY + delta).clamp(-200.0, 700.0);
-      }
-      _rebuildKey++;
-    });
-  }
-
   Future<Uint8List> _buildPreviewBytes(PdfPageFormat _) async {
     final doc = await buildInvoiceDocument(
       _dummyInvoiceForSealPreview(widget.companyInfo),
@@ -978,28 +967,55 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
     return Uint8List.fromList(await doc.save());
   }
 
+  /// 方向ボタンで角印を移動。
+  /// X: right座標 → 大きいほど左、小さいほど右
+  /// Y: top座標   → 大きいほど下、小さいほど上
+  void _moveSeal(bool isX, {required bool toIncreaseDirection, required double amount}) {
+    setState(() {
+      if (isX) {
+        // X: 右移動 = _offsetX を減らす / 左移動 = _offsetX を増やす
+        // toIncreaseDirection=true は「右へ移動」と定義
+        _offsetX = (_offsetX + (toIncreaseDirection ? -amount : amount)).clamp(-200.0, 500.0);
+      } else {
+        // Y: 下移動 = _offsetY を増やす / 上移動 = _offsetY を減らす
+        // toIncreaseDirection=true は「下へ移動」と定義
+        _offsetY = (_offsetY + (toIncreaseDirection ? amount : -amount)).clamp(-200.0, 700.0);
+      }
+      _rebuildKey++;
+    });
+  }
+
   Widget _nudgeRow({
     required String label,
     required double value,
     required bool isX,
   }) {
+    final decBig = isX ? Icons.keyboard_double_arrow_left : Icons.keyboard_double_arrow_up;
+    final decOne = isX ? Icons.keyboard_arrow_left : Icons.keyboard_arrow_up;
+    final incOne = isX ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down;
+    final incBig = isX ? Icons.keyboard_double_arrow_right : Icons.keyboard_double_arrow_down;
+    final decBigTip = isX ? '左 ×5' : '上 ×5';
+    final decOneTip = isX ? '左 ×1' : '上 ×1';
+    final incOneTip = isX ? '右 ×1' : '下 ×1';
+    final incBigTip = isX ? '右 ×5' : '下 ×5';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           SizedBox(
-            width: 60,
+            width: 80,
             child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: () => _nudge(isX, 5),
-            tooltip: '-5',
+            icon: Icon(decBig),
+            onPressed: () => _moveSeal(isX, toIncreaseDirection: false, amount: 5),
+            tooltip: decBigTip,
           ),
           IconButton(
-            icon: const Icon(Icons.remove),
-            onPressed: () => _nudge(isX, 1),
-            tooltip: '-1',
+            icon: Icon(decOne),
+            onPressed: () => _moveSeal(isX, toIncreaseDirection: false, amount: 1),
+            tooltip: decOneTip,
           ),
           SizedBox(
             width: 56,
@@ -1011,23 +1027,14 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _nudge(isX, -1),
-            tooltip: '+1',
+            icon: Icon(incOne),
+            onPressed: () => _moveSeal(isX, toIncreaseDirection: true, amount: 1),
+            tooltip: incOneTip,
           ),
           IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () => _nudge(isX, -5),
-            tooltip: '+5',
-          ),
-          Expanded(
-            child: Slider(
-              value: isX ? _offsetX.clamp(0.0, 300.0) : _offsetY.clamp(0.0, 600.0),
-              min: 0,
-              max: isX ? 300 : 600,
-              divisions: isX ? 60 : 120,
-              onChanged: (v) => _nudge(isX, isX ? (300 - v) - _offsetX : v - _offsetY),
-            ),
+            icon: Icon(incBig),
+            onPressed: () => _moveSeal(isX, toIncreaseDirection: true, amount: 5),
+            tooltip: incBigTip,
           ),
         ],
       ),
@@ -1080,8 +1087,8 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _nudgeRow(label: '右 (X)', value: _offsetX, isX: true),
-                  _nudgeRow(label: '上 (Y)', value: _offsetY, isX: false),
+                  _nudgeRow(label: '横 (左右)', value: _offsetX, isX: true),
+                  _nudgeRow(label: '縦 (上下)', value: _offsetY, isX: false),
                   const SizedBox(height: 4),
                   const Text(
                     'X: 右端からの距離  Y: 上端からの距離（単位: PDF pt）',
