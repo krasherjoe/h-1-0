@@ -56,39 +56,48 @@ Future<pw.Document> buildInvoiceDocument(
           boldItalic: ipaex,
         ).copyWith(defaultTextStyle: pw.TextStyle(fontFallback: [ipaex])),
         buildBackground: (context) {
-          return pw.FullPage(
-            ignoreMargins: true,
-            child: pw.Stack(
-            fit: pw.StackFit.expand,
+          // ページの実サイズとマージンを取得して、コンテンツエリア基準に変換
+          final pageFormat = context.page.pageFormat;
+          final marginRight = pageFormat.marginRight;
+          final marginTop = pageFormat.marginTop;
+          final sealX = sealOffsetXOverride ?? companyInfo.sealOffsetX;
+          final sealY = sealOffsetYOverride ?? companyInfo.sealOffsetY;
+          // buildBackground はコンテンツエリア（マージン内側）に描画される。
+          // sealX/sealY は「ページ右端/上端からの距離」と統一定義し、
+          // コンテンツエリア基準に変換する：right = sealX - marginRight, top = sealY - marginTop
+          final adjustedRight = sealX - marginRight;
+          final adjustedTop = sealY - marginTop;
+          return pw.Stack(
             children: [
               if (sealImage != null)
                 pw.Positioned(
-                  right: sealOffsetXOverride ?? companyInfo.sealOffsetX,
-                  top: sealOffsetYOverride ?? companyInfo.sealOffsetY,
+                  right: adjustedRight,
+                  top: adjustedTop,
                   child: pw.Transform.rotate(
                     angle: (sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,
                     child: pw.Image(sealImage!, width: 100, height: 100),
                   ),
                 ),
               if (invoice.isDraft && !invoice.isLocked)
-                pw.Center(
-                  child: pw.Transform.rotate(
-                    angle: -0.5,
-                    child: pw.Opacity(
-                      opacity: 0.18,
-                      child: pw.Text(
-                        '下書き',
-                        style: pw.TextStyle(
-                          fontSize: 120,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.grey600,
+                pw.Positioned.fill(
+                  child: pw.Center(
+                    child: pw.Transform.rotate(
+                      angle: -0.5,
+                      child: pw.Opacity(
+                        opacity: 0.18,
+                        child: pw.Text(
+                          '下書き',
+                          style: pw.TextStyle(
+                            fontSize: 120,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.grey600,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
             ],
-          ),
           );
         },
         buildForeground: (context) => pw.SizedBox(),
