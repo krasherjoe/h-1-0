@@ -173,6 +173,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   Future<void> _showSealPdfPreview() async {
     if (_info.sealPath == null) return;
 
+    await _companyRepo.saveCompanyInfo(_info);
+
+    if (!mounted) return;
     await Navigator.push<Map<String, double>>(
       context,
       MaterialPageRoute(
@@ -971,7 +974,6 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
       _dummyInvoiceForSealPreview(widget.companyInfo),
       sealOffsetXOverride: _offsetX,
       sealOffsetYOverride: _offsetY,
-      sealRotationOverride: widget.companyInfo.sealRotation,
     );
     return Uint8List.fromList(await doc.save());
   }
