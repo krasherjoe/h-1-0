@@ -56,15 +56,11 @@ Future<pw.Document> buildInvoiceDocument(
           boldItalic: ipaex,
         ).copyWith(defaultTextStyle: pw.TextStyle(fontFallback: [ipaex])),
         buildBackground: (context) {
-          final pageWidth = PdfPageFormat.a4.width;
-          final sealWidth = 100.0;
-          final margin = 32.0;
-          final maxRightOffset = pageWidth - (margin * 2) - sealWidth;
           return pw.Stack(
             children: [
               if (sealImage != null)
                 pw.Positioned(
-                  right: maxRightOffset - (sealOffsetXOverride ?? companyInfo.sealOffsetX),
+                  right: sealOffsetXOverride ?? companyInfo.sealOffsetX,
                   top: sealOffsetYOverride ?? companyInfo.sealOffsetY,
                   child: pw.Transform.rotate(
                     angle: (sealRotationOverride ?? companyInfo.sealRotation) * math.pi / 180,

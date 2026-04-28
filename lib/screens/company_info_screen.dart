@@ -991,12 +991,12 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
           ),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline),
-            onPressed: () => _nudge(isX, -5),
+            onPressed: () => _nudge(isX, 5),
             tooltip: '-5',
           ),
           IconButton(
             icon: const Icon(Icons.remove),
-            onPressed: () => _nudge(isX, -1),
+            onPressed: () => _nudge(isX, 1),
             tooltip: '-1',
           ),
           SizedBox(
@@ -1010,12 +1010,12 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => _nudge(isX, 1),
+            onPressed: () => _nudge(isX, -1),
             tooltip: '+1',
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            onPressed: () => _nudge(isX, 5),
+            onPressed: () => _nudge(isX, -5),
             tooltip: '+5',
           ),
           Expanded(
@@ -1024,7 +1024,7 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
               min: 0,
               max: isX ? 300 : 600,
               divisions: isX ? 60 : 120,
-              onChanged: (v) => _nudge(isX, v - (isX ? _offsetX : _offsetY)),
+              onChanged: (v) => _nudge(isX, isX ? (300 - v) - _offsetX : v - _offsetY),
             ),
           ),
         ],
