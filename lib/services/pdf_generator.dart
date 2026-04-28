@@ -10,14 +10,32 @@ import '../models/invoice_models.dart';
 import 'company_repository.dart';
 import 'activity_log_repository.dart';
 
+/// 角印プレビュー用ページフォーマット（A4, マージン32pt≒11.29mm）
+/// buildInvoiceDocument の pageTheme.margin と完全に一致させるため
+const kSealPreviewPageFormat = PdfPageFormat(
+  210 * PdfPageFormat.mm, // width: A4 210mm
+  297 * PdfPageFormat.mm, // height: A4 297mm
+  marginAll: 11.29 * PdfPageFormat.mm, // 32pt ≒ 11.29mm (buildInvoiceDocument と同一)
+);
+
 /// PDFドキュメントの構築（プレビューと実保存の両方で使用）
-/// [sealOffsetXOverride]/[sealOffsetYOverride]/[sealRotationOverride]: 角印調整画面用の一時オーバーライド
+/// [pageFormat]: printing パッケージから渡されるページフォーマット。
+///               null の場合は kSealPreviewPageFormat をデフォルトとして使用。
 Future<pw.Document> buildInvoiceDocument(
   Invoice invoice, {
+  PdfPageFormat? pageFormat,
   double? sealOffsetXOverride,
   double? sealOffsetYOverride,
   double? sealRotationOverride,
 }) async {
+  // デバッグ: PDF生成時のpageFormatと角印座標を記録
+  final effectiveFormat = pageFormat ?? kSealPreviewPageFormat;
+  debugPrint(
+    '[buildInvoiceDocument] pageFormat=width:${effectiveFormat.width.toStringAsFixed(2)}mm '
+    'height:${effectiveFormat.height.toStringAsFixed(2)}mm marginAll:${effectiveFormat.marginTop.toStringAsFixed(2)}mm '
+    'sealX:${(sealOffsetXOverride ?? 0).toStringAsFixed(1)} sealY:${(sealOffsetYOverride ?? 0).toStringAsFixed(1)}',
+  );
+
   final metaJson = invoice.metaJsonValue;
   final metaHash = invoice.metaHashValue;
 
@@ -47,7 +65,7 @@ Future<pw.Document> buildInvoiceDocument(
   pdf.addPage(
     pw.MultiPage(
       pageTheme: pw.PageTheme(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: pageFormat ?? kSealPreviewPageFormat,
         margin: const pw.EdgeInsets.all(32),
         theme: pw.ThemeData.withFont(
           base: ipaex,

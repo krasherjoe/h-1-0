@@ -958,9 +958,10 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
     _offsetY = widget.initialOffsetY;
   }
 
-  Future<Uint8List> _buildPreviewBytes(PdfPageFormat _) async {
+  Future<Uint8List> _buildPreviewBytes(PdfPageFormat format) async {
     final doc = await buildInvoiceDocument(
       _dummyInvoiceForSealPreview(widget.companyInfo),
+      pageFormat: format,
       sealOffsetXOverride: _offsetX,
       sealOffsetYOverride: _offsetY,
     );
@@ -1068,31 +1069,72 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
       body: Column(
         children: [
           Expanded(
-            child: PdfPreview(
-              key: ValueKey(_rebuildKey),
-              build: _buildPreviewBytes,
-              allowPrinting: false,
-              allowSharing: false,
-              canChangePageFormat: false,
-              canChangeOrientation: false,
-              canDebug: false,
-              actions: const [],
+            child: Column(
+              children: [
+                Expanded(
+                  child: PdfPreview(
+                    key: ValueKey(_rebuildKey),
+                    initialPageFormat: kSealPreviewPageFormat,
+                    build: _buildPreviewBytes,
+                    allowPrinting: false,
+                    allowSharing: false,
+                    canChangePageFormat: false,
+                    canChangeOrientation: false,
+                    canDebug: false,
+                    actions: const [],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  color: Colors.blue.shade50,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline, size: 18, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              '方向ボタンで角印を移動 | X:右端からの距離 Y:上端からの距離',
+                              style: TextStyle(fontSize: 12, color: Colors.blue),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      _nudgeRow(label: '横 (左右)', value: _offsetX, isX: true),
+                      _nudgeRow(label: '縦 (上下)', value: _offsetY, isX: false),
+                      const Text(
+                        '単位: PDF pt（1pt = 1/72インチ）',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           SafeArea(
             top: false,
-            child: Container(
-              color: Colors.grey.shade50,
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  _nudgeRow(label: '横 (左右)', value: _offsetX, isX: true),
-                  _nudgeRow(label: '縦 (上下)', value: _offsetY, isX: false),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'X: 右端からの距離  Y: 上端からの距離（単位: PDF pt）',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final updated = widget.companyInfo.copyWith(
+                        sealOffsetX: _offsetX,
+                        sealOffsetY: _offsetY,
+                      );
+                      await _companyRepo.saveCompanyInfo(updated);
+                      if (!mounted) return;
+                      final nav = Navigator.of(context);
+                      nav.pop({'x': _offsetX, 'y': _offsetY});
+                    },
+                    icon: const Icon(Icons.check),
+                    label: const Text('確定'),
                   ),
                 ],
               ),

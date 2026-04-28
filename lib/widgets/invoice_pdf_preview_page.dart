@@ -51,7 +51,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
   @override
   void initState() {
     super.initState();
-    _stablePdfBuilder = (_) => _buildPdfBytes();
+    _stablePdfBuilder = (format) => _buildPdfBytes(format);
   }
 
   bool get _canFormalIssue =>
@@ -93,8 +93,11 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     return result ?? false;
   }
 
-  Future<Uint8List> _buildPdfBytes() async {
-    final doc = await buildInvoiceDocument(widget.invoice);
+  Future<Uint8List> _buildPdfBytes([PdfPageFormat? format]) async {
+    final doc = await buildInvoiceDocument(
+      widget.invoice,
+      pageFormat: format ?? kSealPreviewPageFormat,
+    );
     return Uint8List.fromList(await doc.save());
   }
 
@@ -194,6 +197,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
               children: [
                 Expanded(
                   child: PdfPreview(
+                    initialPageFormat: kSealPreviewPageFormat,
                     build: _stablePdfBuilder,
                     allowPrinting: false,
                     allowSharing: false,
@@ -293,8 +297,8 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                         onPressed: widget.showPrint
                             ? () async {
                                 await Printing.layoutPdf(
-                                  onLayout: (_) async => _buildPdfBytes(),
-                                );
+                                   onLayout: (format) async => _buildPdfBytes(format),
+                                 );
                               }
                             : null,
                       ),
