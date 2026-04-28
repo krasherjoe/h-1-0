@@ -173,36 +173,21 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   Future<void> _showSealPdfPreview() async {
     if (_info.sealPath == null) return;
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('角印 PDF プレビュー'),
-        content: SizedBox(
-          width: 600,
-          height: 800,
-          child: PdfPreview(
-            build: (PdfPageFormat _) async {
-              final doc = await buildInvoiceDocument(
-                _dummyInvoiceForSealPreview(_info),
-              );
-              return Uint8List.fromList(await doc.save());
-            },
-            allowPrinting: false,
-            allowSharing: false,
-            canChangePageFormat: false,
-            canChangeOrientation: false,
-            canDebug: false,
-            actions: const [],
-          ),
+    await Navigator.push<Map<String, double>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _SealOffsetAdjustPage(
+          sealPath: _info.sealPath!,
+          initialOffsetX: _info.sealOffsetX,
+          initialOffsetY: _info.sealOffsetY,
+          companyInfo: _info,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('閉じる'),
-          ),
-        ],
       ),
     );
+
+    if (mounted) {
+      _loadInfo();
+    }
   }
 
   Future<void> _exportToJson() async {
@@ -961,6 +946,7 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
   late double _offsetX;
   late double _offsetY;
   int _rebuildKey = 0;
+  final _companyRepo = CompanyRepository();
 
   @override
   void initState() {
@@ -1055,7 +1041,16 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
         foregroundColor: Colors.white,
         actions: [
           TextButton.icon(
-            onPressed: () => Navigator.pop(context, {'x': _offsetX, 'y': _offsetY}),
+            onPressed: () async {
+              final updated = widget.companyInfo.copyWith(
+                sealOffsetX: _offsetX,
+                sealOffsetY: _offsetY,
+              );
+              await _companyRepo.saveCompanyInfo(updated);
+              if (!mounted) return;
+              final nav = Navigator.of(context);
+              nav.pop({'x': _offsetX, 'y': _offsetY});
+            },
             icon: const Icon(Icons.check, color: Colors.white),
             label: const Text('確定', style: TextStyle(color: Colors.white)),
           ),
