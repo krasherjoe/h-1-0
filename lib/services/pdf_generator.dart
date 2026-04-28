@@ -68,6 +68,7 @@ Future<pw.Document> buildInvoiceDocument(
           final adjustedRight = sealX - marginRight;
           final adjustedTop = sealY - marginTop;
           return pw.Stack(
+            fit: pw.StackFit.expand,
             children: [
               if (sealImage != null)
                 pw.Positioned(
