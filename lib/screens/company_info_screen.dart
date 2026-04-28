@@ -549,7 +549,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Transform.rotate(
-                                angle: _info.sealRotation * 3.14159265359 / 180,
+                                angle: -_info.sealRotation * 3.14159265359 / 180,
                                 child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
                               ),
                             )
