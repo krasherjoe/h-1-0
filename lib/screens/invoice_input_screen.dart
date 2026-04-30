@@ -256,7 +256,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   void initState() {
     super.initState();
-    _subjectController.addListener(_onSubjectChanged);
+    _subjectController.addListener(_onSubjectChanged); // ← 1回だけ登録
     _subjectFocusNode.addListener(() {
       if (!_subjectFocusNode.hasFocus) {
         final current = _subjectController.text;
@@ -268,7 +268,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         }
       }
     });
-    _subjectController.addListener(_onSubjectChanged);
+    // ※ _subjectController.addListener(_onSubjectChanged) の重複登録を削除済み
     _loadInitialData();
   }
 
@@ -466,11 +466,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final invoice = Invoice(
       id: id,
       customer: _selectedCustomer!,
-      date: _selectedDate, // 修正
+      date: _selectedDate,
       items: _items,
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
+      subject: _subjectController.text.isNotEmpty // ← バグ修正: subjectを追加
+          ? _subjectController.text
+          : null,
       notes: null,
       isDraft: _isDraft,
       isLocked: _isLocked,
