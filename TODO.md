@@ -1,10 +1,16 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-04-13 23:57
+最終更新: 2026-04-30 21:54
 
 ## 🔴 緊急・高優先度
 
 ### 完了
+- [x] D3:伝票入力画面の件名消失バグを修正 (2026-04-30, commit: 3e36db9)
+  - 関連：`lib/screens/invoice_input_screen.dart`
+  - 内容:
+    - `_showPreview()` メソッドで `subject` が渡されていなかったのを修正
+    - `initState` 内の `_subjectController.addListener` の重複を削除
+
 - [x] Google 統合の復元とデータベース場所の変更 (2026-04-09, commit: fe6e875)
 
 - [x] S1:設定画面の LSP 構文エラー修正とバックアップ機能拡張 (2026-04-10, 完了，commit: f62b752)
