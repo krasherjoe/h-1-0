@@ -62,6 +62,13 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
       !_issued &&
       widget.onFormalIssue != null;
 
+  /// PP 内で正式発行済みになった場合、widget.invoice は古い下書き状態のまま
+  /// なので、PDF 生成・共有・メール送信・印刷では `_issued` を反映した
+  /// 確定済みインスタンスを使う。
+  Invoice get _effectiveInvoice => _issued
+      ? widget.invoice.copyWith(isDraft: false, isLocked: true)
+      : widget.invoice;
+
   Future<bool> _showFormalIssueWarning(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
@@ -95,7 +102,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
 
   Future<Uint8List> _buildPdfBytes([PdfPageFormat? format]) async {
     final doc = await buildInvoiceDocument(
-      widget.invoice,
+      _effectiveInvoice,
       pageFormat: format ?? kSealPreviewPageFormat,
     );
     return Uint8List.fromList(await doc.save());
@@ -115,7 +122,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
 
     try {
       // メール送信を実行
-      final result = await emailSender.sendEmail(invoice: widget.invoice);
+      final result = await emailSender.sendEmail(invoice: _effectiveInvoice);
 
       if (!mounted) return;
 
@@ -184,7 +191,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
           children: const [
             Text("PP:PDF プレビュー"),
             Text(
-              "請求書・見積書のプレビュー",
+              "拡大する時はダブルタップしてからピンチインしてください",
               style: TextStyle(fontSize: 11, color: Colors.white70),
             ),
           ],
@@ -275,7 +282,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                                 final bytes = await _buildPdfBytes();
                                 await Printing.sharePdf(
                                   bytes: bytes,
-                                  filename: widget.invoice.mailAttachmentFileName,
+                                  filename: _effectiveInvoice.mailAttachmentFileName,
                                 );
                               }
                             : null,
