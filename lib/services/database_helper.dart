@@ -288,7 +288,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 54;
+  static const _databaseVersion = 55;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1629,6 +1629,28 @@ class DatabaseHelper {
     if (oldVersion < 54) {
       await _safeAddColumn(db, 'company_info', 'seal_rotation REAL DEFAULT 0.0');
     }
+
+    // v55: 電子帳簿保存法対応 - electronic_ledgersテーブルにバージョン管理カラム追加
+    if (oldVersion < 55) {
+      await _safeAddColumn(db, 'electronic_ledgers', 'valid_from TEXT');
+      await _safeAddColumn(db, 'electronic_ledgers', 'valid_to TEXT');
+      await _safeAddColumn(db, 'electronic_ledgers', 'is_current INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'electronic_ledgers', 'version INTEGER DEFAULT 1');
+      await _safeAddColumn(db, 'electronic_ledgers', 'previous_hash TEXT');
+      await _safeAddColumn(db, 'electronic_ledgers', 'document_id TEXT');
+      await db.execute('''
+        UPDATE electronic_ledgers
+        SET is_current = 1, version = 1, valid_from = created_at, valid_to = NULL,
+            document_id = id
+        WHERE is_current IS NULL
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_electronic_ledgers_current ON electronic_ledgers(is_current, valid_to)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_electronic_ledgers_document_id ON electronic_ledgers(document_id)',
+      );
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2382,7 +2404,7 @@ class DatabaseHelper {
       'CREATE INDEX idx_custom_field_values_entity ON custom_field_values(entity_id, entity_type)',
     );
 
-    // バージョン40: 電子帳簿保存法対応テーブル追加
+    // バージョン40/55: 電子帳簿保存法対応テーブル追加
     await db.execute('''
       CREATE TABLE electronic_ledgers (
         id TEXT PRIMARY KEY,
@@ -2393,7 +2415,13 @@ class DatabaseHelper {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         business_profile_id TEXT,
-        is_active INTEGER DEFAULT 1
+        is_active INTEGER DEFAULT 1,
+        valid_from TEXT,
+        valid_to TEXT,
+        is_current INTEGER DEFAULT 1,
+        version INTEGER DEFAULT 1,
+        previous_hash TEXT,
+        document_id TEXT
       )
     ''');
     await db.execute(
@@ -2407,6 +2435,12 @@ class DatabaseHelper {
     );
     await db.execute(
       'CREATE INDEX idx_electronic_ledgers_active ON electronic_ledgers(is_active)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledgers_current ON electronic_ledgers(is_current, valid_to)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_electronic_ledgers_document_id ON electronic_ledgers(document_id)',
     );
 
     await db.execute('''

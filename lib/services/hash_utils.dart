@@ -108,28 +108,53 @@ class HashUtils {
 
   /// ハッシュチェーンを検証
   ///
-  /// [currentHash] 現在のハッシュ
-  /// [expectedPreviousHash] 期待される前バージョンのハッシュ（最初のバージョンは null）
+  /// [currentHash] 現在レコードに保存されているハッシュ
+  /// [currentInput] 現在レコードのデータから再構成したハッシュ入力文字列
+  /// [actualPreviousHash] 現在レコードの previous_hash フィールド値
+  /// [expectedPreviousHash] 前バージョンの content_hash（最初のバージョンは null）
   static bool verifyHashChain({
     required String currentHash,
     required String currentInput,
+    String? actualPreviousHash,
     String? expectedPreviousHash,
   }) {
-    // 現在入力のハッシュを再計算
+    // 現在入力のハッシュを再計算して、保存値と一致するか確認
     final calculatedHash = calculateSha256(currentInput);
-
     if (calculatedHash != currentHash) {
       return false;
     }
 
     // previous_hash の整合性チェック
     if (expectedPreviousHash != null) {
-      // ここで実際の previous_hash フィールド値との整合性を確認する必要がある
-      // 実装は repository レベルで行う
-      return true;
+      // 現在レコードの previous_hash が、前バージョンの content_hash と一致するか
+      return actualPreviousHash == expectedPreviousHash;
+    } else {
+      // 最初のバージョンなら previous_hash は null または空文字であるべき
+      return actualPreviousHash == null || actualPreviousHash.isEmpty;
+    }
+  }
+
+  /// 前バージョンのハッシュから現在のハッシュ入力を再計算して整合性検証
+  ///
+  /// [currentHash] DBに保存された現在のハッシュ
+  /// [previousHash] DBに保存された previous_hash 値
+  /// [previousContentHash] 前バージョンレコードの content_hash
+  static bool verifyPreviousHashLinkage({
+    required String currentHash,
+    required String? previousHash,
+    required String? previousContentHash,
+  }) {
+    // 前バージョンがない場合（最初のレコード）
+    if (previousHash == null || previousHash.isEmpty) {
+      return previousContentHash == null || previousContentHash.isEmpty;
     }
 
-    return true;
+    // 前バージョンがある場合、previous_hash == 前バージョンの content_hash であることを確認
+    if (previousContentHash == null || previousContentHash.isEmpty) {
+      return false;
+    }
+
+    return previousHash == previousContentHash;
   }
 
   /// ハッシュの整合性を検証（データベースから取得したレコード用）

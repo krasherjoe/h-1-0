@@ -1,13 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'database_helper.dart';
+import 'hash_utils.dart';
 
-/// 電子帳簿保存法対応リポジトリ
+/// 電子帳簿保存法対応リポジトリ（追記-only: UPDATE禁止）
 class ElectronicLedgerRepository {
   final DatabaseHelper _db = DatabaseHelper();
+  final Random _random = Random.secure();
 
-  /// 電子帳簿データを保存
+  /// バージョン管理用の一意な行IDを生成
+  String _generateRowId() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final rand = _random.nextInt(999999).toString().padLeft(6, '0');
+    return 'EL-$now-$rand';
+  }
+
+  /// 電子帳簿データを保存（新規: 追記INSERTのみ）
   Future<void> saveElectronicLedger({
     required String documentId,
     required String documentType,
@@ -16,126 +26,158 @@ class ElectronicLedgerRepository {
     String? businessProfileId,
   }) async {
     final db = await _db.database;
-    
-    // ドキュメントデータをJSONシリアライズ
+    final rowId = _generateRowId();
+
     final documentJson = jsonEncode(documentData);
-    
-    // ハッシュ値を生成（改ざん検出用）
-    final documentHash = _generateDocumentHash(documentJson);
-    
-    // メタデータを生成
+    final documentHash = _generateDocumentHash(documentJson, null);
+
     final metadata = {
-      'documentId': documentId,
       'documentType': documentType,
       'businessProfileId': businessProfileId,
       'createdAt': createdAt.toIso8601String(),
       'documentHash': documentHash,
       'dataSize': documentJson.length,
-      'version': '1.0',
+      'version': 1,
+      'previousHash': null,
     };
 
     await db.insert('electronic_ledgers', {
-      'id': documentId,
+      'id': rowId,
+      'document_id': documentId,
       'document_type': documentType,
       'document_data': documentJson,
       'document_hash': documentHash,
+      'previous_hash': null,
       'metadata': jsonEncode(metadata),
       'created_at': createdAt.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
       'business_profile_id': businessProfileId,
       'is_active': 1,
+      'is_current': 1,
+      'version': 1,
+      'valid_from': createdAt.toIso8601String(),
+      'valid_to': null,
     });
   }
 
-  /// 電子帳簿データを更新
+  /// 電子帳簿データを更新（追記INSERTのみ: document_dataはUPDATE禁止）
   Future<void> updateElectronicLedger({
     required String documentId,
     required Map<String, dynamic> documentData,
     required DateTime updatedAt,
   }) async {
     final db = await _db.database;
-    
-    // ドキュメントデータをJSONシリアライズ
-    final documentJson = jsonEncode(documentData);
-    
-    // 新しいハッシュ値を生成
-    final documentHash = _generateDocumentHash(documentJson);
-    
-    // 既存レコードを取得
-    final existing = await db.query(
+
+    // 現在のカレントレコードを取得
+    final current = await db.query(
       'electronic_ledgers',
-      where: 'id = ?',
+      where: 'document_id = ? AND is_current = 1 AND is_active = 1',
       whereArgs: [documentId],
     );
-    
-    if (existing.isEmpty) {
+
+    if (current.isEmpty) {
       throw Exception('ドキュメントが見つかりません: $documentId');
     }
-    
-    final existingRecord = existing.first;
-    final metadata = jsonDecode(existingRecord['metadata'] as String);
-    
-    // メタデータを更新
-    metadata['updatedAt'] = updatedAt.toIso8601String();
-    metadata['documentHash'] = documentHash;
-    metadata['dataSize'] = documentJson.length;
-    metadata['version'] = (double.tryParse(metadata['version'].toString()) ?? 1.0) + 0.1;
-    
-    // 履歴レコードを作成
+
+    final currentRecord = current.first;
+    final currentRowId = currentRecord['id'] as String;
+    final currentHash = currentRecord['document_hash'] as String;
+    final currentVersion = (currentRecord['version'] as int?) ?? 1;
+    final currentMetadata =
+        jsonDecode(currentRecord['metadata'] as String) as Map<String, dynamic>;
+
+    final documentJson = jsonEncode(documentData);
+    final documentHash = _generateDocumentHash(documentJson, currentHash);
+
+    // 履歴テーブルに旧データを退避（冗長バックアップ）
     await db.insert('electronic_ledger_history', {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'ledger_id': documentId,
-      'document_data': existingRecord['document_data'],
-      'document_hash': existingRecord['document_hash'],
-      'metadata': existingRecord['metadata'],
-      'created_at': existingRecord['created_at'],
+      'id': _generateRowId(),
+      'ledger_id': currentRowId,
+      'document_data': currentRecord['document_data'],
+      'document_hash': currentHash,
+      'metadata': currentRecord['metadata'],
+      'created_at': currentRecord['created_at'],
       'updated_at': DateTime.now().toIso8601String(),
     });
-    
-    // メインレコードを更新
+
+    // 旧レコードを非カレント化（メタデータのみUPDATE: document_dataは不変）
+    final now = DateTime.now().toIso8601String();
     await db.update(
       'electronic_ledgers',
       {
-        'document_data': documentJson,
-        'document_hash': documentHash,
-        'metadata': jsonEncode(metadata),
-        'updated_at': updatedAt.toIso8601String(),
+        'is_current': 0,
+        'valid_to': now,
       },
       where: 'id = ?',
-      whereArgs: [documentId],
+      whereArgs: [currentRowId],
     );
+
+    // 新バージョンをINSERT（電帳法: 追記のみ）
+    final newVersion = currentVersion + 1;
+    final newMetadata = {
+      'documentType': currentMetadata['documentType'],
+      'businessProfileId': currentMetadata['businessProfileId'],
+      'createdAt': currentMetadata['createdAt'],
+      'updatedAt': updatedAt.toIso8601String(),
+      'documentHash': documentHash,
+      'dataSize': documentJson.length,
+      'version': newVersion,
+      'previousHash': currentHash,
+    };
+
+    await db.insert('electronic_ledgers', {
+      'id': _generateRowId(),
+      'document_id': documentId,
+      'document_type': currentRecord['document_type'],
+      'document_data': documentJson,
+      'document_hash': documentHash,
+      'previous_hash': currentHash,
+      'metadata': jsonEncode(newMetadata),
+      'created_at': currentRecord['created_at'],
+      'updated_at': now,
+      'business_profile_id': currentRecord['business_profile_id'],
+      'is_active': 1,
+      'is_current': 1,
+      'version': newVersion,
+      'valid_from': now,
+      'valid_to': null,
+    });
   }
 
-  /// 電子帳簿データを取得
+  /// 電子帳簿データを取得（最新カレントバージョン）
   Future<Map<String, dynamic>?> getElectronicLedger(String documentId) async {
     final db = await _db.database;
-    
+
     final result = await db.query(
       'electronic_ledgers',
-      where: 'id = ? AND is_active = 1',
+      where: 'document_id = ? AND is_active = 1 AND is_current = 1',
       whereArgs: [documentId],
     );
-    
+
     if (result.isEmpty) return null;
-    
+
     final record = result.first;
-    
-    // データ整合性チェック（ハッシュ検証）
+
+    // データ整合性チェック（ハッシュ + previous_hash チェーン）
     final storedHash = record['document_hash'] as String;
     final documentData = record['document_data'] as String;
-    final calculatedHash = _generateDocumentHash(documentData);
-    
+    final previousHash = record['previous_hash'] as String?;
+    final calculatedHash = _generateDocumentHash(documentData, previousHash);
+
     if (storedHash != calculatedHash) {
       throw Exception('データ改ざんが検出されました: $documentId');
     }
-    
+
     return {
       'id': record['id'],
+      'documentId': record['document_id'],
       'documentType': record['document_type'],
       'documentData': jsonDecode(documentData),
       'metadata': jsonDecode(record['metadata'] as String),
       'createdAt': DateTime.parse(record['created_at'] as String),
       'updatedAt': DateTime.parse(record['updated_at'] as String),
+      'version': record['version'],
+      'previousHash': previousHash,
     };
   }
 
@@ -181,92 +223,163 @@ class ElectronicLedgerRepository {
     ''', whereArgs);
     
     return result.map((record) {
-      // データ整合性チェック
+      // データ整合性チェック（previous_hash含め）
       final storedHash = record['document_hash'] as String;
       final documentData = record['document_data'] as String;
-      final calculatedHash = _generateDocumentHash(documentData);
-      
+      final previousHash = record['previous_hash'] as String?;
+      final calculatedHash = _generateDocumentHash(documentData, previousHash);
+
       if (storedHash != calculatedHash) {
         throw Exception('データ改ざんが検出されました: ${record['id']}');
       }
-      
+
       return {
         'id': record['id'],
+        'documentId': record['document_id'],
         'documentType': record['document_type'],
         'documentData': jsonDecode(documentData),
         'metadata': jsonDecode(record['metadata'] as String),
         'createdAt': DateTime.parse(record['created_at'] as String),
         'updatedAt': DateTime.parse(record['updated_at'] as String),
+        'version': record['version'],
+        'isCurrent': record['is_current'] == 1,
       };
     }).toList();
   }
 
-  /// 電子帳簿データの履歴を取得
+  /// 電子帳簿データの履歴を取得（メインテーブルの過去バージョン）
   Future<List<Map<String, dynamic>>> getLedgerHistory(String documentId) async {
     final db = await _db.database;
-    
-    final result = await db.query(
+
+    // メインテーブルから document_id に紐づく全バージョンを取得（カレントを除く）
+    final mainResult = await db.query(
+      'electronic_ledgers',
+      where: 'document_id = ? AND is_current = 0',
+      whereArgs: [documentId],
+      orderBy: 'version DESC',
+    );
+
+    // 冗長履歴テーブルからも取得
+    final historyResult = await db.query(
       'electronic_ledger_history',
-      where: 'ledger_id = ?',
+      where: 'ledger_id IN (SELECT id FROM electronic_ledgers WHERE document_id = ?)',
       whereArgs: [documentId],
       orderBy: 'created_at DESC',
     );
-    
-    return result.map((record) {
+
+    final mainHistory = mainResult.map((record) {
+      return {
+        'id': record['id'],
+        'documentId': record['document_id'],
+        'documentData': jsonDecode(record['document_data'] as String),
+        'documentHash': record['document_hash'],
+        'previousHash': record['previous_hash'],
+        'metadata': jsonDecode(record['metadata'] as String),
+        'version': record['version'],
+        'createdAt': DateTime.parse(record['created_at'] as String),
+        'updatedAt': DateTime.parse(record['updated_at'] as String),
+        'source': 'main_table',
+      };
+    }).toList();
+
+    final backupHistory = historyResult.map((record) {
       return {
         'id': record['id'],
         'ledgerId': record['ledger_id'],
         'documentData': jsonDecode(record['document_data'] as String),
+        'documentHash': record['document_hash'],
         'metadata': jsonDecode(record['metadata'] as String),
         'createdAt': DateTime.parse(record['created_at'] as String),
         'updatedAt': DateTime.parse(record['updated_at'] as String),
+        'source': 'history_backup',
       };
     }).toList();
+
+    return [...mainHistory, ...backupHistory];
   }
 
-  /// 電子帳簿データを削除（論理削除）
+  /// 電子帳簿データを削除（論理削除: 全バージョン対象）
   Future<void> deleteElectronicLedger(String documentId) async {
     final db = await _db.database;
-    
+    final now = DateTime.now().toIso8601String();
+
     await db.update(
       'electronic_ledgers',
       {
         'is_active': 0,
-        'updated_at': DateTime.now().toIso8601String(),
+        'is_current': 0,
+        'updated_at': now,
       },
-      where: 'id = ?',
+      where: 'document_id = ?',
       whereArgs: [documentId],
     );
   }
 
-  /// データ整合性チェック（全データ）
+  /// データ整合性チェック（全データ: ハッシュ + チェーン検証）
   Future<List<Map<String, dynamic>>> verifyDataIntegrity() async {
     final db = await _db.database;
-    
+
     final result = await db.query(
       'electronic_ledgers',
       where: 'is_active = 1',
+      orderBy: 'document_id, version ASC',
     );
-    
+
     final issues = <Map<String, dynamic>>[];
-    
+    final Map<String, Map<String, dynamic>> previousVersions = {};
+
     for (final record in result) {
+      final rowId = record['id'] as String;
+      final documentId = record['document_id'] as String? ?? rowId;
       final storedHash = record['document_hash'] as String;
       final documentData = record['document_data'] as String;
-      final calculatedHash = _generateDocumentHash(documentData);
-      
+      final previousHash = record['previous_hash'] as String?;
+      final version = (record['version'] as int?) ?? 1;
+
+      // 1. 単体ハッシュ整合性
+      final calculatedHash = _generateDocumentHash(documentData, previousHash);
       if (storedHash != calculatedHash) {
         issues.add({
-          'documentId': record['id'],
+          'rowId': rowId,
+          'documentId': documentId,
           'documentType': record['document_type'],
           'issue': 'ハッシュ値不一致',
           'storedHash': storedHash,
           'calculatedHash': calculatedHash,
+          'version': version,
           'createdAt': record['created_at'],
         });
+        continue;
       }
+
+      // 2. チェーン連結整合性
+      if (previousHash != null && previousHash.isNotEmpty) {
+        final prevRecord = previousVersions[documentId];
+        if (prevRecord != null) {
+          final prevHash = prevRecord['document_hash'] as String?;
+          final chainValid = HashUtils.verifyPreviousHashLinkage(
+            currentHash: storedHash,
+            previousHash: previousHash,
+            previousContentHash: prevHash,
+          );
+          if (!chainValid) {
+            issues.add({
+              'rowId': rowId,
+              'documentId': documentId,
+              'documentType': record['document_type'],
+              'issue': 'ハッシュチェーン不整合',
+              'previousHash': previousHash,
+              'expectedPreviousHash': prevHash,
+              'version': version,
+              'createdAt': record['created_at'],
+            });
+          }
+        }
+      }
+
+      previousVersions[documentId] = record;
     }
-    
+
     return issues;
   }
 
@@ -308,9 +421,13 @@ class ElectronicLedgerRepository {
     };
   }
 
-  /// ドキュメントハッシュ値を生成
-  String _generateDocumentHash(String documentData) {
-    return sha256.convert(utf8.encode(documentData)).toString();
+  /// ドキュメントハッシュ値を生成（previous_hashを含めてチェーン化）
+  String _generateDocumentHash(String documentData, String? previousHash) {
+    final input = [
+      documentData,
+      previousHash ?? '',
+    ].join('|');
+    return sha256.convert(utf8.encode(input)).toString();
   }
 
   /// 古いデータをアーカイブ
@@ -339,9 +456,14 @@ class ElectronicLedgerRepository {
         'archived_at': DateTime.now().toIso8601String(),
       });
       
-      // 元テーブルから削除
-      await db.delete(
+      // 電帳法対応: DELETEは禁止（7年間保存義務）
+      // 元テーブルからは削除せず、is_current=0にしてアーカイブ済みフラグを立てる
+      await db.update(
         'electronic_ledgers',
+        {
+          'is_current': 0,
+          'valid_to': DateTime.now().toIso8601String(),
+        },
         where: 'id = ?',
         whereArgs: [record['id']],
       );
