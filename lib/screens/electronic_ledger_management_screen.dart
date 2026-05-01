@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 import '../models/electronic_ledger_model.dart';
 import '../services/electronic_ledger_repository.dart';
+import '../services/database_helper.dart';
 
 /// 電子帳簿管理画面
 class ElectronicLedgerManagementScreen extends StatefulWidget {
@@ -18,13 +19,16 @@ class ElectronicLedgerManagementScreen extends StatefulWidget {
 
 class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManagementScreen> {
   final ElectronicLedgerRepository _ledgerRepo = ElectronicLedgerRepository();
-  
+  final LocalBackupService _backupService = LocalBackupService();
+
   List<Map<String, dynamic>> _ledgers = [];
   bool _isLoading = true;
   String _selectedDocumentType = 'all';
   DateTime? _startDate;
   DateTime? _endDate;
   Map<String, dynamic>? _statistics;
+  List<BackupFile> _quarantinedBackups = [];
+  bool _isLoadingQuarantine = false;
 
   @override
   void initState() {
@@ -178,6 +182,197 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
     }
   }
 
+  /// 隔離されたバックアップ一覧を読み込み
+  Future<void> _loadQuarantine() async {
+    setState(() => _isLoadingQuarantine = true);
+    try {
+      final list = await _backupService.getQuarantineList();
+      if (!mounted) return;
+      setState(() {
+        _quarantinedBackups = list;
+        _isLoadingQuarantine = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingQuarantine = false);
+      }
+    }
+  }
+
+  /// 隔離バックアップを手動削除（確認ダイアログ必須）
+  Future<void> _deleteQuarantinedBackup(BackupFile backup) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('バックアップ削除確認'),
+        content: Text(
+          '以下のバックアップを削除しますか？\n'
+          '作成日時: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(backup.createdTime)}\n'
+          'サイズ: ${backup.formattedSize}\n\n'
+          '※ 削除後は復元できません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('削除', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoadingQuarantine = true);
+    try {
+      await _backupService.deleteQuarantinedBackup(backup.path);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('バックアップを削除しました'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      await _loadQuarantine();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingQuarantine = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('削除に失敗しました: $e')),
+        );
+      }
+    }
+  }
+
+  /// 隔離バックアップ管理ダイアログ（ユーザー手動削除UI）
+  Future<void> _showQuarantineDialog() async {
+    await _loadQuarantine();
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.warning_amber, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    '隔離バックアップ管理',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: _isLoadingQuarantine
+                  ? const Center(child: CircularProgressIndicator())
+                  : _quarantinedBackups.isEmpty
+                      ? const Center(
+                          child: Text(
+                            '隔離されたバックアップはありません\n'
+                            '（保存期間超過データが自動隔離されます）',
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _quarantinedBackups.length,
+                          itemBuilder: (context, index) {
+                            final backup = _quarantinedBackups[index];
+                            return Card(
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.folder_zip,
+                                  color: Colors.grey,
+                                ),
+                                title: Text(
+                                  DateFormat('yyyy-MM-dd HH:mm:ss')
+                                      .format(backup.createdTime),
+                                ),
+                                subtitle: Text(
+                                  'サイズ: ${backup.formattedSize}\n'
+                                  '${backup.path.split('/').last}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                isThreeLine: true,
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  tooltip: '削除',
+                                  onPressed: () async {
+                                    await _deleteQuarantinedBackup(backup);
+                                    // _loadQuarantineで再読み込み済み、ダイアログ再描画
+                                    setDialogState(() {});
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('閉じる'),
+              ),
+              if (_quarantinedBackups.isNotEmpty)
+                TextButton(
+                  onPressed: () async {
+                    // 一括削除（個別確認あり）
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('一括削除確認'),
+                        content: Text(
+                          '${_quarantinedBackups.length}件のバックアップを削除します。\n'
+                          '本当によろしいですか？',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('キャンセル'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              'すべて削除',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      for (final backup in List<BackupFile>.from(
+                        _quarantinedBackups,
+                      )) {
+                        await _backupService.deleteQuarantinedBackup(
+                          backup.path,
+                        );
+                      }
+                      await _loadQuarantine();
+                      setDialogState(() {});
+                    }
+                  },
+                  child: const Text('すべて削除', style: TextStyle(color: Colors.red)),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,6 +381,11 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep),
+            onPressed: _showQuarantineDialog,
+            tooltip: '隔離バックアップ管理',
+          ),
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: _exportLedgers,

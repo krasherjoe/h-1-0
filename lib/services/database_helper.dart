@@ -437,6 +437,84 @@ class LocalBackupService {
       return false;
     }
   }
+
+  /// 隔離フォルダ内のバックアップ一覧を取得（ユーザー確認用）
+  Future<List<BackupFile>> getQuarantineList() async {
+    try {
+      final backupDir = await _getBackupDirectory();
+      final quarantineDir = Directory(path.join(backupDir, 'quarantine'));
+      if (!await quarantineDir.exists()) return [];
+
+      final files = await quarantineDir
+          .list()
+          .where((f) => f.path.endsWith('.db'))
+          .toList();
+
+      // メタデータから信頼できる作成日時を取得
+      final result = <BackupFile>[];
+      for (final f in files) {
+        final file = f as File;
+        final stat = file.statSync();
+        final fileName = file.path.split('/').last;
+        DateTime? fileDate;
+
+        // メタデータ（.sha256）から作成日時を優先取得
+        final hashFile = File('${file.path}$_backupHashSuffix');
+        if (await hashFile.exists()) {
+          try {
+            final hashContent = await hashFile.readAsString();
+            final hashMeta = jsonDecode(hashContent) as Map<String, dynamic>;
+            final createdAtStr = hashMeta['createdAt'] as String?;
+            if (createdAtStr != null) {
+              fileDate = DateTime.parse(createdAtStr);
+            }
+          } catch (_) {}
+        }
+
+        // フォールバック: ファイル名タイムスタンプ
+        fileDate ??= DateTime.fromMillisecondsSinceEpoch(
+          int.tryParse(fileName.replaceAll(_backupPrefix, '').replaceAll('.db', '')) ?? 0,
+        );
+
+        result.add(BackupFile(
+          path: file.path,
+          size: stat.size,
+          createdTime: fileDate,
+          isLatest: false,
+        ));
+      }
+
+      result.sort((a, b) => b.createdTime.compareTo(a.createdTime));
+      return result;
+    } catch (e) {
+      print('隔離一覧取得失敗：$e');
+      return [];
+    }
+  }
+
+  /// 隔離バックアップを手動削除（ユーザー確認済みのみ実行）
+  Future<bool> deleteQuarantinedBackup(String backupPath) async {
+    try {
+      final file = File(backupPath);
+      if (!await file.exists()) {
+        print('削除対象が見つかりません：$backupPath');
+        return false;
+      }
+
+      // 対応ハッシュファイルも削除
+      final hashFile = File('$backupPath$_backupHashSuffix');
+      if (await hashFile.exists()) {
+        await hashFile.delete();
+      }
+
+      await file.delete();
+      print('隔離バックアップを削除：$backupPath');
+      return true;
+    } catch (e) {
+      print('隔離バックアップ削除失敗：$e');
+      return false;
+    }
+  }
 }
 
 /// バックアップファイル情報
