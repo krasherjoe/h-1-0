@@ -106,7 +106,12 @@ class LocalBackupService {
       final backupBytes = await File(backupPath).readAsBytes();
       final backupHash = crypto.sha256.convert(backupBytes).toString();
       final hashPath = '$backupPath$_backupHashSuffix';
-      await File(hashPath).writeAsString(backupHash);
+      // JSONでハッシュ＋作成日時を記録（端末日付暴走時の誤削除防止）
+      final hashMeta = jsonEncode({
+        'hash': backupHash,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+      await File(hashPath).writeAsString(hashMeta);
 
       print('ローカルバックアップ作成：$backupPath (hash=$backupHash)');
 
@@ -123,13 +128,14 @@ class LocalBackupService {
     }
   }
 
-  /// 古いバックアップを削除（保存期間7年を超えるもののみ）
+  /// 古いバックアップを削除（保存期間7年を超えるもののみ、未来日付暴走時は削除しない）
   Future<void> _cleanupOldBackups(String backupDir) async {
     try {
       final backupDirObj = Directory(backupDir);
       if (!await backupDirObj.exists()) return;
 
-      final cutoffDate = DateTime.now().subtract(
+      final now = DateTime.now();
+      final cutoffDate = now.subtract(
         const Duration(days: _retentionDays),
       );
 
@@ -139,18 +145,43 @@ class LocalBackupService {
           .toList();
 
       for (final file in files) {
-        final fileName = file.path.split('/').last;
-        final timestampStr = fileName
-            .replaceAll(_backupPrefix, '')
-            .replaceAll('.db', '');
-        final timestamp = int.tryParse(timestampStr) ?? 0;
-        final fileDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        DateTime? fileDate;
 
-        // 保存期間を超えたバックアップのみ削除
+        // 1. メタデータ（.sha256）から作成日時を優先取得（誤削除防止）
+        final hashFile = File('${file.path}$_backupHashSuffix');
+        if (await hashFile.exists()) {
+          try {
+            final hashContent = await hashFile.readAsString();
+            final hashMeta = jsonDecode(hashContent) as Map<String, dynamic>;
+            final createdAtStr = hashMeta['createdAt'] as String?;
+            if (createdAtStr != null) {
+              fileDate = DateTime.parse(createdAtStr);
+            }
+          } catch (_) {
+            // JSON解析失敗時はフォールバック
+          }
+        }
+
+        // 2. メタデータ取得失敗時はファイル名タイムスタンプをフォールバック
+        if (fileDate == null) {
+          final fileName = file.path.split('/').last;
+          final timestampStr = fileName
+              .replaceAll(_backupPrefix, '')
+              .replaceAll('.db', '');
+          final timestamp = int.tryParse(timestampStr) ?? 0;
+          fileDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+        }
+
+        // 3. ファイル日付が未来の場合は「日付暴走」と判断して削除しない（安全側に倒す）
+        if (fileDate.isAfter(now)) {
+          print('未来日付バックアップをスキップ（日付暴走疑い）：${file.path}');
+          continue;
+        }
+
+        // 4. 保存期間を超えたバックアップのみ削除
         if (fileDate.isBefore(cutoffDate)) {
           await (file as File).delete();
           // 対応するハッシュファイルも削除
-          final hashFile = File('${file.path}$_backupHashSuffix');
           if (await hashFile.exists()) {
             await hashFile.delete();
           }
@@ -178,11 +209,19 @@ class LocalBackupService {
         return false;
       }
 
-      final storedHash = await hashFile.readAsString();
+      final hashContent = await hashFile.readAsString();
+      String storedHash;
+      try {
+        final hashMeta = jsonDecode(hashContent) as Map<String, dynamic>;
+        storedHash = hashMeta['hash'] as String;
+      } catch (_) {
+        // 旧フォーマット（生ハッシュ文字列）との後方互換
+        storedHash = hashContent.trim();
+      }
       final backupBytes = await backupFile.readAsBytes();
       final calculatedHash = crypto.sha256.convert(backupBytes).toString();
 
-      if (storedHash.trim() != calculatedHash) {
+      if (storedHash != calculatedHash) {
         print('バックアップ整合性エラー: $backupPath');
         return false;
       }
@@ -212,10 +251,14 @@ class LocalBackupService {
 
       await dbFile.copy(exportPath);
 
-      // ハッシュも一緒にエクスポート
+      // ハッシュも一緒にエクスポート（作成日時記録）
       final dbBytes = await File(exportPath).readAsBytes();
       final dbHash = crypto.sha256.convert(dbBytes).toString();
-      await File('$exportPath$_backupHashSuffix').writeAsString(dbHash);
+      final hashMeta = jsonEncode({
+        'hash': dbHash,
+        'createdAt': now.toIso8601String(),
+      });
+      await File('$exportPath$_backupHashSuffix').writeAsString(hashMeta);
 
       print('長期保存用アーカイブをエクスポート：$exportPath');
       return exportPath;
