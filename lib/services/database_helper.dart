@@ -6,19 +6,25 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:crypto/crypto.dart' as crypto;
 
 import '../constants/warehouse_constants.dart';
 import 'storage_permission_service.dart';
 
-/// ローカルバックアップサービス
+/// ローカルバックアップサービス（電子帳簿保存法7年保存対応）
 ///
 /// 機能：
 /// - 自動ローカルバックアップ（毎日）
-/// - バックアップ履歴管理（過去 3 件保持）
+/// - バックアップ履歴管理（7年間保存: 保存期間満了後のみ削除）
+/// - バックアップ整合性検証（SHA256ハッシュ）
 /// - リストア機能
 class LocalBackupService {
   static const _backupPrefix = 'backup_';
-  static const _maxBackups = 3;
+  static const _backupHashSuffix = '.sha256';
+  /// 7年間の日次バックアップ上限（理論上の上限、実際は保存期間で制御）
+  static const _maxBackups = 9999;
+  /// 電子帳簿保存法保存期間: 7年（2555日）
+  static const _retentionDays = 365 * 7;
   static const _lastBackupKey = 'last_backup_timestamp';
   static const _dailyBackupKey = 'backup_date_today';
 
@@ -95,10 +101,17 @@ class LocalBackupService {
       }
 
       await dbFile.copy(backupPath);
-      print('ローカルバックアップ作成：$backupPath');
 
-      // 過去バックアップを整理（最大 3 件）
-      await _cleanupOldBackups(backupDir, max: _maxBackups);
+      // バックアップファイルのSHA256ハッシュを生成（整合性検証用）
+      final backupBytes = await File(backupPath).readAsBytes();
+      final backupHash = crypto.sha256.convert(backupBytes).toString();
+      final hashPath = '$backupPath$_backupHashSuffix';
+      await File(hashPath).writeAsString(backupHash);
+
+      print('ローカルバックアップ作成：$backupPath (hash=$backupHash)');
+
+      // 過去バックアップを整理（保存期間7年を超えるもののみ削除）
+      await _cleanupOldBackups(backupDir);
 
       // 今日のバックアップ済みフラグ設定
       await _setTodayBackedUp();
@@ -110,43 +123,105 @@ class LocalBackupService {
     }
   }
 
-  /// 古いバックアップを削除（最新 N 件保持）
-  Future<void> _cleanupOldBackups(String backupDir, {int max = 3}) async {
+  /// 古いバックアップを削除（保存期間7年を超えるもののみ）
+  Future<void> _cleanupOldBackups(String backupDir) async {
     try {
       final backupDirObj = Directory(backupDir);
       if (!await backupDirObj.exists()) return;
+
+      final cutoffDate = DateTime.now().subtract(
+        const Duration(days: _retentionDays),
+      );
 
       final files = await backupDirObj
           .list()
           .where((f) => f.path.endsWith('.db'))
           .toList();
 
-      // 作成時間でソート（古い順）- ファイル名からタイムスタンプを抽出
-      files.sort((a, b) {
-        final aPath = (a as File).path;
-        final bPath = (b as File).path;
-        // backup_1234567890.db から数値部分を抽出
-        final aNum =
-            int.tryParse(
-              aPath.replaceAll(_backupPrefix, '').replaceAll('.db', ''),
-            ) ??
-            0;
-        final bNum =
-            int.tryParse(
-              bPath.replaceAll(_backupPrefix, '').replaceAll('.db', ''),
-            ) ??
-            0;
-        return aNum.compareTo(bNum);
-      });
+      for (final file in files) {
+        final fileName = file.path.split('/').last;
+        final timestampStr = fileName
+            .replaceAll(_backupPrefix, '')
+            .replaceAll('.db', '');
+        final timestamp = int.tryParse(timestampStr) ?? 0;
+        final fileDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
 
-      // 古いファイルから削除（max を超える分）
-      while (files.length > max) {
-        final oldest = files.removeAt(0);
-        await (oldest as File).delete();
-        print('古いバックアップを削除：${oldest.path}');
+        // 保存期間を超えたバックアップのみ削除
+        if (fileDate.isBefore(cutoffDate)) {
+          await (file as File).delete();
+          // 対応するハッシュファイルも削除
+          final hashFile = File('${file.path}$_backupHashSuffix');
+          if (await hashFile.exists()) {
+            await hashFile.delete();
+          }
+          print('保存期間満了バックアップを削除：${file.path}');
+        }
       }
     } catch (e) {
       print('バックアップ整理失敗：$e');
+    }
+  }
+
+  /// バックアップファイルの整合性を検証（SHA256ハッシュ照合）
+  Future<bool> verifyBackupIntegrity(String backupPath) async {
+    try {
+      final backupFile = File(backupPath);
+      if (!await backupFile.exists()) {
+        print('バックアップファイルが見つかりません：$backupPath');
+        return false;
+      }
+
+      final hashPath = '$backupPath$_backupHashSuffix';
+      final hashFile = File(hashPath);
+      if (!await hashFile.exists()) {
+        print('ハッシュファイルが見つかりません：$hashPath');
+        return false;
+      }
+
+      final storedHash = await hashFile.readAsString();
+      final backupBytes = await backupFile.readAsBytes();
+      final calculatedHash = crypto.sha256.convert(backupBytes).toString();
+
+      if (storedHash.trim() != calculatedHash) {
+        print('バックアップ整合性エラー: $backupPath');
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      print('バックアップ整合性検証失敗：$e');
+      return false;
+    }
+  }
+
+  /// ダウンロードフォルダにアーカイブエクスポート（手動長期保存用）
+  Future<String?> exportArchiveForLongTerm(String databasePath) async {
+    try {
+      final dbFile = File(databasePath);
+      if (!await dbFile.exists()) {
+        print('DBファイルが見つかりません：$databasePath');
+        return null;
+      }
+
+      final downloadDir = await _getBackupDirectory();
+      final now = DateTime.now();
+      final fileName =
+          'gemi_invoice_archive_${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_'
+          '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}.db';
+      final exportPath = path.join(downloadDir, fileName);
+
+      await dbFile.copy(exportPath);
+
+      // ハッシュも一緒にエクスポート
+      final dbBytes = await File(exportPath).readAsBytes();
+      final dbHash = crypto.sha256.convert(dbBytes).toString();
+      await File('$exportPath$_backupHashSuffix').writeAsString(dbHash);
+
+      print('長期保存用アーカイブをエクスポート：$exportPath');
+      return exportPath;
+    } catch (e) {
+      print('アーカイブエクスポート失敗：$e');
+      return null;
     }
   }
 
