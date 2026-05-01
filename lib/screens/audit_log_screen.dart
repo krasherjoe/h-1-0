@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as p;
 import '../models/auth_models.dart';
 import '../services/auth_repository.dart';
 
@@ -516,9 +521,122 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   }
 
   Future<void> _exportLogs() async {
-    // 実際のエクスポート処理
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('エクスポート機能は今後実装予定です')));
+    if (_auditLogs.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('エクスポート対象のログがありません')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // フィルタ条件に一致する全ログを再取得（ページングなし）
+      final allLogs = await _authRepository.getAuditLogs(
+        userId: _selectedUser == 'すべて' ? null : _selectedUser,
+        resourceType:
+            _selectedResourceType == 'すべて' ? null : _selectedResourceType,
+        startDate: _startDate,
+        endDate: _endDate,
+        limit: 100000, // 実質的全件取得
+        offset: 0,
+      );
+
+      final csvContent = _generateCsv(allLogs);
+      final fileName =
+          'audit_logs_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+
+      // 一時ファイル作成
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(p.join(tempDir.path, fileName));
+      await tempFile.writeAsString(csvContent, encoding: utf8);
+
+      // Downloadsフォルダにもコピー（ユーザーが直接アクセスできるよう）
+      String? downloadPath;
+      if (Platform.isAndroid) {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final downloadFile = File(p.join(downloadDir.path, fileName));
+          await tempFile.copy(downloadFile.path);
+          downloadPath = downloadFile.path;
+        }
+      }
+
+      // 共有ダイアログ表示
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(tempFile.path, mimeType: 'text/csv')],
+          subject: '監査ログエクスポート ($fileName)',
+          text: '監査ログ CSV エクスポート',
+        ),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              downloadPath != null
+                  ? 'CSVをエクスポートしました\n$downloadPath'
+                  : 'CSVをエクスポートしました',
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エクスポートに失敗しました: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// CSV内容を生成（BOM付きUTF-8でExcel対応）
+  String _generateCsv(List<AuditLog> logs) {
+    final buffer = StringBuffer();
+    // UTF-8 BOM for Excel
+    buffer.writeCharCode(0xFEFF);
+
+    // ヘッダー
+    buffer.writeln(
+      'ID,ユーザ名,アクション,リソース種別,リソースID,変更前,変更後,IPアドレス,ユーザーエージェント,作成日時',
+    );
+
+    for (final log in logs) {
+      buffer.writeln(
+        [
+          _csvEscape(log.id),
+          _csvEscape(log.username),
+          _csvEscape(log.action),
+          _csvEscape(log.resourceType),
+          _csvEscape(log.resourceId ?? ''),
+          _csvEscape(log.oldValue ?? ''),
+          _csvEscape(log.newValue ?? ''),
+          _csvEscape(log.ipAddress ?? ''),
+          _csvEscape(log.userAgent ?? ''),
+          _csvEscape(DateFormat('yyyy-MM-dd HH:mm:ss').format(log.createdAt)),
+        ].join(','),
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// CSVフィールドのエスケープ（RFC 4180準拠）
+  String _csvEscape(String value) {
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 }
