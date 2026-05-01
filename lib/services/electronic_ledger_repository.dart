@@ -30,21 +30,85 @@ class ElectronicLedgerRepository {
     return (maxSeq ?? 0) + 1;
   }
 
-  /// タイムスタンプ逆行を検出（端末時計改ざんの疑い）
-  Future<bool> _detectTimestampTampering(DateTime currentTime) async {
+  /// タイムスタンプ逆行・異常ジャンプを多層検出（ログ基準が最も信頼できる）
+  ///
+  /// NTP/DNS偽装、GPSエミュレータ、SharedPreferences改竄を想定し、
+  /// ハッシュチェーン保護されたDBログ自体を最終的な信頼基準とする。
+  Future<Map<String, dynamic>> _detectTimestampTampering(DateTime currentTime) async {
+    final db = await _db.database;
+    final issues = <String>[];
+    DateTime? trustAnchor; // ログから算出した最も信頼できる基準時刻
+
+    // === Layer 1: SharedPreferences（軽量だが改竄可能） ===
     final prefs = await SharedPreferences.getInstance();
     final lastTimestamp = prefs.getInt(_lastLedgerTimestampKey);
     if (lastTimestamp != null) {
       final lastTime = DateTime.fromMillisecondsSinceEpoch(lastTimestamp);
       if (currentTime.isBefore(lastTime)) {
-        return true;
+        issues.add('Prefs逆行: ${lastTime.toIso8601String()} → ${currentTime.toIso8601String()}');
       }
     }
+    // SharedPreferencesは常に更新（攻撃者の足跡としても有用）
     await prefs.setInt(
       _lastLedgerTimestampKey,
       currentTime.millisecondsSinceEpoch,
     );
-    return false;
+
+    // === Layer 2: DBログ最新レコード（ハッシュチェーン保護・改竄困難） ===
+    final latestResult = await db.rawQuery(
+      'SELECT updated_at, sequence_number FROM electronic_ledgers '
+      'WHERE is_active = 1 ORDER BY sequence_number DESC LIMIT 1',
+    );
+    if (latestResult.isNotEmpty) {
+      final latestTime = DateTime.parse(latestResult.first['updated_at'] as String);
+      final latestSeq = latestResult.first['sequence_number'] as int? ?? 0;
+      if (currentTime.isBefore(latestTime)) {
+        issues.add('DB逆行(seq=$latestSeq): ${latestTime.toIso8601String()} → ${currentTime.toIso8601String()}');
+      }
+      trustAnchor = latestTime;
+    }
+
+    // === Layer 3: 統計的異常検出（過去ログ推移パターンから予測） ===
+    if (trustAnchor != null) {
+      final history = await db.rawQuery(
+        'SELECT updated_at FROM electronic_ledgers '
+        'WHERE is_active = 1 ORDER BY sequence_number DESC LIMIT 10',
+      );
+      if (history.length >= 3) {
+        final intervals = <Duration>[];
+        DateTime? prev;
+        for (final row in history.reversed) {
+          final t = DateTime.parse(row['updated_at'] as String);
+          if (prev != null) {
+            intervals.add(t.difference(prev));
+          }
+          prev = t;
+        }
+        if (intervals.isNotEmpty) {
+          // 中央値間隔を算出（外れ値に強い）
+          intervals.sort((a, b) => a.inSeconds.compareTo(b.inSeconds));
+          final medianInterval = intervals[intervals.length ~/ 2];
+          final expectedRange = Duration(
+            seconds: medianInterval.inSeconds * 3 + 300, // 中央値×3 + 5分許容
+          );
+          final elapsed = currentTime.difference(trustAnchor);
+          if (elapsed.isNegative) {
+            // 既にLayer 2で検出済み
+          } else if (elapsed > expectedRange) {
+            // 未来への不自然な飛躍（レイヤード攻撃: 少しずつ進める偽NTP）
+            issues.add('未来飛躍: 最終ログ=${trustAnchor.toIso8601String()}, '
+                '経過=${elapsed.inMinutes}分, 予測最大=${expectedRange.inMinutes}分');
+          }
+        }
+      }
+    }
+
+    return {
+      'tampered': issues.isNotEmpty,
+      'issues': issues,
+      'trustAnchor': trustAnchor?.toIso8601String(),
+      'currentTime': currentTime.toIso8601String(),
+    };
   }
 
   /// 電子帳簿データを保存（新規: 追記INSERTのみ）
@@ -59,10 +123,14 @@ class ElectronicLedgerRepository {
     final rowId = _generateRowId();
     final now = DateTime.now();
 
-    // タイムスタンプ逆行検出
-    if (await _detectTimestampTampering(now)) {
+    // タイムスタンプ逆行・異常検出（ログ基準が最も信頼できる）
+    final tamperingCheck = await _detectTimestampTampering(now);
+    if (tamperingCheck['tampered'] == true) {
+      final issues = tamperingCheck['issues'] as List<String>;
+      final trustAnchor = tamperingCheck['trustAnchor'] as String?;
       throw Exception(
-        'タイムスタンプ逆行が検出されました。端末の時計設定を確認してください。',
+        'タイムスタンプ異常が検出されました: ${issues.join("; ")}\n'
+        'ログ基準時刻: $trustAnchor',
       );
     }
 
