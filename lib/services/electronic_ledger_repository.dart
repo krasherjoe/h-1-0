@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 import 'hash_utils.dart';
 
@@ -10,11 +11,40 @@ class ElectronicLedgerRepository {
   final DatabaseHelper _db = DatabaseHelper();
   final Random _random = Random.secure();
 
+  static const String _lastLedgerTimestampKey = 'last_ledger_timestamp';
+
   /// バージョン管理用の一意な行IDを生成
   String _generateRowId() {
     final now = DateTime.now().millisecondsSinceEpoch;
     final rand = _random.nextInt(999999).toString().padLeft(6, '0');
     return 'EL-$now-$rand';
+  }
+
+  /// 次のグローバルシーケンス番号を取得（連続性確保）
+  Future<int> _getNextSequenceNumber() async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT MAX(sequence_number) as max_seq FROM electronic_ledgers',
+    );
+    final maxSeq = result.first['max_seq'] as int?;
+    return (maxSeq ?? 0) + 1;
+  }
+
+  /// タイムスタンプ逆行を検出（端末時計改ざんの疑い）
+  Future<bool> _detectTimestampTampering(DateTime currentTime) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastTimestamp = prefs.getInt(_lastLedgerTimestampKey);
+    if (lastTimestamp != null) {
+      final lastTime = DateTime.fromMillisecondsSinceEpoch(lastTimestamp);
+      if (currentTime.isBefore(lastTime)) {
+        return true;
+      }
+    }
+    await prefs.setInt(
+      _lastLedgerTimestampKey,
+      currentTime.millisecondsSinceEpoch,
+    );
+    return false;
   }
 
   /// 電子帳簿データを保存（新規: 追記INSERTのみ）
@@ -27,6 +57,16 @@ class ElectronicLedgerRepository {
   }) async {
     final db = await _db.database;
     final rowId = _generateRowId();
+    final now = DateTime.now();
+
+    // タイムスタンプ逆行検出
+    if (await _detectTimestampTampering(now)) {
+      throw Exception(
+        'タイムスタンプ逆行が検出されました。端末の時計設定を確認してください。',
+      );
+    }
+
+    final sequenceNumber = await _getNextSequenceNumber();
 
     final documentJson = jsonEncode(documentData);
     final documentHash = _generateDocumentHash(documentJson, null);
@@ -39,6 +79,7 @@ class ElectronicLedgerRepository {
       'dataSize': documentJson.length,
       'version': 1,
       'previousHash': null,
+      'sequenceNumber': sequenceNumber,
     };
 
     await db.insert('electronic_ledgers', {
@@ -50,13 +91,14 @@ class ElectronicLedgerRepository {
       'previous_hash': null,
       'metadata': jsonEncode(metadata),
       'created_at': createdAt.toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
+      'updated_at': now.toIso8601String(),
       'business_profile_id': businessProfileId,
       'is_active': 1,
       'is_current': 1,
       'version': 1,
       'valid_from': createdAt.toIso8601String(),
       'valid_to': null,
+      'sequence_number': sequenceNumber,
     });
   }
 
@@ -114,6 +156,7 @@ class ElectronicLedgerRepository {
 
     // 新バージョンをINSERT（電帳法: 追記のみ）
     final newVersion = currentVersion + 1;
+    final newSequenceNumber = await _getNextSequenceNumber();
     final newMetadata = {
       'documentType': currentMetadata['documentType'],
       'businessProfileId': currentMetadata['businessProfileId'],
@@ -123,6 +166,7 @@ class ElectronicLedgerRepository {
       'dataSize': documentJson.length,
       'version': newVersion,
       'previousHash': currentHash,
+      'sequenceNumber': newSequenceNumber,
     };
 
     await db.insert('electronic_ledgers', {
@@ -141,6 +185,7 @@ class ElectronicLedgerRepository {
       'version': newVersion,
       'valid_from': now,
       'valid_to': null,
+      'sequence_number': newSequenceNumber,
     });
   }
 
@@ -377,7 +422,50 @@ class ElectronicLedgerRepository {
         }
       }
 
+      // 3. シーケンス番号連続性チェック
+      final sequenceNumber = record['sequence_number'] as int?;
+      if (sequenceNumber != null && previousVersions.containsKey(documentId)) {
+        final prevRecord = previousVersions[documentId];
+        final prevSeq = prevRecord?['sequence_number'] as int?;
+        if (prevSeq != null && sequenceNumber <= prevSeq) {
+          issues.add({
+            'rowId': rowId,
+            'documentId': documentId,
+            'documentType': record['document_type'],
+            'issue': 'シーケンス番号逆行',
+            'sequenceNumber': sequenceNumber,
+            'expectedMinSequence': prevSeq + 1,
+            'version': version,
+            'createdAt': record['created_at'],
+          });
+        }
+      }
+
       previousVersions[documentId] = record;
+    }
+
+    // 4. グローバルシーケンス番号ギャップ検出
+    final globalSequences = result
+        .where((r) => r['sequence_number'] != null)
+        .map((r) => r['sequence_number'] as int)
+        .toList();
+    if (globalSequences.isNotEmpty) {
+      globalSequences.sort();
+      for (int i = 1; i < globalSequences.length; i++) {
+        if (globalSequences[i] - globalSequences[i - 1] > 1) {
+          issues.add({
+            'rowId': 'GLOBAL',
+            'documentId': 'GLOBAL',
+            'documentType': 'ALL',
+            'issue': 'シーケンス番号ギャップ',
+            'missingSequences':
+                List.generate(globalSequences[i] - globalSequences[i - 1] - 1,
+                    (idx) => globalSequences[i - 1] + 1 + idx),
+            'version': 0,
+            'createdAt': null,
+          });
+        }
+      }
     }
 
     return issues;

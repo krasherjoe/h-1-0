@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as p;
 import '../models/electronic_ledger_model.dart';
 import '../services/electronic_ledger_repository.dart';
 
@@ -180,6 +186,11 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: _exportLedgers,
+            tooltip: 'CSVエクスポート',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
@@ -670,5 +681,102 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
       return json;
     }
     return json.toString();
+  }
+
+  /// CSVエクスポート（現在表示中の帳簿データを出力）
+  Future<void> _exportLedgers() async {
+    if (_ledgers.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('エクスポート対象のデータがありません')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final buffer = StringBuffer();
+      // UTF-8 BOM for Excel
+      buffer.writeCharCode(0xFEFF);
+
+      buffer.writeln(
+        'ドキュメントID,ドキュメント種別,バージョン,作成日時,更新日時,データサイズ,ハッシュ値',
+      );
+
+      for (final ledger in _ledgers) {
+        final metadata = ledger['metadata'] as Map<String, dynamic>;
+        buffer.writeln(
+          [
+            _csvEscape(ledger['documentId'] as String),
+            _csvEscape(_getDocumentTypeDisplayName(ledger['documentType'] as String)),
+            '${ledger['version']}',
+            _csvEscape(DateFormat('yyyy-MM-dd HH:mm:ss').format(ledger['createdAt'] as DateTime)),
+            _csvEscape(DateFormat('yyyy-MM-dd HH:mm:ss').format(ledger['updatedAt'] as DateTime)),
+            '${metadata['dataSize'] ?? 0}',
+            _csvEscape(metadata['documentHash'] as String? ?? ''),
+          ].join(','),
+        );
+      }
+
+      final fileName =
+          'electronic_ledger_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(p.join(tempDir.path, fileName));
+      await tempFile.writeAsString(buffer.toString(), encoding: utf8);
+
+      // Downloadsフォルダにもコピー
+      String? downloadPath;
+      if (Platform.isAndroid) {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final downloadFile = File(p.join(downloadDir.path, fileName));
+          await tempFile.copy(downloadFile.path);
+          downloadPath = downloadFile.path;
+        }
+      }
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(tempFile.path, mimeType: 'text/csv')],
+          subject: '電子帳簿エクスポート ($fileName)',
+          text: '電子帳簿 CSV エクスポート',
+        ),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              downloadPath != null
+                  ? 'CSVをエクスポートしました\n$downloadPath'
+                  : 'CSVをエクスポートしました',
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エクスポートに失敗しました: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _csvEscape(String value) {
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 }

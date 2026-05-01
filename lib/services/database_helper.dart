@@ -363,7 +363,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 55;
+  static const _databaseVersion = 56;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1726,6 +1726,14 @@ class DatabaseHelper {
         'CREATE INDEX IF NOT EXISTS idx_electronic_ledgers_document_id ON electronic_ledgers(document_id)',
       );
     }
+
+    // v56: 電子帳簿保存法対応 - タイムスタンプ信頼性向上（シーケンス番号追加）
+    if (oldVersion < 56) {
+      await _safeAddColumn(db, 'electronic_ledgers', 'sequence_number INTEGER');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_electronic_ledgers_sequence ON electronic_ledgers(sequence_number)',
+      );
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2496,7 +2504,8 @@ class DatabaseHelper {
         is_current INTEGER DEFAULT 1,
         version INTEGER DEFAULT 1,
         previous_hash TEXT,
-        document_id TEXT
+        document_id TEXT,
+        sequence_number INTEGER
       )
     ''');
     await db.execute(
