@@ -115,8 +115,14 @@ class LocalBackupService {
 
       print('ローカルバックアップ作成：$backupPath (hash=$backupHash)');
 
-      // 過去バックアップを整理（保存期間7年を超えるもののみ削除）
-      await _cleanupOldBackups(backupDir);
+      // 自動削除は行わない（タイムスタンプ信頼性問題対策：
+      // NTP/DNS攻撃・GPSエミュレータ等で日付が狂う可能性があるため、
+      // データの自動消去は人間の判断を必須とする）
+      final storageInfo = await _getBackupStorageInfo(backupDir);
+      if (storageInfo['warning'] == true) {
+        print('バックアップ容量警告：${storageInfo['sizeReadable']} - '
+            '手動削除が必要です（settings→バックアップ管理）');
+      }
 
       // 今日のバックアップ済みフラグ設定
       await _setTodayBackedUp();
@@ -128,11 +134,62 @@ class LocalBackupService {
     }
   }
 
-  /// 古いバックアップを削除（保存期間7年を超えるもののみ、未来日付暴走時は削除しない）
-  Future<void> _cleanupOldBackups(String backupDir) async {
+  /// バックアップ保存領域の容量情報を取得（警告閾値: 1GB）
+  Future<Map<String, dynamic>> _getBackupStorageInfo(String backupDir) async {
+    try {
+      final dir = Directory(backupDir);
+      if (!await dir.exists()) {
+        return {'sizeBytes': 0, 'sizeReadable': '0 B', 'warning': false};
+      }
+
+      int totalBytes = 0;
+      int fileCount = 0;
+      await for (final entity in dir.list()) {
+        if (entity is File) {
+          totalBytes += await entity.length();
+          fileCount++;
+        }
+      }
+
+      const warnThreshold = 1024 * 1024 * 1024; // 1GB
+      String readable;
+      if (totalBytes < 1024) {
+        readable = '$totalBytes B';
+      } else if (totalBytes < 1024 * 1024) {
+        readable = '${(totalBytes / 1024).toStringAsFixed(1)} KB';
+      } else if (totalBytes < 1024 * 1024 * 1024) {
+        readable = '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+      } else {
+        readable = '${(totalBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+      }
+
+      return {
+        'sizeBytes': totalBytes,
+        'sizeReadable': readable,
+        'fileCount': fileCount,
+        'warning': totalBytes > warnThreshold,
+      };
+    } catch (e) {
+      print('容量情報取得失敗：$e');
+      return {'sizeBytes': 0, 'sizeReadable': '不明', 'warning': false};
+    }
+  }
+
+  /// 古いバックアップを隔離フォルダへ移動（完全削除はしない・人間確認必須）
+  ///
+  /// 電子帳簿保存法7年保存義務＋タイムスタンプ信頼性問題対策：
+  /// NTP/DNS攻撃・GPSエミュレータで日付が狂った場合の誤削除を防ぐため、
+  /// 自動削除は行わず、隔離（quarantine）して管理者確認を待つ。
+  Future<List<String>> quarantineOldBackups(String backupDir) async {
+    final quarantined = <String>[];
     try {
       final backupDirObj = Directory(backupDir);
-      if (!await backupDirObj.exists()) return;
+      if (!await backupDirObj.exists()) return quarantined;
+
+      final quarantineDir = Directory(path.join(backupDir, 'quarantine'));
+      if (!await quarantineDir.exists()) {
+        await quarantineDir.create();
+      }
 
       final now = DateTime.now();
       final cutoffDate = now.subtract(
@@ -178,19 +235,23 @@ class LocalBackupService {
           continue;
         }
 
-        // 4. 保存期間を超えたバックアップのみ削除
+        // 4. 保存期間を超えたバックアップを隔離フォルダへ移動（削除はしない）
         if (fileDate.isBefore(cutoffDate)) {
-          await (file as File).delete();
-          // 対応するハッシュファイルも削除
+          final fileName = file.path.split('/').last;
+          final quarantinePath = path.join(quarantineDir.path, fileName);
+          await (file as File).rename(quarantinePath);
           if (await hashFile.exists()) {
-            await hashFile.delete();
+            await hashFile.rename(
+                path.join(quarantineDir.path, '$fileName$_backupHashSuffix'));
           }
-          print('保存期間満了バックアップを削除：${file.path}');
+          quarantined.add(quarantinePath);
+          print('保存期間満了バックアップを隔離：$quarantinePath');
         }
       }
     } catch (e) {
-      print('バックアップ整理失敗：$e');
+      print('バックアップ隔離失敗：$e');
     }
+    return quarantined;
   }
 
   /// バックアップファイルの整合性を検証（SHA256ハッシュ照合）
