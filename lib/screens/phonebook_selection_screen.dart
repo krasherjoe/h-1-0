@@ -109,240 +109,17 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     });
   }
 
-  Future<Customer?> _showContactDetail(Contact contact) async {
-    // 会社名、氏名の取得
-    final orgCompany = contact.organizations.isNotEmpty
-        ? contact.organizations.first.company
-        : '';
-    final personParts = [
-      contact.name.last,
-      contact.name.first,
-    ].where((v) => v.isNotEmpty).toList();
-    final person = personParts.isNotEmpty
-        ? personParts.join(' ').trim()
-        : contact.displayName;
-
-    // 住所、メールの取得
-    final addresses = contact.addresses
-        .map(
-          (a) => [
-            a.postalCode,
-            a.state,
-            a.city,
-            a.street,
-            a.country,
-          ].where((v) => v.isNotEmpty).join(' '),
-        )
-        .where((s) => s.trim().isNotEmpty)
-        .toList();
-
-    final emails = contact.emails
-        .map((e) => e.address)
-        .where((e) => e.trim().isNotEmpty)
-        .toList();
-
-    final tel = contact.phones.isNotEmpty
-        ? contact.phones.first.number
-        : null;
-
-    String selectedNameSource = 'person';
-    String? selectedEmail = emails.isNotEmpty ? emails.first : null;
-
-    // 取り込み元に応じた初期値生成ヘルパー
-    String computeDisplay(String source) =>
-        source == 'company' && orgCompany.isNotEmpty ? orgCompany : person;
-    String computeFormal(String source) =>
-        source == 'company' && orgCompany.isNotEmpty
-            ? orgCompany
-            : '${_stripHonorific(person)} 様';
-
-    // コントローラを一度だけ生成（ダイアログ間で持続、ユーザー編集を保持）
-    final displayNameController =
-        TextEditingController(text: computeDisplay(selectedNameSource));
-    final formalNameController =
-        TextEditingController(text: computeFormal(selectedNameSource));
-
-    try {
-      final result = await showDialog<Map<String, dynamic>>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (ctx, setDialogState) {
-          return AlertDialog(
-            title: const Text('連絡先詳細'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 顧客名の取り込み元選択
-                  const Text('顧客名の取り込み元'),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'company', label: Text('会社名')),
-                      ButtonSegment(value: 'person', label: Text('氏名')),
-                    ],
-                    selected: {selectedNameSource},
-                    onSelectionChanged: (values) {
-                      if (values.isEmpty) return;
-                      setDialogState(() {
-                        selectedNameSource = values.first;
-                        // 取り込み元変更時はテキストを自動再生成
-                        displayNameController.text =
-                            computeDisplay(selectedNameSource);
-                        formalNameController.text =
-                            computeFormal(selectedNameSource);
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 表示名（編集可）
-                  TextField(
-                    controller: displayNameController,
-                    decoration: const InputDecoration(
-                      labelText: '表示名',
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 正式名称（編集可）
-                  TextField(
-                    controller: formalNameController,
-                    decoration: const InputDecoration(
-                      labelText: '正式名称',
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.done,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 電話番号
-                  if (tel != null && tel.isNotEmpty) ...[
-                    const Text('電話番号'),
-                    Text(tel),
-                    const SizedBox(height: 8),
-                  ],
-
-                  // メールアドレス（複数ある場合は選択）
-                  if (emails.isNotEmpty) ...[
-                    const Text('メールアドレス'),
-                    if (emails.length == 1)
-                      Text(emails.first)
-                    else
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedEmail,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: emails.map((email) =>
-                          DropdownMenuItem(
-                            value: email,
-                            child: Text(email, overflow: TextOverflow.ellipsis),
-                          ),
-                        ).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setDialogState(() {
-                              selectedEmail = value;
-                            });
-                          }
-                        },
-                      ),
-                    const SizedBox(height: 8),
-                  ],
-
-                  // 住所
-                  if (addresses.isNotEmpty) ...[
-                    const Text('住所'),
-                    ...addresses.map((a) => Text(a)),
-                    const SizedBox(height: 8),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('キャンセル'),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // ユーザー編集後のテキストを採用して Customer を生成
-                  final customer = _convertToCustomer(
-                    contact,
-                    selectedNameSource,
-                    displayNameController.text.trim(),
-                    formalNameController.text.trim(),
-                    addresses.firstOrNull,
-                    selectedEmail,
-                    tel,
-                  );
-
-                  Navigator.pop(dialogContext, {
-                    'customer': customer,
-                    'company': orgCompany,
-                    'person': person,
-                    'addresses': addresses,
-                    'emails': emails,
-                    'tel': tel,
-                    'selectedNameSource': selectedNameSource,
-                  });
-                },
-                icon: const Icon(Icons.check),
-                label: const Text('選択'),
-              ),
-            ],
-          );
-        },
-      ),
+  Future<void> _showContactDetail(Contact contact) async {
+    // コントローラ・状態はダイアログWidget側で管理し、Flutterのライフサイクルに任せることで
+    // dispose後の使用エラーを防ぐ
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => _ContactDetailDialog(contact: contact),
     );
-
-      if (result != null && mounted) {
-        // ダイアログを閉じた後、この画面自体も閉じて Map を返す
-        Navigator.pop(context, result);
-      }
-      return null;
-    } finally {
-      displayNameController.dispose();
-      formalNameController.dispose();
+    if (result != null && mounted) {
+      // ダイアログを閉じた後、この画面自体も閉じて Map を返す
+      Navigator.pop(context, result);
     }
-  }
-
-  /// 電話帳の生データから末尾の敬称を除去（様・御中・殿・先生・スペース区切り対応）
-  static String _stripHonorific(String name) {
-    return name.replaceAll(RegExp(r'[\s\u3000]*(様|御中|殿|先生)$'), '').trim();
-  }
-
-  /// Contact を Customer モデルに変換（displayName / formalName はボタン押下時のコントローラ値をそのまま使用）
-  Customer _convertToCustomer(
-    Contact contact,
-    String selectedNameSource,
-    String displayName,
-    String formalName,
-    String? address,
-    String? email,
-    String? tel,
-  ) {
-    return Customer(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      displayName: displayName,
-      formalName: formalName,
-      title: selectedNameSource == 'company' ? HonorificCode.onchu : HonorificCode.san,
-      department: null,
-      address: address,
-      tel: tel,
-      email: email,
-      contactVersionId: null,
-      odooId: null,
-      isSynced: false,
-      updatedAt: DateTime.now(),
-      isLocked: false,
-      isHidden: false,
-    );
   }
 
   @override
@@ -479,5 +256,234 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     }
 
     return Row(children: parts);
+  }
+}
+
+/// 電話帳の生データから末尾の敬称を除去（様・御中・殿・先生・スペース区切り対応）
+String _stripHonorific(String name) {
+  return name.replaceAll(RegExp(r'[\s\u3000]*(様|御中|殿|先生)$'), '').trim();
+}
+
+/// 連絡先詳細ダイアログ
+///
+/// コントローラのライフサイクルを State に委ねることで、
+/// 「保存ボタン押下→画面pop→controller dispose→widget teardown中にcontroller参照」
+/// の競合（A TextEditingController was used after being disposed）を防ぐ。
+class _ContactDetailDialog extends StatefulWidget {
+  const _ContactDetailDialog({required this.contact});
+  final Contact contact;
+
+  @override
+  State<_ContactDetailDialog> createState() => _ContactDetailDialogState();
+}
+
+class _ContactDetailDialogState extends State<_ContactDetailDialog> {
+  late final String _orgCompany;
+  late final String _person;
+  late final List<String> _addresses;
+  late final List<String> _emails;
+  late final String? _tel;
+  late final TextEditingController _displayNameController;
+  late final TextEditingController _formalNameController;
+
+  String _selectedNameSource = 'person';
+  String? _selectedEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    final contact = widget.contact;
+    _orgCompany = contact.organizations.isNotEmpty
+        ? contact.organizations.first.company
+        : '';
+    final personParts = [
+      contact.name.last,
+      contact.name.first,
+    ].where((v) => v.isNotEmpty).toList();
+    _person = personParts.isNotEmpty
+        ? personParts.join(' ').trim()
+        : contact.displayName;
+    _addresses = contact.addresses
+        .map(
+          (a) => [
+            a.postalCode,
+            a.state,
+            a.city,
+            a.street,
+            a.country,
+          ].where((v) => v.isNotEmpty).join(' '),
+        )
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+    _emails = contact.emails
+        .map((e) => e.address)
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+    _tel = contact.phones.isNotEmpty ? contact.phones.first.number : null;
+    _selectedEmail = _emails.isNotEmpty ? _emails.first : null;
+    _displayNameController =
+        TextEditingController(text: _computeDisplay(_selectedNameSource));
+    _formalNameController =
+        TextEditingController(text: _computeFormal(_selectedNameSource));
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _formalNameController.dispose();
+    super.dispose();
+  }
+
+  String _computeDisplay(String source) =>
+      source == 'company' && _orgCompany.isNotEmpty ? _orgCompany : _person;
+
+  String _computeFormal(String source) =>
+      source == 'company' && _orgCompany.isNotEmpty
+          ? _orgCompany
+          : '${_stripHonorific(_person)} 様';
+
+  void _onSelected() {
+    final customer = Customer(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      displayName: _displayNameController.text.trim(),
+      formalName: _formalNameController.text.trim(),
+      title: _selectedNameSource == 'company'
+          ? HonorificCode.onchu
+          : HonorificCode.san,
+      department: null,
+      address: _addresses.firstOrNull,
+      tel: _tel,
+      email: _selectedEmail,
+      contactVersionId: null,
+      odooId: null,
+      isSynced: false,
+      updatedAt: DateTime.now(),
+      isLocked: false,
+      isHidden: false,
+    );
+    Navigator.pop(context, {
+      'customer': customer,
+      'company': _orgCompany,
+      'person': _person,
+      'addresses': _addresses,
+      'emails': _emails,
+      'tel': _tel,
+      'selectedNameSource': _selectedNameSource,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tel = _tel;
+    return AlertDialog(
+      title: const Text('連絡先詳細'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 顧客名の取り込み元選択
+            const Text('顧客名の取り込み元'),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'company', label: Text('会社名')),
+                ButtonSegment(value: 'person', label: Text('氏名')),
+              ],
+              selected: {_selectedNameSource},
+              onSelectionChanged: (values) {
+                if (values.isEmpty) return;
+                setState(() {
+                  _selectedNameSource = values.first;
+                  _displayNameController.text =
+                      _computeDisplay(_selectedNameSource);
+                  _formalNameController.text =
+                      _computeFormal(_selectedNameSource);
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // 表示名（編集可）
+            TextField(
+              controller: _displayNameController,
+              decoration: const InputDecoration(
+                labelText: '表示名',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 8),
+
+            // 正式名称（編集可）
+            TextField(
+              controller: _formalNameController,
+              decoration: const InputDecoration(
+                labelText: '正式名称',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
+            ),
+            const SizedBox(height: 8),
+
+            // 電話番号
+            if (tel != null && tel.isNotEmpty) ...[
+              const Text('電話番号'),
+              Text(tel),
+              const SizedBox(height: 8),
+            ],
+
+            // メールアドレス（複数ある場合は選択）
+            if (_emails.isNotEmpty) ...[
+              const Text('メールアドレス'),
+              if (_emails.length == 1)
+                Text(_emails.first)
+              else
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedEmail,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: _emails
+                      .map(
+                        (email) => DropdownMenuItem(
+                          value: email,
+                          child:
+                              Text(email, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedEmail = value);
+                    }
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+
+            // 住所
+            if (_addresses.isNotEmpty) ...[
+              const Text('住所'),
+              ..._addresses.map((a) => Text(a)),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton.icon(
+          onPressed: _onSelected,
+          icon: const Icon(Icons.check),
+          label: const Text('選択'),
+        ),
+      ],
+    );
   }
 }
