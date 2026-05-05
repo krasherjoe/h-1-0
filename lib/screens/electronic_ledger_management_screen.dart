@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../models/electronic_ledger_model.dart';
 import '../services/electronic_ledger_repository.dart';
 import '../services/database_helper.dart';
+import '../services/activity_log_repository.dart';
 
 /// 電子帳簿管理画面
 class ElectronicLedgerManagementScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class ElectronicLedgerManagementScreen extends StatefulWidget {
 class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManagementScreen> {
   final ElectronicLedgerRepository _ledgerRepo = ElectronicLedgerRepository();
   final LocalBackupService _backupService = LocalBackupService();
+  final ActivityLogRepository _activityLog = ActivityLogRepository();
 
   List<Map<String, dynamic>> _ledgers = [];
   bool _isLoading = true;
@@ -230,6 +232,14 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
     setState(() => _isLoadingQuarantine = true);
     try {
       await _backupService.deleteQuarantinedBackup(backup.path);
+      // P5: 削除操作をaudit_logsに記録（誰が・いつ・何を削除したか追跡）
+      await _activityLog.logAction(
+        action: 'DELETE_QUARANTINE_BACKUP',
+        targetType: 'BACKUP',
+        targetId: backup.path.split('/').last,
+        details: 'バックアップ削除: 作成日時=${DateFormat('yyyy-MM-dd HH:mm:ss').format(backup.createdTime)}, '
+            'サイズ=${backup.formattedSize}, パス=${backup.path}',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -353,11 +363,18 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                       ),
                     );
                     if (confirmed == true) {
-                      for (final backup in List<BackupFile>.from(
-                        _quarantinedBackups,
-                      )) {
+                      final targets = List<BackupFile>.from(_quarantinedBackups);
+                      for (final backup in targets) {
                         await _backupService.deleteQuarantinedBackup(
                           backup.path,
+                        );
+                        // P5: 一括削除もaudit_logsに記録
+                        await _activityLog.logAction(
+                          action: 'DELETE_QUARANTINE_BACKUP_BULK',
+                          targetType: 'BACKUP',
+                          targetId: backup.path.split('/').last,
+                          details: 'バックアップ一括削除: 作成日時=${DateFormat('yyyy-MM-dd HH:mm:ss').format(backup.createdTime)}, '
+                              'サイズ=${backup.formattedSize}, パス=${backup.path}',
                         );
                       }
                       await _loadQuarantine();

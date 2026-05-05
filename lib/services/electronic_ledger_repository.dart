@@ -20,16 +20,6 @@ class ElectronicLedgerRepository {
     return 'EL-$now-$rand';
   }
 
-  /// 次のグローバルシーケンス番号を取得（連続性確保）
-  Future<int> _getNextSequenceNumber() async {
-    final db = await _db.database;
-    final result = await db.rawQuery(
-      'SELECT MAX(sequence_number) as max_seq FROM electronic_ledgers',
-    );
-    final maxSeq = result.first['max_seq'] as int?;
-    return (maxSeq ?? 0) + 1;
-  }
-
   /// タイムスタンプ逆行・異常ジャンプを多層検出（ログ基準が最も信頼できる）
   ///
   /// NTP/DNS偽装、GPSエミュレータ、SharedPreferences改竄を想定し、
@@ -134,39 +124,55 @@ class ElectronicLedgerRepository {
       );
     }
 
-    final sequenceNumber = await _getNextSequenceNumber();
-
     final documentJson = jsonEncode(documentData);
-    final documentHash = _generateDocumentHash(documentJson, null);
+    final createdAtIso = createdAt.toIso8601String();
 
-    final metadata = {
-      'documentType': documentType,
-      'businessProfileId': businessProfileId,
-      'createdAt': createdAt.toIso8601String(),
-      'documentHash': documentHash,
-      'dataSize': documentJson.length,
-      'version': 1,
-      'previousHash': null,
-      'sequenceNumber': sequenceNumber,
-    };
+    // P2: 採番＋INSERTをトランザクションで原子化（レース条件防止）
+    await db.transaction((txn) async {
+      final seqResult = await txn.rawQuery(
+        'SELECT MAX(sequence_number) as max_seq FROM electronic_ledgers',
+      );
+      final sequenceNumber =
+          ((seqResult.first['max_seq'] as int?) ?? 0) + 1;
 
-    await db.insert('electronic_ledgers', {
-      'id': rowId,
-      'document_id': documentId,
-      'document_type': documentType,
-      'document_data': documentJson,
-      'document_hash': documentHash,
-      'previous_hash': null,
-      'metadata': jsonEncode(metadata),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': now.toIso8601String(),
-      'business_profile_id': businessProfileId,
-      'is_active': 1,
-      'is_current': 1,
-      'version': 1,
-      'valid_from': createdAt.toIso8601String(),
-      'valid_to': null,
-      'sequence_number': sequenceNumber,
+      // P3: ハッシュv2（seq・createdAtを保護対象に含める）
+      final documentHash = _generateDocumentHashV2(
+        sequenceNumber: sequenceNumber,
+        createdAtIso: createdAtIso,
+        documentData: documentJson,
+        previousHash: null,
+      );
+
+      final metadata = {
+        'documentType': documentType,
+        'businessProfileId': businessProfileId,
+        'createdAt': createdAtIso,
+        'documentHash': documentHash,
+        'dataSize': documentJson.length,
+        'version': 1,
+        'previousHash': null,
+        'sequenceNumber': sequenceNumber,
+        'hashVersion': _hashVersionCurrent,
+      };
+
+      await txn.insert('electronic_ledgers', {
+        'id': rowId,
+        'document_id': documentId,
+        'document_type': documentType,
+        'document_data': documentJson,
+        'document_hash': documentHash,
+        'previous_hash': null,
+        'metadata': jsonEncode(metadata),
+        'created_at': createdAtIso,
+        'updated_at': now.toIso8601String(),
+        'business_profile_id': businessProfileId,
+        'is_active': 1,
+        'is_current': 1,
+        'version': 1,
+        'valid_from': createdAtIso,
+        'valid_to': null,
+        'sequence_number': sequenceNumber,
+      });
     });
   }
 
@@ -178,82 +184,108 @@ class ElectronicLedgerRepository {
   }) async {
     final db = await _db.database;
 
-    // 現在のカレントレコードを取得
-    final current = await db.query(
-      'electronic_ledgers',
-      where: 'document_id = ? AND is_current = 1 AND is_active = 1',
-      whereArgs: [documentId],
-    );
-
-    if (current.isEmpty) {
-      throw Exception('ドキュメントが見つかりません: $documentId');
+    // P1: 更新時もタイムスタンプ異常検出（ログ基準が最も信頼できる）
+    final tamperingCheck = await _detectTimestampTampering(updatedAt);
+    if (tamperingCheck['tampered'] == true) {
+      final issues = tamperingCheck['issues'] as List<String>;
+      final trustAnchor = tamperingCheck['trustAnchor'] as String?;
+      throw Exception(
+        'タイムスタンプ異常が検出されました（更新時）: ${issues.join("; ")}\n'
+        'ログ基準時刻: $trustAnchor',
+      );
     }
 
-    final currentRecord = current.first;
-    final currentRowId = currentRecord['id'] as String;
-    final currentHash = currentRecord['document_hash'] as String;
-    final currentVersion = (currentRecord['version'] as int?) ?? 1;
-    final currentMetadata =
-        jsonDecode(currentRecord['metadata'] as String) as Map<String, dynamic>;
-
     final documentJson = jsonEncode(documentData);
-    final documentHash = _generateDocumentHash(documentJson, currentHash);
 
-    // 履歴テーブルに旧データを退避（冗長バックアップ）
-    await db.insert('electronic_ledger_history', {
-      'id': _generateRowId(),
-      'ledger_id': currentRowId,
-      'document_data': currentRecord['document_data'],
-      'document_hash': currentHash,
-      'metadata': currentRecord['metadata'],
-      'created_at': currentRecord['created_at'],
-      'updated_at': DateTime.now().toIso8601String(),
-    });
+    // P2: 現在レコード取得→履歴保存→非カレント化→新バージョンINSERTを原子化
+    await db.transaction((txn) async {
+      final current = await txn.query(
+        'electronic_ledgers',
+        where: 'document_id = ? AND is_current = 1 AND is_active = 1',
+        whereArgs: [documentId],
+      );
 
-    // 旧レコードを非カレント化（メタデータのみUPDATE: document_dataは不変）
-    final now = DateTime.now().toIso8601String();
-    await db.update(
-      'electronic_ledgers',
-      {
-        'is_current': 0,
-        'valid_to': now,
-      },
-      where: 'id = ?',
-      whereArgs: [currentRowId],
-    );
+      if (current.isEmpty) {
+        throw Exception('ドキュメントが見つかりません: $documentId');
+      }
 
-    // 新バージョンをINSERT（電帳法: 追記のみ）
-    final newVersion = currentVersion + 1;
-    final newSequenceNumber = await _getNextSequenceNumber();
-    final newMetadata = {
-      'documentType': currentMetadata['documentType'],
-      'businessProfileId': currentMetadata['businessProfileId'],
-      'createdAt': currentMetadata['createdAt'],
-      'updatedAt': updatedAt.toIso8601String(),
-      'documentHash': documentHash,
-      'dataSize': documentJson.length,
-      'version': newVersion,
-      'previousHash': currentHash,
-      'sequenceNumber': newSequenceNumber,
-    };
+      final currentRecord = current.first;
+      final currentRowId = currentRecord['id'] as String;
+      final currentHash = currentRecord['document_hash'] as String;
+      final currentVersion = (currentRecord['version'] as int?) ?? 1;
+      final currentMetadata =
+          jsonDecode(currentRecord['metadata'] as String) as Map<String, dynamic>;
 
-    await db.insert('electronic_ledgers', {
-      'id': _generateRowId(),
-      'document_id': documentId,
-      'document_type': currentRecord['document_type'],
-      'document_data': documentJson,
-      'document_hash': documentHash,
-      'previous_hash': currentHash,
-      'metadata': jsonEncode(newMetadata),
-      'created_at': currentRecord['created_at'],
-      'updated_at': now,
-      'business_profile_id': currentRecord['business_profile_id'],
-      'is_active': 1,
-      'is_current': 1,
-      'version': newVersion,
-      'valid_from': now,
-      'valid_to': null,
-      'sequence_number': newSequenceNumber,
+      // 履歴テーブルに旧データを退避（冗長バックアップ）
+      await txn.insert('electronic_ledger_history', {
+        'id': _generateRowId(),
+        'ledger_id': currentRowId,
+        'document_data': currentRecord['document_data'],
+        'document_hash': currentHash,
+        'metadata': currentRecord['metadata'],
+        'created_at': currentRecord['created_at'],
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      // 旧レコードを非カレント化（メタデータのみUPDATE: document_dataは不変）
+      final now = DateTime.now().toIso8601String();
+      await txn.update(
+        'electronic_ledgers',
+        {
+          'is_current': 0,
+          'valid_to': now,
+        },
+        where: 'id = ?',
+        whereArgs: [currentRowId],
+      );
+
+      // P2: 採番もトランザクション内で実施（レース条件防止）
+      final seqResult = await txn.rawQuery(
+        'SELECT MAX(sequence_number) as max_seq FROM electronic_ledgers',
+      );
+      final newSequenceNumber =
+          ((seqResult.first['max_seq'] as int?) ?? 0) + 1;
+
+      // P3: v2ハッシュ（seq・createdAtを保護対象に含める）
+      final newVersion = currentVersion + 1;
+      final documentHash = _generateDocumentHashV2(
+        sequenceNumber: newSequenceNumber,
+        createdAtIso: now,
+        documentData: documentJson,
+        previousHash: currentHash,
+      );
+
+      final newMetadata = {
+        'documentType': currentMetadata['documentType'],
+        'businessProfileId': currentMetadata['businessProfileId'],
+        'createdAt': currentMetadata['createdAt'],
+        'updatedAt': updatedAt.toIso8601String(),
+        'documentHash': documentHash,
+        'dataSize': documentJson.length,
+        'version': newVersion,
+        'previousHash': currentHash,
+        'sequenceNumber': newSequenceNumber,
+        'hashVersion': _hashVersionCurrent,
+      };
+
+      await txn.insert('electronic_ledgers', {
+        'id': _generateRowId(),
+        'document_id': documentId,
+        'document_type': currentRecord['document_type'],
+        'document_data': documentJson,
+        'document_hash': documentHash,
+        'previous_hash': currentHash,
+        'metadata': jsonEncode(newMetadata),
+        'created_at': currentRecord['created_at'],
+        'updated_at': now,
+        'business_profile_id': currentRecord['business_profile_id'],
+        'is_active': 1,
+        'is_current': 1,
+        'version': newVersion,
+        'valid_from': now,
+        'valid_to': null,
+        'sequence_number': newSequenceNumber,
+      });
     });
   }
 
@@ -271,13 +303,26 @@ class ElectronicLedgerRepository {
 
     final record = result.first;
 
-    // データ整合性チェック（ハッシュ + previous_hash チェーン）
+    // データ整合性チェック（ハッシュ + previous_hash チェーン、v1/v2両対応）
     final storedHash = record['document_hash'] as String;
     final documentData = record['document_data'] as String;
     final previousHash = record['previous_hash'] as String?;
-    final calculatedHash = _generateDocumentHash(documentData, previousHash);
+    final sequenceNumber = record['sequence_number'] as int?;
+    final createdAtIso = record['created_at'] as String?;
+    final metadata =
+        jsonDecode(record['metadata'] as String) as Map<String, dynamic>;
+    final hashVersion = metadata['hashVersion'] as int?;
 
-    if (storedHash != calculatedHash) {
+    final valid = _verifyHashByVersion(
+      hashVersion: hashVersion,
+      storedHash: storedHash,
+      documentData: documentData,
+      previousHash: previousHash,
+      sequenceNumber: sequenceNumber,
+      createdAtIso: createdAtIso,
+    );
+
+    if (!valid) {
       throw Exception('データ改ざんが検出されました: $documentId');
     }
 
@@ -336,13 +381,26 @@ class ElectronicLedgerRepository {
     ''', whereArgs);
     
     return result.map((record) {
-      // データ整合性チェック（previous_hash含め）
+      // データ整合性チェック（previous_hash含め、v1/v2両対応）
       final storedHash = record['document_hash'] as String;
       final documentData = record['document_data'] as String;
       final previousHash = record['previous_hash'] as String?;
-      final calculatedHash = _generateDocumentHash(documentData, previousHash);
+      final sequenceNumber = record['sequence_number'] as int?;
+      final createdAtIso = record['created_at'] as String?;
+      final metadata =
+          jsonDecode(record['metadata'] as String) as Map<String, dynamic>;
+      final hashVersion = metadata['hashVersion'] as int?;
 
-      if (storedHash != calculatedHash) {
+      final valid = _verifyHashByVersion(
+        hashVersion: hashVersion,
+        storedHash: storedHash,
+        documentData: documentData,
+        previousHash: previousHash,
+        sequenceNumber: sequenceNumber,
+        createdAtIso: createdAtIso,
+      );
+
+      if (!valid) {
         throw Exception('データ改ざんが検出されました: ${record['id']}');
       }
 
@@ -448,17 +506,29 @@ class ElectronicLedgerRepository {
       final documentData = record['document_data'] as String;
       final previousHash = record['previous_hash'] as String?;
       final version = (record['version'] as int?) ?? 1;
+      final sequenceNumber = record['sequence_number'] as int?;
+      final createdAtIso = record['created_at'] as String?;
+      final metadataMap =
+          jsonDecode(record['metadata'] as String) as Map<String, dynamic>;
+      final hashVersion = metadataMap['hashVersion'] as int?;
 
-      // 1. 単体ハッシュ整合性
-      final calculatedHash = _generateDocumentHash(documentData, previousHash);
-      if (storedHash != calculatedHash) {
+      // 1. 単体ハッシュ整合性（v1/v2両対応）
+      final valid = _verifyHashByVersion(
+        hashVersion: hashVersion,
+        storedHash: storedHash,
+        documentData: documentData,
+        previousHash: previousHash,
+        sequenceNumber: sequenceNumber,
+        createdAtIso: createdAtIso,
+      );
+      if (!valid) {
         issues.add({
           'rowId': rowId,
           'documentId': documentId,
           'documentType': record['document_type'],
           'issue': 'ハッシュ値不一致',
           'storedHash': storedHash,
-          'calculatedHash': calculatedHash,
+          'hashVersion': hashVersion ?? 1,
           'version': version,
           'createdAt': record['created_at'],
         });
@@ -490,18 +560,18 @@ class ElectronicLedgerRepository {
         }
       }
 
-      // 3. シーケンス番号連続性チェック
-      final sequenceNumber = record['sequence_number'] as int?;
-      if (sequenceNumber != null && previousVersions.containsKey(documentId)) {
+      // 3. シーケンス番号連続性チェック（sequenceNumberはL509で定義済み）
+      final seqNum = sequenceNumber;
+      if (seqNum != null && previousVersions.containsKey(documentId)) {
         final prevRecord = previousVersions[documentId];
         final prevSeq = prevRecord?['sequence_number'] as int?;
-        if (prevSeq != null && sequenceNumber <= prevSeq) {
+        if (prevSeq != null && seqNum <= prevSeq) {
           issues.add({
             'rowId': rowId,
             'documentId': documentId,
             'documentType': record['document_type'],
             'issue': 'シーケンス番号逆行',
-            'sequenceNumber': sequenceNumber,
+            'sequenceNumber': seqNum,
             'expectedMinSequence': prevSeq + 1,
             'version': version,
             'createdAt': record['created_at'],
@@ -577,13 +647,63 @@ class ElectronicLedgerRepository {
     };
   }
 
-  /// ドキュメントハッシュ値を生成（previous_hashを含めてチェーン化）
+  /// ハッシュフォーマットバージョン
+  /// - v1: documentData|previousHash のみ（seq/時刻改竄に脆弱）
+  /// - v2: seq|createdAt|documentData|previousHash（順序・時刻も保護）
+  static const int _hashVersionCurrent = 2;
+
+  /// ドキュメントハッシュ値を生成（v1: 後方互換用）
   String _generateDocumentHash(String documentData, String? previousHash) {
     final input = [
       documentData,
       previousHash ?? '',
     ].join('|');
     return sha256.convert(utf8.encode(input)).toString();
+  }
+
+  /// ドキュメントハッシュ値を生成（v2: 順序＋時刻も保護）
+  ///
+  /// P3対策: sequence_number と created_at をハッシュ入力に含めることで、
+  /// 「ハッシュチェーンを壊さずに順序・時刻のみ改竄」を防止する。
+  String _generateDocumentHashV2({
+    required int sequenceNumber,
+    required String createdAtIso,
+    required String documentData,
+    required String? previousHash,
+  }) {
+    final input = [
+      'v2',
+      sequenceNumber.toString(),
+      createdAtIso,
+      documentData,
+      previousHash ?? '',
+    ].join('|');
+    return sha256.convert(utf8.encode(input)).toString();
+  }
+
+  /// 記録されたhashVersionに応じてハッシュを検証
+  bool _verifyHashByVersion({
+    required int? hashVersion,
+    required String storedHash,
+    required String documentData,
+    required String? previousHash,
+    required int? sequenceNumber,
+    required String? createdAtIso,
+  }) {
+    if (hashVersion == 2 &&
+        sequenceNumber != null &&
+        createdAtIso != null) {
+      final expected = _generateDocumentHashV2(
+        sequenceNumber: sequenceNumber,
+        createdAtIso: createdAtIso,
+        documentData: documentData,
+        previousHash: previousHash,
+      );
+      return storedHash == expected;
+    }
+    // v1（既存データ）: 後方互換
+    final expected = _generateDocumentHash(documentData, previousHash);
+    return storedHash == expected;
   }
 
   /// 古いデータをアーカイブ

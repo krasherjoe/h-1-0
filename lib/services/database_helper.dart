@@ -398,12 +398,37 @@ class LocalBackupService {
   }
 
   /// バックアップからリストア
-  Future<bool> restoreFromBackup(String backupPath, String databasePath) async {
+  ///
+  /// P4: 復元前にSHA256ハッシュ整合性検証を必須化。
+  /// 改竄されたバックアップや.sha256が存在しないバックアップは復元を拒否する。
+  /// 運用上必要な場合のみ allowUnverified=true で明示的にスキップ可能。
+  Future<bool> restoreFromBackup(
+    String backupPath,
+    String databasePath, {
+    bool allowUnverified = false,
+  }) async {
     try {
       final backupFile = File(backupPath);
       if (!await backupFile.exists()) {
         print('バックアップファイルが見つかりません：$backupPath');
         return false;
+      }
+
+      // P4: 復元前に必ず整合性を検証
+      final hashFile = File('$backupPath$_backupHashSuffix');
+      if (!await hashFile.exists()) {
+        if (!allowUnverified) {
+          print('整合性メタデータ(.sha256)が存在しません。復元を中止します：$backupPath');
+          return false;
+        }
+        print('警告: 整合性メタデータなしで復元を強行します（allowUnverified=true）');
+      } else {
+        final verified = await verifyBackupIntegrity(backupPath);
+        if (!verified) {
+          print('整合性検証に失敗しました。改竄の疑いがあるため復元を中止：$backupPath');
+          return false;
+        }
+        print('整合性検証OK：$backupPath');
       }
 
       // 現在のデータベースをクローズ
