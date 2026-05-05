@@ -267,7 +267,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // Customer オブジェクトに変換して返す（非同期処理）
+                  // Customer オブジェクトに変換して返す
                   final customer = _convertToCustomer(
                     contact,
                     selectedNameSource,
@@ -288,11 +288,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                     'selectedNameSource': selectedNameSource,
                   });
                 },
-                icon: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                icon: const Icon(Icons.check),
                 label: const Text('選択'),
               ),
             ],
