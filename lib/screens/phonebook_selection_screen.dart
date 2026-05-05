@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import '../models/customer_model.dart';
-import '../widgets/contact_picker_sheet.dart';
-import '../models/customer_model.dart' show HonorificCode;
 
 /// 電話帳から顧客を選択するための検索機能付き画面
 class PhonebookSelectionScreen extends StatefulWidget {
@@ -112,50 +110,63 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
   }
 
   Future<Customer?> _showContactDetail(Contact contact) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          String selectedNameSource = 'person';
+    // 会社名、氏名の取得
+    final orgCompany = contact.organizations.isNotEmpty
+        ? contact.organizations.first.company
+        : '';
+    final personParts = [
+      contact.name.last,
+      contact.name.first,
+    ].where((v) => v.isNotEmpty).toList();
+    final person = personParts.isNotEmpty
+        ? personParts.join(' ').trim()
+        : contact.displayName;
 
-          // 会社名、氏名の取得
-          final orgCompany = contact.organizations.isNotEmpty
-              ? contact.organizations.first.company
-              : '';
-          final personParts = [
-            contact.name.last,
-            contact.name.first,
-          ].where((v) => v.isNotEmpty).toList();
-          final person = personParts.isNotEmpty
-              ? personParts.join(' ').trim()
-              : contact.displayName;
+    // 住所、メールの取得
+    final addresses = contact.addresses
+        .map(
+          (a) => [
+            a.postalCode,
+            a.state,
+            a.city,
+            a.street,
+            a.country,
+          ].where((v) => v.isNotEmpty).join(' '),
+        )
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
 
-          // 住所、メールの取得
-          final addresses = contact.addresses
-              .map(
-                (a) => [
-                  a.postalCode,
-                  a.state,
-                  a.city,
-                  a.street,
-                  a.country,
-                ].where((v) => v.isNotEmpty).join(' '),
-              )
-              .where((s) => s.trim().isNotEmpty)
-              .toList();
+    final emails = contact.emails
+        .map((e) => e.address)
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
 
-          final emails = contact.emails
-              .map((e) => e.address)
-              .where((e) => e.trim().isNotEmpty)
-              .toList();
+    final tel = contact.phones.isNotEmpty
+        ? contact.phones.first.number
+        : null;
 
-          // メールアドレスが複数ある場合は選択状態を管理
-          String? selectedEmail = emails.isNotEmpty ? emails.first : null;
+    String selectedNameSource = 'person';
+    String? selectedEmail = emails.isNotEmpty ? emails.first : null;
 
-          final tel = contact.phones.isNotEmpty
-              ? contact.phones.first.number
-              : null;
+    // 取り込み元に応じた初期値生成ヘルパー
+    String computeDisplay(String source) =>
+        source == 'company' && orgCompany.isNotEmpty ? orgCompany : person;
+    String computeFormal(String source) =>
+        source == 'company' && orgCompany.isNotEmpty
+            ? orgCompany
+            : '${_stripHonorific(person)} 様';
 
+    // コントローラを一度だけ生成（ダイアログ間で持続、ユーザー編集を保持）
+    final displayNameController =
+        TextEditingController(text: computeDisplay(selectedNameSource));
+    final formalNameController =
+        TextEditingController(text: computeFormal(selectedNameSource));
+
+    try {
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (ctx, setDialogState) {
           return AlertDialog(
             title: const Text('連絡先詳細'),
             content: SingleChildScrollView(
@@ -175,42 +186,35 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                       if (values.isEmpty) return;
                       setDialogState(() {
                         selectedNameSource = values.first;
+                        // 取り込み元変更時はテキストを自動再生成
+                        displayNameController.text =
+                            computeDisplay(selectedNameSource);
+                        formalNameController.text =
+                            computeFormal(selectedNameSource);
                       });
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // 表示名
+                  // 表示名（編集可）
                   TextField(
+                    controller: displayNameController,
                     decoration: const InputDecoration(
                       labelText: '表示名',
                       border: OutlineInputBorder(),
                     ),
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text:
-                          selectedNameSource == 'company' &&
-                              orgCompany.isNotEmpty
-                          ? orgCompany
-                          : person,
-                    ),
+                    textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 8),
 
-                  // 正式名称（自動生成）
+                  // 正式名称（編集可）
                   TextField(
+                    controller: formalNameController,
                     decoration: const InputDecoration(
                       labelText: '正式名称',
                       border: OutlineInputBorder(),
                     ),
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text:
-                          selectedNameSource == 'company' &&
-                              orgCompany.isNotEmpty
-                          ? orgCompany
-                          : '${_stripHonorific(person)} 様',
-                    ),
+                    textInputAction: TextInputAction.done,
                   ),
                   const SizedBox(height: 8),
 
@@ -228,7 +232,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                       Text(emails.first)
                     else
                       DropdownButtonFormField<String>(
-                        value: selectedEmail,
+                        initialValue: selectedEmail,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
@@ -267,12 +271,12 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // Customer オブジェクトに変換して返す
+                  // ユーザー編集後のテキストを採用して Customer を生成
                   final customer = _convertToCustomer(
                     contact,
                     selectedNameSource,
-                    orgCompany,
-                    person,
+                    displayNameController.text.trim(),
+                    formalNameController.text.trim(),
                     addresses.firstOrNull,
                     selectedEmail,
                     tel,
@@ -297,11 +301,15 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
       ),
     );
 
-    if (result != null && mounted) {
-      // ダイアログを閉じた後、この画面自体も閉じて Map を返す
-      Navigator.pop(context, result);
+      if (result != null && mounted) {
+        // ダイアログを閉じた後、この画面自体も閉じて Map を返す
+        Navigator.pop(context, result);
+      }
+      return null;
+    } finally {
+      displayNameController.dispose();
+      formalNameController.dispose();
     }
-    return null;
   }
 
   /// 電話帳の生データから末尾の敬称を除去（様・御中・殿・先生・スペース区切り対応）
@@ -309,28 +317,16 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
     return name.replaceAll(RegExp(r'[\s\u3000]*(様|御中|殿|先生)$'), '').trim();
   }
 
-  /// Contact を Customer モデルに変換
+  /// Contact を Customer モデルに変換（displayName / formalName はボタン押下時のコントローラ値をそのまま使用）
   Customer _convertToCustomer(
     Contact contact,
     String selectedNameSource,
-    String orgCompany,
-    String person,
+    String displayName,
+    String formalName,
     String? address,
     String? email,
     String? tel,
   ) {
-    // 電話帳の生データに敬称が含まれる場合があるため除去
-    final cleanPerson = _stripHonorific(person);
-    final cleanOrg = _stripHonorific(orgCompany);
-
-    final displayName = selectedNameSource == 'company' && cleanOrg.isNotEmpty
-        ? cleanOrg
-        : cleanPerson;
-
-    final formalName = selectedNameSource == 'company' && cleanOrg.isNotEmpty
-        ? cleanOrg
-        : cleanPerson;
-
     return Customer(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       displayName: displayName,
