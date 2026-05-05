@@ -6,7 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 import '../models/auth_models.dart';
+import '../models/activity_log_model.dart';
 import '../services/auth_repository.dart';
+import '../services/activity_log_repository.dart';
 
 /// 監査ログ画面
 class AuditLogScreen extends StatefulWidget {
@@ -18,20 +20,28 @@ class AuditLogScreen extends StatefulWidget {
 
 class _AuditLogScreenState extends State<AuditLogScreen> {
   final AuthRepository _authRepository = AuthRepository();
+  final ActivityLogRepository _activityLogRepo = ActivityLogRepository();
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _activityScrollController = ScrollController();
 
+  // --- 認証ログ (tab 0) ---
   List<AuditLog> _auditLogs = [];
   List<User> _users = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _currentPage = 0;
   final int _pageSize = 50;
-
   String _selectedUser = 'すべて';
   String _selectedResourceType = 'すべて';
   DateTime? _startDate;
   DateTime? _endDate;
   String _searchQuery = '';
+
+  // --- 操作ログ (tab 1) ---
+  List<ActivityLog> _activityLogs = [];
+  bool _isLoadingActivity = false;
+  String _selectedTargetType = 'すべて';
+  String _activitySearchQuery = '';
 
   @override
   void initState() {
@@ -39,11 +49,13 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     _scrollController.addListener(_onScroll);
     _loadData();
     _loadUsers();
+    _loadActivityLogs();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _activityScrollController.dispose();
     super.dispose();
   }
 
@@ -141,6 +153,34 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     }
   }
 
+  // --- 操作ログ メソッド ---
+  Future<void> _loadActivityLogs() async {
+    setState(() => _isLoadingActivity = true);
+    try {
+      final logs = await _activityLogRepo.getAllLogs(limit: 500);
+      if (!mounted) return;
+      setState(() {
+        _activityLogs = logs;
+        _isLoadingActivity = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingActivity = false);
+    }
+  }
+
+  List<ActivityLog> get _filteredActivityLogs {
+    return _activityLogs.where((log) {
+      final matchesType = _selectedTargetType == 'すべて' ||
+          log.targetType == _selectedTargetType;
+      final matchesSearch = _activitySearchQuery.isEmpty ||
+          log.action.toLowerCase().contains(_activitySearchQuery.toLowerCase()) ||
+          log.targetType.toLowerCase().contains(_activitySearchQuery.toLowerCase()) ||
+          (log.details?.toLowerCase().contains(_activitySearchQuery.toLowerCase()) ?? false);
+      return matchesType && matchesSearch;
+    }).toList();
+  }
+
+  // --- 認証ログ メソッド ---
   List<AuditLog> get _filteredLogs {
     return _auditLogs.where((log) {
       final matchesSearch =
@@ -153,37 +193,217 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('AL:監査ログ'),
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: '更新',
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('AL:監査ログ'),
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                _loadData();
+                _loadActivityLogs();
+              },
+              tooltip: '更新',
+            ),
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: _exportLogs,
+              tooltip: 'エクスポート（認証ログ）',
+            ),
+          ],
+          bottom: const TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(icon: Icon(Icons.lock_outline), text: '認証ログ'),
+              Tab(icon: Icon(Icons.history), text: '操作ログ'),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _exportLogs,
-            tooltip: 'エクスポート',
-          ),
-        ],
+        ),
+        body: TabBarView(
+          children: [
+            // --- Tab 0: 認証ログ ---
+            Column(
+              children: [
+                _buildFilterSection(),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildLogList(),
+                ),
+              ],
+            ),
+            // --- Tab 1: 操作ログ ---
+            Column(
+              children: [
+                _buildActivityFilterSection(),
+                Expanded(
+                  child: _isLoadingActivity
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildActivityLogList(),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      body: Column(
+    );
+  }
+
+  // --- 操作ログ UI ---
+  Widget _buildActivityFilterSection() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      color: Colors.grey.shade100,
+      child: Column(
         children: [
-          _buildFilterSection(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildLogList(),
+          TextField(
+            decoration: const InputDecoration(
+              labelText: '検索（操作・種別・詳細）',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (v) => setState(() => _activitySearchQuery = v),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _selectedTargetType,
+                  isDense: true,
+                  decoration: const InputDecoration(
+                    labelText: '種別',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'すべて', child: Text('すべて')),
+                    DropdownMenuItem(value: 'BACKUP', child: Text('バックアップ')),
+                    DropdownMenuItem(value: 'INVOICE', child: Text('請求書')),
+                    DropdownMenuItem(value: 'CUSTOMER', child: Text('得意先')),
+                    DropdownMenuItem(value: 'PRODUCT', child: Text('商品')),
+                    DropdownMenuItem(value: 'STOCK_TRANSFER', child: Text('在庫移動')),
+                    DropdownMenuItem(value: 'WAREHOUSE', child: Text('倉庫')),
+                    DropdownMenuItem(value: 'STAFF', child: Text('担当者')),
+                  ],
+                  onChanged: (v) => setState(() => _selectedTargetType = v!),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => setState(() {
+                  _selectedTargetType = 'すべて';
+                  _activitySearchQuery = '';
+                }),
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text('クリア'),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildActivityLogList() {
+    final logs = _filteredActivityLogs;
+    if (logs.isEmpty) {
+      return const Center(
+        child: Text('操作ログが見つかりません', style: TextStyle(color: Colors.grey)),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadActivityLogs,
+      child: ListView.builder(
+        controller: _activityScrollController,
+        padding: const EdgeInsets.all(8),
+        itemCount: logs.length,
+        itemBuilder: (context, index) => _buildActivityCard(logs[index]),
+      ),
+    );
+  }
+
+  Widget _buildActivityCard(ActivityLog log) {
+    final isBackup = log.targetType == 'BACKUP';
+    final isDelete = log.action.contains('DELETE');
+    final color = isBackup && isDelete
+        ? Colors.red
+        : isDelete
+            ? Colors.orange
+            : Colors.teal;
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color,
+          child: Icon(
+            isBackup ? Icons.backup : Icons.history,
+            color: Colors.white,
+            size: 18,
+          ),
+        ),
+        title: Text(
+          log.action,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('種別: ${log.targetType}${log.targetId != null ? '  ID: ${log.targetId}' : ''}'),
+            if (log.details != null)
+              Text(
+                log.details!,
+                style: const TextStyle(fontSize: 11),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            Text(
+              DateFormat('yyyy-MM-dd HH:mm:ss').format(log.timestamp),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+            ),
+          ],
+        ),
+        isThreeLine: true,
+        onTap: () => _showActivityLogDetails(log),
+      ),
+    );
+  }
+
+  void _showActivityLogDetails(ActivityLog log) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('操作詳細'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailRow('操作', log.action),
+              _buildDetailRow('種別', log.targetType),
+              if (log.targetId != null) _buildDetailRow('対象ID', log.targetId!),
+              _buildDetailRow('日時', DateFormat('yyyy-MM-dd HH:mm:ss').format(log.timestamp)),
+              if (log.details != null) _buildDetailRow('詳細', log.details!),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 認証ログ UI ---
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
