@@ -47,31 +47,36 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
     if (!mounted) return;
     setState(() => _isImportingFromContacts = true);
     try {
-      if (await FlutterContacts.requestPermission(readonly: true)) {
-        if (!mounted) return;
-        final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
+      // パーミッション拒否時は即座にスピナーを解除して終了
+      if (!await FlutterContacts.requestPermission(readonly: true)) {
         if (!mounted) return;
         setState(() => _isImportingFromContacts = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('連絡先の権限がありません')));
+        return;
+      }
+      if (!mounted) return;
+      final contacts = await FlutterContacts.getContacts(withProperties: true, withAccounts: true, withPhoto: false);
+      if (!mounted) return;
+      setState(() => _isImportingFromContacts = false);
 
-        final Contact? selectedContact = await showModalBottomSheet<Contact?>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => ContactPickerSheet(contacts: contacts, title: '電話帳から顧客候補を選択'),
+      final Contact? selectedContact = await showModalBottomSheet<Contact?>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ContactPickerSheet(contacts: contacts, title: '電話帳から顧客候補を選択'),
+      );
+
+      if (!context.mounted) return;
+
+      if (selectedContact != null) {
+        final orgCompany = selectedContact.organizations.isNotEmpty ? selectedContact.organizations.first.company : '';
+        final personName = selectedContact.displayName;
+        final display = orgCompany.isNotEmpty ? orgCompany : personName;
+        final formal = orgCompany.isNotEmpty ? orgCompany : personName;
+        _showCustomerEditDialog(
+          displayName: display,
+          initialFormalName: formal,
         );
-
-        if (!context.mounted) return;
-
-        if (selectedContact != null) {
-          final orgCompany = selectedContact.organizations.isNotEmpty ? selectedContact.organizations.first.company : '';
-          final personName = selectedContact.displayName;
-          final display = orgCompany.isNotEmpty ? orgCompany : personName;
-          final formal = orgCompany.isNotEmpty ? orgCompany : personName;
-          _showCustomerEditDialog(
-            displayName: display,
-            initialFormalName: formal,
-          );
-        }
       }
     } catch (e) {
       if (!mounted) return;
