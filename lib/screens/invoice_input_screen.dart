@@ -139,6 +139,29 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     return _currentId!;
   }
 
+  /// 編集モードで戻るボタン押下時の破棄確認ダイアログ
+  Future<bool> _showDiscardConfirmDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('変更を破棄しますか？'),
+        content: const Text('保存されていない編集内容は失われます。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('編集に戻る'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('破棄して戻る'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   void _showDocumentTypeChangeDialog() async {
     if (_isLocked || !_isDraft) return;
 
@@ -846,21 +869,31 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       ),
     );
 
-    return Scaffold(
-      appBar: sensorAppBar,
-      backgroundColor: themeColor,
-      resizeToAvoidBottomInset: false,
-      body: _isViewMode
-          ? InteractiveViewer(
-              transformationController: _transformationController,
-              minScale: 1.0,
-              maxScale: 2.0,
-              boundaryMargin: const EdgeInsets.all(100),
-              constrained: true,
-              panEnabled: _panEnabled,
-              child: content.body!,
-            )
-          : content.body!,
+    return PopScope(
+      canPop: _isViewMode,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _showDiscardConfirmDialog();
+        if (shouldPop && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: sensorAppBar,
+        backgroundColor: themeColor,
+        resizeToAvoidBottomInset: false,
+        body: _isViewMode
+            ? InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: 1.0,
+                maxScale: 2.0,
+                boundaryMargin: const EdgeInsets.all(100),
+                constrained: true,
+                panEnabled: _panEnabled,
+                child: content.body!,
+              )
+            : content.body!,
+      ),
     );
   }
 
