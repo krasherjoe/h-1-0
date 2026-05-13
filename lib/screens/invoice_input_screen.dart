@@ -1411,7 +1411,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     if (_isTaxInclusiveMode) {
       // 税込みモード: 小計は税込価格の合計。消費税を逆算
-      final int taxInclusiveSubtotal = subtotal - itemDiscountAmount;
+      final int taxInclusiveSubtotal = subtotal - itemDiscountAmount - priceAdjustmentDiscount;
       tax = (taxInclusiveSubtotal * _taxRate / (1 + _taxRate)).round();
       taxableAmount = taxInclusiveSubtotal - tax;
       total = taxInclusiveSubtotal;

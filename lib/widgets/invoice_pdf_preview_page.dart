@@ -100,6 +100,38 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     return result ?? false;
   }
 
+  Future<bool> _showDraftSendWarning(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('⚠️ 下書きの送信'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.invoice.customerNameForDisplay),
+            const SizedBox(height: 8),
+            const Text(
+              'この伝票は下書き状態です。\n正式発行されていません。\n\n下書きのまま送信してよろしいですか？',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('下書きのまま送信'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<Uint8List> _buildPdfBytes([PdfPageFormat? format]) async {
     final doc = await buildInvoiceDocument(
       _effectiveInvoice,
@@ -276,9 +308,13 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                       _ppButton(
                         icon: Icons.share,
                         label: '共有',
-                        enabled: widget.showShare && (!isDraft || effectiveIsLocked),
-                        onPressed: (widget.showShare && (!isDraft || effectiveIsLocked))
+                        enabled: widget.showShare,
+                        onPressed: widget.showShare
                             ? () async {
+                                if (isDraft && !effectiveIsLocked) {
+                                  final confirmed = await _showDraftSendWarning(context);
+                                  if (!confirmed) return;
+                                }
                                 final bytes = await _buildPdfBytes();
                                 await Printing.sharePdf(
                                   bytes: bytes,
@@ -291,9 +327,15 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                       _ppButton(
                         icon: Icons.mail_outline,
                         label: 'メール',
-                        enabled: widget.showEmail && (!isDraft || effectiveIsLocked),
-                        onPressed: (widget.showEmail && (!isDraft || effectiveIsLocked))
-                            ? () async => _sendMail(context)
+                        enabled: widget.showEmail,
+                        onPressed: widget.showEmail
+                            ? () async {
+                                if (isDraft && !effectiveIsLocked) {
+                                  final confirmed = await _showDraftSendWarning(context);
+                                  if (!confirmed) return;
+                                }
+                                await _sendMail(context);
+                              }
                             : null,
                       ),
                       const SizedBox(width: 8),

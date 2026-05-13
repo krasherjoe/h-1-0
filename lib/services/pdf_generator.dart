@@ -364,15 +364,28 @@ Future<pw.Document> buildInvoiceDocument(
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text("Verification Hash (SHA256):", style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
-                  pw.Text(invoice.contentHash, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                  if (invoice.isDraft && !invoice.isLocked) ...[
+                    pw.Text("下書き下書き下書き下書き下書き下書き", style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey500)),
+                  ] else ...[
+                    pw.Text("Verification Hash (SHA256):", style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                    pw.Text(invoice.contentHash, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                  ],
                 ],
               ),
-              pw.Container(
-                width: 50,
-                height: 50,
-                child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: metaHash, drawText: false),
-              ),
+              if (invoice.isDraft && !invoice.isLocked)
+                pw.Container(
+                  width: 50,
+                  height: 50,
+                  decoration: const pw.BoxDecoration(
+                    border: pw.Border.fromBorderSide(pw.BorderSide(color: PdfColors.grey400, width: 1)),
+                  ),
+                )
+              else
+                pw.Container(
+                  width: 50,
+                  height: 50,
+                  child: pw.BarcodeWidget(barcode: pw.Barcode.qrCode(), data: metaHash, drawText: false),
+                ),
             ],
           ),
         ];
