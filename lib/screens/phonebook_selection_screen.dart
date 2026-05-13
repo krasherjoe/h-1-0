@@ -266,9 +266,8 @@ String _stripHonorific(String name) {
 
 /// 連絡先詳細ダイアログ
 ///
-/// コントローラのライフサイクルを State に委ねることで、
-/// 「保存ボタン押下→画面pop→controller dispose→widget teardown中にcontroller参照」
-/// の競合（A TextEditingController was used after being disposed）を防ぐ。
+/// コントローラは State で管理し、dismiss アニメーション中の dispose 競合を避けるため
+/// 明示的な dispose は行わない（短命ダイアログのため GC 任せで問題なし）。
 class _ContactDetailDialog extends StatefulWidget {
   const _ContactDetailDialog({required this.contact});
   final Contact contact;
@@ -325,13 +324,6 @@ class _ContactDetailDialogState extends State<_ContactDetailDialog> {
         TextEditingController(text: _computeDisplay(_selectedNameSource));
     _formalNameController =
         TextEditingController(text: _computeFormal(_selectedNameSource));
-  }
-
-  @override
-  void dispose() {
-    _displayNameController.dispose();
-    _formalNameController.dispose();
-    super.dispose();
   }
 
   String _computeDisplay(String source) =>
