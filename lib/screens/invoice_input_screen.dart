@@ -63,7 +63,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final List<InvoiceItem> _items = [];
   double _taxRate = 0.10;
   bool _includeTax = false;
-  bool _isTaxInclusiveMode = false; // 税込みモード（単価が税込、消費税を逆算）
   DocumentType _documentType = DocumentType.invoice; // 追加
   DateTime _selectedDate = DateTime.now(); // 追加: 伝票日付
   bool _isDraft = true; // デフォルトは下書き
@@ -395,26 +394,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   int get _subTotal =>
       _items.fold(0, (sum, item) => sum + (item.unitPrice * item.quantity));
-
-  /// 税込みモード用の自動調整項目を確保（なければ作成、あれば更新）
-  void _ensureTaxInclusiveAdjustmentItem() {
-    const marker = '【税込調整】';
-    final existing = _items.indexWhere((i) => i.description.startsWith(marker));
-    if (existing == -1) {
-      _items.add(InvoiceItem(
-        description: marker,
-        quantity: 1,
-        unitPrice: 0,
-        discountAmount: 0,
-      ));
-    }
-  }
-
-  /// 税込みモード解除時に自動調整項目を削除
-  void _removeTaxInclusiveAdjustmentItem() {
-    const marker = '【税込調整】';
-    _items.removeWhere((i) => i.description.startsWith(marker));
-  }
   Future<void> _saveInvoice({bool generatePdf = true}) async {
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(
@@ -576,7 +555,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           items: _cloneItems(_items),
           taxRate: _taxRate,
           includeTax: _includeTax,
-          isTaxInclusiveMode: _isTaxInclusiveMode,
           documentType: _documentType,
           date: _selectedDate,
           isDraft: _isDraft,
@@ -597,7 +575,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           items: _cloneItems(_items),
           taxRate: _taxRate,
           includeTax: _includeTax,
-          isTaxInclusiveMode: _isTaxInclusiveMode,
           documentType: _documentType,
           date: _selectedDate,
           isDraft: _isDraft,
@@ -614,7 +591,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ..addAll(_cloneItems(snapshot.items));
       _taxRate = snapshot.taxRate;
       _includeTax = snapshot.includeTax;
-      _isTaxInclusiveMode = snapshot.isTaxInclusiveMode;
       _documentType = snapshot.documentType;
       _selectedDate = snapshot.date;
       _isDraft = snapshot.isDraft;
@@ -632,7 +608,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           items: _cloneItems(_items),
           taxRate: _taxRate,
           includeTax: _includeTax,
-          isTaxInclusiveMode: _isTaxInclusiveMode,
           documentType: _documentType,
           date: _selectedDate,
           isDraft: _isDraft,
@@ -647,7 +622,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ..addAll(_cloneItems(snapshot.items));
       _taxRate = snapshot.taxRate;
       _includeTax = snapshot.includeTax;
-      _isTaxInclusiveMode = snapshot.isTaxInclusiveMode;
       _documentType = snapshot.documentType;
       _selectedDate = snapshot.date;
       _isDraft = snapshot.isDraft;
@@ -1420,22 +1394,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final int priceAdjustmentDiscount = _calculatePriceAdjustmentDiscount();
     final int totalDiscountAmount =
         itemDiscountAmount + priceAdjustmentDiscount;
-
-    int tax;
-    int taxableAmount;
-    int total;
-
-    if (_isTaxInclusiveMode) {
-      // 税込みモード: 小計は税込価格の合計。消費税を逆算
-      final int taxInclusiveSubtotal = subtotal - itemDiscountAmount;
-      tax = (taxInclusiveSubtotal * _taxRate / (1 + _taxRate)).round();
-      taxableAmount = taxInclusiveSubtotal - tax;
-      total = taxInclusiveSubtotal;
-    } else {
-      taxableAmount = subtotal - totalDiscountAmount;
-      tax = _includeTax ? (taxableAmount * _taxRate).floor() : 0;
-      total = taxableAmount + tax;
-    }
+    final int taxableAmount = subtotal - totalDiscountAmount;
+    final int tax = _includeTax ? (taxableAmount * _taxRate).floor() : 0;
+    final int total = taxableAmount + tax;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
@@ -1497,7 +1458,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSummaryRow("小計", "￥${formatAmount(subtotal)}", labelColor),
-            if (itemDiscountAmount > 0 && !_isTaxInclusiveMode) ...[
+            if (itemDiscountAmount > 0) ...[
               Divider(color: dividerColor),
               _buildSummaryRow(
                 "値引き",
@@ -1554,7 +1515,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             ],
             Divider(color: dividerColor),
             _buildSummaryRow(
-              _isTaxInclusiveMode ? "税抜金額（逆算）" : "税抜金額",
+              "税抜金額",
               "￥${formatAmount(taxableAmount)}",
               labelColor,
             ),
@@ -1571,9 +1532,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _isTaxInclusiveMode
-                              ? "消費税 (${(_taxRate * 100).toInt()}% 逆算)"
-                              : "消費税 (${(_taxRate * 100).toInt()}%)",
+                          "消費税 (${(_taxRate * 100).toInt()}%)",
                           style: TextStyle(
                             fontSize: 14,
                             color: labelColor,
@@ -2259,49 +2218,32 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
-  /// 消費税率を変更するダイアログ（税込みモード対応）
+  /// 消費税率を変更するダイアログ
   Future<void> _showTaxRatePicker() async {
-    final selected = await showDialog<String>(
+    final selected = await showDialog<double>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: const Text('消費税率を選択'),
         children: [
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, '10'),
+            onPressed: () => Navigator.pop(ctx, 0.10),
             child: const ListTile(
               leading: Icon(Icons.percent),
               title: Text('10%'),
             ),
           ),
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, '8'),
+            onPressed: () => Navigator.pop(ctx, 0.08),
             child: const ListTile(
               leading: Icon(Icons.percent),
               title: Text('8%'),
             ),
           ),
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, '0'),
+            onPressed: () => Navigator.pop(ctx, 0.0),
             child: const ListTile(
               leading: Icon(Icons.money_off),
               title: Text('非課税 (0%)'),
-            ),
-          ),
-          const Divider(),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'tax_inclusive_10'),
-            child: const ListTile(
-              leading: Icon(Icons.shopping_cart, color: Colors.orange),
-              title: Text('税込み (10%)'),
-              subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'tax_inclusive_8'),
-            child: const ListTile(
-              leading: Icon(Icons.shopping_cart, color: Colors.orange),
-              title: Text('税込み (8%)'),
-              subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
             ),
           ),
         ],
@@ -2310,38 +2252,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
     if (selected != null && mounted) {
       setState(() {
-        switch (selected) {
-          case '10':
-            _taxRate = 0.10;
-            _includeTax = true;
-            _isTaxInclusiveMode = false;
-            _removeTaxInclusiveAdjustmentItem();
-            break;
-          case '8':
-            _taxRate = 0.08;
-            _includeTax = true;
-            _isTaxInclusiveMode = false;
-            _removeTaxInclusiveAdjustmentItem();
-            break;
-          case '0':
-            _taxRate = 0.0;
-            _includeTax = false;
-            _isTaxInclusiveMode = false;
-            _removeTaxInclusiveAdjustmentItem();
-            break;
-          case 'tax_inclusive_10':
-            _taxRate = 0.10;
-            _includeTax = true;
-            _isTaxInclusiveMode = true;
-            _ensureTaxInclusiveAdjustmentItem();
-            break;
-          case 'tax_inclusive_8':
-            _taxRate = 0.08;
-            _includeTax = true;
-            _isTaxInclusiveMode = true;
-            _ensureTaxInclusiveAdjustmentItem();
-            break;
-        }
+        _taxRate = selected;
+        _includeTax = selected > 0;
       });
       _pushHistory();
     }
@@ -2460,7 +2372,6 @@ class _InvoiceSnapshot {
   final List<InvoiceItem> items;
   final double taxRate;
   final bool includeTax;
-  final bool isTaxInclusiveMode;
   final DocumentType documentType;
   final DateTime date;
   final bool isDraft;
@@ -2471,7 +2382,6 @@ class _InvoiceSnapshot {
     required this.items,
     required this.taxRate,
     required this.includeTax,
-    required this.isTaxInclusiveMode,
     required this.documentType,
     required this.date,
     required this.isDraft,
