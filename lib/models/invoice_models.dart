@@ -146,6 +146,7 @@ class Invoice {
   final bool isReceiptIssued; // 領収証発行済みフラグ
   final DateTime? receiptIssuedAt; // 領収証発行日時
   final bool includeTax; // 税込みフラグ
+  final bool isTaxInclusiveMode; // 税込みモード（単価が税込、消費税を逆算）
   final String? priceAdjustmentType; // 価格調整タイプ: 'round_down', 'round_up', 'round_nearest'
   final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
 
@@ -187,6 +188,7 @@ class Invoice {
     this.isReceiptIssued = false,
     this.receiptIssuedAt,
     this.includeTax = false,
+    this.isTaxInclusiveMode = false,
     this.priceAdjustmentType,
     this.priceAdjustmentUnit,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -267,8 +269,15 @@ class Invoice {
 
     final unit = priceAdjustmentUnit!;
     final baseAmount = subtotal - _regularDiscount;
-    final taxAmount = includeTax ? (baseAmount * taxRate).floor() : 0;
-    final totalBeforeAdjustment = baseAmount + taxAmount;
+
+    int totalBeforeAdjustment;
+    if (isTaxInclusiveMode) {
+      // 税込みモード: baseAmountは税込なのでそのまま合計
+      totalBeforeAdjustment = baseAmount;
+    } else {
+      final taxAmount = includeTax ? (baseAmount * taxRate).floor() : 0;
+      totalBeforeAdjustment = baseAmount + taxAmount;
+    }
 
     int adjustedTotal;
     switch (priceAdjustmentType) {
@@ -317,9 +326,33 @@ class Invoice {
 
   int get discountAmount => _regularDiscount + priceAdjustmentDiscount;
 
-  int get taxableAmount => subtotal - discountAmount;
-  int get tax => includeTax ? (taxableAmount * taxRate).floor() : 0;
-  int get totalAmount => taxableAmount + tax;
+  int get taxableAmount {
+    if (isTaxInclusiveMode) {
+      // 税込みモード: 小計は税込、税抜金額を逆算
+      final taxInclusiveTotal = subtotal - discountAmount;
+      final tax = (taxInclusiveTotal * taxRate / (1 + taxRate)).round();
+      return taxInclusiveTotal - tax;
+    }
+    return subtotal - discountAmount;
+  }
+
+  int get tax {
+    if (!includeTax) return 0;
+    if (isTaxInclusiveMode) {
+      // 税込みモード: 合計から消費税を逆算
+      final taxInclusiveTotal = subtotal - discountAmount;
+      return (taxInclusiveTotal * taxRate / (1 + taxRate)).round();
+    }
+    return (taxableAmount * taxRate).floor();
+  }
+
+  int get totalAmount {
+    if (isTaxInclusiveMode) {
+      // 税込みモード: 合計 = 税込小計（税抜金額 + 消費税）
+      return subtotal - discountAmount;
+    }
+    return taxableAmount + tax;
+  }
 
   String get _projectLabel {
     if (subject != null && subject!.trim().isNotEmpty) {
@@ -443,6 +476,7 @@ class Invoice {
       'price_adjustment_type': priceAdjustmentType,
       'price_adjustment_unit': priceAdjustmentUnit,
       'include_tax': includeTax ? 1 : 0,
+      'is_tax_inclusive_mode': isTaxInclusiveMode ? 1 : 0,
     };
   }
 
@@ -484,6 +518,7 @@ class Invoice {
     bool? isReceiptIssued,
     DateTime? receiptIssuedAt,
     bool? includeTax,
+    bool? isTaxInclusiveMode,
     String? priceAdjustmentType,
     int? priceAdjustmentUnit,
   }) {
@@ -527,6 +562,7 @@ class Invoice {
       isReceiptIssued: isReceiptIssued ?? this.isReceiptIssued,
       receiptIssuedAt: receiptIssuedAt ?? this.receiptIssuedAt,
       includeTax: includeTax ?? this.includeTax,
+      isTaxInclusiveMode: isTaxInclusiveMode ?? this.isTaxInclusiveMode,
       priceAdjustmentType: priceAdjustmentType ?? this.priceAdjustmentType,
       priceAdjustmentUnit: priceAdjustmentUnit ?? this.priceAdjustmentUnit,
     );

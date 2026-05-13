@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 56;
+  static const _databaseVersion = 57;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1941,6 +1941,11 @@ class DatabaseHelper {
         'CREATE INDEX IF NOT EXISTS idx_electronic_ledgers_sequence ON electronic_ledgers(sequence_number)',
       );
     }
+
+    // v57: 税込みモード対応 - is_tax_inclusive_modeカラム追加
+    if (oldVersion < 57) {
+      await _safeAddColumn(db, 'invoices', 'is_tax_inclusive_mode INTEGER DEFAULT 0');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2100,6 +2105,7 @@ class DatabaseHelper {
         price_adjustment_type TEXT,
         price_adjustment_unit INTEGER,
         include_tax INTEGER DEFAULT 1,
+        is_tax_inclusive_mode INTEGER DEFAULT 0,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
