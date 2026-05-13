@@ -456,6 +456,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Color(0xFF1E1E1E),
               foregroundColor: Colors.white,
               elevation: 0,
+              titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             cardTheme: const CardThemeData(
               color: Color(0xFF1E1E1E),
@@ -527,6 +528,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Color(0xFF4A4A4A),
               foregroundColor: Colors.white,
               elevation: 0,
+              titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             cardTheme: const CardThemeData(
               color: Color(0xFF4A4A4A),
@@ -597,6 +599,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Colors.grey.shade600,
               foregroundColor: Colors.white,
               elevation: 0,
+              titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
@@ -651,6 +654,7 @@ class _MyAppState extends State<MyApp> {
               backgroundColor: Colors.indigo.shade700,
               foregroundColor: Colors.white,
               elevation: 0,
+              titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
