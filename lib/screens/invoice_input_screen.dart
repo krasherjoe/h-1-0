@@ -2318,6 +2318,26 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
 
     if (selected != null && mounted) {
+      final String logMsg;
+      switch (selected) {
+        case '10':
+          logMsg = '消費税率を 10% に変更しました';
+          break;
+        case '8':
+          logMsg = '消費税率を 8% に変更しました';
+          break;
+        case '0':
+          logMsg = '非課税 (0%) に変更しました';
+          break;
+        case 'tax_inclusive_10':
+          logMsg = '税込みモード (10% 逆算) に変更しました';
+          break;
+        case 'tax_inclusive_8':
+          logMsg = '税込みモード (8% 逆算) に変更しました';
+          break;
+        default:
+          logMsg = '';
+      }
       setState(() {
         switch (selected) {
           case '10':
@@ -2348,6 +2368,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         }
       });
       _pushHistory();
+      if (logMsg.isNotEmpty) {
+        final id = _ensureCurrentId();
+        _editLogRepo.addLog(id, logMsg).then((_) => _loadEditLogs());
+      }
     }
   }
 

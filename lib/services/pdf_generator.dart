@@ -294,13 +294,18 @@ Future<pw.Document> buildInvoiceDocument(
                 child: pw.Column(
                   children: [
                     pw.SizedBox(height: 10),
-                    _buildSummaryRow("小計", amountFormatter.format(invoice.subtotal)),
+                    _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
                     if (invoice.discountAmount > 0) ...[
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
                     ],
                     if (invoice.tax > 0) ...[
                       ...(() {
                         final mode = companyInfo.taxDisplayMode.isNotEmpty ? companyInfo.taxDisplayMode : 'normal';
+                        if (invoice.isTaxInclusiveMode) {
+                          return [
+                            _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}% 逆算)", "(内 ￥${amountFormatter.format(invoice.tax)})"),
+                          ];
+                        }
                         return [
                           if (mode == 'normal')
                             _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
@@ -313,16 +318,16 @@ Future<pw.Document> buildInvoiceDocument(
                     _buildSummaryRow(() {
                       switch (invoice.documentType) {
                         case DocumentType.estimation:
-                          return "お見積り合計";
+                          return invoice.isTaxInclusiveMode ? "お見積り合計 (税込)" : "お見積り合計";
                         case DocumentType.delivery:
-                          return "納品合計";
+                          return invoice.isTaxInclusiveMode ? "納品合計 (税込)" : "納品合計";
                         case DocumentType.order:
-                          return "受注合計";
+                          return invoice.isTaxInclusiveMode ? "受注合計 (税込)" : "受注合計";
                         case DocumentType.receipt:
-                          return "領収金額合計";
+                          return invoice.isTaxInclusiveMode ? "領収金額合計 (税込)" : "領収金額合計";
                         case DocumentType.invoice:
                         default:
-                          return "ご請求合計";
+                          return invoice.isTaxInclusiveMode ? "ご請求合計 (税込)" : "ご請求合計";
                       }
                     }(), "￥${amountFormatter.format(invoice.totalAmount)}", isBold: true),
                   ],
