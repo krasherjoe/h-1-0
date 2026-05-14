@@ -785,6 +785,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         _buildSummarySection(fmt),
                         const SizedBox(height: 12),
                         _buildEditLogsSection(),
+                        if (_isLocked && _currentId != null) ...[
+                          const SizedBox(height: 16),
+                          _buildRedInvoiceButton(),
+                        ],
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -1952,6 +1956,160 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ),
       ],
     );
+  }
+
+  String _getRedInvoiceButtonLabel() {
+    final docName = _documentTypeLabel(_documentType).replaceAll('書', '');
+    return 'この$docNameを取消して赤伝を起票';
+  }
+
+  Widget _buildRedInvoiceButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0.5,
+      color: cardColor,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade300, width: 1.5),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '電子帳簿保存法対応',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.grey.shade400 : Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _createRedInvoice,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.undo, size: 22),
+                label: Text(
+                  _getRedInvoiceButtonLabel(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'ロック済みの伝票を取消す場合、電子帳簿保存法に基づき元伝票を保持したまま、全明細をマイナスにした赤伝を自動生成・ロックします。',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createRedInvoice() async {
+    if (_selectedCustomer == null || _currentInvoice == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('赤伝起票の確認'),
+        content: Text(
+          '「${_documentTypeLabel(_documentType).replaceAll('書', '')}」${_currentInvoice!.invoiceNumber} の取消し（赤伝）を作成します。\n元の伝票は保持されたまま、全明細をマイナスにして自動ロックされます。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
+            icon: const Icon(Icons.undo),
+            label: const Text('赤伝を起票'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    _savingNotifier.value = true;
+
+    try {
+      final negatedItems = _items.map((e) => e.negate()).toList();
+      final redInvoice = Invoice(
+        customer: _selectedCustomer!,
+        date: DateTime.now(),
+        items: negatedItems,
+        notes: '【赤伝】${_currentInvoice!.invoiceNumber} の取消し\n${_currentInvoice?.notes ?? ''}',
+        documentType: _documentType,
+        taxRate: _taxRate,
+        isDraft: false,
+        isLocked: true,
+        subject: _subjectController.text.isEmpty
+            ? '赤伝：${_currentInvoice!.invoiceNumber}'
+            : '赤伝：${_subjectController.text}',
+        includeTax: _includeTax,
+        isTaxInclusiveMode: _isTaxInclusiveMode,
+        priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
+        priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
+        sourceDocumentId: _currentId,
+        terminalId: _currentInvoice?.terminalId,
+      );
+
+      await _invoiceRepo.saveInvoice(redInvoice);
+      await _editLogRepo.addLog(redInvoice.id, '赤伝を起票しました（元：${_currentInvoice!.invoiceNumber}）');
+
+      final pdfPath = await generateInvoicePdf(redInvoice);
+      if (pdfPath != null) {
+        final saved = redInvoice.copyWith(filePath: pdfPath);
+        await _invoiceRepo.saveInvoice(saved);
+      }
+
+      if (!mounted) return;
+      _savingNotifier.value = false;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InvoicePdfPreviewPage(
+            invoice: pdfPath != null ? redInvoice.copyWith(filePath: pdfPath) : redInvoice,
+            isUnlocked: false,
+            isLocked: true,
+            allowFormalIssue: false,
+            showShare: true,
+            showEmail: true,
+            showPrint: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      _savingNotifier.value = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('赤伝起票に失敗しました: $e')),
+        );
+      }
+    }
   }
 
   // 価格調整ダイアログ
