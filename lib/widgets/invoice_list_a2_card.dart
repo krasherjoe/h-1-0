@@ -11,6 +11,7 @@ class InvoiceListA2Card extends StatelessWidget {
   final VoidCallback? onLongPress;
   final String draftLabel;
   final bool showLockedBadge;
+  final bool hasRedInvoice; // 元伝票に対する赤伝が発行済みか
 
   const InvoiceListA2Card({
     super.key,
@@ -21,13 +22,20 @@ class InvoiceListA2Card extends StatelessWidget {
     this.onLongPress,
     this.draftLabel = '下書き',
     this.showLockedBadge = true,
+    this.hasRedInvoice = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDraft = invoice.isDraft;
-    final cardColor = isDraft ? Colors.orange.shade50 : Colors.white;
-    final iconColor = _docTypeColor(invoice.documentType);
+    final isRed = invoice.isRedInvoice;
+    final isCancelled = hasRedInvoice && !isRed; // 元伝票で赤伝済み
+
+    final cardColor = isRed
+        ? Colors.red.shade50
+        : (isCancelled ? Colors.red.shade50.withValues(alpha: 0.55) : (isDraft ? Colors.orange.shade50 : Colors.white));
+    final borderColor = isRed || isCancelled ? Colors.red.shade200 : null;
+    final iconColor = isRed ? Colors.red : _docTypeColor(invoice.documentType);
     final iconBg = iconColor.withValues(alpha: 0.18);
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
@@ -41,11 +49,14 @@ class InvoiceListA2Card extends StatelessWidget {
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
     final subjectColor = invoice.isLocked ? Colors.grey.shade500 : Colors.indigo.shade700;
-    final amountColor = invoice.isLocked ? Colors.grey.shade500 : Colors.black87;
+    final amountColor = isRed ? Colors.red : (invoice.isLocked ? Colors.grey.shade500 : Colors.black87);
 
     return Card(
       color: cardColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: borderColor != null ? BorderSide(color: borderColor, width: 1.2) : BorderSide.none,
+      ),
       elevation: isDraft ? 1.5 : 0.5,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
@@ -64,7 +75,7 @@ class InvoiceListA2Card extends StatelessWidget {
                     Align(
                       alignment: Alignment.center,
                       child: Icon(
-                        _docTypeIcon(invoice.documentType),
+                        isRed ? Icons.undo : _docTypeIcon(invoice.documentType),
                         color: iconColor,
                       ),
                     ),
@@ -102,7 +113,7 @@ class InvoiceListA2Card extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: subjectColor,
+                                color: isRed ? Colors.red.shade700 : subjectColor,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -118,7 +129,41 @@ class InvoiceListA2Card extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (isDraft)
+                            if (isRed)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                margin: const EdgeInsets.only(right: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  '赤伝',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              )
+                            else if (isCancelled)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                margin: const EdgeInsets.only(right: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  '赤伝済',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              )
+                            else if (isDraft)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 margin: const EdgeInsets.only(right: 6),

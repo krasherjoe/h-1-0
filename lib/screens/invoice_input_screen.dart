@@ -96,6 +96,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   List<EditLogEntry> _editLogs = [];
   final FocusNode _subjectFocusNode = FocusNode();
   String _lastLoggedSubject = "";
+  bool _hasRedInvoice = false;
 
   String _documentTypeLabel(DocumentType type) {
     switch (type) {
@@ -346,6 +347,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     _showNewBadge = widget.showNewBadge;
     _showCopyBadge = widget.showCopyBadge;
     _pushHistory(clearRedo: true);
+
+    if (_currentId != null) {
+      _invoiceRepo.hasRedInvoice(_currentId!).then((has) {
+        if (mounted) setState(() => _hasRedInvoice = has);
+      });
+    }
     _lastLoggedSubject = _subjectController.text;
     if (_currentId != null) {
       _loadEditLogs();
@@ -785,9 +792,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         _buildSummarySection(fmt),
                         const SizedBox(height: 12),
                         _buildEditLogsSection(),
-                        if (_isLocked && _currentId != null) ...[
+                        if (_isLocked && _currentId != null && !_hasRedInvoice) ...[
                           const SizedBox(height: 16),
                           _buildRedInvoiceButton(),
+                        ],
+                        if (_isLocked && _currentId != null && _hasRedInvoice) ...[
+                          const SizedBox(height: 16),
+                          _buildRedInvoiceIssuedLabel(),
                         ],
                         const SizedBox(height: 20),
                       ],
@@ -2017,6 +2028,54 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               style: TextStyle(
                 fontSize: 11,
                 color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRedInvoiceIssuedLabel() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0.5,
+      color: cardColor,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200, width: 1.5),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.red.shade400),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '赤伝発行済み',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'この伝票に対する赤伝（取消し伝票）は既に発行されています。',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey.shade400 : Colors.black54,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

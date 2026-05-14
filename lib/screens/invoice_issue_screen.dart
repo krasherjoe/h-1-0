@@ -39,6 +39,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   InvoiceListStyle _listStyle = InvoiceListStyle.legacy;
+  Set<String> _redInvoiceSourceIds = {};
 
   @override
   void initState() {
@@ -105,6 +106,10 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
     if (!mounted) return;
     setState(() {
       _invoices = invoices.where((inv) => inv.documentType == DocumentType.invoice).toList();
+      _redInvoiceSourceIds = _invoices
+          .where((i) => i.isRedInvoice && i.sourceDocumentId != null)
+          .map((i) => i.sourceDocumentId!)
+          .toSet();
       _loading = false;
     });
     await _loadListStyle();
@@ -404,17 +409,27 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                               draftLabel: '未発行',
                               onTap: () => _openPreview(invoice),
                               onLongPress: () => _showInvoiceActions(invoice),
+                              hasRedInvoice: _redInvoiceSourceIds.contains(invoice.id),
                             );
                           }
 
                           final issuing = _issuing[invoice.id] ?? false;
                           final bool isDraft = invoice.isDraft;
+                          final bool isRed = invoice.isRedInvoice;
+                          final bool isCancelled = _redInvoiceSourceIds.contains(invoice.id);
                           final statusChip = _buildStatusChip(isDraft, styleTheme);
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            color: styleTheme.cardColor(isDraft),
+                            color: isRed
+                                ? Colors.red.shade50
+                                : (isCancelled ? Colors.red.shade50.withValues(alpha: 0.5) : styleTheme.cardColor(isDraft)),
                             elevation: styleTheme.cardElevation(isDraft),
-                            shape: styleTheme.cardShape,
+                            shape: (isRed || isCancelled)
+                                ? RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(color: Colors.red.shade200, width: 1.5),
+                                  )
+                                : styleTheme.cardShape,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -428,7 +443,41 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                         ),
                                       ),
-                                      if (statusChip != null) ...[
+                                      if (isRed)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade100,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Text(
+                                            '赤伝',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        )
+                                      else if (isCancelled)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade100,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Text(
+                                            '赤伝済',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        )
+                                      else if (statusChip != null) ...[
                                         const SizedBox(width: 8),
                                         statusChip,
                                       ],

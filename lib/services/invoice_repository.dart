@@ -502,6 +502,24 @@ class InvoiceRepository {
     return snapshots;
   }
 
+  /// 指定した元伝票IDに紐づく赤伝が存在するか確認（source_document_idが一致し、total_amount<0）
+  Future<bool> hasRedInvoice(String sourceDocumentId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'source_document_id = ?',
+      whereArgs: [sourceDocumentId],
+    );
+    if (rows.isEmpty) return false;
+    // total_amountがマイナスのものが赤伝
+    return rows.any((r) {
+      final total = r['total_amount'];
+      if (total is int) return total < 0;
+      if (total is num) return total < 0;
+      return false;
+    });
+  }
+
   Future<void> markSynced(List<String> ids) async {
     if (ids.isEmpty) return;
     final db = await _dbHelper.database;

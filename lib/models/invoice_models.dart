@@ -367,6 +367,9 @@ class Invoice {
     return taxableAmount + tax;
   }
 
+  /// 赤伝かどうか（元伝票への取消しで、合計金額がマイナス）
+  bool get isRedInvoice => sourceDocumentId != null && totalAmount < 0;
+
   String get _projectLabel {
     if (subject != null && subject!.trim().isNotEmpty) {
       return subject!.trim();
