@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -13,6 +14,7 @@ import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
 import '../services/company_repository.dart';
 import '../services/company_info_export_import.dart';
+import '../services/company_profile_service.dart';
 import '../services/pdf_generator.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 
@@ -40,6 +42,13 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   String _taxDisplayMode = 'normal';
   bool _hasRegistrationNumber = false;
   final _regNumberController = TextEditingController();
+  int _defaultBankIndex = 0;
+  final List<List<TextEditingController>> _bankControllers = [
+    [TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController()],
+    [TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController()],
+    [TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController()],
+  ];
+  final List<String> _bankLabels = ['銀行名', '支店名', '口座種別', '口座番号', '口座名義'];
 
   @override
   void initState() {
@@ -63,8 +72,18 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       _taxRate = _info.defaultTaxRate;
       _taxDisplayMode = _info.taxDisplayMode;
       _hasRegistrationNumber = _info.registrationNumber != null && _info.registrationNumber!.isNotEmpty;
-      // Tプレフィックスがあれば除去して表示（TextFieldにprefixText: 'T'があるため）
       _regNumberController.text = _info.registrationNumber?.replaceFirst('T', '') ?? '';
+      _defaultBankIndex = _info.defaultBankAccountIndex;
+      final accounts = _decodeBankAccounts(_info.bankAccounts);
+      for (int i = 0; i < 3; i++) {
+        if (i < accounts.length) {
+          _bankControllers[i][0].text = accounts[i].bankName;
+          _bankControllers[i][1].text = accounts[i].branchName;
+          _bankControllers[i][2].text = accounts[i].accountType;
+          _bankControllers[i][3].text = accounts[i].accountNumber;
+          _bankControllers[i][4].text = accounts[i].holderName;
+        }
+      }
       setState(() => _isLoading = false);
     } catch (e) {
       print('F1 会社情報読み込みエラー: $e');
@@ -161,6 +180,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       registrationNumber: _hasRegistrationNumber && _regNumberController.text.isNotEmpty
           ? 'T${_regNumberController.text.trim()}'
           : null,
+      bankAccounts: _encodeBankAccounts(),
+      defaultBankAccountIndex: _defaultBankIndex,
     );
     print('DEBUG: _save() - _hasRegistrationNumber: $_hasRegistrationNumber');
     print('DEBUG: _save() - registrationNumber: ${updated.registrationNumber}');
@@ -168,6 +189,30 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("自社情報を保存しました")));
     Navigator.pop(context);
+  }
+
+  List<CompanyBankAccount> _decodeBankAccounts(String? raw) {
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => CompanyBankAccount.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  String _encodeBankAccounts() {
+    final accounts = <CompanyBankAccount>[];
+    for (int i = 0; i < 3; i++) {
+      accounts.add(CompanyBankAccount(
+        bankName: _bankControllers[i][0].text,
+        branchName: _bankControllers[i][1].text,
+        accountType: _bankControllers[i][2].text.isEmpty ? '普通' : _bankControllers[i][2].text,
+        accountNumber: _bankControllers[i][3].text,
+        holderName: _bankControllers[i][4].text,
+      ));
+    }
+    return jsonEncode(accounts.map((e) => e.toJson()).toList());
   }
 
   Future<void> _showSealPdfPreview() async {
@@ -530,7 +575,46 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               ),
               const SizedBox(height: 20),
 
-              // スロット4: 角印
+              // スロット4: 銀行口座
+              _buildSlot(
+                title: '銀行口座',
+                icon: Icons.account_balance,
+                children: [
+                  const Text('請求書で使用する銀行口座を登録してください（最大3件）', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  for (int i = 0; i < 3; i++) ...[
+                    Row(
+                      children: [
+                        Radio<int>(
+                          value: i,
+                          groupValue: _defaultBankIndex,
+                          onChanged: (v) => setState(() => _defaultBankIndex = v!),
+                        ),
+                        Text('口座 ${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        if (_defaultBankIndex == i)
+                          const Text('デフォルト', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    for (int j = 0; j < 5; j++) ...[
+                      TextField(
+                        controller: _bankControllers[i][j],
+                        decoration: InputDecoration(
+                          labelText: _bankLabels[j],
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                    const Divider(height: 24),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // スロット5: 角印
               _buildSlot(
                 title: '印影（角印）',
                 icon: Icons.image,

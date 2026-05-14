@@ -162,6 +162,7 @@ class Invoice {
   final bool isTaxInclusiveMode; // 税込みモード（単価が税込、消費税を逆算）
   final String? priceAdjustmentType; // 価格調整タイプ: 'round_down', 'round_up', 'round_nearest'
   final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
+  final String? bankAccount; // 銀行口座情報（請求書用）
 
   Invoice({
     String? id,
@@ -204,6 +205,7 @@ class Invoice {
     this.isTaxInclusiveMode = false,
     this.priceAdjustmentType,
     this.priceAdjustmentUnit,
+    this.bankAccount,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        terminalId = terminalId ?? "T1", // デフォルト端末ID
        updatedAt = updatedAt ?? DateTime.now();
@@ -491,6 +493,7 @@ class Invoice {
       'total_discount_rate': totalDiscountRate,
       'price_adjustment_type': priceAdjustmentType,
       'price_adjustment_unit': priceAdjustmentUnit,
+      'bank_account': bankAccount,
       'include_tax': includeTax ? 1 : 0,
       'is_tax_inclusive_mode': isTaxInclusiveMode ? 1 : 0,
     };
@@ -537,6 +540,7 @@ class Invoice {
     bool? isTaxInclusiveMode,
     String? priceAdjustmentType,
     int? priceAdjustmentUnit,
+    String? bankAccount,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -581,6 +585,7 @@ class Invoice {
       isTaxInclusiveMode: isTaxInclusiveMode ?? this.isTaxInclusiveMode,
       priceAdjustmentType: priceAdjustmentType ?? this.priceAdjustmentType,
       priceAdjustmentUnit: priceAdjustmentUnit ?? this.priceAdjustmentUnit,
+      bankAccount: bankAccount ?? this.bankAccount,
     );
   }
 }

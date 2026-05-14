@@ -65,6 +65,8 @@ class CompanyRepository {
         sealRotation: (map['seal_rotation'] as num?)?.toDouble() ?? 0.0,
         taxDisplayMode: map['tax_display_mode'] ?? 'normal',
         registrationNumber: map['registration_number'],
+        bankAccounts: map['bank_accounts'],
+        defaultBankAccountIndex: (map['default_bank_account_index'] as num?)?.toInt() ?? 0,
       );
       print('DEBUG: Loaded company registrationNumber: ${company.registrationNumber}');
       return company;
@@ -106,6 +108,8 @@ class CompanyRepository {
       'seal_rotation': info.sealRotation,
       'tax_display_mode': info.taxDisplayMode,
       'registration_number': info.registrationNumber,
+      'bank_accounts': info.bankAccounts,
+      'default_bank_account_index': info.defaultBankAccountIndex,
     };
     
     // INSERT OR REPLACEを使用

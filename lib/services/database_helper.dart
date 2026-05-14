@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 57;
+  static const _databaseVersion = 58;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1946,6 +1946,13 @@ class DatabaseHelper {
     if (oldVersion < 57) {
       await _safeAddColumn(db, 'invoices', 'is_tax_inclusive_mode INTEGER DEFAULT 0');
     }
+
+    // v58: 銀行口座情報対応
+    if (oldVersion < 58) {
+      await _safeAddColumn(db, 'company_info', 'bank_accounts TEXT');
+      await _safeAddColumn(db, 'company_info', 'default_bank_account_index INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'invoices', 'bank_account TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2145,7 +2152,9 @@ class DatabaseHelper {
         default_tax_rate REAL DEFAULT 0.10,
         seal_path TEXT,
         tax_display_mode TEXT DEFAULT "normal",
-        registration_number TEXT
+        registration_number TEXT,
+        bank_accounts TEXT,
+        default_bank_account_index INTEGER DEFAULT 0
       )
     ''');
 

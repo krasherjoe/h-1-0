@@ -21,6 +21,14 @@ const kSealPreviewPageFormat = PdfPageFormat(
 /// PDFドキュメントの構築（プレビューと実保存の両方で使用）
 /// [pageFormat]: printing パッケージから渡されるページフォーマット。
 ///               null の場合は kSealPreviewPageFormat をデフォルトとして使用。
+String _formatBankAccount(String raw) {
+  final parts = raw.split('|');
+  if (parts.length >= 5) {
+    return '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]} ${parts[4]}';
+  }
+  return raw;
+}
+
 Future<pw.Document> buildInvoiceDocument(
   Invoice invoice, {
   PdfPageFormat? pageFormat,
@@ -343,6 +351,16 @@ Future<pw.Document> buildInvoiceDocument(
               padding: const pw.EdgeInsets.all(8),
               decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
               child: pw.Text(invoice.notes!, textAlign: pw.TextAlign.left),
+            ),
+          ],
+          if (invoice.bankAccount != null && invoice.bankAccount!.isNotEmpty) ...[
+            pw.SizedBox(height: 10),
+            pw.Text("振込先:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
+              child: pw.Text(_formatBankAccount(invoice.bankAccount!), textAlign: pw.TextAlign.left),
             ),
           ],
           // 領収書の但し書き

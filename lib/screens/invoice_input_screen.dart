@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/customer_model.dart';
@@ -15,6 +16,7 @@ import 'product_picker_modal.dart';
 import '../models/product_model.dart';
 import '../services/app_settings_repository.dart';
 import '../services/company_repository.dart';
+import '../services/company_profile_service.dart';
 import '../services/edit_log_repository.dart';
 
 class InvoiceInputForm extends StatefulWidget {
@@ -97,6 +99,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   final FocusNode _subjectFocusNode = FocusNode();
   String _lastLoggedSubject = "";
   bool _hasRedInvoice = false;
+  List<CompanyBankAccount> _companyBankAccounts = [];
+  int _selectedBankIndex = -1;
 
   String _documentTypeLabel(DocumentType type) {
     switch (type) {
@@ -305,18 +309,19 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final savedSummary = await _settingsRepo.getSummaryTheme();
     _summaryIsBlue = savedSummary == 'blue';
 
-    // 会社設定のデフォルト消費税率を取得（新規伝票に使用）
+    // 会社設定のデフォルト消費税率・銀行口座を取得
     final company = await _companyRepo.getCompanyInfo();
     final defaultTaxRate = company.defaultTaxRate;
+    final bankAccounts = _decodeBankAccounts(company.bankAccounts);
+    final defaultBankIdx = company.defaultBankAccountIndex;
 
     setState(() {
+      _companyBankAccounts = bankAccounts;
       // 既存伝票がある場合は初期値を上書き
       if (widget.existingInvoice != null) {
         final inv = widget.existingInvoice!;
         _selectedCustomer = inv.customer;
         _items.addAll(inv.items);
-        // HASHチェーンでロック済み伝票は保存時点の税率・課税状態を完全に維持（不変）
-        // 下書き伝票はF1(会社設定)のデフォルト税率を反映するがincludeTaxフラグはDB値を尊重
         if (inv.isLocked) {
           _taxRate = inv.taxRate;
           _includeTax = inv.taxRate > 0 || inv.includeTax;
@@ -333,6 +338,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _isLocked = inv.isLocked;
         if (inv.subject != null) _subjectController.text = inv.subject!;
         _currentInvoice = inv;
+        if (inv.bankAccount != null && inv.bankAccount!.isNotEmpty) {
+          _selectedBankIndex = _companyBankAccounts.indexWhere(
+            (a) => _accountKey(a) == inv.bankAccount,
+          );
+        } else {
+          _selectedBankIndex = defaultBankIdx < bankAccounts.length ? defaultBankIdx : -1;
+        }
       } else {
         _taxRate = defaultTaxRate > 0 ? defaultTaxRate : 0.10;
         _includeTax = true;
@@ -341,6 +353,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _currentId = null;
         _isLocked = false;
         _currentInvoice = null;
+        _selectedBankIndex = defaultBankIdx < bankAccounts.length ? defaultBankIdx : -1;
       }
     });
     _isViewMode = widget.startViewMode; // 指定に従う
@@ -437,20 +450,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
-      subject: _subjectController.text.isNotEmpty
-          ? _subjectController.text
-          : null, // 追加
+      subject: _subjectController.text.isNotEmpty ? _subjectController.text : null,
       notes: null,
       latitude: pos?.latitude,
       longitude: pos?.longitude,
-      isDraft: _isDraft, // 追加
+      isDraft: _isDraft,
       includeTax: _includeTax,
       isTaxInclusiveMode: _isTaxInclusiveMode,
-      promisedDate: _documentType == DocumentType.estimation
-          ? _selectedDate.add(const Duration(days: 14))
-          : null,
       priceAdjustmentType: _currentInvoice?.priceAdjustmentType,
       priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
+      bankAccount: _selectedBankIndex >= 0 && _selectedBankIndex < _companyBankAccounts.length
+          ? _accountKey(_companyBankAccounts[_selectedBankIndex])
+          : null,
     );
     try {
       // PDF生成有無に関わらず、まずは保存
@@ -505,14 +516,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       taxRate: _includeTax ? _taxRate : 0.0,
       documentType: _documentType,
       customerFormalNameSnapshot: _selectedCustomer!.formalName,
-      subject: _subjectController.text.isNotEmpty // ← バグ修正: subjectを追加
-          ? _subjectController.text
-          : null,
+      subject: _subjectController.text.isNotEmpty ? _subjectController.text : null,
       notes: null,
       isDraft: _isDraft,
       isLocked: _isLocked,
       includeTax: _includeTax,
       isTaxInclusiveMode: _isTaxInclusiveMode,
+      bankAccount: _selectedBankIndex >= 0 && _selectedBankIndex < _companyBankAccounts.length
+          ? _accountKey(_companyBankAccounts[_selectedBankIndex])
+          : null,
       promisedDate: _documentType == DocumentType.estimation
           ? _selectedDate.add(const Duration(days: 14))
           : null,
@@ -786,6 +798,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         _buildCustomerSection(),
                         const SizedBox(height: 16),
                         _buildSubjectSection(),
+                        const SizedBox(height: 16),
+                        _buildBankAccountSection(),
                         const SizedBox(height: 20),
                         _buildItemsSection(fmt),
                         const SizedBox(height: 20),
@@ -1969,6 +1983,63 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     );
   }
 
+  List<CompanyBankAccount> _decodeBankAccounts(String? raw) {
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => CompanyBankAccount.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  String _accountKey(CompanyBankAccount a) {
+    return '${a.bankName}|${a.branchName}|${a.accountType}|${a.accountNumber}|${a.holderName}';
+  }
+
+  Widget _buildBankAccountSection() {
+    if (_companyBankAccounts.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0.5,
+      color: cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '振込先口座',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.grey.shade300 : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Column(
+              children: _companyBankAccounts.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final acc = entry.value;
+                final display = '${acc.bankName} ${acc.branchName} ${acc.accountType} ${acc.accountNumber} ${acc.holderName}';
+                return RadioListTile<int>(
+                  value: idx,
+                  groupValue: _selectedBankIndex,
+                  onChanged: _isLocked ? null : (v) => setState(() => _selectedBankIndex = v!),
+                  title: Text(display, style: const TextStyle(fontSize: 13)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _getRedInvoiceButtonLabel() {
     final docName = _documentTypeLabel(_documentType).replaceAll('書', '');
     return 'この$docNameを取消して赤伝を起票';
@@ -2133,6 +2204,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         priceAdjustmentUnit: _currentInvoice?.priceAdjustmentUnit,
         sourceDocumentId: _currentId,
         terminalId: _currentInvoice?.terminalId,
+        bankAccount: _currentInvoice?.bankAccount,
       );
 
       await _invoiceRepo.saveInvoice(redInvoice);

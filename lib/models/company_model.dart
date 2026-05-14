@@ -8,12 +8,14 @@ class CompanyInfo {
   final String? email;
   final String? url;
   final double defaultTaxRate;
-  final String? sealPath; // 角印（印鑑）の画像パス
-  final double sealOffsetX; // 角印の右端からのオフセット（PDF座標）
-  final double sealOffsetY; // 角印の上端からのオフセット（PDF座標）
-  final double sealRotation; // 角印の回転角度（度数）
-  final String taxDisplayMode; // 'normal', 'hidden', 'text_only'
-  final String? registrationNumber; // 追加: インボイス登録番号 (T番号)
+  final String? sealPath;
+  final double sealOffsetX;
+  final double sealOffsetY;
+  final double sealRotation;
+  final String taxDisplayMode;
+  final String? registrationNumber;
+  final String? bankAccounts;
+  final int defaultBankAccountIndex;
 
   CompanyInfo({
     required this.name,
@@ -30,12 +32,14 @@ class CompanyInfo {
     this.sealOffsetY = 50.0,
     this.sealRotation = 0.0,
     this.taxDisplayMode = 'normal',
-    this.registrationNumber, // 追加
+    this.registrationNumber,
+    this.bankAccounts,
+    this.defaultBankAccountIndex = 0,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': 1, // 常に1行のみ保持
+      'id': 1,
       'name': name,
       'zip_code': zipCode,
       'address': address,
@@ -50,7 +54,9 @@ class CompanyInfo {
       'seal_offset_y': sealOffsetY,
       'seal_rotation': sealRotation,
       'tax_display_mode': taxDisplayMode,
-      'registration_number': registrationNumber, // 追加
+      'registration_number': registrationNumber,
+      'bank_accounts': bankAccounts,
+      'default_bank_account_index': defaultBankAccountIndex,
     };
   }
 
@@ -70,7 +76,9 @@ class CompanyInfo {
       sealOffsetY: (map['seal_offset_y'] as num?)?.toDouble() ?? 50.0,
       sealRotation: (map['seal_rotation'] as num?)?.toDouble() ?? 0.0,
       taxDisplayMode: map['tax_display_mode'] ?? 'normal',
-      registrationNumber: map['registration_number'], // 追加
+      registrationNumber: map['registration_number'],
+      bankAccounts: map['bank_accounts'],
+      defaultBankAccountIndex: (map['default_bank_account_index'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -89,7 +97,9 @@ class CompanyInfo {
     double? sealOffsetY,
     double? sealRotation,
     String? taxDisplayMode,
-    String? registrationNumber, // 追加
+    String? registrationNumber,
+    String? bankAccounts,
+    int? defaultBankAccountIndex,
   }) {
     return CompanyInfo(
       name: name ?? this.name,
@@ -106,7 +116,9 @@ class CompanyInfo {
       sealOffsetY: sealOffsetY ?? this.sealOffsetY,
       sealRotation: sealRotation ?? this.sealRotation,
       taxDisplayMode: taxDisplayMode ?? this.taxDisplayMode,
-      registrationNumber: registrationNumber ?? this.registrationNumber, // 追加
+      registrationNumber: registrationNumber ?? this.registrationNumber,
+      bankAccounts: bankAccounts ?? this.bankAccounts,
+      defaultBankAccountIndex: defaultBankAccountIndex ?? this.defaultBankAccountIndex,
     );
   }
 }
