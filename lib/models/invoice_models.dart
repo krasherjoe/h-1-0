@@ -80,14 +80,14 @@ class InvoiceItem {
     );
   }
 
-  /// 赤伝用: 数量・単価をマイナスに反転したコピーを返す
+  /// 赤伝用: 数量をマイナスに反転したコピーを返す（単価はそのまま）
   InvoiceItem negate() {
     return InvoiceItem(
       id: null,
       productId: productId,
       description: description,
       quantity: -quantity,
-      unitPrice: -unitPrice,
+      unitPrice: unitPrice,
       discountAmount: discountAmount,
       discountRate: discountRate,
     );
