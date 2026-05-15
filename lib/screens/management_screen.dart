@@ -15,6 +15,7 @@ import 'gps_history_screen.dart';
 import 'camera_delivery_photo_screen.dart';
 import 'fast_search_screen.dart';
 import 'restore_screen.dart';
+import 'screen_pj1_project_list.dart';
 
 class ManagementScreen extends StatefulWidget {
   const ManagementScreen({super.key});
@@ -34,6 +35,20 @@ class _ManagementScreenState extends State<ManagementScreen> {
       ),
       body: ListView(
         children: [
+          _buildSectionHeader("案件管理"),
+          _buildMenuTile(
+            context,
+            Icons.folder_special,
+            "PJ1:案件管理",
+            "見積・請求・売上を案件単位でまとめて管理します",
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ProjectListScreen(),
+              ),
+            ),
+          ),
+          const Divider(),
           _buildSectionHeader("データ入出力"),
           _buildMenuTile(
             context,
