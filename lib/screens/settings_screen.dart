@@ -389,31 +389,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Future.microtask(() async {
       // Google API サービスを初期化
       GoogleAccountService().init();
-
-      // アプリバージョン情報を取得
-      await _loadAppVersion();
-
-      final theme = await _repo.getTheme();
-      setState(() => _theme = theme);
-      final summaryTheme = await _repo.getSummaryTheme();
-      setState(() => _summaryTheme = summaryTheme);
-      final listStyle = await _repo.getInvoiceListStyle();
-      setState(() => _invoiceListStyle = listStyle);
-      final homeMode = await _repo.getHomeMode();
-      setState(() => _homeMode = homeMode);
-      final statusText = await _repo.getDashboardStatusText();
-      setState(() => _statusTextController.text = statusText);
-      final showCategoryDesc = await _repo
-          .getDashboardShowCategoryDescriptions();
-      setState(() => _showCategoryDescriptions = showCategoryDesc);
-      final showInvNum = await _repo.getShowHistoryInvoiceNumber();
-      setState(() => _showHistoryInvoiceNumber = showInvNum);
-      final encoding = await _repo.getGmailEnvelopeEncoding();
-      setState(() => _encodingMode = encoding);
-      final transport = await _repo.getSyncTransportMode();
-      await _loadBackupSettings();
-      setState(() => _transportMode = transport);
+      await _reloadSettings();
     });
+  }
+
+  /// 設定値を再読み込み（サブ画面から戻った時に呼ぶ）
+  Future<void> _reloadSettings() async {
+    // アプリバージョン情報を取得
+    await _loadAppVersion();
+
+    final theme = await _repo.getTheme();
+    if (!mounted) return;
+    setState(() => _theme = theme);
+    final summaryTheme = await _repo.getSummaryTheme();
+    if (!mounted) return;
+    setState(() => _summaryTheme = summaryTheme);
+    final listStyle = await _repo.getInvoiceListStyle();
+    if (!mounted) return;
+    setState(() => _invoiceListStyle = listStyle);
+    final homeMode = await _repo.getHomeMode();
+    if (!mounted) return;
+    setState(() => _homeMode = homeMode);
+    final statusText = await _repo.getDashboardStatusText();
+    if (!mounted) return;
+    setState(() => _statusTextController.text = statusText);
+    final showCategoryDesc = await _repo
+        .getDashboardShowCategoryDescriptions();
+    if (!mounted) return;
+    setState(() => _showCategoryDescriptions = showCategoryDesc);
+    final showInvNum = await _repo.getShowHistoryInvoiceNumber();
+    if (!mounted) return;
+    setState(() => _showHistoryInvoiceNumber = showInvNum);
+    final encoding = await _repo.getGmailEnvelopeEncoding();
+    if (!mounted) return;
+    setState(() => _encodingMode = encoding);
+    final transport = await _repo.getSyncTransportMode();
+    await _loadBackupSettings();
+    if (!mounted) return;
+    setState(() => _transportMode = transport);
   }
 
   /// アプリバージョン情報を取得
@@ -546,12 +559,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('ダッシュボード設定'),
             subtitle: const Text('表示するメニューの ON/OFF と順序を管理'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const DashboardMenuSettingsScreen(),
-              ),
-            ),
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DashboardMenuSettingsScreen(),
+                ),
+              );
+              if (mounted) await _reloadSettings();
+            },
           ),
           const SizedBox(height: 12),
           SwitchListTile.adaptive(
@@ -568,10 +584,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // バックアップ・リストア設定（専用画面へ）
           InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BackupSettingsScreen()),
-            ),
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BackupSettingsScreen()),
+              );
+              if (mounted) await _reloadSettings();
+            },
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -691,13 +710,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right),
-                      onPressed: () {
-                        Navigator.push(
+                      onPressed: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const ThemeSelectionScreen(),
                           ),
                         );
+                        if (mounted) await _reloadSettings();
                       },
                     ),
                   ],
@@ -935,12 +955,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('SM: メール設定'),
                   subtitle: const Text('BCC 設定、メールテンプレート（ヘッダー/フッター）'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ScreenS8EmailSettings(),
-                    ),
-                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ScreenS8EmailSettings(),
+                      ),
+                    );
+                    if (mounted) await _reloadSettings();
+                  },
                 ),
                 ListTile(
                   leading: Icon(Icons.storage, color: Colors.red),
@@ -1186,12 +1209,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('お局様検出設定'),
                   subtitle: const Text('GPS 位置ベースの自動検出と記憶された場所の管理'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MothershipDiscoverySettingsScreen(),
-                    ),
-                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MothershipDiscoverySettingsScreen(),
+                      ),
+                    );
+                    if (mounted) await _reloadSettings();
+                  },
                 ),
               ],
             ),
@@ -1222,15 +1248,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.business),
                   title: const Text('会社情報'),
-                  onTap: () {
+                  onTap: () async {
                     try {
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const CompanyInfoScreen(),
                         ),
                       );
+                      if (mounted) await _reloadSettings();
                     } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('エラー：$e'),
@@ -1243,15 +1271,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.people),
                   title: const Text('顧客マスター'),
-                  onTap: () {
+                  onTap: () async {
                     try {
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const CustomerMasterScreen(),
                         ),
                       );
+                      if (mounted) await _reloadSettings();
                     } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('エラー：$e'),
@@ -1264,15 +1294,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.inventory_2),
                   title: const Text('商品マスター'),
-                  onTap: () {
+                  onTap: () async {
                     try {
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const ProductMasterScreen(),
                         ),
                       );
+                      if (mounted) await _reloadSettings();
                     } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('エラー：$e'),
@@ -1311,10 +1343,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.storage),
                   title: const Text('M1: マスター管理'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => MasterHubPage()),
-                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => MasterHubPage()),
+                    );
+                    if (mounted) await _reloadSettings();
+                  },
                 ),
               ],
             ),
