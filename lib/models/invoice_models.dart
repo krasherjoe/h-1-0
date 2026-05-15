@@ -166,6 +166,7 @@ class Invoice {
   final String? priceAdjustmentType; // 価格調整タイプ: 'round_down', 'round_up', 'round_nearest'
   final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
   final String? bankAccount; // 銀行口座情報（請求書用）
+  final String? projectId; // 案件ID（任意紐づけ）
 
   Invoice({
     String? id,
@@ -211,6 +212,7 @@ class Invoice {
     this.priceAdjustmentType,
     this.priceAdjustmentUnit,
     this.bankAccount,
+    this.projectId,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        terminalId = terminalId ?? "T1", // デフォルト端末ID
        updatedAt = updatedAt ?? DateTime.now();
@@ -529,6 +531,7 @@ class Invoice {
       'price_adjustment_type': priceAdjustmentType,
       'price_adjustment_unit': priceAdjustmentUnit,
       'bank_account': bankAccount,
+      'project_id': projectId,
       'include_tax': includeTax ? 1 : 0,
       'is_tax_inclusive_mode': isTaxInclusiveMode ? 1 : 0,
     };
@@ -578,6 +581,7 @@ class Invoice {
     String? priceAdjustmentType,
     int? priceAdjustmentUnit,
     String? bankAccount,
+    String? projectId,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -625,6 +629,7 @@ class Invoice {
       priceAdjustmentType: priceAdjustmentType ?? this.priceAdjustmentType,
       priceAdjustmentUnit: priceAdjustmentUnit ?? this.priceAdjustmentUnit,
       bankAccount: bankAccount ?? this.bankAccount,
+      projectId: projectId ?? this.projectId,
     );
   }
 }

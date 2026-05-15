@@ -18,6 +18,8 @@ import '../services/app_settings_repository.dart';
 import '../services/company_repository.dart';
 import '../services/company_profile_service.dart';
 import '../services/edit_log_repository.dart';
+import '../models/project_model.dart';
+import '../services/project_repository.dart';
 
 class InvoiceInputForm extends StatefulWidget {
   final Function(Invoice invoice, String filePath) onInvoiceGenerated;
@@ -101,6 +103,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _hasRedInvoice = false;
   List<CompanyBankAccount> _companyBankAccounts = [];
   int _selectedBankIndex = -1;
+  final ProjectRepository _projectRepo = ProjectRepository();
+  String? _selectedProjectId;
+  String? _selectedProjectName;
+  List<Project> _customerProjects = [];
 
   String _documentTypeLabel(DocumentType type) {
     switch (type) {
@@ -338,6 +344,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _isLocked = inv.isLocked;
         if (inv.subject != null) _subjectController.text = inv.subject!;
         _currentInvoice = inv;
+        _selectedProjectId = inv.projectId;
         if (inv.bankAccount != null && inv.bankAccount!.isNotEmpty) {
           _selectedBankIndex = _companyBankAccounts.indexWhere(
             (a) => _accountKey(a) == inv.bankAccount,
@@ -370,6 +377,20 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (_currentId != null) {
       _loadEditLogs();
     }
+    // 既存伝票の顧客に紐づく案件を読み込む
+    final existingCustomer = widget.existingInvoice?.customer;
+    if (existingCustomer != null) {
+      _loadProjectsForCustomer(existingCustomer.id).then((_) {
+        if (!mounted) return;
+        final pid = widget.existingInvoice?.projectId;
+        if (pid != null) {
+          final proj = _customerProjects.where((p) => p.id == pid).firstOrNull;
+          if (proj != null && mounted) {
+            setState(() => _selectedProjectName = proj.name);
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -383,6 +404,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final logs = await _editLogRepo.getLogs(_currentId!);
     if (!mounted) return;
     setState(() => _editLogs = logs);
+  }
+
+  Future<void> _loadProjectsForCustomer(String customerId) async {
+    final projects = await _projectRepo.getProjectsByCustomer(customerId);
+    if (!mounted) return;
+    setState(() => _customerProjects = projects);
   }
 
   void _onSubjectChanged() {
@@ -462,6 +489,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       bankAccount: _selectedBankIndex >= 0 && _selectedBankIndex < _companyBankAccounts.length
           ? _accountKey(_companyBankAccounts[_selectedBankIndex])
           : null,
+      projectId: _selectedProjectId,
     );
     try {
       // PDF生成有無に関わらず、まずは保存
@@ -471,6 +499,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           final updatedInvoice = invoice.copyWith(filePath: path);
           await _repository.saveInvoice(updatedInvoice);
           _currentId = updatedInvoice.id;
+          if (_selectedProjectId != null) {
+            await _projectRepo.linkDocument(
+              projectId: _selectedProjectId!,
+              table: 'invoices',
+              documentId: invoiceId,
+            );
+          }
           if (mounted) widget.onInvoiceGenerated(updatedInvoice, path);
           if (mounted)
             ScaffoldMessenger.of(
@@ -485,6 +520,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       } else {
         await _repository.saveInvoice(invoice);
         _currentId = invoice.id;
+        if (_selectedProjectId != null) {
+          await _projectRepo.linkDocument(
+            projectId: _selectedProjectId!,
+            table: 'invoices',
+            documentId: invoiceId,
+          );
+        }
         if (mounted)
           ScaffoldMessenger.of(
             context,
@@ -796,6 +838,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         _buildDateSection(),
                         const SizedBox(height: 16),
                         _buildCustomerSection(),
+                        const SizedBox(height: 12),
+                        _buildProjectSection(),
                         const SizedBox(height: 16),
                         _buildSubjectSection(),
                         const SizedBox(height: 20),
@@ -1104,12 +1148,183 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   ),
                 );
                 if (picked != null) {
-                  setState(() => _selectedCustomer = picked);
+                  setState(() {
+                    _selectedCustomer = picked;
+                    _selectedProjectId = null;
+                    _selectedProjectName = null;
+                    _customerProjects = [];
+                  });
                   _pushHistory();
+                  _loadProjectsForCustomer(picked.id);
                 }
               },
       ),
     );
+  }
+
+  Widget _buildProjectSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasProjects = _customerProjects.isNotEmpty;
+    final displayText = _selectedProjectId != null
+        ? (_selectedProjectName ?? "案件を選択中")
+        : (hasProjects ? "案件を選択（任意）" : "案件なし");
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.folder_special, color: Colors.teal),
+        title: Text(
+          displayText,
+          style: TextStyle(
+            color: _selectedProjectId == null && hasProjects
+                ? Colors.grey
+                : (isDark ? Colors.white : Colors.black87),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: _isViewMode
+            ? null
+            : Text(
+                hasProjects
+                    ? "${_customerProjects.length}件の案件が見つかりました"
+                    : (_selectedCustomer == null
+                        ? "顧客を先に選択してください"
+                        : "顧客に紐づく案件はありません"),
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
+        trailing: (_isViewMode || _isLocked || !hasProjects)
+            ? null
+            : const Icon(Icons.chevron_right),
+        onTap: (_isViewMode || _isLocked || !hasProjects)
+            ? null
+            : () => _showProjectPicker(),
+      ),
+    );
+  }
+
+  void _showProjectPicker() {
+    if (_customerProjects.isEmpty) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("案件を選択", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.remove_circle_outline, color: Colors.grey),
+                title: const Text("案件なし", style: TextStyle(color: Colors.grey)),
+                onTap: () {
+                  setState(() {
+                    _selectedProjectId = null;
+                    _selectedProjectName = null;
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+              const Divider(),
+              ..._customerProjects.map((p) => ListTile(
+                leading: Icon(
+                  Icons.folder_special,
+                  color: p.status == ProjectStatus.active ? Colors.teal : Colors.grey,
+                ),
+                title: Text(p.name),
+                subtitle: Text("${p.status.displayName} ・ ${NumberFormat('#,###').format(p.totalAmount)}円"),
+                trailing: _selectedProjectId == p.id
+                    ? const Icon(Icons.check_circle, color: Colors.teal)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _selectedProjectId = p.id;
+                    _selectedProjectName = p.name;
+                  });
+                  Navigator.pop(ctx);
+                },
+              )),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showQuickProjectCreateDialog();
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text("新規案件を作成"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showQuickProjectCreateDialog() async {
+    if (_selectedCustomer == null) return;
+    final controller = TextEditingController(text: _subjectController.text.isNotEmpty ? _subjectController.text : "");
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("新規案件を作成"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: "案件名",
+            hintText: "例：サーバー導入プロジェクト",
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("キャンセル")),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("作成"),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && controller.text.trim().isNotEmpty) {
+      final newProject = await _projectRepo.createProject(
+        name: controller.text.trim(),
+        customerId: _selectedCustomer!.id,
+        customerName: _selectedCustomer!.displayName,
+        status: ProjectStatus.active,
+        startDate: DateTime.now(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _customerProjects.add(newProject);
+        _selectedProjectId = newProject.id;
+        _selectedProjectName = newProject.name;
+      });
+    }
   }
 
   Future<void> _showItemEditSheet(int idx) async {
