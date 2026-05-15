@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
 /// 全文検索サービス
@@ -10,67 +11,107 @@ class FullTextSearchService {
   FullTextSearchService._();
   
   final DatabaseHelper _db = DatabaseHelper();
+  bool _ftsAvailable = true;
   
-  /// FTSテーブルを作成
+  bool get ftsAvailable => _ftsAvailable;
+  
+  /// FTSテーブルを作成（fts5→fts4→通常検索のフォールバック）
   Future<void> createFtsTables() async {
     final db = await _db.database;
     
-    // 顧客FTSテーブル
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS customers_fts USING fts5(
-        display_name,
-        formal_name,
-        address,
-        tel,
-        email,
-        department,
-        content='customers',
-        content_rowid='id'
-      )
-    ''');
-    
-    // 製品FTSテーブル
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts5(
-        name,
-        description,
-        barcode,
-        category,
-        content='products',
-        content_rowid='id'
-      )
-    ''');
-    
-    // 請求書FTSテーブル
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS invoices_fts USING fts5(
-        document_number,
-        subject,
-        notes,
-        content='invoices',
-        content_rowid='id'
-      )
-    ''');
-    
-    // 取引先FTSテーブル（仕入先）
-    await db.execute('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts5(
-        name,
-        contact_person,
-        email,
-        tel,
-        address,
-        notes,
-        content='suppliers',
-        content_rowid='id'
-      )
-    ''');
-    
-    debugPrint('FTS tables created successfully');
+    try {
+      // 顧客FTSテーブル (fts5)
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS customers_fts USING fts5(
+          display_name,
+          formal_name,
+          address,
+          tel,
+          email,
+          department,
+          content='customers',
+          content_rowid='id'
+        )
+      ''');
+      
+      // 製品FTSテーブル (fts5)
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts5(
+          name,
+          description,
+          barcode,
+          category,
+          content='products',
+          content_rowid='id'
+        )
+      ''');
+      
+      // 請求書FTSテーブル (fts5)
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS invoices_fts USING fts5(
+          document_number,
+          subject,
+          notes,
+          content='invoices',
+          content_rowid='id'
+        )
+      ''');
+      
+      // 取引先FTSテーブル (fts5)
+      await db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts5(
+          name,
+          contact_person,
+          email,
+          tel,
+          address,
+          notes,
+          content='suppliers',
+          content_rowid='id'
+        )
+      ''');
+      
+      _ftsAvailable = true;
+      debugPrint('FTS5 tables created successfully');
+    } catch (e) {
+      debugPrint('FTS5 not available, trying FTS4 fallback: $e');
+      try {
+        // fts4フォールバック
+        await db.execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS customers_fts USING fts4(
+            display_name, formal_name, address, tel, email, department
+          )
+        ''');
+        await db.execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS products_fts USING fts4(
+            name, description, barcode, category
+          )
+        ''');
+        await db.execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS invoices_fts USING fts4(
+            document_number, subject, notes
+          )
+        ''');
+        await db.execute('''
+          CREATE VIRTUAL TABLE IF NOT EXISTS suppliers_fts USING fts4(
+            name, contact_person, email, tel, address, notes
+          )
+        ''');
+        _ftsAvailable = true;
+        debugPrint('FTS4 tables created successfully');
+      } catch (e2) {
+        debugPrint('FTS not available, falling back to LIKE search: $e2');
+        _ftsAvailable = false;
+      }
+    }
   }
   
   /// FTSインデックスを更新
   Future<void> updateFtsIndex() async {
+    if (!_ftsAvailable) {
+      debugPrint('FTS not available, skipping index update');
+      return;
+    }
     final db = await _db.database;
     
     try {
@@ -117,64 +158,108 @@ class FullTextSearchService {
   Future<List<Map<String, dynamic>>> searchCustomers(String query) async {
     final db = await _db.database;
     
-    final results = await db.rawQuery('''
-      SELECT c.*, customers_fts.rank
-      FROM customers c
-      JOIN customers_fts ON c.id = customers_fts.rowid
-      WHERE customers_fts MATCH ?
-      ORDER BY customers_fts.rank DESC
-      LIMIT 50
-    ''', [query]);
+    if (!_ftsAvailable) {
+      return _fallbackSearch(db, 'customers', query, [
+        'display_name', 'formal_name', 'address', 'tel', 'email', 'department'
+      ]);
+    }
     
-    return results;
+    try {
+      final results = await db.rawQuery('''
+        SELECT c.*, customers_fts.rank
+        FROM customers c
+        JOIN customers_fts ON c.id = customers_fts.rowid
+        WHERE customers_fts MATCH ?
+        ORDER BY customers_fts.rank DESC
+        LIMIT 50
+      ''', [query]);
+      return results;
+    } catch (e) {
+      return _fallbackSearch(db, 'customers', query, [
+        'display_name', 'formal_name', 'address', 'tel', 'email', 'department'
+      ]);
+    }
   }
   
   /// 製品を全文検索
   Future<List<Map<String, dynamic>>> searchProducts(String query) async {
     final db = await _db.database;
     
-    final results = await db.rawQuery('''
-      SELECT p.*, products_fts.rank
-      FROM products p
-      JOIN products_fts ON p.id = products_fts.rowid
-      WHERE products_fts MATCH ?
-      ORDER BY products_fts.rank DESC
-      LIMIT 50
-    ''', [query]);
+    if (!_ftsAvailable) {
+      return _fallbackSearch(db, 'products', query, [
+        'name', 'description', 'barcode', 'category'
+      ]);
+    }
     
-    return results;
+    try {
+      final results = await db.rawQuery('''
+        SELECT p.*, products_fts.rank
+        FROM products p
+        JOIN products_fts ON p.id = products_fts.rowid
+        WHERE products_fts MATCH ?
+        ORDER BY products_fts.rank DESC
+        LIMIT 50
+      ''', [query]);
+      return results;
+    } catch (e) {
+      return _fallbackSearch(db, 'products', query, [
+        'name', 'description', 'barcode', 'category'
+      ]);
+    }
   }
   
   /// 請求書を全文検索
   Future<List<Map<String, dynamic>>> searchInvoices(String query) async {
     final db = await _db.database;
     
-    final results = await db.rawQuery('''
-      SELECT i.*, invoices_fts.rank
-      FROM invoices i
-      JOIN invoices_fts ON i.id = invoices_fts.rowid
-      WHERE invoices_fts MATCH ?
-      ORDER BY invoices_fts.rank DESC
-      LIMIT 50
-    ''', [query]);
+    if (!_ftsAvailable) {
+      return _fallbackSearch(db, 'invoices', query, [
+        'document_number', 'subject', 'notes'
+      ]);
+    }
     
-    return results;
+    try {
+      final results = await db.rawQuery('''
+        SELECT i.*, invoices_fts.rank
+        FROM invoices i
+        JOIN invoices_fts ON i.id = invoices_fts.rowid
+        WHERE invoices_fts MATCH ?
+        ORDER BY invoices_fts.rank DESC
+        LIMIT 50
+      ''', [query]);
+      return results;
+    } catch (e) {
+      return _fallbackSearch(db, 'invoices', query, [
+        'document_number', 'subject', 'notes'
+      ]);
+    }
   }
   
   /// 仕入先を全文検索
   Future<List<Map<String, dynamic>>> searchSuppliers(String query) async {
     final db = await _db.database;
     
-    final results = await db.rawQuery('''
-      SELECT s.*, suppliers_fts.rank
-      FROM suppliers s
-      JOIN suppliers_fts ON s.id = suppliers_fts.rowid
-      WHERE suppliers_fts MATCH ?
-      ORDER BY suppliers_fts.rank DESC
-      LIMIT 50
-    ''', [query]);
+    if (!_ftsAvailable) {
+      return _fallbackSearch(db, 'suppliers', query, [
+        'name', 'contact_person', 'email', 'tel', 'address', 'notes'
+      ]);
+    }
     
-    return results;
+    try {
+      final results = await db.rawQuery('''
+        SELECT s.*, suppliers_fts.rank
+        FROM suppliers s
+        JOIN suppliers_fts ON s.id = suppliers_fts.rowid
+        WHERE suppliers_fts MATCH ?
+        ORDER BY suppliers_fts.rank DESC
+        LIMIT 50
+      ''', [query]);
+      return results;
+    } catch (e) {
+      return _fallbackSearch(db, 'suppliers', query, [
+        'name', 'contact_person', 'email', 'tel', 'address', 'notes'
+      ]);
+    }
   }
   
   /// 全データを横断検索
@@ -368,6 +453,31 @@ class FullTextSearchService {
     return results;
   }
   
+  /// LIKE検索によるフォールバック
+  Future<List<Map<String, dynamic>>> _fallbackSearch(
+    Database db,
+    String table,
+    String query,
+    List<String> columns,
+  ) async {
+    final keywords = query.replaceAll('*', '').split(RegExp(r'\s+'));
+    final conditions = <String>[];
+    final args = <dynamic>[];
+    
+    for (final col in columns) {
+      for (final kw in keywords) {
+        if (kw.isEmpty) continue;
+        conditions.add('$col LIKE ?');
+        args.add('%$kw%');
+      }
+    }
+    
+    if (conditions.isEmpty) return [];
+    
+    final whereClause = conditions.join(' OR ');
+    return db.query(table, where: whereClause, whereArgs: args, limit: 50);
+  }
+  
   /// 検索サジェストを取得
   Future<List<String>> getSuggestions(String query) async {
     final db = await _db.database;
@@ -435,6 +545,10 @@ class FullTextSearchService {
   
   /// FTSインデックスを再構築
   Future<void> rebuildFtsIndex() async {
+    if (!_ftsAvailable) {
+      debugPrint('FTS not available, skipping rebuild');
+      return;
+    }
     final db = await _db.database;
     
     try {

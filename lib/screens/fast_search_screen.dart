@@ -31,20 +31,19 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
     setState(() {
       _isIndexing = true;
     });
-    
+
     try {
       await _searchService.createFtsTables();
       await _searchService.updateFtsIndex();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('FTS初期化に失敗しました: $e')),
-        );
-      }
+      debugPrint('FTS初期化エラー: $e');
+      // FTSが使えなくてもLIKE検索フォールバックで画面は利用可能
     } finally {
-      setState(() {
-        _isIndexing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isIndexing = false;
+        });
+      }
     }
   }
   
