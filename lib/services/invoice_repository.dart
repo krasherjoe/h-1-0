@@ -11,16 +11,37 @@ import '../models/invoice_sync_payload.dart';
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 import 'company_repository.dart';
+import 'electronic_ledger_repository.dart';
 import 'storage_monitor.dart';
 
 /// 在庫処理の除外対象とする商品カテゴリ名
 /// サービスやサポート系の有形財でない品目は在庫引当/減算を行わない
 const List<String> kNonStockCategories = <String>['サポート', 'サービス'];
 
+/// ハッシュチェーン検証結果
+class HashChainVerifyResult {
+  /// 検証した伝票件数
+  final int checked;
+  /// 改ざんが検出された伝票IDのリスト（空なら健全）
+  final List<String> brokenIds;
+  /// 検証実行日時
+  final DateTime verifiedAt;
+
+  HashChainVerifyResult({
+    required this.checked,
+    required this.brokenIds,
+    required this.verifiedAt,
+  });
+
+  bool get isHealthy => brokenIds.isEmpty;
+  int get brokenCount => brokenIds.length;
+}
+
 class InvoiceRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
   final CompanyRepository _companyRepo = CompanyRepository();
+  final ElectronicLedgerRepository _ledgerRepo = ElectronicLedgerRepository();
   final StorageMonitor _storageMonitor = StorageMonitor();
   final StreamController<List<Invoice>> _orderStreamController = StreamController.broadcast();
 
@@ -47,6 +68,27 @@ class InvoiceRepository {
     }
 
     final db = await _dbHelper.database;
+
+    // ===== ハッシュチェーン保護 =====
+    // 既存レコードを確認し、ロック済みの場合は絶対に上書き禁止
+    // これによりロック済み伝票の content_hash/meta_hash/meta_json が壊れることを防ぐ
+    final existing = await db.query(
+      'invoices',
+      columns: ['id', 'is_locked', 'meta_hash', 'content_hash'],
+      where: 'id = ?',
+      whereArgs: [invoice.id],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) {
+      final existingIsLocked = (existing.first['is_locked'] as int? ?? 0) == 1;
+      if (existingIsLocked) {
+        throw Exception(
+          'ハッシュチェーン保護: ロック済み伝票 ${invoice.id} は変更できません。'
+          '\n複写または新規IDで保存してください。',
+        );
+      }
+    }
+    // ===============================
 
     // 正式発行（下書きでない）場合はロックを掛ける
     final companyInfo = await _companyRepo.getCompanyInfo();
@@ -158,6 +200,50 @@ class InvoiceRepository {
       targetId: invoice.id,
       details: "種別: ${invoice.documentTypeName}, 取引先: ${invoice.customerNameForDisplay}, 合計: ￥${invoice.totalAmount}",
     );
+
+    // ===== 電子帳簿保存法: electronic_ledgersへ追記 =====
+    // 正式発行時（下書きでない）に電子帳簿テーブルへ記録
+    // saveElectronicLedger は追記INSERTのみ（更新禁止）
+    if (!invoice.isDraft) {
+      try {
+        await _ledgerRepo.saveElectronicLedger(
+          documentId: invoice.id,
+          documentType: invoice.documentTypeName,
+          documentData: invoice.toMap(),
+          createdAt: invoice.date,
+        );
+      } catch (e) {
+        // 重複INSERTはスキップ（2回目以降の呼び出し防止）
+        // タイムスタンプ異常はログ記録してベストエフォート継続
+        await _logRepo.logAction(
+          action: 'ELECTRONIC_LEDGER_SAVE_ERROR',
+          targetType: 'INVOICE',
+          targetId: invoice.id,
+          details: '電子帳簿保存エラー: $e',
+        );
+      }
+    }
+    // =================================================
+
+    // ===== Tail-5 ハッシュチェーン検証 =====
+    // ロック保存後、直近5件のハッシュチェーン整合性を軽量検証
+    // SHA-256 × 5 ≈ 数ms でバッテリー消費極小
+    if (!invoice.isDraft) {
+      try {
+        final result = await verifyTailN(n: 5);
+        if (!result.isHealthy) {
+          await _logRepo.logAction(
+            action: "HASH_CHAIN_BROKEN",
+            targetType: "INVOICE",
+            targetId: result.brokenIds.join(','),
+            details: "Tail-5検証で改ざん検出: ${result.brokenCount}件 / 検証${result.checked}件",
+          );
+        }
+      } catch (_) {
+        // 検証失敗は保存自体は成功させる（ベストエフォート）
+      }
+    }
+    // =====================================
   }
 
   Future<void> updateInvoice(Invoice invoice) async {
@@ -368,6 +454,23 @@ class InvoiceRepository {
 
   Future<void> deleteInvoice(String id) async {
     final db = await _dbHelper.database;
+
+    // ===== ハッシュチェーン保護: ロック済み伝票の物理削除禁止 =====
+    final lockCheck = await db.query(
+      'invoices',
+      columns: ['is_locked'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (lockCheck.isNotEmpty && (lockCheck.first['is_locked'] as int? ?? 0) == 1) {
+      throw Exception(
+        'ハッシュチェーン保護: ロック済み伝票 $id は削除できません。'
+        '\n訂正が必要な場合は赤伝（訂正伝票）を作成してください。',
+      );
+    }
+    // ==========================================================
+
     await db.transaction((txn) async {
       // 在庫の復元
       final List<Map<String, dynamic>> items = await txn.query(
@@ -451,6 +554,62 @@ class InvoiceRepository {
     final invoices = await getAllInvoices(customers);
     final target = invoices.firstWhere((i) => i.id == id, orElse: () => throw Exception('invoice not found'));
     return verifyInvoiceMeta(target);
+  }
+
+  /// 最新の N 件のロック済み伝票を遡ってハッシュチェーン整合性を検証する。
+  /// 軽量（SHA-256 × N 件、通常数ms以下）でバッテリー消費極小。
+  /// 改ざんが検出された伝票IDのリストと検証総数を返す。
+  Future<HashChainVerifyResult> verifyTailN({int n = 5}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      columns: ['id', 'meta_json', 'meta_hash', 'updated_at'],
+      where: 'is_locked = 1 AND meta_hash IS NOT NULL',
+      orderBy: 'updated_at DESC',
+      limit: n,
+    );
+    final broken = <String>[];
+    for (final row in rows) {
+      final storedHash = row['meta_hash'] as String?;
+      final metaJson = row['meta_json'] as String?;
+      if (storedHash == null || metaJson == null) continue;
+      final recomputed = sha256.convert(utf8.encode(metaJson)).toString();
+      if (recomputed != storedHash) {
+        broken.add(row['id'] as String);
+      }
+    }
+    return HashChainVerifyResult(
+      checked: rows.length,
+      brokenIds: broken,
+      verifiedAt: DateTime.now(),
+    );
+  }
+
+  /// 全ロック済み伝票のハッシュチェーン整合性を検証する（手動実行向け）。
+  /// 件数が多いと数百ms程度かかる可能性あり。
+  Future<HashChainVerifyResult> verifyAllLocked() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      columns: ['id', 'meta_json', 'meta_hash'],
+      where: 'is_locked = 1 AND meta_hash IS NOT NULL',
+      orderBy: 'updated_at DESC',
+    );
+    final broken = <String>[];
+    for (final row in rows) {
+      final storedHash = row['meta_hash'] as String?;
+      final metaJson = row['meta_json'] as String?;
+      if (storedHash == null || metaJson == null) continue;
+      final recomputed = sha256.convert(utf8.encode(metaJson)).toString();
+      if (recomputed != storedHash) {
+        broken.add(row['id'] as String);
+      }
+    }
+    return HashChainVerifyResult(
+      checked: rows.length,
+      brokenIds: broken,
+      verifiedAt: DateTime.now(),
+    );
   }
 
   Future<Map<String, int>> getMonthlySales(int year) async {
@@ -543,6 +702,10 @@ class InvoiceRepository {
         limit: 1,
       );
       if (existing.isNotEmpty) {
+        // ===== ハッシュチェーン保護: 同期時もロック済み伝票の上書き禁止 =====
+        final isLocked = (existing.first['is_locked'] as int? ?? 0) == 1;
+        if (isLocked) return;
+        // ================================================================
         final existingUpdatedAt = existing.first['updated_at'];
         if (existingUpdatedAt is String) {
           currentUpdatedAt = DateTime.tryParse(existingUpdatedAt);
