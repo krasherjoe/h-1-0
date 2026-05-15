@@ -36,8 +36,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final db = await _db.database;
     final inv = await db.query('invoices',
         where: 'project_id = ?', whereArgs: [_project.id], orderBy: 'date DESC');
-    final sal = await db.query('sales',
-        where: 'project_id = ?', whereArgs: [_project.id], orderBy: 'date DESC');
+
+    List<Map<String, dynamic>> sal = [];
+    final salesExists = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='sales'");
+    if (salesExists.isNotEmpty) {
+      sal = await db.query('sales',
+          where: 'project_id = ?', whereArgs: [_project.id], orderBy: 'date DESC');
+    }
 
     List<Map<String, dynamic>> quo = [];
     final quotExists = await db.rawQuery(
