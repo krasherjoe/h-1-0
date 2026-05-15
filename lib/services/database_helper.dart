@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 59;
+  static const _databaseVersion = 60;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2041,6 +2041,51 @@ class DatabaseHelper {
         'CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts(receipt_date)',
       );
     }
+
+    // v60: 案件グループ（projects）導入
+    if (oldVersion < 60) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS projects (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          customer_id TEXT,
+          customer_name TEXT,
+          status TEXT NOT NULL DEFAULT 'active',
+          start_date TEXT,
+          end_date TEXT,
+          notes TEXT,
+          total_amount INTEGER DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(customer_id) REFERENCES customers(id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_projects_customer ON projects(customer_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)',
+      );
+
+      // 各伝票テーブルに project_id を追加
+      await _safeAddColumn(db, 'invoices', 'project_id TEXT');
+      await _safeAddColumn(db, 'quotations', 'project_id TEXT');
+      await _safeAddColumn(db, 'sales', 'project_id TEXT');
+      await _safeAddColumn(db, 'purchase_orders', 'project_id TEXT');
+
+      // インデックス（テーブルが存在する場合のみ）
+      for (final table in ['invoices', 'quotations', 'sales', 'purchase_orders']) {
+        final exists = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+          [table],
+        );
+        if (exists.isNotEmpty) {
+          await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_${table}_project ON $table(project_id)',
+          );
+        }
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2203,6 +2248,7 @@ class DatabaseHelper {
         is_tax_inclusive_mode INTEGER DEFAULT 0,
         payment_status TEXT DEFAULT 'unpaid',
         received_amount INTEGER DEFAULT 0,
+        project_id TEXT,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
@@ -2222,6 +2268,7 @@ class DatabaseHelper {
         subject TEXT,
         status TEXT NOT NULL,
         invoice_id TEXT,
+        project_id TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY(customer_id) REFERENCES customers(id)
@@ -2946,6 +2993,30 @@ class DatabaseHelper {
     ''');
     await db.execute(
       'CREATE INDEX idx_electronic_ledger_settings_profile ON electronic_ledger_settings(business_profile_id)',
+    );
+
+    // 案件グループ
+    await db.execute('''
+      CREATE TABLE projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        customer_id TEXT,
+        customer_name TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        start_date TEXT,
+        end_date TEXT,
+        notes TEXT,
+        total_amount INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(customer_id) REFERENCES customers(id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_projects_customer ON projects(customer_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_projects_status ON projects(status)',
     );
   }
 
