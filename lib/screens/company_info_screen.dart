@@ -49,6 +49,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     [TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController()],
   ];
   final List<String> _bankLabels = ['銀行名', '支店名', '口座種別', '口座番号', '口座名義'];
+  final List<bool> _bankActive = [false, false, false];
 
   @override
   void initState() {
@@ -82,6 +83,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
           _bankControllers[i][2].text = accounts[i].accountType;
           _bankControllers[i][3].text = accounts[i].accountNumber;
           _bankControllers[i][4].text = accounts[i].holderName;
+          _bankActive[i] = accounts[i].isActive;
+        } else {
+          _bankActive[i] = false;
         }
       }
       setState(() => _isLoading = false);
@@ -210,6 +214,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         accountType: _bankControllers[i][2].text.isEmpty ? '普通' : _bankControllers[i][2].text,
         accountNumber: _bankControllers[i][3].text,
         holderName: _bankControllers[i][4].text,
+        isActive: _bankActive[i],
       ));
     }
     return jsonEncode(accounts.map((e) => e.toJson()).toList());
@@ -585,15 +590,14 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                   for (int i = 0; i < 3; i++) ...[
                     Row(
                       children: [
-                        Radio<int>(
-                          value: i,
-                          groupValue: _defaultBankIndex,
-                          onChanged: (v) => setState(() => _defaultBankIndex = v!),
+                        Checkbox(
+                          value: _bankActive[i],
+                          onChanged: (v) => setState(() => _bankActive[i] = v ?? false),
                         ),
                         Text('口座 ${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                         const Spacer(),
-                        if (_defaultBankIndex == i)
-                          const Text('デフォルト', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                        if (_bankActive[i])
+                          const Text('請求書に表示', style: TextStyle(fontSize: 12, color: Colors.indigo)),
                       ],
                     ),
                     const SizedBox(height: 4),

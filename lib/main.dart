@@ -23,6 +23,8 @@ import 'services/theme_controller.dart';
 import 'services/auto_backup_service.dart';
 import 'services/backup_progress_notifier.dart';
 import 'services/database_helper.dart';
+import 'services/invoice_repository.dart';
+import 'services/activity_log_repository.dart';
 import 'utils/build_expiry_info.dart';
 
 // --- バックアップ進捗状態のデータクラス ---
@@ -125,6 +127,8 @@ class _MyAppState extends State<MyApp> {
       _sendHeartbeat();
       _chatSyncScheduler?.start();
       _checkFirstLaunchRestore();
+      // 起動時 Tail-5 ハッシュチェーン検証（バッテリー消費極小・数ms）
+      _verifyHashChainOnStartup();
     } catch (e) {
       debugPrint('初期化エラー: $e');
       if (!mounted) return;
@@ -132,6 +136,31 @@ class _MyAppState extends State<MyApp> {
         _isInitialized = true;
       });
     }
+  }
+
+  /// 起動時に直近5件のハッシュチェーン整合性を検証する。
+  /// SHA-256 × 5 ≈ 数ms でバッテリー消費極小。
+  /// 改ざんが検出された場合は activity_log に記録するだけで UI を妨げない。
+  void _verifyHashChainOnStartup() {
+    if (kIsWeb) return;
+    Future.microtask(() async {
+      try {
+        final result = await InvoiceRepository().verifyTailN(n: 5);
+        if (!result.isHealthy) {
+          await ActivityLogRepository().logAction(
+            action: 'HASH_CHAIN_BROKEN_ON_STARTUP',
+            targetType: 'INVOICE',
+            targetId: result.brokenIds.join(','),
+            details: '起動時Tail-5検証で改ざん検出: ${result.brokenCount}件 / 検証${result.checked}件',
+          );
+          debugPrint('[HashChain] 起動時検証で改ざん検出: ${result.brokenIds}');
+        } else {
+          debugPrint('[HashChain] 起動時Tail-5検証OK (${result.checked}件)');
+        }
+      } catch (e) {
+        debugPrint('[HashChain] 起動時検証エラー: $e');
+      }
+    });
   }
 
   void _onBackupProgressChanged() {

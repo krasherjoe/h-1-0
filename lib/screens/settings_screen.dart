@@ -14,6 +14,7 @@ import '../services/auto_backup_service.dart';
 import '../services/database_helper.dart';
 import '../services/drive_backup_service.dart';
 import '../services/google_account_service.dart';
+import '../services/invoice_repository.dart';
 import '../services/theme_controller.dart';
 import 'company_info_screen.dart';
 import 'customer_master_screen.dart';
@@ -296,6 +297,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ エラー：$e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _verifyHashChainTail() async {
+    await _runHashChainVerify(
+      title: '直近5件のハッシュチェーン検証',
+      runner: () => InvoiceRepository().verifyTailN(n: 5),
+    );
+  }
+
+  Future<void> _verifyHashChainAll() async {
+    await _runHashChainVerify(
+      title: '全ロック済み伝票のハッシュチェーン検証',
+      runner: () => InvoiceRepository().verifyAllLocked(),
+    );
+  }
+
+  Future<void> _runHashChainVerify({
+    required String title,
+    required Future<HashChainVerifyResult> Function() runner,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final result = await runner();
+      stopwatch.stop();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                result.isHealthy ? Icons.check_circle : Icons.error,
+                color: result.isHealthy ? Colors.teal : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('検証件数: ${result.checked} 件'),
+              const SizedBox(height: 4),
+              Text(
+                result.isHealthy
+                    ? '✅ 改ざんは検出されませんでした'
+                    : '⚠ 改ざん検出: ${result.brokenCount} 件',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: result.isHealthy ? Colors.teal : Colors.red,
+                ),
+              ),
+              if (!result.isHealthy) ...[
+                const SizedBox(height: 8),
+                const Text('改ざん検出された伝票ID:', style: TextStyle(fontSize: 12)),
+                ...result.brokenIds.map((id) => Text(
+                      '・$id',
+                      style: const TextStyle(fontSize: 11, color: Colors.red),
+                    )),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                '処理時間: ${stopwatch.elapsedMilliseconds} ms',
+                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('閉じる'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('検証エラー: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -970,6 +1053,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('復元ダイアログを再表示'),
                   style: OutlinedButton.styleFrom(foregroundColor: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.verified_user, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'ハッシュチェーン整合性',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'ロック済み伝票の改ざんを検出します。電子帳簿保存法対応の監査機能です。',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _verifyHashChainTail,
+                  icon: const Icon(Icons.speed),
+                  label: const Text('直近5件を検証（高速）'),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.teal),
+                ),
+                const SizedBox(height: 4),
+                OutlinedButton.icon(
+                  onPressed: _verifyHashChainAll,
+                  icon: const Icon(Icons.fact_check),
+                  label: const Text('全ロック済み伝票を検証'),
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.teal),
                 ),
               ],
             ),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart' show debugPrint;
@@ -8,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import '../models/invoice_models.dart';
 import 'company_repository.dart';
+import 'company_profile_service.dart';
 import 'activity_log_repository.dart';
 
 /// 角印プレビュー用ページフォーマット（A4, マージン32pt≒11.29mm）
@@ -27,6 +29,16 @@ String _formatBankAccount(String raw) {
     return '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]} ${parts[4]}';
   }
   return raw;
+}
+
+List<CompanyBankAccount> _decodeBankAccounts(String? raw) {
+  if (raw == null || raw.isEmpty) return [];
+  try {
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list.map((e) => CompanyBankAccount.fromJson(e as Map<String, dynamic>)).toList();
+  } catch (_) {
+    return [];
+  }
 }
 
 Future<pw.Document> buildInvoiceDocument(
@@ -353,16 +365,30 @@ Future<pw.Document> buildInvoiceDocument(
               child: pw.Text(invoice.notes!, textAlign: pw.TextAlign.left),
             ),
           ],
-          if (invoice.bankAccount != null && invoice.bankAccount!.isNotEmpty) ...[
-            pw.SizedBox(height: 10),
-            pw.Text("振込先:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
-              child: pw.Text(_formatBankAccount(invoice.bankAccount!), textAlign: pw.TextAlign.left),
-            ),
-          ],
+          ...(() {
+            final activeAccounts = _decodeBankAccounts(companyInfo.bankAccounts)
+                .where((a) => a.isActive)
+                .take(3)
+                .toList();
+            if (activeAccounts.isEmpty) return <pw.Widget>[];
+            return [
+              pw.SizedBox(height: 10),
+              pw.Text("振込先:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Container(
+                width: double.infinity,
+                alignment: pw.Alignment.centerLeft,
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: activeAccounts.map((a) {
+                    final line = '${a.bankName} ${a.branchName} ${a.accountType} ${a.accountNumber} ${a.holderName}';
+                    return pw.Text(line, textAlign: pw.TextAlign.left);
+                  }).toList(),
+                ),
+              ),
+            ];
+          }()),
           // 領収書の但し書き
           if (invoice.documentType == DocumentType.receipt && invoice.subject != null && invoice.subject!.isNotEmpty) ...[
             pw.SizedBox(height: 10),
@@ -408,7 +434,7 @@ Future<pw.Document> buildInvoiceDocument(
           ),
         ];
 
-        return [pw.Column(children: content)];
+        return [pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: content)];
       },
       footer: (context) => pw.Column(
         mainAxisSize: pw.MainAxisSize.min,

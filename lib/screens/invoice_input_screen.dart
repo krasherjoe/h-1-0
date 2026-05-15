@@ -798,8 +798,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                         _buildCustomerSection(),
                         const SizedBox(height: 16),
                         _buildSubjectSection(),
-                        const SizedBox(height: 16),
-                        _buildBankAccountSection(),
                         const SizedBox(height: 20),
                         _buildItemsSection(fmt),
                         const SizedBox(height: 20),
@@ -938,106 +936,122 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   Widget _buildDateSection() {
     final fmt = DateFormat('yyyy/MM/dd');
-    return GestureDetector(
-      onTap: _isViewMode
-          ? null
-          : () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                setState(() => _selectedDate = picked);
-                _pushHistory();
-              }
-            },
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Builder(
-          builder: (context) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 18,
-                    color: Colors.indigo,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "伝票日付: ${fmt.format(_selectedDate)}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  if (_showNewBadge)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        "新規",
-                        style: TextStyle(
-                          color: Colors.deepOrange,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: _isViewMode
+              ? null
+              : () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setState(() => _selectedDate = picked);
+                    _pushHistory();
+                  }
+                },
+          child: Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                  if (_showCopyBadge)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        "複写",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  if (!_isViewMode && !_isLocked) ...[
-                    const SizedBox(width: 8),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     const Icon(
-                      Icons.chevron_right,
+                      Icons.calendar_today,
                       size: 18,
                       color: Colors.indigo,
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "伝票日付: ${fmt.format(_selectedDate)}",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    if (_showNewBadge)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          "新規",
+                          style: TextStyle(
+                            color: Colors.deepOrange,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    if (_showCopyBadge)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          "複写",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    if (!_isViewMode && !_isLocked) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: Colors.indigo,
+                      ),
+                    ],
                   ],
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
-      ),
+        if (_isLocked && _documentType == DocumentType.invoice) ...[
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _createReceiptFromInvoice,
+            icon: const Icon(Icons.receipt, size: 16),
+            label: const Text('領収証生成'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -1998,44 +2012,32 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   Widget _buildBankAccountSection() {
+    if (_documentType != DocumentType.invoice) return const SizedBox.shrink();
     if (_companyBankAccounts.isEmpty) return const SizedBox.shrink();
+    if (_selectedBankIndex < 0 || _selectedBankIndex >= _companyBankAccounts.length) return const SizedBox.shrink();
+    final acc = _companyBankAccounts[_selectedBankIndex];
+    final display = '${acc.bankName} ${acc.branchName} ${acc.accountType} ${acc.accountNumber} ${acc.holderName}';
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 0.5,
-      color: cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '振込先口座',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.grey.shade300 : Colors.black87,
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            '振込先：',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.grey.shade400 : Colors.black54,
             ),
-            const SizedBox(height: 8),
-            Column(
-              children: _companyBankAccounts.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final acc = entry.value;
-                final display = '${acc.bankName} ${acc.branchName} ${acc.accountType} ${acc.accountNumber} ${acc.holderName}';
-                return RadioListTile<int>(
-                  value: idx,
-                  groupValue: _selectedBankIndex,
-                  onChanged: _isLocked ? null : (v) => setState(() => _selectedBankIndex = v!),
-                  title: Text(display, style: const TextStyle(fontSize: 13)),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                );
-              }).toList(),
+          ),
+          Expanded(
+            child: Text(
+              display,
+              style: const TextStyle(fontSize: 12),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2153,6 +2155,70 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ),
       ),
     );
+  }
+
+  Future<void> _createReceiptFromInvoice() async {
+    if (_currentInvoice == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('領収証を生成します'),
+        content: const Text('この請求書から領収証を生成してもよろしいですか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade600),
+            child: const Text('生成'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final newReceiptId = DateTime.now().millisecondsSinceEpoch.toString();
+      final receipt = _currentInvoice!.copyWith(
+        id: newReceiptId,
+        documentType: DocumentType.receipt,
+        isDraft: true,
+        isLocked: false,
+        taxRate: _currentInvoice!.taxRate,
+        includeTax: _currentInvoice!.includeTax,
+        isTaxInclusiveMode: _currentInvoice!.isTaxInclusiveMode,
+        totalDiscountAmount: _currentInvoice!.totalDiscountAmount,
+        totalDiscountRate: _currentInvoice!.totalDiscountRate,
+        priceAdjustmentType: _currentInvoice!.priceAdjustmentType,
+        priceAdjustmentUnit: _currentInvoice!.priceAdjustmentUnit,
+      );
+
+      await _repository.saveInvoice(receipt);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InvoiceInputForm(
+            existingInvoice: receipt,
+            onInvoiceGenerated: (inv, path) {},
+            initialDocumentType: DocumentType.receipt,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Future<void> _createRedInvoice() async {
