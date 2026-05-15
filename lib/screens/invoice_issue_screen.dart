@@ -173,6 +173,23 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                   await _editInvoice(invoice);
                 },
               ),
+            const Divider(),
+            FutureBuilder<bool>(
+              future: _invoiceRepo.hasSales(invoice.id),
+              builder: (context, snapshot) {
+                final hasSales = snapshot.data ?? false;
+                return ListTile(
+                  leading: Icon(Icons.receipt_long, color: hasSales ? Colors.green : Colors.grey),
+                  title: const Text('売上伝票'),
+                  subtitle: Text(hasSales ? '作成済み' : '未作成'),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.payments, color: invoice.paymentStatusColor),
+              title: const Text('入金状況'),
+              subtitle: Text(invoice.paymentStatusDisplay),
+            ),
           ],
         ),
       ),

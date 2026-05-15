@@ -8,6 +8,8 @@ import '../models/invoice_models.dart';
 import '../models/customer_model.dart';
 import '../models/customer_contact.dart';
 import '../models/invoice_sync_payload.dart';
+import '../models/receipt_model.dart';
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 import 'database_helper.dart';
 import 'activity_log_repository.dart';
 import 'company_repository.dart';
@@ -405,6 +407,14 @@ class InvoiceRepository {
         } catch (_) {}
       }
 
+      PaymentStatus paymentStatus = PaymentStatus.unpaid;
+      final psRaw = iMap['payment_status'];
+      if (psRaw is String) {
+        try {
+          paymentStatus = PaymentStatus.values.firstWhere((e) => e.name == psRaw);
+        } catch (_) {}
+      }
+
       invoices.add(Invoice(
         id: iMap['id'],
         customer: customer,
@@ -442,6 +452,8 @@ class InvoiceRepository {
         totalDiscountRate: iMap['total_discount_rate'],
         isReceiptIssued: (iMap['is_receipt_issued'] ?? 0) == 1,
         receiptIssuedAt: iMap['receipt_issued_at'] != null ? DateTime.tryParse(iMap['receipt_issued_at']) : null,
+        paymentStatus: paymentStatus,
+        receivedAmount: iMap['received_amount'] as int? ?? 0,
         priceAdjustmentType: iMap['price_adjustment_type'] as String?,
         priceAdjustmentUnit: iMap['price_adjustment_unit'] as int?,
         bankAccount: iMap['bank_account'] as String?,
@@ -555,6 +567,140 @@ class InvoiceRepository {
     final target = invoices.firstWhere((i) => i.id == id, orElse: () => throw Exception('invoice not found'));
     return verifyInvoiceMeta(target);
   }
+
+  // ===== 入金・売上リレーション =====
+
+  /// 請求書IDに紐づく入金実績を取得
+  Future<List<Receipt>> getReceiptsByInvoiceId(String invoiceId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'receipts',
+      where: 'invoice_id = ?',
+      whereArgs: [invoiceId],
+      orderBy: 'receipt_date DESC',
+    );
+    return rows.map((r) => Receipt.fromMap(r)).toList();
+  }
+
+  /// 入金実績を追加し、請求書の入金ステータスを自動更新
+  Future<void> addReceipt(Receipt receipt) async {
+    final db = await _dbHelper.database;
+
+    // 1. 入金実績をINSERT
+    await db.insert('receipts', receipt.toMap());
+
+    // 2. 同じ請求書の全入金実績を集計
+    final result = await db.rawQuery(
+      'SELECT SUM(amount) as total FROM receipts WHERE invoice_id = ?',
+      [receipt.invoiceId],
+    );
+    final totalReceived = (result.first['total'] as num?)?.toInt() ?? 0;
+
+    // 3. 請求書金額を取得
+    final invoiceResult = await db.query(
+      'invoices',
+      columns: ['total_amount'],
+      where: 'id = ?',
+      whereArgs: [receipt.invoiceId],
+      limit: 1,
+    );
+    if (invoiceResult.isEmpty) return;
+    final totalAmount = invoiceResult.first['total_amount'] as int? ?? 0;
+
+    // 4. ステータス計算
+    final String newStatus;
+    if (totalReceived >= totalAmount) {
+      newStatus = PaymentStatus.paid.name;
+    } else if (totalReceived > 0) {
+      newStatus = PaymentStatus.partial.name;
+    } else {
+      newStatus = PaymentStatus.unpaid.name;
+    }
+
+    // 5. 請求書をUPDATE
+    await db.update(
+      'invoices',
+      {
+        'payment_status': newStatus,
+        'received_amount': totalReceived,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [receipt.invoiceId],
+    );
+
+    // 6. ログ記録
+    await _logRepo.logAction(
+      action: 'ADD_RECEIPT',
+      targetType: 'INVOICE',
+      targetId: receipt.invoiceId,
+      details: '入金額: \u00a5$totalReceived / 請求額: \u00a5$totalAmount, ステータス: $newStatus',
+    );
+  }
+
+  /// 請求書の入金ステータスを入金実績から再計算して更新
+  Future<void> updatePaymentStatus(String invoiceId) async {
+    final db = await _dbHelper.database;
+
+    final receiptResult = await db.rawQuery(
+      'SELECT SUM(amount) as total FROM receipts WHERE invoice_id = ?',
+      [invoiceId],
+    );
+    final totalReceived = (receiptResult.first['total'] as num?)?.toInt() ?? 0;
+
+    final invoiceResult = await db.query(
+      'invoices',
+      columns: ['total_amount'],
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+      limit: 1,
+    );
+    if (invoiceResult.isEmpty) return;
+    final totalAmount = invoiceResult.first['total_amount'] as int? ?? 0;
+
+    final String newStatus;
+    if (totalReceived >= totalAmount) {
+      newStatus = PaymentStatus.paid.name;
+    } else if (totalReceived > 0) {
+      newStatus = PaymentStatus.partial.name;
+    } else {
+      newStatus = PaymentStatus.unpaid.name;
+    }
+
+    await db.update(
+      'invoices',
+      {
+        'payment_status': newStatus,
+        'received_amount': totalReceived,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
+  /// 請求書IDに紐づく売上伝票を取得
+  Future<List<Map<String, dynamic>>> getSalesByInvoiceId(String invoiceId) async {
+    final db = await _dbHelper.database;
+    return await db.query(
+      'sales',
+      where: 'invoice_id = ?',
+      whereArgs: [invoiceId],
+      orderBy: 'date DESC',
+    );
+  }
+
+  /// 請求書に紐づく売上伝票が存在するか
+  Future<bool> hasSales(String invoiceId) async {
+    final db = await _dbHelper.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM sales WHERE invoice_id = ?',
+      [invoiceId],
+    );
+    return (result.first['count'] as int) > 0;
+  }
+
+  // ==================================
 
   /// 最新の N 件のロック済み伝票を遡ってハッシュチェーン整合性を検証する。
   /// 軽量（SHA-256 × N 件、通常数ms以下）でバッテリー消費極小。

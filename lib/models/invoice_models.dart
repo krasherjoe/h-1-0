@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/material.dart' show Colors, Color;
 import 'package:intl/intl.dart';
 import '../models/customer_model.dart';
 import '../models/customer_model.dart' show HonorificCode;
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 
 class InvoiceItem {
   final String? id;
@@ -158,6 +159,8 @@ class Invoice {
   final double? totalDiscountRate; // 合計値引き率
   final bool isReceiptIssued; // 領収証発行済みフラグ
   final DateTime? receiptIssuedAt; // 領収証発行日時
+  final PaymentStatus paymentStatus; // 入金ステータス
+  final int receivedAmount; // 入金済み金額
   final bool includeTax; // 税込みフラグ
   final bool isTaxInclusiveMode; // 税込みモード（単価が税込、消費税を逆算）
   final String? priceAdjustmentType; // 価格調整タイプ: 'round_down', 'round_up', 'round_nearest'
@@ -201,6 +204,8 @@ class Invoice {
     this.totalDiscountRate,
     this.isReceiptIssued = false,
     this.receiptIssuedAt,
+    this.paymentStatus = PaymentStatus.unpaid,
+    this.receivedAmount = 0,
     this.includeTax = false,
     this.isTaxInclusiveMode = false,
     this.priceAdjustmentType,
@@ -372,6 +377,34 @@ class Invoice {
   /// 赤伝かどうか（元伝票への取消しで、合計金額がマイナス）
   bool get isRedInvoice => sourceDocumentId != null && totalAmount < 0;
 
+  /// 入金ステータスの表示用文字列
+  String get paymentStatusDisplay {
+    switch (paymentStatus) {
+      case PaymentStatus.unpaid:
+        return '未入金';
+      case PaymentStatus.partial:
+        return '一部入金（\u00a5${NumberFormat('#,###').format(receivedAmount)} / \u00a5${NumberFormat('#,###').format(totalAmount)}）';
+      case PaymentStatus.paid:
+        return '入金済み';
+      case PaymentStatus.overdue:
+        return '延滞（\u00a5${NumberFormat('#,###').format(receivedAmount)} / \u00a5${NumberFormat('#,###').format(totalAmount)}）';
+    }
+  }
+
+  /// 入金ステータスに応じた色
+  Color get paymentStatusColor {
+    switch (paymentStatus) {
+      case PaymentStatus.unpaid:
+        return Colors.orange;
+      case PaymentStatus.partial:
+        return Colors.amber;
+      case PaymentStatus.paid:
+        return Colors.green;
+      case PaymentStatus.overdue:
+        return Colors.red;
+    }
+  }
+
   String get _projectLabel {
     if (subject != null && subject!.trim().isNotEmpty) {
       return subject!.trim();
@@ -489,6 +522,8 @@ class Invoice {
       'meta_hash': metaHashValue,
       'is_receipt_issued': isReceiptIssued ? 1 : 0,
       'receipt_issued_at': receiptIssuedAt?.toIso8601String(),
+      'payment_status': paymentStatus.name,
+      'received_amount': receivedAmount,
       'total_discount_amount': totalDiscountAmount,
       'total_discount_rate': totalDiscountRate,
       'price_adjustment_type': priceAdjustmentType,
@@ -536,6 +571,8 @@ class Invoice {
     double? totalDiscountRate,
     bool? isReceiptIssued,
     DateTime? receiptIssuedAt,
+    PaymentStatus? paymentStatus,
+    int? receivedAmount,
     bool? includeTax,
     bool? isTaxInclusiveMode,
     String? priceAdjustmentType,
@@ -581,6 +618,8 @@ class Invoice {
       totalDiscountRate: totalDiscountRate ?? this.totalDiscountRate,
       isReceiptIssued: isReceiptIssued ?? this.isReceiptIssued,
       receiptIssuedAt: receiptIssuedAt ?? this.receiptIssuedAt,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      receivedAmount: receivedAmount ?? this.receivedAmount,
       includeTax: includeTax ?? this.includeTax,
       isTaxInclusiveMode: isTaxInclusiveMode ?? this.isTaxInclusiveMode,
       priceAdjustmentType: priceAdjustmentType ?? this.priceAdjustmentType,

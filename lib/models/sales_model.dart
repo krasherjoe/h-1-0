@@ -18,9 +18,12 @@ class Sales extends BaseDocument {
     super.notes,
     super.subject,
     required super.status,
+    this.invoiceId,
     required super.createdAt,
     required super.updatedAt,
   });
+
+  final String? invoiceId; // 紐づく請求書ID
 
   @override
   Color getStatusColor() {
@@ -58,6 +61,7 @@ class Sales extends BaseDocument {
       'notes': notes,
       'subject': subject,
       'status': status.name,
+      'invoice_id': invoiceId,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -80,6 +84,7 @@ class Sales extends BaseDocument {
         (e) => e.name == map['status'],
         orElse: () => DocumentStatus.draft,
       ),
+      invoiceId: map['invoice_id'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -98,6 +103,7 @@ class Sales extends BaseDocument {
     String? notes,
     String? subject,
     DocumentStatus? status,
+    String? invoiceId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -114,6 +120,7 @@ class Sales extends BaseDocument {
       notes: notes ?? this.notes,
       subject: subject ?? this.subject,
       status: status ?? this.status,
+      invoiceId: invoiceId ?? this.invoiceId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -65,6 +65,34 @@ class SalesRepository {
     }
   }
 
+  /// 請求書IDに紐づく売上伝票を取得
+  Future<List<Sales>> getSalesByInvoiceId(String invoiceId) async {
+    final database = await _db.database;
+    final customers = await _customerRepo.getAllCustomers();
+
+    final maps = await database.query(
+      'sales',
+      where: 'invoice_id = ?',
+      whereArgs: [invoiceId],
+      orderBy: 'date DESC',
+    );
+
+    return maps.map((map) {
+      final customerId = map['customer_id'] as String?;
+      final customer = customerId != null
+          ? customers.firstWhere(
+              (c) => c.id == customerId,
+              orElse: () => Customer(
+                id: customerId,
+                displayName: '不明な顧客',
+                formalName: '不明な顧客',
+              ),
+            )
+          : null;
+      return Sales.fromMap(map, customer);
+    }).toList();
+  }
+
   /// 売上を削除
   Future<void> deleteSales(String id) async {
     final database = await _db.database;

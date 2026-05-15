@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 58;
+  static const _databaseVersion = 59;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -1953,6 +1953,40 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'company_info', 'default_bank_account_index INTEGER DEFAULT 0');
       await _safeAddColumn(db, 'invoices', 'bank_account TEXT');
     }
+
+    // v59: 請求書と売上伝票・入金のリレーション対応
+    if (oldVersion < 59) {
+      // salesテーブルに請求書IDを追加（どの請求書から作成されたか）
+      await _safeAddColumn(db, 'sales', 'invoice_id TEXT');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_sales_invoice ON sales(invoice_id)',
+      );
+
+      // invoicesテーブルに入金ステータスと入金額を追加
+      await _safeAddColumn(db, 'invoices', "payment_status TEXT DEFAULT 'unpaid'");
+      await _safeAddColumn(db, 'invoices', 'received_amount INTEGER DEFAULT 0');
+
+      // 入金実績テーブル（得意先からの入金）
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS receipts (
+          id TEXT PRIMARY KEY,
+          invoice_id TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          receipt_date TEXT NOT NULL,
+          payment_method TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_receipts_invoice ON receipts(invoice_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_receipts_date ON receipts(receipt_date)',
+      );
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2113,9 +2147,60 @@ class DatabaseHelper {
         price_adjustment_unit INTEGER,
         include_tax INTEGER DEFAULT 1,
         is_tax_inclusive_mode INTEGER DEFAULT 0,
+        payment_status TEXT DEFAULT 'unpaid',
+        received_amount INTEGER DEFAULT 0,
         FOREIGN KEY (customer_id) REFERENCES customers (id)
       )
     ''');
+
+    // 売上伝票マスター
+    await db.execute('''
+      CREATE TABLE sales (
+        id TEXT PRIMARY KEY,
+        document_number TEXT NOT NULL,
+        date TEXT NOT NULL,
+        customer_id TEXT,
+        subtotal INTEGER NOT NULL,
+        tax_amount INTEGER NOT NULL,
+        total INTEGER NOT NULL,
+        tax_rate REAL NOT NULL,
+        notes TEXT,
+        subject TEXT,
+        status TEXT NOT NULL,
+        invoice_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(customer_id) REFERENCES customers(id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_sales_date ON sales(date)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_sales_customer ON sales(customer_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_sales_invoice ON sales(invoice_id)',
+    );
+
+    await db.execute('''
+      CREATE TABLE sales_items (
+        id TEXT PRIMARY KEY,
+        sales_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        unit_price INTEGER NOT NULL,
+        subtotal INTEGER NOT NULL,
+        tax_rate REAL NOT NULL,
+        notes TEXT,
+        FOREIGN KEY(sales_id) REFERENCES sales(id) ON DELETE CASCADE,
+        FOREIGN KEY(product_id) REFERENCES products(id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_sales_items_sales ON sales_items(sales_id)',
+    );
 
     await db.execute('''
       CREATE TABLE app_gps_history (
