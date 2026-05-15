@@ -13,6 +13,7 @@ import 'invoice_input_screen.dart';
 import 'settings_screen.dart';
 import 'company_info_screen.dart';
 import 'dashboard_screen.dart';
+import 'screen_pj1_project_list.dart';
 import '../services/app_settings_repository.dart';
 import '../widgets/swipe_to_unlock.dart';
 // InvoiceFlowScreen import removed; using inline type picker
@@ -352,7 +353,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               tooltip: "再度プロテクトする",
             ),
           IconButton(
-            icon: const Icon(Icons.sort),
+            icon: const Icon(Icons.more_vert),
             onPressed: () {
               showMenu<String>(
                 context: context,
@@ -361,15 +362,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   const PopupMenuItem(value: "date", child: Text("日付順")),
                   const PopupMenuItem(value: "amount", child: Text("金額順")),
                   const PopupMenuItem(value: "customer", child: Text("顧客名順")),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(value: "project_list", child: Text("PJ1:案件管理")),
                 ],
               ).then((val) {
-                if (val != null) {
-                  setState(() => _sortBy = val);
-                  _applyFilterAndSort();
+                if (val == null) return;
+                if (val == "project_list") {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen()));
+                  return;
                 }
+                setState(() => _sortBy = val);
+                _applyFilterAndSort();
               });
             },
-            tooltip: "ソート切り替え",
+            tooltip: "メニュー",
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
