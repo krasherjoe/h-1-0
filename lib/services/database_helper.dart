@@ -1956,11 +1956,65 @@ class DatabaseHelper {
 
     // v59: 請求書と売上伝票・入金のリレーション対応
     if (oldVersion < 59) {
-      // salesテーブルに請求書IDを追加（どの請求書から作成されたか）
-      await _safeAddColumn(db, 'sales', 'invoice_id TEXT');
-      await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_sales_invoice ON sales(invoice_id)',
+      // salesテーブルの存在確認
+      final salesExists = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='sales'",
       );
+
+      if (salesExists.isNotEmpty) {
+        // salesテーブルが既存の場合: invoice_idカラムを追加
+        await _safeAddColumn(db, 'sales', 'invoice_id TEXT');
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_sales_invoice ON sales(invoice_id)',
+        );
+      } else {
+        // salesテーブルが存在しない場合: invoice_idを含めて新規作成
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS sales (
+            id TEXT PRIMARY KEY,
+            document_number TEXT NOT NULL,
+            date TEXT NOT NULL,
+            customer_id TEXT,
+            subtotal INTEGER NOT NULL,
+            tax_amount INTEGER NOT NULL,
+            total INTEGER NOT NULL,
+            tax_rate REAL NOT NULL,
+            notes TEXT,
+            subject TEXT,
+            status TEXT NOT NULL,
+            invoice_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(customer_id) REFERENCES customers(id)
+          )
+        ''');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_customer ON sales(customer_id)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_invoice ON sales(invoice_id)');
+
+        // sales_itemsテーブルも合わせて作成
+        final salesItemsExists = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='sales_items'",
+        );
+        if (salesItemsExists.isEmpty) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS sales_items (
+              id TEXT PRIMARY KEY,
+              sales_id TEXT NOT NULL,
+              product_id TEXT NOT NULL,
+              product_name TEXT NOT NULL,
+              quantity INTEGER NOT NULL,
+              unit_price INTEGER NOT NULL,
+              subtotal INTEGER NOT NULL,
+              tax_rate REAL NOT NULL,
+              notes TEXT,
+              FOREIGN KEY(sales_id) REFERENCES sales(id) ON DELETE CASCADE,
+              FOREIGN KEY(product_id) REFERENCES products(id)
+            )
+          ''');
+          await db.execute('CREATE INDEX IF NOT EXISTS idx_sales_items_sales ON sales_items(sales_id)');
+        }
+      }
 
       // invoicesテーブルに入金ステータスと入金額を追加
       await _safeAddColumn(db, 'invoices', "payment_status TEXT DEFAULT 'unpaid'");
