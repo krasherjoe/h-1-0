@@ -22,6 +22,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   List<Map<String, dynamic>> _invoices = [];
   List<Map<String, dynamic>> _sales = [];
   List<Map<String, dynamic>> _quotations = [];
+  bool _salesTableExists = false;
+  bool _quotationsTableExists = false;
   bool _loading = true;
 
   @override
@@ -59,6 +61,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       _invoices = inv;
       _sales = sal;
       _quotations = quo;
+      _salesTableExists = salesExists.isNotEmpty;
+      _quotationsTableExists = quotExists.isNotEmpty;
       if (fresh != null) _project = fresh;
       _loading = false;
     });
@@ -330,24 +334,28 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     amountKey: 'total_amount',
                     labelKey: 'subject',
                   ),
-                  const SizedBox(height: 8),
-                  _buildDocSection(
-                    label: '見積',
-                    icon: Icons.description,
-                    table: 'quotations',
-                    docs: _quotations,
-                    amountKey: 'total_amount',
-                    labelKey: 'subject',
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDocSection(
-                    label: '売上伝票',
-                    icon: Icons.point_of_sale,
-                    table: 'sales',
-                    docs: _sales,
-                    amountKey: 'total',
-                    labelKey: 'document_number',
-                  ),
+                  if (_quotationsTableExists) ...[
+                    const SizedBox(height: 8),
+                    _buildDocSection(
+                      label: '見積',
+                      icon: Icons.description,
+                      table: 'quotations',
+                      docs: _quotations,
+                      amountKey: 'total_amount',
+                      labelKey: 'subject',
+                    ),
+                  ],
+                  if (_salesTableExists) ...[
+                    const SizedBox(height: 8),
+                    _buildDocSection(
+                      label: '売上伝票',
+                      icon: Icons.point_of_sale,
+                      table: 'sales',
+                      docs: _sales,
+                      amountKey: 'total',
+                      labelKey: 'document_number',
+                    ),
+                  ],
                 ],
               ),
             ),
