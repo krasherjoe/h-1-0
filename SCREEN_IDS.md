@@ -1,12 +1,12 @@
 # 画面ID管理データベース
 # AIセッション開始時に必ず読み込んでください
-# 最終更新: 2026-04-14
+# 最終更新: 2026-05-16
 
 ---
 # 画面ID定義ルール
 rules:
-  format: "XX:画面名"
-  length: "2文字（英大文字+数字）"
+  format: "XX:画面名 または XXX:画面名"
+  length: "2〜3文字（英大文字+数字）※機能グループが増え3文字も許容"
   unique: true
   duplicate_check: "新規追加時は必ず既存IDと重複しないことを確認"
   category: "カテゴリ別に整理（マスタ管理、販売管理、仕入管理、在庫管理、集計分析、システム設定、母艦連携、その他）"
@@ -356,6 +356,18 @@ screen_ids:
     file: lib/screens/screen_sb_backup_settings.dart
     status: 確認
     category: 母艦連携
+
+  # 案件管理
+  PJ1:
+    name: 案件一覧
+    file: lib/screens/screen_pj1_project_list.dart
+    status: 確認
+    category: 案件管理
+  PJ2:
+    name: 案件詳細
+    file: lib/screens/screen_pj2_project_detail.dart
+    status: 確認
+    category: 案件管理
 
   # その他
   SUP:

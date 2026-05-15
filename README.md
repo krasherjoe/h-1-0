@@ -147,9 +147,10 @@ Add mothership GPS discovery feature
 
 ### 画面ID規則
 
-**全画面のタイトル（AppBar）には2文字の一意なIDを必須とします：**
+**全画面のタイトル（AppBar）には2〜3文字の一意なIDを必須とします：**
 
-- 形式: `XX:画面名` （例: `S1:設定`, `SM:メール設定`, `P1:商品マスター`）
+- 形式: `XX:画面名` または `XXX:画面名` （例: `S1:設定`, `SM:メール設定`, `PJ1:案件管理`）
+- 2文字で一意にできない場合は3文字を使用
 - 非ホーム画面: 必ず戻るボタンを表示
 - ホーム画面: メニューボタンを表示（戻るボタンの代わり）
 
@@ -208,7 +209,7 @@ lib/
 
 #### **1. 新しい画面を追加する場合**
 ```dart
-// 画面IDは2文字必須（例: NW:新機能）
+// 画面IDは2〜3文字（例: NW:新機能、 NW1:新機能一覧）
 class NewFeatureScreen extends StatefulWidget {
   const NewFeatureScreen({super.key});
   
