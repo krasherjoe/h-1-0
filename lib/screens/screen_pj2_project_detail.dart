@@ -444,16 +444,32 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         children: [
           ...docs.map((doc) {
             final id = doc['id'] as String;
-            final date = (doc['date'] as String? ?? '').length >= 10
-                ? (doc['date'] as String).substring(0, 10)
-                : (doc['date'] as String? ?? '');
+            final rawDate = doc['date'] as String? ?? '';
+            final date = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
             final lbl = doc[labelKey] as String? ?? id.substring(0, 8);
             final amount = doc[amountKey] as int? ?? 0;
+            final statusInfo = _docStatusInfo(table, doc);
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-              title: Text(lbl, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14)),
-              subtitle: Text(date, style: const TextStyle(fontSize: 12)),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(lbl, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: statusInfo.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusInfo.color.withOpacity(0.5)),
+                    ),
+                    child: Text(statusInfo.label,
+                        style: TextStyle(fontSize: 11, color: statusInfo.color, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              subtitle: Text('発行日: $date', style: const TextStyle(fontSize: 12)),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -479,6 +495,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ],
       ),
     );
+  }
+
+  ({String label, Color color}) _docStatusInfo(String table, Map<String, dynamic> doc) {
+    if (table == 'invoices' || table == 'quotations') {
+      final isDraft = doc['is_draft'] == 1 || doc['is_draft'] == true;
+      if (isDraft) {
+        return (label: '下書き', color: Colors.grey);
+      }
+      return (label: '正式発行済', color: Colors.green);
+    }
+    return (label: '完了', color: Colors.blue);
   }
 
   Color _statusColorOf(ProjectStatus s) {
