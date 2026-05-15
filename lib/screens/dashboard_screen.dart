@@ -39,6 +39,7 @@ import 'staff_management_screen.dart';
 import 'delivery_list_screen.dart';
 import 'purchase_order_screen.dart';
 import 'purchase_payment_screen.dart';
+import 'screen_pj1_project_list.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -165,6 +166,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const StaffMasterScreen();
       case 'master_hub':
         return const MasterHubPage();
+      case 'project_list':
+        return const ProjectListScreen();
       case 'settings':
         return const SettingsScreen();
       case 'stocktake_input':
