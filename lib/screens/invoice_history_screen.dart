@@ -278,6 +278,14 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       onTap: () => Navigator.pop(context),
                     ),
                     ListTile(
+                      leading: const Icon(Icons.folder_special, color: Colors.teal),
+                      title: const Text("PJ1:案件管理"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen()));
+                      },
+                    ),
+                    ListTile(
                       leading: const Icon(Icons.people),
                       title: const Text("顧客マスター"),
                       onTap: () {
