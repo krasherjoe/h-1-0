@@ -89,6 +89,8 @@ class Customer {
   final bool isHidden; // 非表示
   final String? headChar1; // インデックス 1
   final String? headChar2; // インデックス 2
+  final int? closingDay; // 締日（月次請求の締め日、1-28）
+  final int? paymentDay; // 支払日（支払い期限日、1-28）
 
   // 電子帳簿保存法対応 - バージョン管理フィールド
   final DateTime? validFrom; // 有効開始日
@@ -116,6 +118,8 @@ class Customer {
     this.isHidden = false,
     this.headChar1,
     this.headChar2,
+    this.closingDay,
+    this.paymentDay,
     this.validFrom,
     this.validTo,
     this.isCurrentFlag = true,
@@ -147,6 +151,8 @@ class Customer {
       'odoo_id': odooId,
       'head_char1': headChar1,
       'head_char2': headChar2,
+      'closing_day': closingDay,
+      'payment_day': paymentDay,
       'is_locked': isLocked ? 1 : 0,
       'is_synced': isSynced ? 1 : 0,
       'is_hidden': isHidden ? 1 : 0,
@@ -190,6 +196,8 @@ class Customer {
       updatedAt: DateTime.parse(map['updated_at']),
       headChar1: map['head_char1'],
       headChar2: map['head_char2'],
+      closingDay: map['closing_day'] as int?,
+      paymentDay: map['payment_day'] as int?,
       // 電子帳簿保存法対応 - バージョン管理フィールド
       validFrom: map['valid_from'] != null
           ? DateTime.parse(map['valid_from'])
@@ -220,6 +228,8 @@ class Customer {
     int? contactVersionId,
     String? headChar1,
     String? headChar2,
+    int? closingDay,
+    int? paymentDay,
     DateTime? validFrom,
     DateTime? validTo,
     bool? isCurrentFlag,
@@ -245,6 +255,8 @@ class Customer {
       isHidden: isHidden ?? this.isHidden,
       headChar1: headChar1 ?? this.headChar1,
       headChar2: headChar2 ?? this.headChar2,
+      closingDay: closingDay ?? this.closingDay,
+      paymentDay: paymentDay ?? this.paymentDay,
       // 電子帳簿保存法対応 - バージョン管理フィールド
       validFrom: validFrom ?? this.validFrom,
       validTo: validTo ?? this.validTo,

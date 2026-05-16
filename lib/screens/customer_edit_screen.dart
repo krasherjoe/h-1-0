@@ -30,6 +30,8 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
 
   late int _selectedTitle;
   late bool _isCompany;
+  late int? _closingDay;
+  late int? _paymentDay;
   bool get _isEdit => widget.customer != null;
 
   @override
@@ -46,6 +48,8 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     _isCompany =
         _selectedTitle == HonorificCode.onchu ||
         _selectedTitle == HonorificCode.kisha;
+    _closingDay = c?.closingDay;
+    _paymentDay = c?.paymentDay;
     _head1Ctl = TextEditingController(
       text: c?.headChar1 ?? _headKana(_displayNameCtl.text),
     );
@@ -194,6 +198,8 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
       email: _emailCtl.text.trim().isEmpty ? null : _emailCtl.text.trim(),
       headChar1: _head1Ctl.text.trim().isEmpty ? null : _head1Ctl.text.trim(),
       headChar2: _head2Ctl.text.trim().isEmpty ? null : _head2Ctl.text.trim(),
+      closingDay: _closingDay,
+      paymentDay: _paymentDay,
       isLocked: false, // ロック解除
     );
     Navigator.pop(context, newCustomer);
@@ -439,6 +445,57 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── 決済情報セクション ──
+            _SectionHeader(icon: Icons.account_balance, title: '決済情報'),
+            const SizedBox(height: 8),
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<int>(
+                      value: _closingDay,
+                      decoration: const InputDecoration(
+                        labelText: '締日（月末以外の場合）',
+                        hintText: '未設定の場合は空欄',
+                        prefixIcon: Icon(Icons.calendar_today),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: List.generate(28, (i) => i + 1)
+                          .map((day) => DropdownMenuItem(
+                                value: day,
+                                child: Text('$day日'),
+                              ))
+                          .toList(),
+                      onChanged: (val) => setState(() => _closingDay = val),
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<int>(
+                      value: _paymentDay,
+                      decoration: const InputDecoration(
+                        labelText: '支払日（月末以外の場合）',
+                        hintText: '未設定の場合は空欄',
+                        prefixIcon: Icon(Icons.payment),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: List.generate(28, (i) => i + 1)
+                          .map((day) => DropdownMenuItem(
+                                value: day,
+                                child: Text('$day日'),
+                              ))
+                          .toList(),
+                      onChanged: (val) => setState(() => _paymentDay = val),
                     ),
                   ],
                 ),

@@ -536,13 +536,13 @@ class LocalBackupService {
       print('隔離バックアップを削除：$backupPath');
       return true;
     } catch (e) {
-      print('隔離バックアップ削除失敗：$e');
-      return false;
-    }
+       print('隔離バックアップ削除失敗：$e');
+       return false;
+      }
+     }
   }
-}
 
-/// バックアップファイル情報
+  /// バックアップファイル情報
 class BackupFile {
   final String path;
   final int size;
@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 60;
+  static const _databaseVersion = 61;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2086,6 +2086,12 @@ class DatabaseHelper {
         }
       }
     }
+
+    // v61: 顧客に締日・支払日を追加
+    if (oldVersion < 61) {
+      await _safeAddColumn(db, 'customers', 'closing_day INTEGER');
+      await _safeAddColumn(db, 'customers', 'payment_day INTEGER');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2103,6 +2109,8 @@ class DatabaseHelper {
         odoo_id TEXT,
         head_char1 TEXT,
         head_char2 TEXT,
+        closing_day INTEGER,
+        payment_day INTEGER,
         is_locked INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
         is_synced INTEGER DEFAULT 0,
