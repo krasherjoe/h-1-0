@@ -4,6 +4,7 @@ import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../models/sales_model.dart';
 import '../services/sales_repository.dart';
+import 'sales_input_screen.dart';
 
 /// 売上入力画面（汎用テンプレート使用）
 class SalesEntryScreen extends StatefulWidget {
@@ -36,11 +37,14 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
           date: sales.date,
           status: sales.status,
           themeColor: sales.getThemeColor(),
-          onTap: () {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('売上詳細画面は今後実装予定です')),
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SalesInputScreen(existingSales: sales)),
             );
+            if (result == true && context.mounted) {
+              onRefresh();
+            }
           },
           actions: [
             CardAction(
@@ -139,8 +143,9 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
       // 新規作成
       onCreateNew: () async {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('売上作成画面は今後実装予定です')),
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SalesInputScreen()),
         );
       },
 
@@ -151,11 +156,19 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
         subtitle: 'レジモードで売上を登録してください',
         actionLabel: '新規売上作成',
         iconColor: Colors.green,
-        onAction: () {
+        onAction: () async {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('売上作成画面は今後実装予定です')),
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SalesInputScreen()),
           );
+          if (result == true && context.mounted) {
+            // GenericListScreenの空状態アクションはVoidCallbackなので直接refreshできないが
+            // 画面全体をrefreshする方法がないため、snackbarで案内
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('新規売上を保存しました')),
+            );
+          }
         },
       ),
     );

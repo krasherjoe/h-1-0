@@ -122,7 +122,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '受注登録と進捗管理',
   ),
   MenuDefinition(
-    id: 'a1',
+    id: 'se',
     title: '売上入力',
     route: 'sales_entry',
     category: '02. 販売管理',
