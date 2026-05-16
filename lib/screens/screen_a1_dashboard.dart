@@ -484,7 +484,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                         if (!mounted) return;
                         Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: invoice)));
                       },
-                      initialDocumentType: DocumentType.quotation,
+                      initialDocumentType: DocumentType.estimation,
                     ),
                   ),
                 ),
@@ -543,8 +543,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           const SizedBox(height: 4),
           ..._recentInvoices.map((row) {
             final docType = row['document_type'] as String? ?? 'invoice';
-            final typeLabel = docType == 'quotation' ? '見積' : docType == 'sales' ? '売上' : '請求';
-            final typeColor = docType == 'quotation' ? Colors.teal : docType == 'sales' ? Colors.green : Colors.blue;
+            final typeLabel = docType == 'estimation' ? '見積' : docType == 'sales' ? '売上' : '請求';
+            final typeColor = docType == 'estimation' ? Colors.teal : docType == 'sales' ? Colors.green : Colors.blue;
             final dateStr = (row['date'] as String? ?? '').substring(0, 10);
             final subject = row['subject'] as String? ?? '(件名なし)';
             final amount = row['total_amount'] as num? ?? 0;
@@ -609,7 +609,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                 trailing: Text('\u00a5${project.totalAmount}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => ProjectDetailScreen(projectId: project.id)),
+                  MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: project)),
                 ),
               ),
             );
