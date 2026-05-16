@@ -56,7 +56,7 @@ class MasterHubPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text('マスター管理'),
-            Text('ScreenID: 03', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('ScreenID: M1', style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
       ),
