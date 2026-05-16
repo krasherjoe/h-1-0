@@ -148,7 +148,7 @@ class _PurchaseReturnListScreenState extends State<PurchaseReturnListScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const ScreenAppBarTitle(screenId: 'PR', title: '仕入返品管理'),
+        title: const ScreenAppBarTitle(screenId: 'PR1', title: '仕入返品入力'),
         actions: actions,
       ),
       body: RefreshIndicator(onRefresh: _loadReturns, child: body),
@@ -380,7 +380,7 @@ class _PurchaseReturnEditorPageState extends State<PurchaseReturnEditorPage> {
       appBar: AppBar(
         leading: const BackButton(),
         title: ScreenAppBarTitle(
-          screenId: 'PR',
+          screenId: 'PR1',
           title: widget.purchaseReturn == null ? '返品作成' : '返品編集',
         ),
         actions: [

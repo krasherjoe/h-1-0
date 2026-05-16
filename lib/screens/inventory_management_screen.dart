@@ -49,8 +49,8 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
         ],
       ),
       body: GenericListScreen<Inventory>(
-        screenId: 'IQ',
-        title: '在庫管理',
+        screenId: 'IMC',
+        title: '在庫移動・棚卸',
         icon: Icons.inventory,
         themeColor: Colors.purple,
 
