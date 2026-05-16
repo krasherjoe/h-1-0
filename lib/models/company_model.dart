@@ -16,6 +16,7 @@ class CompanyInfo {
   final String? registrationNumber;
   final String? bankAccounts;
   final int defaultBankAccountIndex;
+  final int fiscalYearStart;
 
   CompanyInfo({
     required this.name,
@@ -35,6 +36,7 @@ class CompanyInfo {
     this.registrationNumber,
     this.bankAccounts,
     this.defaultBankAccountIndex = 0,
+    this.fiscalYearStart = 4,
   });
 
   Map<String, dynamic> toMap() {
@@ -57,6 +59,7 @@ class CompanyInfo {
       'registration_number': registrationNumber,
       'bank_accounts': bankAccounts,
       'default_bank_account_index': defaultBankAccountIndex,
+      'fiscal_year_start': fiscalYearStart,
     };
   }
 
@@ -79,6 +82,7 @@ class CompanyInfo {
       registrationNumber: map['registration_number'],
       bankAccounts: map['bank_accounts'],
       defaultBankAccountIndex: (map['default_bank_account_index'] as num?)?.toInt() ?? 0,
+      fiscalYearStart: (map['fiscal_year_start'] as num?)?.toInt() ?? 4,
     );
   }
 
@@ -100,6 +104,7 @@ class CompanyInfo {
     String? registrationNumber,
     String? bankAccounts,
     int? defaultBankAccountIndex,
+    int? fiscalYearStart,
   }) {
     return CompanyInfo(
       name: name ?? this.name,
@@ -119,6 +124,7 @@ class CompanyInfo {
       registrationNumber: registrationNumber ?? this.registrationNumber,
       bankAccounts: bankAccounts ?? this.bankAccounts,
       defaultBankAccountIndex: defaultBankAccountIndex ?? this.defaultBankAccountIndex,
+      fiscalYearStart: fiscalYearStart ?? this.fiscalYearStart,
     );
   }
 }

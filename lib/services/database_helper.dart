@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 61;
+  static const _databaseVersion = 62;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2092,6 +2092,11 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'customers', 'closing_day INTEGER');
       await _safeAddColumn(db, 'customers', 'payment_day INTEGER');
     }
+
+    // v62: 会社情報に年度開始月を追加
+    if (oldVersion < 62) {
+      await _safeAddColumn(db, 'company_info', 'fiscal_year_start INTEGER DEFAULT 4');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2336,21 +2341,22 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-      CREATE TABLE company_info (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        zip_code TEXT,
-        address TEXT,
-        address2 TEXT,
-        tel TEXT,
-        default_tax_rate REAL DEFAULT 0.10,
-        seal_path TEXT,
-        tax_display_mode TEXT DEFAULT "normal",
-        registration_number TEXT,
-        bank_accounts TEXT,
-        default_bank_account_index INTEGER DEFAULT 0
-      )
-    ''');
+       CREATE TABLE company_info (
+         id INTEGER PRIMARY KEY,
+         name TEXT NOT NULL,
+         zip_code TEXT,
+         address TEXT,
+         address2 TEXT,
+         tel TEXT,
+         default_tax_rate REAL DEFAULT 0.10,
+         seal_path TEXT,
+         tax_display_mode TEXT DEFAULT "normal",
+         registration_number TEXT,
+         bank_accounts TEXT,
+         default_bank_account_index INTEGER DEFAULT 0,
+         fiscal_year_start INTEGER DEFAULT 4
+       )
+     ''');
 
     await db.execute('''
       CREATE TABLE activity_logs (
