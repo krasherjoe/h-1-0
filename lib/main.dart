@@ -13,7 +13,7 @@ import 'models/invoice_models.dart'; // Invoice, InvoiceItem モデル
 import 'screens/invoice_input_screen.dart'; // 入力フォーム画面
 import 'screens/invoice_detail_page.dart'; // 詳細表示・編集画面
 import 'screens/invoice_history_screen.dart'; // 履歴画面
-import 'screens/dashboard_screen.dart'; // ダッシュボード
+import 'screens/screen_a1_dashboard.dart'; // A1: ダッシュボード
 import 'services/location_service.dart'; // 位置情報サービス
 import 'services/customer_repository.dart'; // 顧客リポジトリ
 import 'services/app_settings_repository.dart';
@@ -819,7 +819,7 @@ class _MyAppState extends State<MyApp> {
     }
     // _homeMode が null（未設定）の場合はデフォルトで請求書一覧を表示
     if (_homeMode == 'dashboard') {
-      return const DashboardScreen();
+      return const ScreenA1Dashboard();
     }
     return const InvoiceHistoryScreen();
   }

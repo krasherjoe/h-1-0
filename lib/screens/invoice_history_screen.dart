@@ -12,7 +12,7 @@ import 'customer_master_screen.dart';
 import 'invoice_input_screen.dart';
 import 'settings_screen.dart';
 import 'company_info_screen.dart';
-import 'dashboard_screen.dart';
+import 'screen_a1_dashboard.dart';
 import 'screen_pj1_project_list.dart';
 import '../services/app_settings_repository.dart';
 import '../widgets/swipe_to_unlock.dart';
@@ -331,7 +331,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                    MaterialPageRoute(builder: (_) => const ScreenA1Dashboard()),
                   );
                 },
               )
