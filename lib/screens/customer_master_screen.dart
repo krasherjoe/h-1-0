@@ -460,9 +460,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           return;
         }
 
+        // 電話帳データから敬称を除去（様・御中・殿など）
+        final issue = CustomerDataCleaner.analyzeCustomer(customer);
+        final cleanCustomer = issue?.fixed ?? customer;
+
         try {
           // Customer オブジェクトを保存（重複チェック付き）
-          await _customerRepo.saveCustomer(customer);
+          await _customerRepo.saveCustomer(cleanCustomer);
 
           if (!mounted) return;
 
@@ -474,7 +478,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   const Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 12),
                   Expanded(
-                    child: Text('電話帳から「${customer.displayName}」を追加しました'),
+                    child: Text('電話帳から「${cleanCustomer.displayName}」を追加しました'),
                   ),
                 ],
               ),
@@ -556,7 +560,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
           if (shouldContinue == true) {
             // 強制的に保存（重複チェック無視）
-            await _customerRepo.saveCustomer(customer, force: true);
+            await _customerRepo.saveCustomer(cleanCustomer, force: true);
 
             if (!mounted) return;
 
@@ -567,7 +571,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     const Icon(Icons.info_outline),
                     SizedBox(width: 12),
                     Expanded(
-                      child: Text('顧客を登録しました（重複許容）：${customer.displayName}'),
+                      child: Text('顧客を登録しました（重複許容）：${cleanCustomer.displayName}'),
                     ),
                   ],
                 ),

@@ -183,7 +183,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     final newId = isLocked ? Uuid().v4() : (widget.customer?.id ?? Uuid().v4());
     final newCustomer = Customer(
       id: newId,
-      displayName: _displayNameCtl.text.trim(),
+      displayName: _stripHonorific(_displayNameCtl.text.trim()),
       formalName: _stripHonorific(_formalNameCtl.text.trim()),
       title: _selectedTitle,
       department: _departmentCtl.text.trim().isEmpty
