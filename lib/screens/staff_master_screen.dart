@@ -260,6 +260,7 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -276,7 +277,7 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
                 hintText: '担当者名・部署・役職で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: theme.cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -302,14 +303,14 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
                       final s = _filtered[index];
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.teal.shade100,
-                          child: const Icon(Icons.person, color: Colors.teal),
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Icon(Icons.person, color: theme.colorScheme.primary),
                         ),
                         title: Text(
                           s.name + (s.isHidden ? ' (非表示)' : ''),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: s.isHidden ? Colors.grey : Colors.black87,
+                            color: s.isHidden ? theme.hintColor : theme.textTheme.bodyMedium?.color,
                           ),
                         ),
                         subtitle: Text(
@@ -339,7 +340,7 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
         backgroundColor: Colors.teal.shade800,
-        foregroundColor: Colors.white,
+        foregroundColor: theme.cardColor,
         child: const Icon(Icons.add),
       ),
     );

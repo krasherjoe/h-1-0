@@ -1143,9 +1143,10 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         leading: const BackButton(),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -1247,14 +1248,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             SliverToBoxAdapter(
               child: Builder(
                 builder: (context) {
-                  final isDark = Theme.of(context).brightness == Brightness.dark;
-                  final fillColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-                  final hintColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+                  final fillColor = theme.cardColor;
+                  final hintColor = theme.hintColor;
                   return Padding(
                     padding: const EdgeInsets.all(12),
                     child: TextField(
                       controller: _searchController,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                      style: TextStyle(color: theme.textTheme.bodyMedium?.color),
                       decoration: InputDecoration(
                         hintText: widget.selectionMode
                             ? "名前で検索して選択"
@@ -1306,22 +1306,20 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   itemBuilder: (context, index) {
                     final c = _filtered[index];
                     return Card(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       margin: const EdgeInsets.only(bottom: 8),
                       elevation: 1,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: c.isLocked
-                            ? (Theme.of(context).brightness == Brightness.dark
-                                ? Colors.grey.shade700
-                                : Colors.grey.shade300)
-                            : Colors.indigo.shade100,
+                            ? theme.dividerColor
+                            : theme.colorScheme.primaryContainer,
                         child: Stack(
                           children: [
-                            const Align(
+                            Align(
                               alignment: Alignment.center,
-                              child: Icon(Icons.person, color: Colors.indigo),
+                              child: Icon(Icons.person, color: theme.colorScheme.primary),
                             ),
                             if (c.isLocked)
                               const Align(
@@ -1337,25 +1335,23 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       ),
                       title: Builder(
                         builder: (context) {
-                          final isDark = Theme.of(context).brightness == Brightness.dark;
                           return Text(
                             c.displayName,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: c.isLocked
-                                  ? Colors.grey
-                                  : (isDark ? Colors.white : Colors.black87),
+                                  ? theme.hintColor
+                                  : theme.textTheme.bodyMedium?.color,
                             ),
                           );
                         }
                       ),
                       subtitle: Builder(
                         builder: (context) {
-                          final isDark = Theme.of(context).brightness == Brightness.dark;
                           return Text(
                             c.formalName,
                             style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                              color: theme.hintColor,
                             ),
                           );
                         }
@@ -1400,7 +1396,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             icon: const Icon(Icons.add),
             label: Text(widget.selectionMode ? "選択" : "追加"),
             backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
+            foregroundColor: theme.cardColor,
           );
         },
       ),

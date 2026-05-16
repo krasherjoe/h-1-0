@@ -213,11 +213,12 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   Future<String?> _showCategoryPicker() async {
     await _loadProducts(); // カテゴリリストを最新化
     if (!mounted) return null;
+    final theme = Theme.of(context);
     final TextEditingController newCatCtrl = TextEditingController();
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -235,7 +236,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                   Container(
                     width: 40, height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: theme.dividerColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -260,12 +261,12 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                               hintText: '新規カテゴリ名',
                               isDense: true,
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: theme.cardColor,
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8)),
                               enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300)),
+                                  borderSide: BorderSide(color: theme.dividerColor)),
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
                             ),
@@ -292,7 +293,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       children: [
                         Card(
-                          color: Colors.white,
+                          color: theme.cardColor,
                           elevation: 1,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: ListTile(
@@ -302,7 +303,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                           ),
                         ),
                         ..._categories.map((c) => Card(
-                          color: Colors.white,
+                          color: theme.cardColor,
                           elevation: 1,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: ListTile(
@@ -324,6 +325,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   }
 
   Future<void> _showEditDialog({Product? product}) async {
+    final theme = Theme.of(context);
     final result = await showRichMasterEditSheet<Product>(
       context: context,
       titleNew: '商品追加',
@@ -439,7 +441,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         );
       },
       // フッター透明度設定（キャンセル/保存ボタンの後ろのコンテンツが見えるように）
-      footerColor: Colors.white.withOpacity(0.05),
+      footerColor: theme.dividerColor.withValues(alpha: 0.05),
     );
 
     if (result != null) {
@@ -462,6 +464,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   /// 重複商品（同名で複数の現行レコードが存在するケース）を整理するリカバリー処理
   Future<void> _cleanupDuplicateVersions() async {
     if (_isLoading) return;
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -478,7 +481,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              foregroundColor: theme.cardColor,
             ),
             child: const Text('整理する'),
           ),
@@ -506,9 +509,10 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("P1:商品マスター"),
@@ -581,14 +585,13 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           preferredSize: const Size.fromHeight(60),
           child: Builder(
             builder: (context) {
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              final fillColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-              final hintColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+              final fillColor = theme.cardColor;
+              final hintColor = theme.hintColor;
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextField(
                   controller: _searchController,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  style: TextStyle(color: theme.textTheme.bodyMedium?.color),
                   decoration: InputDecoration(
                     hintText: "商品名・バーコード・カテゴリで検索",
                     hintStyle: TextStyle(color: hintColor),
@@ -624,7 +627,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 itemBuilder: (context, index) {
                   final p = _filteredProducts[index];
                   return Card(
-                    color: p.isHidden ? Colors.red.shade50 : Colors.white,
+                    color: p.isHidden ? Colors.red.shade50.withValues(alpha: 0.1) : theme.cardColor,
                     margin: const EdgeInsets.only(bottom: 8),
                     elevation: 1,
                     shape: RoundedRectangleBorder(
@@ -636,15 +639,15 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                     child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: p.isLocked
-                          ? Colors.grey.shade300
-                          : Colors.indigo.shade100,
+                          ? theme.dividerColor
+                          : theme.colorScheme.primaryContainer,
                       child: Stack(
                         children: [
-                          const Align(
+                          Align(
                             alignment: Alignment.center,
                             child: Icon(
                               Icons.inventory_2,
-                              color: Colors.indigo,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                           if (p.isLocked)
@@ -661,7 +664,6 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                     ),
                     title: Builder(
                       builder: (context) {
-                        final isDark = Theme.of(context).brightness == Brightness.dark;
                         return Text(
                           p.name + (p.isHidden ? " (非表示)" : ""),
                           style: TextStyle(
@@ -669,19 +671,18 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                             color: p.isHidden
                                 ? Colors.red.shade700
                                 : (p.isLocked
-                                    ? Colors.grey
-                                    : (isDark ? Colors.white : Colors.black87)),
+                                    ? theme.hintColor
+                                    : theme.textTheme.bodyMedium?.color),
                           ),
                         );
                       }
                     ),
                     subtitle: Builder(
                       builder: (context) {
-                        final isDark = Theme.of(context).brightness == Brightness.dark;
                         return Text(
                           "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice}${p.isNonStockCategory ? '' : ' (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})'}",
                           style: TextStyle(
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                            color: theme.hintColor,
                           ),
                         );
                       }
@@ -782,7 +783,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
         backgroundColor: Colors.blueGrey.shade800,
-        foregroundColor: Colors.white,
+        foregroundColor: theme.cardColor,
         child: const Icon(Icons.add),
       ),
     );

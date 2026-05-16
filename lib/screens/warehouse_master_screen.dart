@@ -200,6 +200,7 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -216,7 +217,7 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
                 hintText: '倉庫名・所在地で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: theme.cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -242,14 +243,14 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
                       final w = _filtered[index];
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.brown.shade100,
-                          child: const Icon(Icons.warehouse, color: Colors.brown),
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Icon(Icons.warehouse, color: theme.colorScheme.primary),
                         ),
                         title: Text(
                           w.name + (w.isHidden ? ' (非表示)' : ''),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: w.isHidden ? Colors.grey : Colors.black87,
+                            color: w.isHidden ? theme.hintColor : theme.textTheme.bodyMedium?.color,
                           ),
                         ),
                         subtitle: w.location != null ? Text(w.location!) : null,
@@ -274,7 +275,7 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
         backgroundColor: Colors.brown.shade800,
-        foregroundColor: Colors.white,
+        foregroundColor: theme.cardColor,
         child: const Icon(Icons.add),
       ),
     );
