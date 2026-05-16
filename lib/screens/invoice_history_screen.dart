@@ -350,7 +350,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
               MaterialPageRoute(builder: (context) => const CompanyInfoScreen()),
             ).then((_) => _loadData());
           },
-          child: Text("A2:履歴リスト v$_appVersion"),
+          child: Text("IH:履歴リスト v$_appVersion"),
         ),
         backgroundColor: _isUnlocked ? Colors.blueGrey : Colors.blueGrey.shade800,
         actions: [

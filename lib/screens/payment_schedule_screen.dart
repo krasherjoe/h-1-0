@@ -19,7 +19,7 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
     final repo = PaymentScheduleRepository();
 
     return GenericListScreen<PaymentSchedule>(
-      screenId: 'P1',
+      screenId: 'PY',
       title: '支払予定',
       icon: Icons.payment,
       themeColor: Colors.blue,

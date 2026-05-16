@@ -182,7 +182,7 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const ScreenAppBarTitle(screenId: 'P3', title: '支払管理'),
+        title: const ScreenAppBarTitle(screenId: 'PS', title: '支払予定管理'),
         actions: [
           IconButton(
             tooltip: '開始日を選択',
@@ -539,7 +539,7 @@ class _PurchaseReceiptEditorPageState extends State<PurchaseReceiptEditorPage> {
       appBar: AppBar(
         leading: const BackButton(),
         title: ScreenAppBarTitle(
-          screenId: 'P4',
+          screenId: 'PS',
           title: title == '支払を登録' ? '支払登録' : '支払編集',
         ),
         actions: [

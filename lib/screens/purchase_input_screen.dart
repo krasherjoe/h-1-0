@@ -18,8 +18,8 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
     final repo = PurchaseRepository();
 
     return GenericListScreen<Purchase>(
-      screenId: 'P1',
-      title: '仕入',
+      screenId: 'PE',
+      title: '仕入入力',
       icon: Icons.shopping_cart,
       themeColor: Colors.orange,
 

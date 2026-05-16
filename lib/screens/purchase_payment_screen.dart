@@ -157,7 +157,7 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const ScreenAppBarTitle(screenId: 'PY', title: '支払管理'),
+        title: const ScreenAppBarTitle(screenId: 'PS', title: '支払予定管理'),
         actions: actions,
       ),
       body: RefreshIndicator(onRefresh: _loadPayments, child: body),
@@ -360,7 +360,7 @@ class _PurchasePaymentEditorPageState extends State<PurchasePaymentEditorPage> {
       appBar: AppBar(
         leading: const BackButton(),
         title: ScreenAppBarTitle(
-          screenId: 'PY',
+          screenId: 'PS',
           title: widget.payment == null ? '支払登録' : '支払編集',
         ),
         actions: [

@@ -124,7 +124,7 @@ class _PurchaseEntriesScreenState extends State<PurchaseEntriesScreen> {
       backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
         leading: const BackButton(),
-        title: const ScreenAppBarTitle(screenId: 'P1', title: '仕入伝票一覧'),
+        title: const ScreenAppBarTitle(screenId: 'PE', title: '仕入入力'),
         actions: [
           PopupMenuButton<PurchaseEntryStatus?>(
             icon: const Icon(Icons.filter_alt),
@@ -352,7 +352,7 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
       appBar: AppBar(
         leading: const BackButton(),
         title: ScreenAppBarTitle(
-          screenId: 'P2',
+          screenId: 'PE',
           title: widget.entry == null ? '仕入伝票作成' : '仕入伝票編集',
         ),
         actions: [

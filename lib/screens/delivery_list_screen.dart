@@ -10,7 +10,7 @@ class DeliveryListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GenericListScreen<Delivery>(
-      screenId: 'DL',
+      screenId: 'DL1',
       title: '配送記録一覧',
       icon: Icons.local_shipping,
       themeColor: Colors.green,

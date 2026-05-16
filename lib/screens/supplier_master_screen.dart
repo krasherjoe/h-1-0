@@ -356,8 +356,8 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
   @override
   Widget build(BuildContext context) {
     return GenericListScreen<Supplier>(
-      screenId: 'S1',
-      title: '仕入先',
+      screenId: 'SUP',
+      title: '仕入先マスタ',
       icon: Icons.business,
       themeColor: Colors.orange,
 

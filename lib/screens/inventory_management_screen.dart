@@ -23,7 +23,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I1:在庫管理'),
+        title: const Text('IQ:在庫照会'),
         backgroundColor: Colors.purple,
         actions: [
           IconButton(
@@ -49,7 +49,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
         ],
       ),
       body: GenericListScreen<Inventory>(
-        screenId: 'I1',
+        screenId: 'IQ',
         title: '在庫管理',
         icon: Icons.inventory,
         themeColor: Colors.purple,

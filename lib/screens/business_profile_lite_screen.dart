@@ -79,7 +79,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('B1:業種設定'),
+        title: const Text('BP:業種設定'),
         backgroundColor: Colors.indigo,
         actions: [
           IconButton(
