@@ -19,7 +19,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
     final repo = SalesRepository();
 
     return GenericListScreen<Sales>(
-      screenId: 'A1',
+      screenId: 'SE',
       title: '売上入力',
       icon: Icons.point_of_sale,
       themeColor: Colors.green,
