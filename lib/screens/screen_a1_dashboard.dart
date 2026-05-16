@@ -286,13 +286,14 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Widget _tile(DashboardMenuItem item) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => _navigate(item),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: theme.dividerColor.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -305,15 +306,15 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                 children: [
                   Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text(_subtitle(item), style: const TextStyle(color: Colors.grey)),
+                  Text(_subtitle(item), style: TextStyle(color: theme.textTheme.bodySmall?.color)),
                   if (_showCategoryDescriptions && item.description != null) ...[
                     const SizedBox(height: 4),
-                    Text(item.description!, style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                    Text(item.description!, style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12)),
                   ]
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            Icon(Icons.chevron_right, color: theme.iconTheme.color),
           ],
         ),
       ),
@@ -321,13 +322,14 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Widget _leading(DashboardMenuItem item) {
+    final theme = Theme.of(context);
     if (item.customIconPath != null && File(item.customIconPath!).existsSync()) {
       return CircleAvatar(backgroundImage: FileImage(File(item.customIconPath!)), radius: 22);
     }
     return CircleAvatar(
       radius: 22,
-      backgroundColor: Colors.indigo.shade50,
-      foregroundColor: Colors.indigo.shade700,
+      backgroundColor: theme.colorScheme.primaryContainer,
+      foregroundColor: theme.colorScheme.primary,
       child: Icon(_iconForName(item.iconName ?? 'list_alt')),
     );
   }
