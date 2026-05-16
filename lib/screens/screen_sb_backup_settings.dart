@@ -205,16 +205,26 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
         await googleService.signOut();
         await Future.delayed(const Duration(milliseconds: 500));
       }
-      await googleService.signIn();
-      await _loadGoogleAccountInfo();
+      final signedIn = await googleService.signIn();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Google アカウントにサインインしました'),
-          backgroundColor: Colors.green,
-        ),
-      );
+
+      if (signedIn) {
+        await _loadGoogleAccountInfo();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Google アカウントにサインインしました'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('サインインをキャンセルしました'),
+            backgroundColor: Colors.grey,
+          ),
+        );
+      }
     } catch (e) {
       print('[BackupSettings] Google サインイン失敗：$e');
       if (!mounted) return;
