@@ -1,6 +1,15 @@
 # 販売アシスト1号 開発タスク
 
-最終更新: 2026-04-30 21:54
+最終更新: 2026-05-17 10:00
+
+## 🔵 画面 ID 統一作業（menu_catalog.dart 基準）
+
+### 完了
+- [x] 全スクリーンファイルの screenId と AppBar タイトルを menu_catalog.dart と照合
+- [x] purchase_return_screen.dart: `PR` → `PR1`（仕入返品入力）に修正
+- [x] inventory_management_screen.dart: `IQ` → `IMC`（在庫移動・棚卸）に修正
+- [x] flutter analyze でビルドエラーなしを確認
+- [x] 全修正を git commit（commit: 560d42c）
 
 ## 🔴 緊急・高優先度
 
