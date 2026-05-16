@@ -48,7 +48,7 @@ const Map<String, String> kMenuCategoryDescriptions = {
 const List<MenuDefinition> kMenuDefinitions = [
   // 01. マスタ管理
   MenuDefinition(
-    id: 'p1',
+    id: 'P1',
     title: '商品マスタ',
     route: 'product_master',
     category: '01. マスタ管理',
@@ -56,7 +56,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '商品の登録・編集・在庫単位設定',
   ),
   MenuDefinition(
-    id: 'c1',
+    id: 'C1',
     title: '得意先マスタ',
     route: 'customer_master',
     category: '01. マスタ管理',
@@ -64,7 +64,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '顧客・請求先や連絡先の管理',
   ),
   MenuDefinition(
-    id: 'sup1',
+    id: 'SUP',
     title: '仕入先マスタ',
     route: 'supplier_master',
     category: '01. マスタ管理',
@@ -72,7 +72,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '仕入取引先の情報と条件を管理',
   ),
   MenuDefinition(
-    id: 'w1',
+    id: 'WH',
     title: '倉庫マスタ',
     route: 'warehouse_master',
     category: '01. マスタ管理',
@@ -80,7 +80,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '保管場所や倉庫属性を設定',
   ),
   MenuDefinition(
-    id: 'staff1',
+    id: 'ST',
     title: '担当者マスタ',
     route: 'staff_master',
     category: '01. マスタ管理',
@@ -88,7 +88,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '営業担当・部署の管理',
   ),
   MenuDefinition(
-    id: 'm1',
+    id: 'M1',
     title: 'マスター管理',
     route: 'master_hub',
     category: '01. マスタ管理',
@@ -98,7 +98,7 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 02. 販売管理
   MenuDefinition(
-    id: 'pj1',
+    id: 'PJ1',
     title: '案件管理',
     route: 'project_list',
     category: '02. 販売管理',
@@ -106,7 +106,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '見積・請求・売上を案件単位でまとめて管理',
   ),
   MenuDefinition(
-    id: 'q1',
+    id: 'Q1',
     title: '見積入力',
     route: 'quotation_input',
     category: '02. 販売管理',
@@ -114,7 +114,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '見積作成と履歴管理',
   ),
   MenuDefinition(
-    id: 'o1',
+    id: 'OR',
     title: '受注入力',
     route: 'order_input',
     category: '02. 販売管理',
@@ -122,7 +122,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '受注登録と進捗管理',
   ),
   MenuDefinition(
-    id: 'se',
+    id: 'SE',
     title: '売上入力',
     route: 'sales_entry',
     category: '02. 販売管理',
@@ -130,7 +130,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: 'レジモード売上入力',
   ),
   MenuDefinition(
-    id: 'sr1',
+    id: 'SR1',
     title: '売上返品入力',
     route: 'sales_return_input',
     category: '02. 販売管理',
@@ -138,7 +138,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '返品・値引処理',
   ),
   MenuDefinition(
-    id: 'inv1',
+    id: 'IV',
     title: '請求書発行',
     route: 'invoice_issue',
     category: '02. 販売管理',
@@ -146,7 +146,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '請求書PDF生成と送付',
   ),
   MenuDefinition(
-    id: 'doc1',
+    id: 'II',
     title: '伝票入力',
     route: 'invoice_input',
     category: '02. 販売管理',
@@ -154,7 +154,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '見積・納品・請求・領収の汎用伝票入力',
   ),
   MenuDefinition(
-    id: 'DL',
+    id: 'DL1',
     title: '配送記録一覧',
     route: 'delivery_list',
     category: '02. 販売管理',
@@ -162,7 +162,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '配送記録の一覧表示と管理',
   ),
   MenuDefinition(
-    id: 'a2',
+    id: 'IH',
     title: '伝票一覧',
     route: 'invoice_history',
     category: '02. 販売管理',
@@ -172,7 +172,7 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 03. 仕入管理
   MenuDefinition(
-    id: 'po1',
+    id: 'PO',
     title: '発注入力',
     route: 'purchase_order_input',
     category: '03. 仕入管理',
@@ -180,7 +180,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '仕入先への発注書作成',
   ),
   MenuDefinition(
-    id: 'p2',
+    id: 'PE',
     title: '仕入入力',
     route: 'purchase_entries',
     category: '03. 仕入管理',
@@ -188,7 +188,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '仕入伝票と未入荷の管理',
   ),
   MenuDefinition(
-    id: 'pr1',
+    id: 'PR1',
     title: '仕入返品入力',
     route: 'purchase_return_input',
     category: '03. 仕入管理',
@@ -196,7 +196,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '仕入の返品・値引処理',
   ),
   MenuDefinition(
-    id: 'p3',
+    id: 'PS',
     title: '支払予定管理',
     route: 'purchase_receipts',
     category: '03. 仕入管理',
@@ -204,7 +204,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '支払予定・実績の照会',
   ),
   MenuDefinition(
-    id: 'pay1',
+    id: 'PY',
     title: '支払予定',
     route: 'payment_schedule',
     category: '03. 仕入管理',
@@ -212,7 +212,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '支払予定の一覧と管理',
   ),
   MenuDefinition(
-    id: 'pay2',
+    id: 'PG',
     title: '支払登録',
     route: 'payment_register',
     category: '03. 仕入管理',
@@ -220,7 +220,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '支払実績の登録',
   ),
   MenuDefinition(
-    id: 'cf1',
+    id: 'CF',
     title: '資金繰り',
     route: 'cash_flow',
     category: '05. 集計分析',
@@ -230,7 +230,7 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 04. 在庫管理
   MenuDefinition(
-    id: 'i1',
+    id: 'IQ',
     title: '在庫照会',
     route: 'inventory_lookup',
     category: '04. 在庫管理',
@@ -238,7 +238,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '倉庫別在庫を即時照会',
   ),
   MenuDefinition(
-    id: 'IV',
+    id: 'IL',
     title: '在庫一覧',
     route: 'inventory_list',
     category: '04. 在庫管理',
@@ -246,7 +246,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '商品在庫の一覧表示',
   ),
   MenuDefinition(
-    id: 'i2',
+    id: 'IM',
     title: '在庫移動',
     route: 'stock_transfer',
     category: '04. 在庫管理',
@@ -254,7 +254,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '倉庫間の移動伝票を登録',
   ),
   MenuDefinition(
-    id: 'i3',
+    id: 'IC',
     title: '棚卸入力',
     route: 'stocktake_input',
     category: '04. 在庫管理',
@@ -262,7 +262,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '棚卸リストを入力・確定',
   ),
   MenuDefinition(
-    id: 'i4',
+    id: 'IA',
     title: '在庫調整',
     route: 'stock_adjustment',
     category: '04. 在庫管理',
@@ -272,7 +272,7 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 05. 集計分析
   MenuDefinition(
-    id: 'analytics_dashboard',
+    id: 'AA',
     title: '集計ダッシュボード',
     route: 'analytics_dashboard',
     category: '05. 集計分析',
@@ -280,7 +280,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '売上・仕入・在庫の集計ダッシュボード',
   ),
   MenuDefinition(
-    id: 'r1',
+    id: 'R1',
     title: '売上日報',
     route: 'sales_report',
     category: '05. 集計分析',
@@ -288,7 +288,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '日別売上・資金のサマリ',
   ),
   MenuDefinition(
-    id: 'r2',
+    id: 'CS',
     title: '得意先別売上推移',
     route: 'customer_sales_report',
     category: '05. 集計分析',
@@ -304,7 +304,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '売上データの分析とレポート',
   ),
   MenuDefinition(
-    id: 'r3',
+    id: 'R3',
     title: '商品別粗利分析',
     route: 'product_margin_report',
     category: '05. 集計分析',
@@ -312,7 +312,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '粗利率・粗利額を分析',
   ),
   MenuDefinition(
-    id: 'r4',
+    id: 'R4',
     title: '在庫評価額一覧',
     route: 'inventory_valuation_report',
     category: '05. 集計分析',
@@ -322,7 +322,7 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 06. システム設定
   MenuDefinition(
-    id: 's1',
+    id: 'S1',
     title: 'システム設定',
     route: 'settings',
     category: '06. システム設定',
@@ -330,7 +330,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '端末や同期・テーマなどを設定',
   ),
   MenuDefinition(
-    id: 's2',
+    id: 'UP',
     title: 'ユーザー権限設定',
     route: 'user_permissions',
     category: '06. システム設定',
@@ -338,7 +338,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '利用者アカウントと権限の管理',
   ),
   MenuDefinition(
-    id: 's3',
+    id: 'LM',
     title: 'ログ管理',
     route: 'log_management',
     category: '06. システム設定',
@@ -346,7 +346,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '操作ログや監査ログの閲覧',
   ),
   MenuDefinition(
-    id: 'sup',
+    id: 'SD',
     title: 'サポート窓口管理',
     route: 'support_desk',
     category: '06. システム設定',
@@ -354,7 +354,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '顧客サポートチケットの管理と対応',
   ),
   MenuDefinition(
-    id: 'wh',
+    id: 'WD',
     title: '倉庫ダッシュボード',
     route: 'warehouse_dashboard',
     category: '04. 在庫管理',
@@ -362,7 +362,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '倉庫別在庫状況の可視化と分析',
   ),
   MenuDefinition(
-    id: 'st',
+    id: 'SM',
     title: 'スタッフ管理',
     route: 'staff_management',
     category: '06. システム設定',
@@ -372,7 +372,7 @@ const List<MenuDefinition> kMenuDefinitions = [
 
   // 07. 業種設定
   MenuDefinition(
-    id: 'b1',
+    id: 'BP',
     title: '業種設定',
     route: 'business_profile',
     category: '07. 業種設定',
@@ -380,7 +380,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '業種別の業務フローと機能設定',
   ),
   MenuDefinition(
-    id: 'i4',
+    id: 'WL',
     title: '在庫ロケーション',
     route: 'inventory_location',
     category: '04. 在庫管理',
@@ -388,7 +388,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '倉庫内ロケーションの管理',
   ),
   MenuDefinition(
-    id: 'i5',
+    id: 'IMC',
     title: '在庫移動・棚卸',
     route: 'inventory_movement',
     category: '04. 在庫管理',

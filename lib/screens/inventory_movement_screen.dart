@@ -199,7 +199,7 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I5:在庫移動・棚卸'),
+        title: const Text('IMC:在庫移動・棚卸'),
         backgroundColor: Colors.indigo,
         actions: [
           IconButton(

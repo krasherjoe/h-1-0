@@ -105,7 +105,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('O1:受注入力'),
+        title: const Text('OR:受注入力'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

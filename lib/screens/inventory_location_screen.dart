@@ -170,7 +170,7 @@ class _InventoryLocationScreenState extends State<InventoryLocationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I4:在庫ロケーション'),
+        title: const Text('WL:在庫ロケーション'),
         backgroundColor: Colors.indigo,
         actions: [
           IconButton(
