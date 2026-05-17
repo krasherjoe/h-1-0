@@ -5,15 +5,19 @@ import 'package:uuid/uuid.dart';
 
 import '../models/sales_model.dart';
 import '../models/customer_model.dart';
+import '../models/product_model.dart';
+import '../models/base_document.dart';
 import '../services/sales_repository.dart';
+import '../services/product_repository.dart';
 import '../services/database_helper.dart';
 import '../widgets/document_card.dart';
 import 'customer_picker_modal.dart';
+import 'product_picker_modal.dart';
 
-/// SE1: 売上入力フォーム
+/// SE1: 売上入力フォーム（ラインアイテム付き）
 class SalesInputScreen extends StatefulWidget {
-  final Sales? existingSales;
-  const SalesInputScreen({super.key, this.existingSales});
+  final String? existingSalesId;
+  const SalesInputScreen({super.key, this.existingSalesId});
 
   @override
   State<SalesInputScreen> createState() => _SalesInputScreenState();
@@ -21,9 +25,10 @@ class SalesInputScreen extends StatefulWidget {
 
 class _SalesInputScreenState extends State<SalesInputScreen> {
   final _repo = SalesRepository();
+  final _productRepo = ProductRepository();
 
   final _subjectController = TextEditingController();
-  final _amountController = TextEditingController();
+  final _notesController = TextEditingController();
 
   Customer? _selectedCustomer;
   DateTime _selectedDate = DateTime.now();
@@ -31,22 +36,56 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
   double _taxRate = 0.10;
   bool _isDraft = true;
   bool _saving = false;
+  bool _isLoading = true;
+
+  List<_LineItem> _items = [];
 
   @override
   void initState() {
     super.initState();
-    if (widget.existingSales != null) {
-      _loadExisting(widget.existingSales!);
+    if (widget.existingSalesId != null) {
+      _loadExisting(widget.existingSalesId!);
+    } else {
+      setState(() => _isLoading = false);
     }
   }
 
-  void _loadExisting(Sales s) {
-    _selectedCustomer = s.customer;
-    _subjectController.text = s.subject ?? '';
-    _amountController.text = s.total.toString();
-    _selectedDate = s.date;
-    _taxRate = s.taxRate;
-    _isDraft = s.status == DocumentStatus.draft;
+  Future<void> _loadExisting(String id) async {
+    final sales = await _repo.getSales(id);
+    if (sales == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('売上データが見つかりません')),
+      );
+      Navigator.pop(context);
+      return;
+    }
+    _selectedCustomer = sales.customer;
+    _subjectController.text = sales.subject ?? '';
+    _notesController.text = sales.notes ?? '';
+    _selectedDate = sales.date;
+    _taxRate = sales.taxRate;
+    _isDraft = sales.status == DocumentStatus.draft;
+
+    final loadedItems = <_LineItem>[];
+    for (var i = 0; i < sales.items.length; i++) {
+      final item = sales.items[i];
+      final product = await _productRepo.getProduct(item.productId);
+      loadedItems.add(_LineItem(
+        id: item.id,
+        product: product,
+        productName: item.productName,
+        quantity: 1,
+        unitPrice: item.subtotal,
+        taxRate: item.taxRate,
+      ));
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _items = loadedItems;
+      _isLoading = false;
+    });
   }
 
   Future<void> _pickCustomer() async {
@@ -77,21 +116,75 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     }
   }
 
-  int _parseAmount() {
-    final text = _amountController.text.replaceAll(',', '');
-    return int.tryParse(text) ?? 0;
+  Future<void> _addItem(Product product) async {
+    if (!mounted) return;
+    final controller = TextEditingController(text: '1');
+    final qty = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(product.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('\u{00a5}${product.defaultUnitPrice} x 数量'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, int.tryParse(controller.text) ?? 1),
+            child: const Text('追加'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (qty != null && qty > 0 && mounted) {
+      setState(() {
+        _items.add(_LineItem(
+          id: const Uuid().v4(),
+          product: product,
+          productName: product.name,
+          quantity: qty,
+          unitPrice: product.defaultUnitPrice,
+          taxRate: _taxRate,
+        ));
+      });
+    }
+  }
+
+  void _removeItem(String itemId) {
+    setState(() => _items.removeWhere((i) => i.id == itemId));
+  }
+
+  void _updateItem(String itemId, {int? quantity, int? unitPrice}) {
+    setState(() {
+      for (final item in _items) {
+        if (item.id == itemId) {
+          if (quantity != null) item.quantity = quantity;
+          if (unitPrice != null) item.unitPrice = unitPrice;
+        }
+      }
+    });
   }
 
   (int subtotal, int tax, int total) _calculate() {
-    final amount = _parseAmount();
-    if (!_includeTax) {
-      final tax = (amount * _taxRate).round();
-      return (amount, tax, amount + tax);
+    int subTotal = 0;
+    for (final item in _items) {
+      final lineSubtotal = item.quantity * item.unitPrice;
+      subTotal += lineSubtotal;
     }
-    // 税込金額から逆算
-    final subtotal = (amount / (1 + _taxRate)).round();
-    final tax = amount - subtotal;
-    return (subtotal, tax, amount);
+    final tax = _includeTax
+        ? (subTotal / (1 + _taxRate) * _taxRate).round()
+        : (subTotal * _taxRate).round();
+    return (subTotal, tax, subTotal + tax);
   }
 
   Future<void> _save() async {
@@ -101,11 +194,9 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       );
       return;
     }
-
-    final amount = _parseAmount();
-    if (amount <= 0) {
+    if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('金額を入力してください')),
+        const SnackBar(content: Text('商品を選択してください')),
       );
       return;
     }
@@ -114,21 +205,34 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
 
     final (subtotal, tax, total) = _calculate();
     final now = DateTime.now();
+    final documentId = widget.existingSalesId ?? const Uuid().v4();
+
     final sales = Sales(
-      id: widget.existingSales?.id ?? Uuid().v4(),
-      documentNumber: widget.existingSales?.documentNumber ?? await _generateDocumentNumber(),
+      id: documentId,
+      documentNumber: widget.existingSalesId != null
+          ? (await _repo.getSales(widget.existingSalesId!))?.documentNumber ?? await _generateDocumentNumber()
+          : await _generateDocumentNumber(),
       date: _selectedDate,
       customer: _selectedCustomer,
-      items: [],
+      items: _items.map((i) => DocumentItem(
+        id: i.id,
+        productId: i.product?.id ?? '',
+        productName: i.productName,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        subtotal: i.quantity * i.unitPrice,
+        taxRate: i.taxRate,
+      )).toList(),
       subtotal: subtotal,
       taxAmount: tax,
       total: total,
       taxRate: _taxRate,
-      notes: null,
+      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       subject: _subjectController.text.isNotEmpty ? _subjectController.text : null,
       status: _isDraft ? DocumentStatus.draft : DocumentStatus.confirmed,
-      invoiceId: widget.existingSales?.invoiceId,
-      createdAt: widget.existingSales?.createdAt ?? now,
+      createdAt: widget.existingSalesId != null
+          ? (await _repo.getSales(widget.existingSalesId!))?.createdAt ?? now
+          : now,
       updatedAt: now,
     );
 
@@ -163,8 +267,15 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('SE1:売上読込中')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final theme = Theme.of(context);
-    final isEdit = widget.existingSales != null;
+    final isEdit = widget.existingSalesId != null;
     final (subtotal, tax, total) = _calculate();
 
     return Scaffold(
@@ -214,21 +325,45 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // 金額
-          TextField(
-            controller: _amountController,
-            decoration: const InputDecoration(
-              labelText: '金額',
-              prefixIcon: Icon(Icons.currency_yen),
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (_) => setState(() {}),
+          // ラインアイテムヘッダー
+          Row(
+            children: [
+              const Text('明細', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: _showProductPicker,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('追加'),
+                style: FilledButton.styleFrom(minimumSize: const Size(60, 36)),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+
+          // ラインアイテム一覧
+          if (_items.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text('商品を追加してください'),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._items.map((item) => _buildItemCard(item, theme)),
+
+          const SizedBox(height: 16),
 
           // 税設定
           Row(
@@ -279,6 +414,18 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           ),
           const SizedBox(height: 16),
 
+          // 備考
+          TextField(
+            controller: _notesController,
+            decoration: const InputDecoration(
+              labelText: '備考',
+              prefixIcon: Icon(Icons.note),
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          const SizedBox(height: 16),
+
           // ステータス
           SwitchListTile.adaptive(
             title: const Text('下書きとして保存'),
@@ -286,13 +433,95 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
             value: _isDraft,
             onChanged: (v) => setState(() => _isDraft = v),
           ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  void _showProductPicker() {
+    showDialog(
+      context: context,
+      builder: (ctx) => ProductPickerModal(
+        onProductSelected: (product) async {
+          Navigator.pop(ctx);
+          await _addItem(product);
+        },
+      ),
+    );
+  }
+
+  Widget _buildItemCard(_LineItem item, ThemeData theme) {
+    final lineTotal = item.quantity * item.unitPrice;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: Text(item.productName),
+            subtitle: Text('\u{00a5}${item.unitPrice.toString().replaceAllMapped(
+              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+              (Match m) => '${m[1]},',
+            )} x ${item.quantity}'),
+            trailing: Text(
+              '\u{00a5}${lineTotal.toString().replaceAllMapped(
+                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                (Match m) => '${m[1]},',
+              )}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: item.quantity.toString()),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: '数量',
+                      isDense: true,
+                    ),
+                    onChanged: (v) {
+                      final qty = int.tryParse(v) ?? 0;
+                      _updateItem(item.id, quantity: qty);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: item.unitPrice.toString()),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: '単価',
+                      isDense: true,
+                    ),
+                    onChanged: (v) {
+                      final price = int.tryParse(v) ?? 0;
+                      _updateItem(item.id, unitPrice: price);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () => _removeItem(item.id),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildPriceRow(String label, int amount, {bool isTotal = false}) {
-    final formatted = '¥${amount.toString().replaceAllMapped(
+    final formatted = '\u{00a5}${amount.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     )}';
@@ -307,4 +536,29 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+}
+
+class _LineItem {
+  String id;
+  Product? product;
+  final String productName;
+  int quantity;
+  int unitPrice;
+  double taxRate;
+
+  _LineItem({
+    required this.id,
+    required this.product,
+    required this.productName,
+    required this.quantity,
+    required this.unitPrice,
+    required this.taxRate,
+  });
 }

@@ -40,7 +40,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
           onTap: () async {
             final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => SalesInputScreen(existingSales: sales)),
+              MaterialPageRoute(builder: (_) => SalesInputScreen(existingSalesId: sales.id)),
             );
             if (result == true && context.mounted) {
               onRefresh();

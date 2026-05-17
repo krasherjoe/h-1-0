@@ -9,6 +9,20 @@ class ProductRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final ActivityLogRepository _logRepo = ActivityLogRepository();
 
+  Future<Product?> getProduct(String id) async {
+    if (kIsWeb) return null;
+    final db = await _dbHelper.database;
+    final maps = await db.rawQuery('''
+      SELECT p.*, COALESCE(mh.is_hidden, p.is_hidden, 0) AS is_hidden
+      FROM products p
+      LEFT JOIN master_hidden mh ON mh.master_type = 'product' AND mh.master_id = p.id
+      WHERE p.id = ? AND COALESCE(p.is_current, 1) = 1
+        AND COALESCE(p.valid_to, '9999-12-31') > datetime('now')
+    ''', [id]);
+    if (maps.isEmpty) return null;
+    return Product.fromMap(maps.first);
+  }
+
   Future<List<Product>> getAllProducts({bool includeHidden = false}) async {
     if (kIsWeb) {
       // Webプラットフォームではダミーデータを返す
