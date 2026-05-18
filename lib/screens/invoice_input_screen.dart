@@ -226,7 +226,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             const Divider(),
             ...options.map(
               (type) => ListTile(
-                leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+                leading: Icon(Icons.swap_horiz, color: Theme.of(context).colorScheme.primary),
                 title: Text(_typeLabel(type)),
                 onTap: () => Navigator.pop(context, type),
               ),
@@ -706,7 +706,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final fmt = NumberFormat("#,###");
     final themeColor = Theme.of(context).scaffoldBackgroundColor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final textColor = Theme.of(context).colorScheme.onSurface;
 
     final docColor = _documentTypeColor(_documentType);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
@@ -730,7 +730,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: _titleBarFlash
-                ? Colors.white.withOpacity(0.3)
+                ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -754,16 +754,16 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               padding: EdgeInsets.all(_showCopyBadge ? 8 : 0),
               decoration: BoxDecoration(
                 color: _showCopyBadge
-                    ? Colors.green.withOpacity(0.3)
+                    ? Theme.of(context).colorScheme.secondary.withOpacity(0.3)
                     : Colors.transparent,
                 shape: BoxShape.circle,
                 border: _showCopyBadge
-                    ? Border.all(color: Colors.green, width: 2)
+                    ? Border.all(color: Theme.of(context).colorScheme.secondary, width: 2)
                     : null,
               ),
               child: Icon(
                 _showCopyBadge ? Icons.check : Icons.copy,
-                color: _showCopyBadge ? Colors.green : null,
+                color: _showCopyBadge ? Theme.of(context).colorScheme.secondary : null,
               ),
             ),
           ),
@@ -777,9 +777,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           },
         ),
         if (_isLocked)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Icon(Icons.lock, color: Colors.white),
+            child: Icon(Icons.lock, color: Theme.of(context).colorScheme.onPrimary),
           )
         else if (_isViewMode)
           IconButton(
@@ -1004,11 +1004,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -1017,11 +1017,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 18,
-                      color: Colors.indigo,
-                    ),
+                    Icon(
+                       Icons.calendar_today,
+                       size: 18,
+                       color: Theme.of(context).colorScheme.primary,
+                     ),
                     const SizedBox(width: 8),
                     Text(
                       "伝票日付: ${fmt.format(_selectedDate)}",
@@ -1035,13 +1035,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
+                          color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.4),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
+                        child: Text(
                           "新規",
                           style: TextStyle(
-                            color: Colors.deepOrange,
+                            color: Theme.of(context).colorScheme.onTertiaryContainer,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1055,13 +1055,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
+                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
+                        child: Text(
                           "複写",
                           style: TextStyle(
-                            color: Colors.blue,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1069,10 +1069,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       ),
                     if (!_isViewMode && !_isLocked) ...[
                       const SizedBox(width: 8),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right,
                         size: 18,
-                        color: Colors.indigo,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ],
                   ],
@@ -1088,8 +1088,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             icon: const Icon(Icons.receipt, size: 16),
             label: const Text('領収証生成'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
@@ -1122,7 +1122,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           style: TextStyle(
             color: _selectedCustomer == null
                 ? Colors.grey
-                : (isDark ? Colors.white : Colors.black87),
+                : Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1131,7 +1131,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
             : Text(
                 "顧客マスターから選択",
                 style: TextStyle(
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
         trailing: (_isViewMode || _isLocked)
@@ -1170,7 +1170,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         : (hasProjects ? "案件を選択（任意）" : "案件なし");
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1181,13 +1181,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         ],
       ),
       child: ListTile(
-        leading: const Icon(Icons.folder_special, color: Colors.teal),
+        leading: Icon(Icons.folder_special, color: Theme.of(context).colorScheme.tertiary),
         title: Text(
           displayText,
           style: TextStyle(
             color: _selectedProjectId == null && hasProjects
                 ? Colors.grey
-                : (isDark ? Colors.white : Colors.black87),
+                : Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1251,12 +1251,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               ..._customerProjects.map((p) => ListTile(
                 leading: Icon(
                   Icons.folder_special,
-                  color: p.status == ProjectStatus.active ? Colors.teal : Colors.grey,
+                  color: p.status == ProjectStatus.active ? Theme.of(context).colorScheme.secondary : Colors.grey,
                 ),
                 title: Text(p.name),
                 subtitle: Text("${p.status.displayName} ・ ${NumberFormat('#,###').format(p.totalAmount)}円"),
                 trailing: _selectedProjectId == p.id
-                    ? const Icon(Icons.check_circle, color: Colors.teal)
+                    ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
                     : null,
                 onTap: () {
                   setState(() {
@@ -1471,7 +1471,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 child: Card(
                   margin: const EdgeInsets.only(bottom: 6),
                   elevation: 0.5,
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   child: GestureDetector(
                     onTap: () => _showItemEditSheet(idx),
                     child: Padding(
@@ -1680,17 +1680,17 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final textColor = Theme.of(context).colorScheme.onSurface;
     final useBlue = _summaryIsBlue;
     final bgColor = useBlue
-        ? Colors.indigo
-        : (isDark ? const Color(0xFF2C2C2C) : Colors.indigo.shade50);
+        ? (isDark ? const Color(0xFF1A237E) : const Color(0xFF283593))
+        : (isDark ? const Color(0xFF2C2C2C) : Theme.of(context).colorScheme.surfaceContainerHighest);
     final borderColor = Colors.transparent;
     final labelColor = useBlue ? Colors.white70 : textColor;
     final totalColor = useBlue ? Colors.white : textColor;
     final dividerColor = useBlue
         ? Colors.white24
-        : (isDark ? Colors.grey.shade700 : Colors.grey.shade300);
+        : Theme.of(context).dividerTheme.color ?? Colors.grey.shade300;
 
     // 数値をフォーマット（0 の場合も "0" として表示）
     String formatAmount(int amount) {
@@ -1710,12 +1710,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.palette, color: Colors.indigo),
+                  leading: Icon(Icons.palette, color: Theme.of(context).colorScheme.primary),
                   title: const Text('インディゴ'),
                   onTap: () => Navigator.pop(context, 'blue'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.palette, color: Colors.grey),
+                  leading: Icon(Icons.palette, color: isDark ? Colors.grey.shade500 : Colors.grey),
                   title: const Text('白'),
                   onTap: () => Navigator.pop(context, 'white'),
                 ),
@@ -1748,7 +1748,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               _buildSummaryRow(
                 "値引き",
                 "-￥${formatAmount(itemDiscountAmount)}",
-                Colors.red.shade300,
+                isDark ? Colors.red.shade300 : Theme.of(context).colorScheme.error,
               ),
             ],
             if (priceAdjustmentDiscount > 0 ||
@@ -1765,24 +1765,24 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          "価格調整",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: useBlue ? Colors.white : Colors.indigo.shade700,
-                          ),
-                        ),
-                        if (!_isViewMode && !_isLocked) ...[
+                           "価格調整",
+                           style: TextStyle(
+                             fontSize: 14,
+                             color: useBlue ? Colors.white : (isDark ? Theme.of(context).colorScheme.secondary : Colors.indigo.shade700),
+                           ),
+                         ),
+                         if (!_isViewMode && !_isLocked) ...[
                           const SizedBox(width: 6),
                           Icon(
                             Icons.settings,
                             size: 16,
                             color: useBlue
                                 ? Colors.white
-                                : Colors.indigo.shade700,
+                                : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
                           ),
                         ],
                       ],
-                    ),
+                   ),
                     if (priceAdjustmentDiscount > 0)
                       Text(
                         "-￥${formatAmount(priceAdjustmentDiscount)}",
@@ -1791,13 +1791,13 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           fontWeight: FontWeight.w600,
                           color: useBlue
                               ? Colors.white
-                              : Colors.indigo.shade700,
+                              : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
                         ),
                       ),
                   ],
                 ),
               ),
-            ],
+              ],
             Divider(color: dividerColor),
             _buildSummaryRow(
               _isTaxInclusiveMode ? "税抜金額（逆算）" : "税抜金額",
@@ -1954,7 +1954,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
@@ -1981,7 +1981,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                       label: const Text("PDFプレビュー"), // 名称変更
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Colors.indigo),
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
                       ),
                     ),
                   ),
@@ -2000,8 +2000,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   icon: const Icon(Icons.edit),
                                   label: const Text("編集"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 16,
                                     ),
@@ -2013,8 +2013,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   icon: const Icon(Icons.save),
                                   label: const Text("保存"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 16,
                                     ),
@@ -2034,14 +2034,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                   horizontal: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.indigo.withOpacity(0.3)),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.swipe, size: 16, color: Colors.indigo),
+                    Icon(Icons.swipe, size: 16, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 6),
                     Flexible(
                       child: FittedBox(
@@ -2051,7 +2051,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                           'タイトルバー横になぞると拡大縮小できます',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.indigo,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2067,8 +2067,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   Widget _buildSubjectSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2081,7 +2080,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -2116,15 +2115,15 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   Widget _buildEditLogsSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_currentId == null) {
       return const SizedBox.shrink();
     }
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subtitleColor = isDark ? Colors.grey.shade400 : Colors.black54;
-    final hintColor = isDark ? Colors.grey.shade500 : Colors.grey;
+    final cardColor = theme.cardColor;
+    final textColor = theme.colorScheme.onSurface;
+    final subtitleColor = theme.colorScheme.onSurfaceVariant;
+    final hintColor = theme.colorScheme.onSurface.withOpacity(0.45);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2264,8 +2263,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   Widget _buildRedInvoiceButton() {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final cardColor = theme.cardColor;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -2274,7 +2272,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.shade300, width: 1.5),
+          border: Border.all(color: theme.colorScheme.error.withOpacity(0.5), width: 1.5),
         ),
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -2284,7 +2282,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               '電子帳簿保存法対応',
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? Colors.grey.shade400 : Colors.black54,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -2293,8 +2291,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               child: ElevatedButton.icon(
                 onPressed: _createRedInvoice,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: theme.colorScheme.onError,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -2315,7 +2313,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               'ロック済みの伝票を取消す場合、電子帳簿保存法に基づき元伝票を保持したまま、全明細をマイナスにした赤伝を自動生成・ロックします。',
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -2325,9 +2323,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   Widget _buildRedInvoiceIssuedLabel() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final cardColor = theme.cardColor;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -2336,12 +2334,12 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.shade200, width: 1.5),
+          border: Border.all(color: theme.colorScheme.error.withOpacity(0.3), width: 1.5),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.red.shade400),
+            Icon(Icons.check_circle, color: theme.colorScheme.error),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -2352,7 +2350,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: Colors.red.shade700,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -2387,7 +2385,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade600),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.secondary),
             child: const Text('生成'),
           ),
         ],
@@ -2453,7 +2451,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error, foregroundColor: Colors.white),
             icon: const Icon(Icons.undo),
             label: const Text('赤伝を起票'),
           ),
@@ -2592,8 +2590,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            final dialogHeight = MediaQuery.of(context).size.height * 0.8;
+builder: (BuildContext context, StateSetter setState) {
+             final isDark = Theme.of(context).brightness == Brightness.dark;
+             final dialogHeight = MediaQuery.of(context).size.height * 0.8;
             return Dialog(
               child: SizedBox(
                 width: 360,
@@ -2619,9 +2618,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   child: TextField(
                                     controller: manualDiscountController,
                                     keyboardType: TextInputType.none,
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      fillColor: Colors.white,
+decoration: InputDecoration(
+                                       filled: true,
+                                       fillColor: Theme.of(dialogContext).colorScheme.surface,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -2669,9 +2668,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                 return Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: isDark ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3) : Theme.of(context).colorScheme.primaryContainer,
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.blue.shade200),
+                                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2716,7 +2715,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                             '-￥${fmt.format(result['discount'])}',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.orange.shade700,
+                                              color: isDark ? Colors.orange.shade300 : Colors.orange.shade700,
                                             ),
                                           ),
                                         ],
@@ -2754,7 +2753,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                             '￥${fmt.format(result['total'])}',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.green.shade700,
+                                              color: isDark ? Colors.green.shade300 : Colors.green.shade700,
                                             ),
                                           ),
                                         ],
@@ -2969,8 +2968,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               },
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.zero,
-                backgroundColor: num == 'C' ? Colors.red.shade100 : Colors.blue.shade100,
-                foregroundColor: num == 'C' ? Colors.red.shade900 : Colors.blue.shade900,
+                backgroundColor: num == 'C' ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: num == 'C' ? Theme.of(context).colorScheme.onErrorContainer : Theme.of(context).colorScheme.onPrimaryContainer,
               ),
               child: Text(
                 num,
@@ -2985,40 +2984,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               },
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.zero,
-                backgroundColor: Colors.blue.shade100,
-                foregroundColor: Colors.blue.shade900,
-              ),
-              child: Text(
-                num,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          for (final num in ['1', '2', '3', '000'])
-            ElevatedButton(
-              onPressed: () {
-                controller.text += num;
-                onUpdate();
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: Colors.blue.shade100,
-                foregroundColor: Colors.blue.shade900,
-              ),
-              child: Text(
-                num,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          for (final num in ['0', '0000'])
-            ElevatedButton(
-              onPressed: () {
-                controller.text += num;
-                onUpdate();
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: Colors.blue.shade100,
-                foregroundColor: Colors.blue.shade900,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
               child: Text(
                 num,
@@ -3038,15 +3005,15 @@ class _DraftBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
+        color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.4),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Text(
+      child: Text(
         '下書き',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.orange,
+          color: Theme.of(context).colorScheme.onTertiaryContainer,
         ),
       ),
     );

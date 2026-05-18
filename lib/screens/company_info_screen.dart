@@ -94,7 +94,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -106,12 +106,12 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isReEdit && _info.sealPath != null)
-              ListTile(
-                leading: const Icon(Icons.edit, color: Colors.blue),
-                title: const Text('現在の角印を再編集', style: TextStyle(color: Colors.blue)),
-                onTap: () => Navigator.pop(ctx, 'reedit'),
-              ),
+             if (isReEdit && _info.sealPath != null)
+               ListTile(
+                 leading: Icon(Icons.edit, color: Theme.of(ctx).colorScheme.primary),
+                 title: Text('現在の角印を再編集', style: TextStyle(color: Theme.of(ctx).colorScheme.primary)),
+                 onTap: () => Navigator.pop(ctx, 'reedit'),
+               ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: const Text('ギャラリーから選択'),
@@ -124,8 +124,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
             ),
             if (_info.sealPath != null)
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('削除', style: TextStyle(color: Colors.red)),
+                leading: Icon(Icons.delete, color: Theme.of(ctx).colorScheme.error),
+                title: Text('削除', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
                 onTap: () {
                   setState(() => _info = _info.copyWith(sealPath: null));
                   Navigator.pop(ctx);
@@ -253,7 +253,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("エクスポート失敗: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("エクスポート失敗: $e"), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -268,7 +268,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("エクスポート失敗: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("エクスポート失敗: $e"), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -358,7 +358,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("インポート失敗: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("インポート失敗: $e"), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -371,7 +371,8 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("F1:自社情報"),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -462,7 +463,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                       const SizedBox(width: 12),
                       Text(
                         "${(_taxRate * 100).round()}%",
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                       ),
                     ],
                   ),
@@ -533,10 +534,10 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    "※ T番号非取得時などの表示方法を選択",
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
+         Text(
+             "※ T番号非取得時などの表示方法を選択",
+             style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+           ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -585,7 +586,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 title: '銀行口座',
                 icon: Icons.account_balance,
                 children: [
-                  const Text('請求書で使用する銀行口座を登録してください（最大3件）', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text('請求書で使用する銀行口座を登録してください（最大3件）', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 12),
                   for (int i = 0; i < 3; i++) ...[
                     Row(
@@ -597,7 +598,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                         Text('口座 ${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                         const Spacer(),
                         if (_bankActive[i])
-                          const Text('請求書に表示', style: TextStyle(fontSize: 12, color: Colors.indigo)),
+                          Text('請求書に表示', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -630,7 +631,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                       width: 150,
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: _info.sealPath != null ? Colors.indigo : Colors.grey,
+                          color: _info.sealPath != null ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                           width: _info.sealPath != null ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -643,16 +644,16 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                                 child: Image.file(File(_info.sealPath!), fit: BoxFit.contain),
                               ),
                             )
-                          : const Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey),
-                                  SizedBox(height: 8),
-                                  Text('タップして取り込む', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                ],
-                              ),
-                            ),
+                          : Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.add_photo_alternate, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                    SizedBox(height: 8),
+                                    Text('タップして取り込む', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                 ],
+                               ),
+                             ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -660,7 +661,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     _info.sealPath != null
                         ? "タップして再編集 | 長押しで削除・変更"
                         : "ギャラリーから読み込むか、カメラで撮影してください",
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   if (_info.sealPath != null) ...[
                     const SizedBox(height: 12),
@@ -751,9 +752,9 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.indigo.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.indigo.shade50,
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.15),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -762,14 +763,14 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
           // スロットヘッダー
           Row(
             children: [
-              Icon(icon, color: Colors.indigo, size: 24),
+              Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
               const SizedBox(width: 12),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
@@ -863,7 +864,7 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
               ],
             ),
           ),
-          Divider(color: Colors.grey.shade300),
+          Divider(color: Theme.of(context).colorScheme.outline),
           
           // 拡大プレビュー
           Expanded(
@@ -877,7 +878,7 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
                       child: Container(
                         width: 350,
                         height: 350,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         child: GestureDetector(
                           onPanUpdate: (details) {
                             setState(() {
@@ -907,46 +908,46 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
                     // コントラスト調整
                     const Text('コントラスト', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     Row(
-                      children: [
-                        const Icon(Icons.brightness_low, size: 20, color: Colors.grey),
-                        Expanded(
-                          child: Slider(
-                            value: _contrast,
-                            min: 0.5,
-                            max: 3.0,
-                            divisions: 25,
-                            onChanged: (v) => setState(() => _contrast = v),
-                          ),
-                        ),
-                        const Icon(Icons.brightness_high, size: 20, color: Colors.grey),
-                      ],
-                    ),
-                    Text(
-                      _contrast.toStringAsFixed(1),
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                       children: [
+                         const Icon(Icons.brightness_low, size: 20),
+                         Expanded(
+                           child: Slider(
+                             value: _contrast,
+                             min: 0.5,
+                             max: 3.0,
+                             divisions: 25,
+                             onChanged: (v) => setState(() => _contrast = v),
+                           ),
+                         ),
+                         const Icon(Icons.brightness_high, size: 20),
+                       ],
+                     ),
+                     Text(
+                       _contrast.toStringAsFixed(1),
+                       style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 16),
                     
                     // リサイズ調整
                     const Text('サイズ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    Row(
-                      children: [
-                        const Icon(Icons.zoom_out, size: 20, color: Colors.grey),
-                        Expanded(
-                          child: Slider(
-                            value: _scale,
-                            min: 0.5,
-                            max: 3.0,
-                            divisions: 25,
-                            onChanged: (v) => setState(() => _scale = v),
-                          ),
-                        ),
-                        const Icon(Icons.zoom_in, size: 20, color: Colors.grey),
-                      ],
-                    ),
-                    Text(
-                      '${(_scale * 100).toStringAsFixed(0)}%',
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                   Row(
+                       children: [
+                         const Icon(Icons.zoom_out, size: 20),
+                         Expanded(
+                           child: Slider(
+                             value: _scale,
+                             min: 0.5,
+                             max: 3.0,
+                             divisions: 25,
+                             onChanged: (v) => setState(() => _scale = v),
+                           ),
+                         ),
+                         const Icon(Icons.zoom_in, size: 20),
+                       ],
+                     ),
+                     Text(
+                       '${(_scale * 100).toStringAsFixed(0)}%',
+                       style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 16),
                     
@@ -964,16 +965,16 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
                           },
                           icon: const Icon(Icons.refresh),
                           label: const Text('リセット'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey.shade400,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'ドラッグで位置調整 | スライダーで数値調整',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                         style: ElevatedButton.styleFrom(
+                             backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                           ),
+                         ),
+                       ],
+                     ),
+                     const SizedBox(height: 8),
+                     Text(
+                       'ドラッグで位置調整 | スライダーで数値調整',
+                       style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -981,7 +982,7 @@ class _SealContrastDialogState extends State<_SealContrastDialog> {
             ),
           ),
           
-          Divider(color: Colors.grey.shade300),
+          Divider(color: Theme.of(context).colorScheme.outline),
           
           // アクションボタン
           Padding(
@@ -1135,8 +1136,8 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('F1:角印位置調整'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           TextButton.icon(
             onPressed: () async {
@@ -1149,8 +1150,8 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
               final nav = Navigator.of(context);
               nav.pop({'x': _offsetX, 'y': _offsetY});
             },
-            icon: const Icon(Icons.check, color: Colors.white),
-            label: const Text('確定', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.check),
+            label: const Text('確定'),
           ),
         ],
       ),
@@ -1174,18 +1175,18 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  color: Colors.blue.shade50,
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.info_outline, size: 18, color: Colors.blue),
+                          Icon(Icons.info_outline, size: 18, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               '方向ボタンで角印を移動 | X:右端からの距離 Y:上端からの距離',
-                              style: TextStyle(fontSize: 12, color: Colors.blue),
+                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary),
                             ),
                           ),
                         ],
@@ -1193,9 +1194,9 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
                       const SizedBox(height: 4),
                       _nudgeRow(label: '横 (左右)', value: _offsetX, isX: true),
                       _nudgeRow(label: '縦 (上下)', value: _offsetY, isX: false),
-                      const Text(
+                      Text(
                         '単位: PDF pt（1pt = 1/72インチ）',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
