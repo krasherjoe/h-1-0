@@ -128,9 +128,9 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
   Future<void> _handleManualBackup() async {
     if (_googleFeaturesEnabled && _currentGoogleAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Google Drive バックアップを使用するには、先に Google アカウントにサインインしてください'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('⚠️ Google Drive バックアップを使用するには、先に Google アカウントにサインインしてください'),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
         ),
       );
       return;
@@ -161,7 +161,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
             ),
             if (_googleFeaturesEnabled && _currentGoogleAccount != null)
               ListTile(
-                leading: const Icon(Icons.cloud, color: Colors.deepPurple),
+                leading: Icon(Icons.cloud, color: Theme.of(context).colorScheme.tertiary),
                 title: const Text('Google Driveからリストア'),
                 subtitle: const Text('クラウド上のバックアップを選択'),
                 onTap: () => Navigator.pop(context, 'drive'),
@@ -212,16 +212,16 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       if (signedIn) {
         await _loadGoogleAccountInfo();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('✅ Google アカウントにサインインしました'),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('サインインをキャンセルしました'),
-            backgroundColor: Colors.grey,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
         );
       }
@@ -231,7 +231,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ サインインに失敗しました：$e'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     } finally {
@@ -253,8 +253,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
             child: const Text('サインアウト'),
           ),
@@ -287,8 +286,8 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('SB:バックアップ・リストア'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: SafeArea(
         child: ListView(
@@ -323,32 +322,32 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.backup, color: Colors.green.shade700),
+              Icon(Icons.backup, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 'バックアップ状況',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.green.shade700,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _buildStatusRow(Icons.storage, 'ローカル', _localBackupStatus, Colors.orange),
+          _buildStatusRow(Icons.storage, 'ローカル', _localBackupStatus, Theme.of(context).colorScheme.secondary),
           if (_googleFeaturesEnabled) ...[
             const SizedBox(height: 8),
-            _buildStatusRow(Icons.cloud, 'Google Drive', _driveBackupStatus, Colors.deepPurple),
+            _buildStatusRow(Icons.cloud, 'Google Drive', _driveBackupStatus, Theme.of(context).colorScheme.tertiary),
           ],
         ],
       ),
@@ -366,7 +365,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
         ),
         Text(
           status,
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+          style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -396,16 +395,16 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.account_circle, color: Colors.blue),
+                      Icon(Icons.account_circle, color: Theme.of(context).colorScheme.tertiary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -419,7 +418,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                               _currentGoogleAccount!['email'] ?? '',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -436,7 +435,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                           icon: const Icon(Icons.logout, size: 16),
                           label: const Text('サインアウト'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
+                            foregroundColor: Theme.of(context).colorScheme.error,
                           ),
                         ),
                       ),
@@ -461,8 +460,8 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                   : const Icon(Icons.login),
               label: Text(_googleAuthLoading ? '処理中...' : 'Google アカウントにサインイン'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 minimumSize: const Size(double.infinity, 44),
               ),
             ),
@@ -514,8 +513,8 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
                     : const Icon(Icons.backup),
                 label: Text(_backingUp ? 'バックアップ中...' : '今すぐバックアップ'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -528,10 +527,10 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _handleRestore,
-                icon: const Icon(Icons.restore, color: Colors.orange),
+                icon: Icon(Icons.restore, color: Theme.of(context).colorScheme.secondary),
                 label: const Text('バックアップからリストア'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange.shade700,
+                  foregroundColor: Theme.of(context).colorScheme.secondary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -555,7 +554,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
         const SizedBox(height: 8),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.folder_open, color: Colors.green),
+          leading: Icon(Icons.folder_open, color: Theme.of(context).colorScheme.primary),
           title: const Text('バックアップ一覧・管理'),
           subtitle: const Text('Google Drive上のバックアップを確認・削除'),
           trailing: const Icon(Icons.chevron_right),
