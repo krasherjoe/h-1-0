@@ -31,11 +31,11 @@ class _ManagementScreenState extends State<ManagementScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("マスター管理・同期"),
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: ListView(
         children: [
-          _buildSectionHeader("案件管理"),
+          _buildSectionHeader(context, "案件管理"),
           _buildMenuTile(
             context,
             Icons.folder_special,
@@ -49,7 +49,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
             ),
           ),
           const Divider(),
-          _buildSectionHeader("データ入出力"),
+          _buildSectionHeader(context, "データ入出力"),
           _buildMenuTile(
             context,
             Icons.inventory_2,
@@ -101,7 +101,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
             () => _importCsv(context),
           ),
           const Divider(),
-          _buildSectionHeader("バックアップ & セキュリティ"),
+          _buildSectionHeader(context, "バックアップ & セキュリティ"),
           _buildMenuTile(
             context,
             Icons.backup,
@@ -176,7 +176,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
             ),
           ),
           const Divider(),
-          _buildSectionHeader("外部同期 (将来のOdoo連携)"),
+          _buildSectionHeader(context, "外部同期 (将来のOdoo連携)"),
           _buildMenuTile(
             context,
             Icons.sync,
@@ -189,15 +189,15 @@ class _ManagementScreenState extends State<ManagementScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: Colors.blueGrey,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -211,7 +211,7 @@ class _ManagementScreenState extends State<ManagementScreen> {
     VoidCallback onTap,
   ) {
     return ListTile(
-      leading: Icon(icon, color: Colors.blueGrey),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
       title: Text(title),
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
       trailing: const Icon(Icons.chevron_right),
