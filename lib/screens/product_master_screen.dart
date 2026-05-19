@@ -657,7 +657,7 @@ PopupMenuItem(
                               child: Icon(
                                 Icons.link,
                                 size: 14,
-                                color: Colors.redAccent,
+                                color: Theme.of(context).colorScheme.error,
                               ),
                             ),
                         ],
@@ -853,13 +853,13 @@ floatingActionButton: FloatingActionButton(
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.delete_outline,
-                      color: Colors.redAccent,
+                      color: Theme.of(context).colorScheme.error,
                     ),
-                    label: const Text(
+                    label: Text(
                       "削除",
-                      style: TextStyle(color: Colors.redAccent),
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                     onPressed: () async {
                       final confirmed = await showDialog<bool>(
@@ -874,16 +874,16 @@ floatingActionButton: FloatingActionButton(
                               onPressed: () => Navigator.pop(context, false),
                               child: const Text("キャンセル"),
                             ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                "削除",
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+TextButton(
+                               onPressed: () => Navigator.pop(context, true),
+                               child: Text(
+                                 "削除",
+                                 style: TextStyle(color: Theme.of(context).colorScheme.error),
+                               ),
+                             ),
+                           ],
+                         ),
+                       );
                       if (!context.mounted) return;
                       if (confirmed == true) {
                         await _productRepo.setHiddenProduct(p.id, true);
@@ -896,13 +896,13 @@ floatingActionButton: FloatingActionButton(
                   const SizedBox(width: 8),
                   if (!p.isLocked)
                     OutlinedButton.icon(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.redAccent,
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      label: const Text(
+                      label: Text(
                         "削除",
-                        style: TextStyle(color: Colors.redAccent),
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
                       ),
                       onPressed: () async {
                         final confirmed = await showDialog<bool>(
@@ -915,19 +915,19 @@ floatingActionButton: FloatingActionButton(
                                 onPressed: () => Navigator.pop(context, false),
                                 child: const Text("キャンセル"),
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text(
-                                  "削除",
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (!context.mounted) return;
-                        if (confirmed == true) {
-                          await _productRepo.deleteProduct(p.id);
+TextButton(
+                               onPressed: () => Navigator.pop(context, true),
+                               child: Text(
+                                 "削除",
+                                 style: TextStyle(color: Theme.of(context).colorScheme.error),
+                               ),
+                             ),
+                           ],
+                         ),
+                       );
+                      if (!context.mounted) return;
+                      if (confirmed == true) {
+                        await _productRepo.deleteProduct(p.id);
                           if (!context.mounted) return;
                           Navigator.pop(context); // sheet
                           _loadProducts();
