@@ -79,7 +79,7 @@ class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScree
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PA:商品別粗利分析'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.date_range),
@@ -106,14 +106,14 @@ class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScree
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
-                      color: Colors.teal.shade50,
+                      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
                       child: Row(
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('合計売上', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                Text('合計売上', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 Text(
                                   '¥${_summary.fold(0, (sum, s) => sum + s.totalSales)}',
                                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -125,7 +125,7 @@ class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScree
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('商品数', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                Text('商品数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 Text(
                                   '${_summary.length} 品',
                                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -146,10 +146,10 @@ class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScree
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: Colors.teal.shade100,
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                                 child: Text(
                                   '${index + 1}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                                 ),
                               ),
                               title: Text(
