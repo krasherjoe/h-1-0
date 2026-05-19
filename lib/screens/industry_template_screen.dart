@@ -73,9 +73,9 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
           children: [
             Text('${_getBusinessTypeName(businessType)}業種のテンプレートを適用します。'),
             const SizedBox(height: 8),
-            const Text('既存のカスタムフィールドはすべて削除され、テンプレートのフィールドに置き換えられます。',
-              style: TextStyle(color: Colors.red, fontSize: 12),
-            ),
+          const Text('既存のカスタムフィールドはすべて削除され、テンプレートのフィールドに置き換えられます。',
+               style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+             ),
             const SizedBox(height: 16),
             const Text('よろしいですか？'),
           ],
@@ -87,7 +87,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+         style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
             child: const Text('適用'),
           ),
         ],
@@ -226,8 +226,8 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('T1:業種テンプレート選択'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -248,9 +248,9 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade50,
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.indigo.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.primaryContainer,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +259,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
             children: [
               Icon(
                 _getBusinessTypeIcon(_currentProfile!.businessType),
-                color: Colors.indigo,
+                color: Theme.of(context).colorScheme.primary,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -268,7 +268,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.indigo,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
@@ -278,7 +278,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
             'カスタムフィールド数: ${_currentFields.length}',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -306,7 +306,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
           
           return Card(
             elevation: isSelected ? 8 : 2,
-            color: isSelected ? Colors.indigo.shade50 : null,
+            color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2) : null,
             child: InkWell(
               onTap: () => _previewTemplate(businessType),
               child: Padding(
@@ -317,10 +317,10 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: isSelected ? Colors.indigo : Colors.grey.shade200,
+                          backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: Icon(
                             _getBusinessTypeIcon(businessType),
-                            color: isSelected ? Colors.white : Colors.grey.shade600,
+                            color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
                             size: 20,
                           ),
                         ),
@@ -329,13 +329,13 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
                             margin: const EdgeInsets.only(left: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.green,
+                              color: Theme.of(context).colorScheme.secondary,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
+                            child: Text(
                               '現在',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSecondary,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -349,7 +349,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.indigo : null,
+                        color: isSelected ? Theme.of(context).colorScheme.primary : null,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -357,7 +357,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
                       _getBusinessTypeDescription(businessType),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -371,12 +371,12 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
                           child: const Text('プレビュー'),
                         ),
                         const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () => _applyTemplate(businessType),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isSelected ? Colors.indigo : null,
-                            foregroundColor: isSelected ? Colors.white : null,
-                          ),
+                  ElevatedButton(
+                           onPressed: () => _applyTemplate(businessType),
+                           style: ElevatedButton.styleFrom(
+                             backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : null,
+                             foregroundColor: isSelected ? Theme.of(context).colorScheme.onPrimary : null,
+                           ),
                           child: const Text('適用'),
                         ),
                       ],
