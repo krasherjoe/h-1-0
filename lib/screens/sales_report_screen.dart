@@ -39,9 +39,9 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("売上・資金管理レポート"),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        title: Text("売上・資金管理レポート"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -58,7 +58,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
 
   Widget _buildYearSelector() {
     return Container(
-      color: Colors.indigo.shade50,
+      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -91,15 +91,15 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade900,
+        color: Theme.of(context).colorScheme.primary,
       ),
       child: Column(
         children: [
-          const Text("年間売上合計 (請求確定分)", style: TextStyle(color: Colors.white70)),
+          Text("年間売上合計 (請求確定分)", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7))),
           const SizedBox(height: 8),
           Text(
             "￥${fmt.format(_yearlyTotal)}",
-            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 32, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -116,8 +116,8 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.blueGrey.shade100,
-            child: Text("${index + 1}", style: const TextStyle(color: Colors.indigo)),
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Text("${index + 1}", style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ),
           title: Text("${index + 1}月の売上"),
           subtitle: amount > 0 ? Text("シェア: $percentage%") : null,
@@ -126,7 +126,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: amount > 0 ? Colors.black87 : Colors.grey,
+              color: amount > 0 ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         );
