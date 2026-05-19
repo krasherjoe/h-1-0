@@ -34,9 +34,9 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SA:売上分析'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        title: Text('SA:売上分析'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -140,6 +140,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
       (sum, item) => sum + (item['orders'] as int),
     );
     final avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    final cs = Theme.of(context).colorScheme;
 
     return Row(
       children: [
@@ -148,7 +149,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             '総売上',
             '¥${totalRevenue.toStringAsFixed(0)}',
             Icons.trending_up,
-            Colors.green,
+            cs.primary,
           ),
         ),
         const SizedBox(width: 8),
@@ -157,7 +158,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             '総利益',
             '¥${totalProfit.toStringAsFixed(0)}',
             Icons.show_chart,
-            Colors.blue,
+            cs.primaryContainer,
           ),
         ),
         const SizedBox(width: 8),
@@ -166,7 +167,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             '総注文数',
             totalOrders.toString(),
             Icons.shopping_cart,
-            Colors.orange,
+            cs.tertiary,
           ),
         ),
         const SizedBox(width: 8),
@@ -175,7 +176,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             '平均単価',
             '¥${avgOrderValue.toStringAsFixed(0)}',
             Icons.calculate,
-            Colors.purple,
+            cs.secondary,
           ),
         ),
       ],
@@ -201,7 +202,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             ),
             Text(
               title,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -243,7 +244,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
     }).toList();
 
     return CustomPaint(
-      painter: LineChartPainter(data: data, color: Colors.blue, maxValue: 3.0),
+      painter: LineChartPainter(data: data, color: Theme.of(context).colorScheme.primary, maxValue: 3.0),
       child: Container(),
     );
   }
@@ -275,7 +276,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
     return CustomPaint(
       painter: BarChartPainter(
         data: data,
-        color: Colors.blue,
+        color: Theme.of(context).colorScheme.primary,
         maxValue: 4.0,
         labels: _categoryData
             .map((item) => item['category'] as String)
