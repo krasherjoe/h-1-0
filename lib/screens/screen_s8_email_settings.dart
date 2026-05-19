@@ -264,11 +264,11 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
           children: [
             // BCC 設定セクション
             _buildSectionHeader('BCC 設定（必須）'),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: Text(
                 'メール送信時の控え用メールアドレス',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
               ),
             ),
             TextField(
@@ -310,18 +310,18 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '選択済み：$_selectedDeviceBcc',
-                  style: const TextStyle(color: Colors.green, fontSize: 12),
+                  style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 12),
                 ),
               ),
             const Divider(height: 32),
 
             // メールテンプレート設定セクション
             _buildSectionHeader('メールテンプレート設定'),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: Text(
                 '請求書送信時に自動で追加される本文',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
               ),
             ),
             Row(
@@ -370,7 +370,7 @@ class _ScreenS8EmailSettingsState extends State<ScreenS8EmailSettings> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
