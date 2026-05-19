@@ -148,8 +148,8 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('F1:販売フロー管理'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -203,9 +203,9 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
   }
 
   Widget _buildTabBar() {
-    return Container(
-      color: Colors.indigo.shade50,
-      child: Row(
+return Container(
+       color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2),
+       child: Row(
         children: [
           _buildTabButton('quotes', '見積'),
           _buildTabButton('orders', '受注'),
@@ -230,23 +230,23 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.indigo : Colors.transparent,
-            border: Border(
-              bottom: BorderSide(
-                color: isSelected ? Colors.indigo : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.indigo,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+  decoration: BoxDecoration(
+             color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+             border: Border(
+               bottom: BorderSide(
+                 color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                 width: 2,
+               ),
+             ),
+           ),
+           child: Text(
+             title,
+             textAlign: TextAlign.center,
+             style: TextStyle(
+               color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary,
+               fontWeight: FontWeight.bold,
+             ),
+           ),
         ),
       ),
     );
@@ -255,7 +255,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.grey.shade100,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
           Expanded(
@@ -415,7 +415,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: status.color,
-          child: Icon(status.icon, color: Colors.white, size: 20),
+          child: Icon(status.icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
         ),
         title: Text(
           quote['quote_no'],
@@ -428,7 +428,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             Text(quote['title']),
             Text(
               '有効期限: ${_formatDate(quote['valid_until'])}',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),
@@ -499,7 +499,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: status.color,
-          child: Icon(status.icon, color: Colors.white, size: 20),
+          child: Icon(status.icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
         ),
         title: Text(
           order['order_no'],
@@ -513,7 +513,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
             if (order['delivery_date'] != null)
               Text(
                 '納品予定: ${_formatDate(order['delivery_date'])}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
               ),
           ],
         ),
@@ -576,7 +576,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: status.color,
-              child: Icon(status.icon, color: Colors.white, size: 20),
+              child: Icon(status.icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
             title: Text(sale['sales_no'] ?? '売上'),
             subtitle: Column(
@@ -586,7 +586,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
                 Text(sale['title'] ?? ''),
                 Text(
                   '更新日: ${_formatDate(sale['updated_at'])}',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                 ),
               ],
             ),
@@ -649,7 +649,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: status.color,
-              child: Icon(Icons.local_shipping, color: Colors.white, size: 20),
+              child: Icon(Icons.local_shipping, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
             title: Text(delivery['delivery_no'] ?? '配送'),
             subtitle: Text('更新日: ${_formatDate(delivery['updated_at'])}'),
@@ -688,7 +688,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: status.color,
-              child: Icon(Icons.receipt_long, color: Colors.white, size: 20),
+              child: Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
             title: Text(invoice['invoice_no'] ?? '請求書'),
             subtitle: Column(
@@ -697,7 +697,7 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
                 Text(invoice['client_name'] ?? '不明'),
                 Text(
                   '期限: ${_formatDate(invoice['due_date'])}',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                 ),
               ],
             ),
