@@ -54,9 +54,9 @@ class MasterHubPage extends StatelessWidget {
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text('マスター管理'),
-            Text('ScreenID: M1', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('ScreenID: M1', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
           ],
         ),
       ),
@@ -69,8 +69,8 @@ class MasterHubPage extends StatelessWidget {
             elevation: 1,
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: Colors.indigo.shade50,
-                foregroundColor: Colors.indigo.shade700,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 child: Icon(item.icon),
               ),
               title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
