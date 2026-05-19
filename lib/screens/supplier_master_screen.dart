@@ -359,7 +359,7 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
       screenId: 'SUP',
       title: '仕入先マスタ',
       icon: Icons.business,
-      themeColor: Colors.orange,
+      themeColor: Theme.of(context).colorScheme.secondary,
 
       // データ取得
       fetchData: () => _repo.getAllSuppliers(),
@@ -372,7 +372,7 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
           amount: '',
           date: supplier.updatedAt,
           status: DocumentStatus.confirmed,
-          themeColor: Colors.orange,
+          themeColor: Theme.of(context).colorScheme.secondary,
           onTap: () {
             _showEditDialog(supplier: supplier);
           },
@@ -456,7 +456,7 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
         title: '仕入先がありません',
         subtitle: '新しい仕入先を登録してください',
         actionLabel: '新規仕入先',
-        iconColor: Colors.orange,
+        iconColor: Theme.of(context).colorScheme.secondary,
         onAction: () {
           _showEditDialog();
         },
@@ -509,17 +509,17 @@ class SupplierPreviewCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.black12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
-                Icon(Icons.preview_outlined, color: Colors.indigo),
-                SizedBox(width: 8),
+Row(
+              children: [
+                Icon(Icons.preview_outlined, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
                 Text('保存前プレビュー', style: TextStyle(fontWeight: FontWeight.bold)),
               ],
             ),
@@ -546,7 +546,7 @@ class SupplierPreviewCard extends StatelessWidget {
           Expanded(
             child: Text(
               isEmpty ? '—' : value,
-              style: TextStyle(color: isEmpty ? Colors.black26 : Colors.black87),
+              style: TextStyle(color: isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface),
             ),
           ),
         ],
