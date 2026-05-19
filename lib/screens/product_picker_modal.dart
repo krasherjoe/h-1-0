@@ -41,7 +41,7 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -72,11 +72,11 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                   onPressed: () { _searchController.clear(); _onSearch(""); },
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
@@ -110,7 +110,7 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                         itemBuilder: (context, index) {
                           final product = _products[index];
                           return Card(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             margin: const EdgeInsets.only(bottom: 8),
                             elevation: 1,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -153,18 +153,18 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                                         },
                                       ),
                                       ListTile(
-                                        leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                        title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+                                        leading: const Icon(Icons.delete_outline),
+                                        title: const Text("削除"),
                                         onTap: () async {
                                           Navigator.pop(ctx);
                                           final confirmed = await showDialog<bool>(
                                             context: context,
-                                            builder: (_) => AlertDialog(
+                                            builder: (ctx) => AlertDialog(
                                               title: const Text("削除の確認"),
                                               content: Text("${product.name} を削除しますか？"),
                                               actions: [
                                                 TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                                                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                                                TextButton(onPressed: () => Navigator.pop(context, true), child: Text("削除", style: TextStyle(color: Theme.of(ctx).colorScheme.error))),
                                               ],
                                             ),
                                           );
