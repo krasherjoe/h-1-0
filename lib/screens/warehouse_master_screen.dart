@@ -48,10 +48,10 @@ class WarehousePreviewCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.brown.shade100,
+                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.warehouse, color: Colors.brown),
+                  child: Icon(Icons.warehouse, color: Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -206,7 +206,7 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('WH:倉庫マスター'),
-        backgroundColor: Colors.brown,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -274,7 +274,7 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
-        backgroundColor: Colors.brown.shade800,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: theme.cardColor,
         child: const Icon(Icons.add),
       ),
