@@ -405,7 +405,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         children: [
           _SummaryCard(
             icon: Icons.receipt,
-            color: Colors.blue,
             label: '本日請求',
             value: '${_todayInvoiceCount}件',
             sub: '\u00a5${_formatAmount(_todayInvoiceAmount)}',
@@ -413,7 +412,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           const SizedBox(width: 12),
           _SummaryCard(
             icon: Icons.warning_amber,
-            color: Colors.orange,
             label: '未回収金額',
             value: '\u00a5${_formatAmount(_unpaidTotal)}',
             sub: '入金待ち',
@@ -421,7 +419,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           const SizedBox(width: 12),
           _SummaryCard(
             icon: Icons.folder_open,
-            color: Colors.green,
             label: '進行中案件',
             value: '${_activeProjectCount}件',
             sub: 'PJ1連携',
@@ -453,7 +450,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.add_circle,
                 label: '新規請求',
-                color: Colors.blue,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -477,7 +473,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.description,
                 label: '新規見積',
-                color: Colors.teal,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -495,14 +490,12 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.assignment,
                 label: '案件管理',
-                color: Colors.indigo,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
               ),
               const SizedBox(width: 8),
               _QuickActionButton(
                 icon: Icons.history,
                 label: '請求履歴',
-                color: Colors.purple,
                 onTap: () {
                   if (!_historyUnlocked) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
@@ -546,7 +539,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           ..._recentInvoices.map((row) {
             final docType = row['document_type'] as String? ?? 'invoice';
             final typeLabel = docType == 'estimation' ? '見積' : docType == 'sales' ? '売上' : '請求';
-            final typeColor = docType == 'estimation' ? Colors.teal : docType == 'sales' ? Colors.green : Colors.blue;
+            final cs = Theme.of(context).colorScheme;
+            final typeColor = docType == 'estimation' ? cs.secondary : docType == 'sales' ? cs.primary : cs.tertiary;
             final dateStr = (row['date'] as String? ?? '').substring(0, 10);
             final subject = row['subject'] as String? ?? '(件名なし)';
             final amount = row['total_amount'] as num? ?? 0;
@@ -554,7 +548,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: typeColor.shade50,
+                  backgroundColor: typeColor.withValues(alpha: 0.1),
                   foregroundColor: typeColor,
                   child: Text(typeLabel, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
@@ -602,8 +596,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.indigo.shade50,
-                  foregroundColor: Colors.indigo,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(Icons.assignment, size: 18),
                 ),
                 title: Text(project.name, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -651,7 +645,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     child: _historyUnlocked
                         ? Row(
                             children: [
-                              const Icon(Icons.lock_open, color: Colors.green),
+                              Icon(Icons.lock_open, color: Theme.of(context).colorScheme.primary),
                               const SizedBox(width: 8),
                               const Expanded(child: Text('A2 ロック解除済')),
                               OutlinedButton.icon(
@@ -681,13 +675,13 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                       padding: const EdgeInsets.all(16),
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade200),
+                        border: Border.all(color: Theme.of(context).colorScheme.secondaryContainer),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: Colors.orange),
+                          Icon(Icons.info_outline, color: Theme.of(context).colorScheme.secondary),
                           const SizedBox(width: 12),
                           Expanded(child: Text(_statusText, style: const TextStyle(fontWeight: FontWeight.bold))),
                         ],
@@ -723,7 +717,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
 // ===== サマリーカード =====
 class _SummaryCard extends StatelessWidget {
   final IconData icon;
-  final Color color;
   final String label;
   final String value;
   final String sub;
@@ -731,7 +724,6 @@ class _SummaryCard extends StatelessWidget {
 
   const _SummaryCard({
     required this.icon,
-    required this.color,
     required this.label,
     required this.value,
     required this.sub,
@@ -740,26 +732,27 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 140,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: cs.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 28),
+            Icon(icon, color: cs.primary, size: 28),
             const SizedBox(height: 12),
-            Text(label, style: TextStyle(color: color.withOpacity(0.9), fontSize: 12)),
+            Text(label, style: TextStyle(color: cs.primary.withValues(alpha: 0.9), fontSize: 12)),
             const SizedBox(height: 4),
-            Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(value, style: TextStyle(color: cs.primary, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
-            Text(sub, style: TextStyle(color: color.withOpacity(0.7), fontSize: 11)),
+            Text(sub, style: TextStyle(color: cs.primary.withValues(alpha: 0.7), fontSize: 11)),
           ],
         ),
       ),
@@ -771,33 +764,32 @@ class _SummaryCard extends StatelessWidget {
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
   final VoidCallback onTap;
 
   const _QuickActionButton({
     required this.icon,
     required this.label,
-    required this.color,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
+            color: cs.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
-              Icon(icon, color: color, size: 28),
+              Icon(icon, color: cs.primary, size: 28),
               const SizedBox(height: 6),
-              Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+              Text(label, style: TextStyle(color: cs.primary, fontSize: 12, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
