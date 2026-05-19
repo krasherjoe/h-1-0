@@ -42,8 +42,8 @@ class _MainScreenIntegrationState extends State<MainScreenIntegration> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_getPageTitle()),
-        backgroundColor: _getPageColor(),
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         leading: _currentIndex == 0
             ? Builder(
                 builder: (context) => IconButton(
@@ -106,21 +106,6 @@ class _MainScreenIntegrationState extends State<MainScreenIntegration> {
         return '会計管理アプリ';
     }
   }
-  
-  Color _getPageColor() {
-    switch (_currentIndex) {
-      case 0:
-        return Colors.blue;
-      case 1:
-        return Colors.indigo;
-      case 2:
-        return Colors.purple;
-      case 3:
-        return Colors.green;
-      default:
-        return Colors.blue;
-    }
-  }
 }
 
 /// 請求書一覧ページ
@@ -129,11 +114,11 @@ class InvoiceListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt, size: 64, color: Colors.blue),
+          Icon(Icons.receipt, size: 64, color: Theme.of(context).colorScheme.primary),
           SizedBox(height: 16),
           Text(
             '請求書一覧',
@@ -157,7 +142,7 @@ class SearchPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.search, size: 64, color: Colors.indigo),
+          Icon(Icons.search, size: 64, color: Theme.of(context).colorScheme.secondary),
           const SizedBox(height: 16),
           const Text(
             '検索機能',
@@ -201,7 +186,7 @@ class PerformancePage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.speed, size: 64, color: Colors.purple),
+          Icon(Icons.speed, size: 64, color: Theme.of(context).colorScheme.tertiary),
           const SizedBox(height: 16),
           const Text(
             'パフォーマンス最適化',
@@ -245,7 +230,7 @@ class SensorPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.sensors, size: 64, color: Colors.green),
+          Icon(Icons.sensors, size: 64, color: Theme.of(context).colorScheme.primaryContainer),
           const SizedBox(height: 16),
           const Text(
             'センサー機能',
