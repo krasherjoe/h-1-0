@@ -115,8 +115,8 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('削除'),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: Text('削除'),
           ),
         ],
       ),
@@ -199,8 +199,8 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IMC:在庫移動・棚卸'),
-        backgroundColor: Colors.indigo,
+        title: Text('IMC:在庫移動・棚卸'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: _loadData,
@@ -288,8 +288,8 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
                               child: ListTile(
                                 leading: CircleAvatar(
                                   child: Text(_getMovementTypeIcon(movement.movementType)),
-                                  backgroundColor: _getMovementTypeColor(movement.movementType),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: _getMovementTypeColor(movement.movementType, Theme.of(context).colorScheme),
+                                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                 ),
                                 title: Text(productName),
                                 subtitle: Text(
@@ -299,7 +299,7 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
                                   '${movement.notes != null ? '\n${movement.notes}' : ''}',
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
                                   onPressed: () => _deleteMovement(movement),
                                 ),
                               ),
@@ -331,18 +331,18 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
     }
   }
 
-  Color _getMovementTypeColor(InventoryMovementType type) {
+  Color _getMovementTypeColor(InventoryMovementType type, ColorScheme cs) {
     switch (type) {
       case InventoryMovementType.stockIn:
-        return Colors.green;
+        return cs.primary;
       case InventoryMovementType.stockOut:
-        return Colors.red;
+        return cs.error;
       case InventoryMovementType.transfer:
-        return Colors.blue;
+        return cs.secondary;
       case InventoryMovementType.adjustment:
-        return Colors.orange;
+        return cs.tertiary;
       case InventoryMovementType.stocktake:
-        return Colors.purple;
+        return cs.secondaryContainer;
     }
   }
 
