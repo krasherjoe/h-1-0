@@ -42,15 +42,15 @@ class _DraftBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
+        color: Theme.of(context).colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Text(
+      child: Text(
         '下書き',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.orange,
+          color: Theme.of(context).colorScheme.secondary,
         ),
       ),
     );
@@ -260,12 +260,12 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.palette, color: Colors.indigo),
+              leading: Icon(Icons.palette, color: Theme.of(context).colorScheme.primary),
               title: const Text('インディゴ'),
               onTap: () => Navigator.pop(context, 'blue'),
             ),
             ListTile(
-              leading: const Icon(Icons.palette, color: Colors.grey),
+              leading: Icon(Icons.palette, color: Theme.of(context).colorScheme.onSurfaceVariant),
               title: const Text('白'),
               onTap: () => Navigator.pop(context, 'white'),
             ),
@@ -284,7 +284,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final isDraft = _currentInvoice.isDraft;
     final docTypeName = _currentInvoice.documentTypeName;
     final themeColor = Theme.of(context).scaffoldBackgroundColor;
-    final textColor = Colors.black87;
+    final textColor = Theme.of(context).colorScheme.onSurface;
 
     final locked = _currentInvoice.isLocked;
 
@@ -306,7 +306,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _titleBarFlash
-                  ? Colors.white.withOpacity(0.3)
+                  ? Theme.of(context).colorScheme.onSurface.withOpacity(0.3)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
@@ -316,18 +316,18 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             ),
           ),
         ),
-        backgroundColor: Colors.indigo.shade700,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           if (locked)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               child: Chip(
-                label: const Text(
+                label: Text(
                   "編集不可",
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
                 ),
-                avatar: const Icon(Icons.lock, size: 16, color: Colors.white),
-                backgroundColor: Colors.redAccent,
+                avatar: Icon(Icons.lock, size: 16, color: Theme.of(context).colorScheme.onPrimary),
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             ),
           if (!_isEditing) ...[
@@ -346,16 +346,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     padding: EdgeInsets.all(_showCopyBadge ? 8 : 0),
                     decoration: BoxDecoration(
                       color: _showCopyBadge
-                          ? Colors.green.withOpacity(0.3)
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
                           : Colors.transparent,
                       shape: BoxShape.circle,
                       border: _showCopyBadge
-                          ? Border.all(color: Colors.green, width: 2)
+                          ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
                           : null,
                     ),
                     child: Icon(
                       _showCopyBadge ? Icons.check : Icons.copy,
-                      color: _showCopyBadge ? Colors.green : null,
+                      color: _showCopyBadge ? Theme.of(context).colorScheme.primary : null,
                     ),
                   ),
                 ),
@@ -404,7 +404,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 },
               ),
             IconButton(
-              icon: const Icon(Icons.edit_note, color: Colors.white),
+              icon: Icon(Icons.edit_note, color: Theme.of(context).colorScheme.onPrimary),
               tooltip: locked
                   ? "編集不可"
                   : (widget.isUnlocked ? "詳細編集" : "アンロックして編集"),
@@ -465,34 +465,34 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: Colors.indigo, // 合計金額と同じカラー
+                    color: Theme.of(context).colorScheme.primary, // 合計金額と同じカラー
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.indigo.shade700),
+                    border: Border.all(color: Theme.of(context).colorScheme.primaryContainer),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.edit_note, color: Colors.white70),
-                      const SizedBox(width: 8),
-                      const Expanded(
+                      Icon(Icons.edit_note, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      SizedBox(width: 8),
+                      Expanded(
                         child: Text(
                           "未確定・PDFは正式発行で確定",
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade600,
+                          color: Theme.of(context).colorScheme.secondary,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           "下書$docTypeName",
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -508,7 +508,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 const SizedBox(height: 16),
                 _buildExperimentalSection(isDraft),
               ],
-              Divider(height: 32, color: Colors.grey.shade400),
+              Divider(height: 32, color: Theme.of(context).colorScheme.outlineVariant),
               Text(
                 "明細一覧",
                 style: TextStyle(
@@ -536,8 +536,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                         icon: const Icon(Icons.list_alt),
                         label: const Text("マスターから選択"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueGrey.shade700,
-                          foregroundColor: Colors.white,
+                          backgroundColor: Theme.of(context).colorScheme.tertiary,
+                          foregroundColor: Theme.of(context).colorScheme.onTertiary,
                         ),
                       ),
                     ],
@@ -599,15 +599,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade100,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     _documentTypeLabel(_currentInvoice.documentType),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.indigo,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -637,11 +637,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -668,21 +668,21 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 ),
                 if (_currentInvoice.subject?.isNotEmpty ?? false) ...[
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     "件名",
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     _currentInvoice.subject!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.indigo,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ],
@@ -732,7 +732,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   ) {
     return Table(
       border: TableBorder.all(
-        color: isDraft ? Colors.white24 : Colors.grey.shade300,
+        color: isDraft ? Theme.of(context).colorScheme.onSurface.withOpacity(0.24) : Theme.of(context).colorScheme.outlineVariant,
       ),
       columnWidths: const {
         0: FlexColumnWidth(4),
@@ -745,7 +745,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       children: [
         TableRow(
           decoration: BoxDecoration(
-            color: isDraft ? Colors.black26 : Colors.grey.shade100,
+            color: isDraft ? Theme.of(context).colorScheme.surfaceVariant : Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           children: [
             _TableCell("品名", textColor: textColor),
@@ -792,7 +792,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   textColor: textColor,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                  icon: Icon(Icons.delete, size: 20, color: Theme.of(context).colorScheme.error),
                   onPressed: () => _removeItem(idx),
                 ),
               ],
@@ -837,13 +837,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         : 'normal';
 
     final bool useBlue = _summaryIsBlue;
-    final Color bgColor = useBlue ? Colors.indigo : Colors.white;
+    final Color bgColor = useBlue ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface;
     final Color borderColor = useBlue
         ? Colors.transparent
-        : Colors.grey.shade300;
-    final Color labelColor = useBlue ? Colors.white70 : Colors.black87;
-    final Color totalColor = useBlue ? Colors.white : Colors.black87;
-    final Color dividerColor = useBlue ? Colors.white24 : Colors.grey.shade300;
+        : Theme.of(context).colorScheme.outlineVariant;
+    final Color labelColor = useBlue ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface;
+    final Color totalColor = useBlue ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface;
+    final Color dividerColor = useBlue ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.24) : Theme.of(context).colorScheme.outlineVariant;
 
     return GestureDetector(
       onLongPress: _pickSummaryColor,
@@ -911,7 +911,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             style: TextStyle(
               fontSize: isTotal ? 22 : 16,
               fontWeight: FontWeight.bold,
-              color: isTotal ? Colors.white : textColor,
+              color: isTotal ? Theme.of(context).colorScheme.onPrimary : textColor,
             ),
           ),
         ],
@@ -1021,7 +1021,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             const Divider(),
             ...options.map(
               (type) => ListTile(
-                leading: const Icon(Icons.swap_horiz, color: Colors.indigo),
+                leading: Icon(Icons.swap_horiz, color: Theme.of(context).colorScheme.primary),
                 title: Text(_documentTypeLabel(type)),
                 onTap: () => Navigator.pop(context, type),
               ),
@@ -1054,16 +1054,16 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDraft ? Colors.black45 : Colors.orange.shade50,
+        color: isDraft ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange, width: 1),
+        border: Border.all(color: Theme.of(context).colorScheme.secondary, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "税率設定 (編集用)",
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary),
           ),
           const SizedBox(height: 8),
           Row(
@@ -1071,7 +1071,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               Text(
                 "消費税: ",
                 style: TextStyle(
-                  color: isDraft ? Colors.white70 : Colors.black87,
+                  color: isDraft ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               ChoiceChip(
@@ -1116,8 +1116,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             icon: const Icon(Icons.launch),
             label: const Text("PDFを開く"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
             ),
           ),
         ),
@@ -1128,8 +1128,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             icon: const Icon(Icons.share),
             label: const Text("共有"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         ),
@@ -1161,14 +1161,14 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent, width: 1),
+                      border: Border.all(color: Theme.of(context).colorScheme.error, width: 1),
                     ),
-                    child: const Text(
+                    child: Text(
                       "確定すると暗号チェーンシステムに組み込まれ、二度と編集できません。内容を最終確認のうえ実行してください。",
                       style: TextStyle(
-                        color: Colors.redAccent,
+                        color: Theme.of(context).colorScheme.error,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1192,7 +1192,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.secondary),
                 child: const Text("正式発行する"),
               ),
             ],
@@ -1219,13 +1219,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _currentInvoice.isDraft ? Colors.black26 : Colors.orange.shade50,
+        color: _currentInvoice.isDraft ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange, width: 2),
+        border: Border.all(color: Theme.of(context).colorScheme.secondary, width: 2),
       ),
       child: Row(
         children: [
-          const Icon(Icons.drafts, color: Colors.orange),
+          Icon(Icons.drafts, color: Theme.of(context).colorScheme.secondary),
           const SizedBox(width: 12),
           const Expanded(
             child: Row(
