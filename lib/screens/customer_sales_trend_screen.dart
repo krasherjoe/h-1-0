@@ -76,7 +76,7 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('CS:得意先別売上推移'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.date_range),
@@ -103,14 +103,14 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
-                      color: Colors.deepPurple.shade50,
+                      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
                       child: Row(
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('合計売上', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                Text('合計売上', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 Text(
                                   '¥${_summary.fold(0, (sum, s) => sum + s.totalAmount)}',
                                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -122,7 +122,7 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('得意先数', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                Text('得意先数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 Text(
                                   '${_summary.length} 社',
                                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -143,10 +143,10 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: Colors.deepPurple.shade100,
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                                 child: Text(
                                   '${index + 1}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                                 ),
                               ),
                               title: Text(
