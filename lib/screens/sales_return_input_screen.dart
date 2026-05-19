@@ -22,7 +22,7 @@ class _SalesReturnInputScreenState extends State<SalesReturnInputScreen> {
       screenId: 'SR1',
       title: '売上返品入力',
       icon: Icons.assignment_return,
-      themeColor: Colors.red,
+      themeColor: Theme.of(context).colorScheme.error,
 
       // データ取得（返品は負の金額の売上として扱う）
       fetchData: () async {
@@ -38,7 +38,7 @@ class _SalesReturnInputScreenState extends State<SalesReturnInputScreen> {
           amount: sales.getDisplayAmount(),
           date: sales.date,
           status: sales.status,
-          themeColor: Colors.red,
+themeColor: Theme.of(context).colorScheme.error,
           onTap: () {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
@@ -130,7 +130,7 @@ class _SalesReturnInputScreenState extends State<SalesReturnInputScreen> {
         title: '返品がありません',
         subtitle: '返品処理を登録してください',
         actionLabel: '新規返品作成',
-        iconColor: Colors.red,
+        iconColor: Theme.of(context).colorScheme.error,
         onAction: () {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
