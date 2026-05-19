@@ -55,10 +55,10 @@ class ProductPreviewCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade100,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.inventory_2, color: Colors.indigo),
+                  child: Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -114,10 +114,11 @@ class _ProductInfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade50,
+        color: colorScheme.primaryContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -128,7 +129,7 @@ class _ProductInfoChip extends StatelessWidget {
             label,
             style: Theme.of(
               context,
-            ).textTheme.labelSmall?.copyWith(color: Colors.indigo),
+            ).textTheme.labelSmall?.copyWith(color: colorScheme.primary),
           ),
           const SizedBox(height: 2),
           Text(value, style: Theme.of(context).textTheme.bodyMedium),
@@ -477,34 +478,34 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('キャンセル'),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: theme.cardColor,
-            ),
-            child: const Text('整理する'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    try {
-      final count = await _productRepo.cleanupDuplicateVersions();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(count > 0 ? '$count件の古いレコードを非表示にしました' : '重複は見つかりませんでした'),
-          backgroundColor: count > 0 ? Colors.green : null,
-        ),
-      );
-      await _loadProducts();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
-      );
-    }
+ElevatedButton(
+             onPressed: () => Navigator.pop(ctx, true),
+             style: ElevatedButton.styleFrom(
+               backgroundColor: Theme.of(context).colorScheme.error,
+               foregroundColor: theme.cardColor,
+             ),
+             child: const Text('整理する'),
+           ),
+         ],
+       ),
+     );
+     if (confirmed != true || !mounted) return;
+     try {
+       final count = await _productRepo.cleanupDuplicateVersions();
+       if (!mounted) return;
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(
+           content: Text(count > 0 ? '$count件の古いレコードを非表示にしました' : '重複は見つかりませんでした'),
+           backgroundColor: count > 0 ? Theme.of(context).colorScheme.primary : null,
+         ),
+       );
+       await _loadProducts();
+     } catch (e) {
+       if (!mounted) return;
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+       );
+     }
   }
 
   @override
@@ -516,7 +517,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("P1:商品マスター"),
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           DropdownButtonHideUnderline(
@@ -554,25 +555,25 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 }
               },
               itemBuilder: (BuildContext context) => [
-                PopupMenuItem(
-                  value: 'cleanup_versions',
-                  child: Row(
-                    children: [
-                      Icon(Icons.merge_type, size: 18, color: Colors.indigo),
-                      SizedBox(width: 8),
-                      Text('重複商品を整理'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'toggle_hidden',
-                  child: Row(
-                    children: [
-                      Icon(
-                        _showHidden ? Icons.visibility_off : Icons.visibility,
-                        size: 18,
-                        color: Colors.indigo,
-                      ),
+PopupMenuItem(
+                   value: 'cleanup_versions',
+                   child: Row(
+                     children: [
+                       Icon(Icons.merge_type, size: 18, color: Theme.of(context).colorScheme.primary),
+                       SizedBox(width: 8),
+                       Text('重複商品を整理'),
+                     ],
+                   ),
+                 ),
+                 PopupMenuItem(
+                   value: 'toggle_hidden',
+                   child: Row(
+                     children: [
+                       Icon(
+                         _showHidden ? Icons.visibility_off : Icons.visibility,
+                         size: 18,
+                         color: Theme.of(context).colorScheme.primary,
+                       ),
                       SizedBox(width: 8),
                       Text(_showHidden ? '非表示商品を隠す' : '非表示商品を表示'),
                     ],
@@ -627,13 +628,13 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 itemBuilder: (context, index) {
                   final p = _filteredProducts[index];
                   return Card(
-                    color: p.isHidden ? Colors.red.shade50.withValues(alpha: 0.1) : theme.cardColor,
+                    color: p.isHidden ? Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3) : theme.cardColor,
                     margin: const EdgeInsets.only(bottom: 8),
                     elevation: 1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: p.isHidden
-                          ? BorderSide(color: Colors.red.shade200, width: 1)
+                          ? BorderSide(color: Theme.of(context).colorScheme.errorContainer, width: 1)
                           : BorderSide.none,
                     ),
                     child: ListTile(
@@ -669,7 +670,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: p.isHidden
-                                ? Colors.red.shade700
+                                ? Theme.of(context).colorScheme.error
                                 : (p.isLocked
                                     ? theme.hintColor
                                     : theme.textTheme.bodyMedium?.color),
@@ -723,13 +724,13 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                                 ),
                               if (!p.isLocked)
                                 ListTile(
-                                  leading: const Icon(
+                                  leading: Icon(
                                     Icons.delete_outline,
-                                    color: Colors.redAccent,
+                                    color: Theme.of(context).colorScheme.error,
                                   ),
-                                  title: const Text(
+                                  title: Text(
                                     "削除",
-                                    style: TextStyle(color: Colors.redAccent),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.error),
                                   ),
                                   onTap: () async {
                                     Navigator.pop(ctx);
@@ -747,10 +748,10 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(context, true),
-                                            child: const Text(
+                                            child: Text(
                                               "削除",
                                               style: TextStyle(
-                                                color: Colors.red,
+                                                color: Theme.of(context).colorScheme.error,
                                               ),
                                             ),
                                           ),
@@ -780,46 +781,46 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 },
               ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showEditDialog(),
-        backgroundColor: Colors.blueGrey.shade800,
-        foregroundColor: theme.cardColor,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+floatingActionButton: FloatingActionButton(
+         onPressed: () => _showEditDialog(),
+         backgroundColor: Theme.of(context).colorScheme.primary,
+         foregroundColor: theme.cardColor,
+         child: const Icon(Icons.add),
+       ),
+     );
+   }
 
-  void _showDetailPane(Product p) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.45,
-        maxChildSize: 0.8,
-        minChildSize: 0.35,
-        expand: false,
-        builder: (context, scrollController) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: ListView(
-            controller: scrollController,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    p.isLocked ? Icons.link : Icons.inventory_2,
-                    color: p.isLocked ? Colors.redAccent : Colors.indigo,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      p.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: p.isLocked ? Colors.grey : null,
-                      ),
-                    ),
-                  ),
+   void _showDetailPane(Product p) {
+     showModalBottomSheet(
+       context: context,
+       isScrollControlled: true,
+       builder: (context) => DraggableScrollableSheet(
+         initialChildSize: 0.45,
+         maxChildSize: 0.8,
+         minChildSize: 0.35,
+         expand: false,
+         builder: (context, scrollController) => Padding(
+           padding: const EdgeInsets.all(16),
+           child: ListView(
+             controller: scrollController,
+             children: [
+               Row(
+                 children: [
+                   Icon(
+                     p.isLocked ? Icons.link : Icons.inventory_2,
+                     color: p.isLocked ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                   ),
+                   const SizedBox(width: 8),
+                   Expanded(
+                     child: Text(
+                       p.name,
+                       style: TextStyle(
+                         fontWeight: FontWeight.bold,
+                         fontSize: 18,
+                         color: p.isLocked ? Theme.of(context).colorScheme.onSurfaceVariant : null,
+                       ),
+                     ),
+                   ),
                   Chip(label: Text(p.category ?? '未分類')),
                 ],
               ),
