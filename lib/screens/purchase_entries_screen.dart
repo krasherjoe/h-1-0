@@ -86,7 +86,7 @@ class _PurchaseEntriesScreenState extends State<PurchaseEntriesScreen> {
         content: Text('${entry.subject ?? '無題'} を削除しますか？'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('削除', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.error))),
         ],
       ),
     );
@@ -106,9 +106,9 @@ class _PurchaseEntriesScreenState extends State<PurchaseEntriesScreen> {
             onRefresh: _handleRefresh,
             child: _entries.isEmpty
                 ? ListView(
-                    children: const [
+                    children: [
                       SizedBox(height: 140),
-                      Icon(Icons.receipt_long, size: 64, color: Colors.grey),
+                      Icon(Icons.receipt_long, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       SizedBox(height: 12),
                       Center(child: Text('仕入伝票がありません。右下のボタンから登録してください。')),
                     ],
@@ -121,7 +121,7 @@ class _PurchaseEntriesScreenState extends State<PurchaseEntriesScreen> {
           );
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         leading: const BackButton(),
         title: const ScreenAppBarTitle(screenId: 'PE', title: '仕入入力'),
@@ -150,7 +150,7 @@ class _PurchaseEntriesScreenState extends State<PurchaseEntriesScreen> {
 
   Widget _buildEntryCard(PurchaseEntry entry) {
     return Card(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         onTap: () => _openEditor(entry: entry),
@@ -171,7 +171,7 @@ class _PurchaseEntriesScreenState extends State<PurchaseEntriesScreen> {
         trailing: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(entry.status.displayName, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            Text(entry.status.displayName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 4),
             Text(
               _currencyFormat.format(entry.amountTaxIncl),
@@ -348,7 +348,7 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade200,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         leading: const BackButton(),
         title: ScreenAppBarTitle(
@@ -365,7 +365,7 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Card(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: ListTile(
                 title: Text(_supplierSnapshot ?? '仕入先を選択'),
                 subtitle: const Text('タップして仕入先を選択'),
@@ -375,7 +375,7 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
             ),
             const SizedBox(height: 12),
             Card(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: ListTile(
                 title: const Text('計上日'),
                 subtitle: Text(DateFormat('yyyy/MM/dd').format(_issueDate)),
@@ -384,7 +384,7 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
             ),
             const SizedBox(height: 12),
             Card(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: TextField(
@@ -412,7 +412,7 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
             ),
             const SizedBox(height: 20),
             Card(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: TextField(
