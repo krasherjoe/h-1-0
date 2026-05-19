@@ -66,16 +66,16 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
     }
   }
 
-  Color _getRoleColor(String role) {
+  Color _getRoleColor(String role, ColorScheme cs) {
     switch (role) {
       case 'admin':
-        return Colors.red;
+        return cs.error;
       case 'manager':
-        return Colors.orange;
+        return cs.secondary;
       case 'staff':
-        return Colors.blue;
+        return cs.primary;
       default:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 
@@ -117,15 +117,15 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
           ),
           Expanded(
             child: _filteredStaff.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.badge, size: 64, color: Colors.grey),
+                        Icon(Icons.badge, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         SizedBox(height: 16),
                         Text(
                           'スタッフ情報がありません',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
                         ),
                       ],
                     ),
@@ -142,11 +142,11 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _getRoleColor(staff['role']),
+                            backgroundColor: _getRoleColor(staff['role'], Theme.of(context).colorScheme),
                             child: Text(
                               staff['name'].substring(0, 1),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -157,16 +157,16 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                                 staff['name'],
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: isActive ? Colors.black : Colors.grey,
+                                  color: isActive ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               if (!isActive)
-                                const Chip(
+                                Chip(
                                   label: Text('無効'),
-                                  backgroundColor: Colors.grey,
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   labelStyle: TextStyle(
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     fontSize: 10,
                                   ),
                                   padding: EdgeInsets.symmetric(horizontal: 4),
@@ -183,9 +183,9 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                               const SizedBox(height: 4),
                               Chip(
                                 label: Text(_getRoleLabel(staff['role'])),
-                                backgroundColor: _getRoleColor(staff['role']).withValues(alpha: 0.2),
+                                backgroundColor: _getRoleColor(staff['role'], Theme.of(context).colorScheme).withValues(alpha: 0.2),
                                 labelStyle: TextStyle(
-                                  color: _getRoleColor(staff['role']),
+                                  color: _getRoleColor(staff['role'], Theme.of(context).colorScheme),
                                   fontSize: 12,
                                 ),
                               ),
