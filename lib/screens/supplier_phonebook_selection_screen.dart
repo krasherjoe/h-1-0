@@ -313,7 +313,7 @@ class _SupplierPhonebookSelectionScreenState
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -335,7 +335,7 @@ class _SupplierPhonebookSelectionScreenState
                         Icon(
                           Icons.search_off,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 16),
                         Text('一致する連絡先が見つかりません'),
@@ -344,7 +344,7 @@ class _SupplierPhonebookSelectionScreenState
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               '検索条件を変更して再度お試しください',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ),
                       ],
@@ -362,8 +362,8 @@ class _SupplierPhonebookSelectionScreenState
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.orange.shade100,
-                            child: Icon(Icons.business, color: Colors.orange),
+                            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                            child: Icon(Icons.business, color: Theme.of(context).colorScheme.tertiary),
                           ),
                           title: Text(
                             contact.displayName,
@@ -393,7 +393,7 @@ class _SupplierPhonebookSelectionScreenState
       parts.add(
         Text(
           contact.phones.first.number,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -404,7 +404,7 @@ class _SupplierPhonebookSelectionScreenState
       parts.add(
         Text(
           contact.emails.first.address,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
