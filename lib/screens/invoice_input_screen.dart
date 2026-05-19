@@ -123,18 +123,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     }
   }
 
-  Color _documentTypeColor(DocumentType type) {
+   Color _documentTypeColor(DocumentType type, ColorScheme cs) {
     switch (type) {
       case DocumentType.estimation:
-        return Colors.blue;
+        return cs.primary;
       case DocumentType.order:
-        return Colors.orange;
+        return cs.secondary;
       case DocumentType.delivery:
-        return Colors.teal;
+        return cs.tertiary;
       case DocumentType.invoice:
-        return Colors.indigo;
+        return cs.primaryContainer;
       case DocumentType.receipt:
-        return Colors.green;
+        return cs.secondaryContainer;
     }
   }
 
@@ -165,7 +165,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
             child: const Text('破棄して戻る'),
           ),
         ],
@@ -708,7 +708,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
 
-    final docColor = _documentTypeColor(_documentType);
+     final docColor = _documentTypeColor(_documentType, Theme.of(context).colorScheme);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     // 閲覧モードのみZoomableAppBarを使用（編集モードは入力フィールドと競合するため）
@@ -869,9 +869,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
               builder: (context, saving, child) => AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: saving
-                    ? Container(
+                     ? Container(
                         key: const ValueKey('saving'),
-                        color: Colors.black45,
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         child: Center(
                           child: Card(
                             elevation: 8,
@@ -898,10 +898,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                                   SizedBox(height: 6),
                                   Text(
                                     '暗号コード生成中',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
+                                style: TextStyle(
+                                       fontSize: 12,
+                                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                     ),
                                   ),
                                 ],
                               ),
@@ -1008,7 +1008,7 @@ color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -1103,25 +1103,25 @@ color: Theme.of(context).cardColor,
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: ListTile(
-        leading: const Icon(Icons.business, color: Colors.blueGrey),
+        leading: Icon(Icons.business, color: Theme.of(context).colorScheme.onSurfaceVariant),
         title: Text(
           _selectedCustomer != null
               ? _customerNameWithHonorific(_selectedCustomer!)
               : "取引先を選択してください",
           style: TextStyle(
             color: _selectedCustomer == null
-                ? Colors.grey
+                ? Theme.of(context).colorScheme.onSurfaceVariant
                 : Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
@@ -1174,7 +1174,7 @@ color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -1186,7 +1186,7 @@ color: Theme.of(context).cardColor,
           displayText,
           style: TextStyle(
             color: _selectedProjectId == null && hasProjects
-                ? Colors.grey
+                ? Theme.of(context).colorScheme.onSurfaceVariant
                 : Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
@@ -1199,9 +1199,9 @@ color: Theme.of(context).cardColor,
                     : (_selectedCustomer == null
                         ? "顧客を先に選択してください"
                         : "顧客に紐づく案件はありません"),
-                style: TextStyle(
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                ),
+        style: TextStyle(
+                   color: isDark ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurfaceVariant,
+                 ),
               ),
         trailing: (_isViewMode || _isLocked || !hasProjects)
             ? null
@@ -1237,8 +1237,8 @@ color: Theme.of(context).cardColor,
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(Icons.remove_circle_outline, color: Colors.grey),
-                title: const Text("案件なし", style: TextStyle(color: Colors.grey)),
+                leading: Icon(Icons.remove_circle_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                title: Text("案件なし", style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 onTap: () {
                   setState(() {
                     _selectedProjectId = null;
@@ -1251,7 +1251,7 @@ color: Theme.of(context).cardColor,
               ..._customerProjects.map((p) => ListTile(
                 leading: Icon(
                   Icons.folder_special,
-                  color: p.status == ProjectStatus.active ? Theme.of(context).colorScheme.secondary : Colors.grey,
+                  color: p.status == ProjectStatus.active ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 title: Text(p.name),
                 subtitle: Text("${p.status.displayName} ・ ${NumberFormat('#,###').format(p.totalAmount)}円"),
@@ -1379,7 +1379,7 @@ color: Theme.of(context).cardColor,
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Center(
-              child: Text("商品が追加されていません", style: TextStyle(color: Colors.grey)),
+              child: Text("商品が追加されていません", style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
           )
         else if (_isViewMode)
@@ -1618,9 +1618,9 @@ color: Theme.of(context).cardColor,
                                     padding: EdgeInsets.zero,
                                   ),
                                   IconButton(
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.delete_outline,
-                                      color: Colors.redAccent,
+                                      color: Theme.of(context).colorScheme.error,
                                       size: 20,
                                     ),
                                     onPressed: () async {
@@ -1683,14 +1683,14 @@ color: Theme.of(context).cardColor,
     final textColor = Theme.of(context).colorScheme.onSurface;
     final useBlue = _summaryIsBlue;
     final bgColor = useBlue
-        ? (isDark ? const Color(0xFF1A237E) : const Color(0xFF283593))
-        : (isDark ? const Color(0xFF2C2C2C) : Theme.of(context).colorScheme.surfaceContainerHighest);
+        ? Theme.of(context).colorScheme.primaryContainer
+        : (isDark ? Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5) : Theme.of(context).colorScheme.surfaceContainerHighest);
     final borderColor = Colors.transparent;
-    final labelColor = useBlue ? Colors.white70 : textColor;
-    final totalColor = useBlue ? Colors.white : textColor;
+    final labelColor = useBlue ? Theme.of(context).colorScheme.onPrimaryContainer : textColor;
+    final totalColor = useBlue ? Theme.of(context).colorScheme.onPrimary : textColor;
     final dividerColor = useBlue
-        ? Colors.white24
-        : Theme.of(context).dividerTheme.color ?? Colors.grey.shade300;
+        ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.2)
+        : Theme.of(context).dividerTheme.color ?? Theme.of(context).colorScheme.outline;
 
     // 数値をフォーマット（0 の場合も "0" として表示）
     String formatAmount(int amount) {
@@ -1715,7 +1715,7 @@ color: Theme.of(context).cardColor,
                   onTap: () => Navigator.pop(context, 'blue'),
                 ),
                 ListTile(
-                  leading: Icon(Icons.palette, color: isDark ? Colors.grey.shade500 : Colors.grey),
+                   leading: Icon(Icons.palette, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   title: const Text('白'),
                   onTap: () => Navigator.pop(context, 'white'),
                 ),
@@ -1768,17 +1768,17 @@ color: Theme.of(context).cardColor,
                            "価格調整",
                            style: TextStyle(
                              fontSize: 14,
-                             color: useBlue ? Colors.white : (isDark ? Theme.of(context).colorScheme.secondary : Colors.indigo.shade700),
-                           ),
-                         ),
-                         if (!_isViewMode && !_isLocked) ...[
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.settings,
-                            size: 16,
-                            color: useBlue
-                                ? Colors.white
-                                : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
+                         color: useBlue ? Theme.of(context).colorScheme.onPrimary : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
+                          if (!_isViewMode && !_isLocked) ...[
+                           const SizedBox(width: 6),
+                           Icon(
+                             Icons.settings,
+                             size: 16,
+                             color: useBlue
+                                 ? Theme.of(context).colorScheme.onPrimary
+                                 : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
                           ),
                         ],
                       ],
@@ -1789,9 +1789,9 @@ color: Theme.of(context).cardColor,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: useBlue
-                              ? Colors.white
-                              : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
+                        color: useBlue
+                               ? Theme.of(context).colorScheme.onPrimaryContainer
+                               : (isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary),
                         ),
                       ),
                   ],
@@ -1955,9 +1955,9 @@ color: Theme.of(context).cardColor,
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
+         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -2084,7 +2084,7 @@ color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -2137,11 +2137,11 @@ color: Theme.of(context).cardColor,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
+               boxShadow: [
                 BoxShadow(
                   color: isDark
-                      ? Colors.black.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.13),
+                      ? Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2)
+                      : Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
                   blurRadius: 10,
                   spreadRadius: -4,
                   offset: const Offset(0, 2),
@@ -2242,7 +2242,7 @@ color: Theme.of(context).cardColor,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.grey.shade400 : Colors.black54,
+               color: isDark ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           Expanded(
@@ -2358,7 +2358,7 @@ color: Theme.of(context).cardColor,
                     'この伝票に対する赤伝（取消し伝票）は既に発行されています。',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.black54,
+         color: isDark ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -2428,8 +2428,8 @@ color: Theme.of(context).cardColor,
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+     ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -2698,10 +2698,10 @@ decoration: InputDecoration(
                                             const Text('明細値引き:'),
                                             Text(
                                               '-￥${fmt.format(result['itemDiscount'])}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.orange,
-                                              ),
+                                         style: const TextStyle(
+                                                 fontWeight: FontWeight.w600,
+                                                 color: Color(0xFFFF6F00),
+                                               ),
                                             ),
                                           ],
                                         ),
@@ -2713,10 +2713,10 @@ decoration: InputDecoration(
                                           const Text('値引き額:'),
                                           Text(
                                             '-￥${fmt.format(result['discount'])}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? Colors.orange.shade300 : Colors.orange.shade700,
-                                            ),
+                                          style: TextStyle(
+                                               fontWeight: FontWeight.w600,
+                                               color: isDark ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary,
+                                             ),
                                           ),
                                         ],
                                       ),
@@ -2751,10 +2751,10 @@ decoration: InputDecoration(
                                           ),
                                           Text(
                                             '￥${fmt.format(result['total'])}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: isDark ? Colors.green.shade300 : Colors.green.shade700,
-                                            ),
+                                        style: TextStyle(
+                                               fontWeight: FontWeight.bold,
+                                               color: Theme.of(context).colorScheme.primary,
+                                             ),
                                           ),
                                         ],
                                       ),
@@ -2804,7 +2804,7 @@ decoration: InputDecoration(
                               }
                               Navigator.pop(dialogContext);
                             },
-                            child: const Text('クリア', style: TextStyle(color: Colors.red)),
+                             child: Text('クリア', style: TextStyle(color: Theme.of(dialogContext).colorScheme.error)),
                           ),
                           ElevatedButton(
                             onPressed: () {
@@ -2868,16 +2868,16 @@ decoration: InputDecoration(
           const Divider(),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, 'tax_inclusive_10'),
-            child: const ListTile(
-              leading: Icon(Icons.shopping_cart, color: Colors.orange),
-              title: Text('税込み (10%)'),
-              subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'tax_inclusive_8'),
-            child: const ListTile(
-              leading: Icon(Icons.shopping_cart, color: Colors.orange),
+          child: ListTile(
+               leading: Icon(Icons.shopping_cart, color: Theme.of(ctx).colorScheme.secondary),
+               title: Text('税込み (10%)'),
+               subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
+             ),
+           ),
+           SimpleDialogOption(
+             onPressed: () => Navigator.pop(ctx, 'tax_inclusive_8'),
+             child: ListTile(
+               leading: Icon(Icons.shopping_cart, color: Theme.of(ctx).colorScheme.secondary),
               title: Text('税込み (8%)'),
               subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
             ),
