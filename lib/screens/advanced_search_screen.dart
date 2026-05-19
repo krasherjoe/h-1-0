@@ -140,9 +140,9 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('インデックス最適化が完了しました'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('インデックス最適化が完了しました'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
       
@@ -162,21 +162,21 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   
   void _clearCache() {
     _advancedSearchService.clearCache();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('検索キャッシュをクリアしました'),
-        backgroundColor: Colors.blue,
+ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('検索キャッシュをクリアしました'),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
       ),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('S3:高度検索'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -320,7 +320,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                 ElevatedButton.icon(
                   onPressed: _isOptimizing ? null : _optimizeIndexes,
                   icon: _isOptimizing
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
@@ -328,8 +328,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                       : const Icon(Icons.speed),
                   label: Text(_isOptimizing ? '最適化中...' : 'インデックス最適化'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -428,7 +428,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
     return Chip(
       avatar: Icon(icon, size: 16),
       label: Text('$label: $value'),
-      backgroundColor: Colors.blue.shade50,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
     );
   }
   
@@ -460,12 +460,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
     final time = metric['time_ms'] as int? ?? 0;
     final count = metric['results_count'] as int? ?? 0;
     
-    Color color = Colors.green;
+    Color color = Theme.of(context).colorScheme.primary;
     if (time > 100) {
-      color = Colors.orange;
+      color = Theme.of(context).colorScheme.secondary;
     }
     if (time > 500) {
-      color = Colors.red;
+      color = Theme.of(context).colorScheme.error;
     }
     
     return Padding(
@@ -494,25 +494,25 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
           ),
           const Spacer(),
           if (time > 0)
-            Text(
+Text(
               '${(count * 1000 / time).toStringAsFixed(0)}件/秒',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
         ],
       ),
     );
   }
-  
+
   Widget _buildSearchResults() {
     if (_searchResults.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey),
+            Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
             SizedBox(height: 16),
             Text('検索結果がありません'),
             SizedBox(height: 8),
@@ -611,8 +611,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.indigo.shade100,
-          child: Icon(icon, color: Colors.indigo),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
         ),
         title: Text(title),
         subtitle: Column(
@@ -624,7 +624,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
                 '類似度: ${(fuzzyScore * 100).toStringAsFixed(1)}%',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
           ],
