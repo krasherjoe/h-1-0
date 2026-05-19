@@ -451,9 +451,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         if (customer == null) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('顧客データを取得できませんでした'),
-              backgroundColor: Colors.orange,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
               duration: Duration(seconds: 2),
             ),
           );
@@ -475,14 +475,14 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
+                  Icon(Icons.check_circle, color: Theme.of(context).colorScheme.onPrimary),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text('電話帳から「${cleanCustomer.displayName}」を追加しました'),
                   ),
                 ],
               ),
-              backgroundColor: Colors.green.shade700,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -500,9 +500,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           final shouldContinue = await showDialog<bool>(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                  Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.secondary),
                   SizedBox(width: 8),
                   Text('顧客が重複しています'),
                 ],
@@ -528,7 +528,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                         '電話番号:',
                         Text(
                           e.customer.tel!,
-                          style: TextStyle(color: Colors.orange),
+                          style: TextStyle(color: Theme.of(context).colorScheme.secondary),
                         ),
                       ),
                     ],
@@ -551,7 +551,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   icon: const Icon(Icons.add_circle_outline),
                   label: const Text('上書き登録'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange.shade700,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
                   ),
                 ),
               ],
@@ -575,7 +575,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                     ),
                   ],
                 ),
-                backgroundColor: Colors.orange.shade700,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -588,12 +588,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 SnackBar(
                   content: Row(
                     children: [
-                      const Icon(Icons.cancel, color: Colors.white),
+                      Icon(Icons.cancel, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       SizedBox(width: 12),
                       Text('登録をキャンセルしました：${customer.displayName}'),
                     ],
                   ),
-                  backgroundColor: Colors.grey.shade700,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -615,7 +615,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.white),
+                      Icon(Icons.error_outline, color: Theme.of(context).colorScheme.onPrimary),
                       SizedBox(width: 12),
                       Expanded(child: Text('顧客登録中にエラーが発生しました')),
                     ],
@@ -626,13 +626,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       padding: const EdgeInsets.only(top: 4, bottom: 4),
                       child: Text(
                         e.toString(),
-                        style: TextStyle(fontSize: 12, color: Colors.white70),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onPrimary),
                       ),
                     ),
                   ],
                 ],
               ),
-              backgroundColor: Colors.red.shade700,
+              backgroundColor: Theme.of(context).colorScheme.error,
               duration: const Duration(seconds: 5),
             ),
           );
@@ -643,9 +643,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
         // キャンセル時の通知（画面から戻る場合）
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('電話帳選択をキャンセルしました'),
-              backgroundColor: Colors.grey,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               duration: Duration(seconds: 2),
             ),
           );
@@ -721,8 +721,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
               ),
               child: const Text('削除'),
             ),
@@ -748,7 +748,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -801,9 +801,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       ),
                       Text(
                         '↓ ${CustomerDataCleaner.removeTitleFromName(toClean[i].formalName)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -843,7 +843,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -866,8 +866,8 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             child: const Text('整理する'),
           ),
@@ -881,14 +881,14 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(count > 0 ? '$count件の古いレコードを非表示にしました' : '重複は見つかりませんでした'),
-          backgroundColor: count > 0 ? Colors.green : null,
+          backgroundColor: count > 0 ? Theme.of(context).colorScheme.primary : null,
         ),
       );
       _loadCustomers();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -903,15 +903,15 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
 
     if (issues.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
+              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.onPrimary),
               SizedBox(width: 8),
               Text('敬称の問題は見つかりませんでした'),
             ],
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
       return;
@@ -930,7 +930,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
           return AlertDialog(
             title: Row(
               children: [
-                Icon(Icons.manage_search, color: Colors.orange.shade700),
+                Icon(Icons.manage_search, color: Theme.of(context).colorScheme.secondary),
                 const SizedBox(width: 8),
                 const Text('敬称スクリーニング'),
               ],
@@ -944,14 +944,14 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: Theme.of(context).colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.warning_amber,
-                          color: Colors.orange.shade700,
+                          color: Theme.of(context).colorScheme.secondary,
                           size: 18,
                         ),
                         const SizedBox(width: 6),
@@ -959,7 +959,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           '${issues.length}件の問題を検出',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade800,
+                            color: Theme.of(context).colorScheme.onSecondaryContainer,
                           ),
                         ),
                         const Spacer(),
@@ -1012,71 +1012,71 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                                   issue.original.formalName)
                                 RichText(
                                   text: TextSpan(
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.black87,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                     children: [
-                                      const TextSpan(
-                                        text: '正式: ',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                      TextSpan(
-                                        text: issue.original.formalName,
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                          decoration:
-                                              TextDecoration.lineThrough,
-                                        ),
-                                      ),
-                                      const TextSpan(text: ' → '),
-                                      TextSpan(
-                                        text: issue.fixedFormalName,
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              if (issue.fixedDisplayName !=
-                                  issue.original.displayName)
-                                RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.black87,
-                                    ),
-                                    children: [
-                                      const TextSpan(
-                                        text: '表示: ',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                      TextSpan(
-                                        text: issue.original.displayName,
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                          decoration:
-                                              TextDecoration.lineThrough,
-                                        ),
-                                      ),
-                                      const TextSpan(text: ' → '),
-                                      TextSpan(
-                                        text: issue.fixedDisplayName,
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+TextSpan(
+                                         text: '正式: ',
+                                         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                       ),
+                                       TextSpan(
+                                         text: issue.original.formalName,
+                                         style: TextStyle(
+                                           color: Theme.of(context).colorScheme.error,
+                                           decoration:
+                                               TextDecoration.lineThrough,
+                                         ),
+                                       ),
+                                       const TextSpan(text: ' → '),
+                                       TextSpan(
+                                         text: issue.fixedFormalName,
+                                         style: TextStyle(
+                                           color: Theme.of(context).colorScheme.primary,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                 ),
+                               if (issue.fixedDisplayName !=
+                                   issue.original.displayName)
+                                 RichText(
+                                   text: TextSpan(
+                                     style: TextStyle(
+                                       fontSize: 11,
+                                       color: Theme.of(context).colorScheme.onSurface,
+                                     ),
+                                     children: [
+                                       TextSpan(
+                                         text: '表示: ',
+                                         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                       ),
+                                       TextSpan(
+                                         text: issue.original.displayName,
+                                         style: TextStyle(
+                                           color: Theme.of(context).colorScheme.error,
+                                           decoration:
+                                               TextDecoration.lineThrough,
+                                         ),
+                                       ),
+                                       const TextSpan(text: ' → '),
+                                       TextSpan(
+                                         text: issue.fixedDisplayName,
+                                         style: TextStyle(
+                                           color: Theme.of(context).colorScheme.primary,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                 ),
                               Text(
                                 '敬称: ${issue.original.title}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.grey,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -1092,7 +1092,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                         '${checkedIssues.length}件を修正します',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.orange.shade700,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
                     ),
@@ -1108,7 +1108,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 icon: const Icon(Icons.auto_fix_high, size: 18),
                 label: Text('${checkedIssues.length}件を修正'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade700,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
                 ),
                 onPressed: checkedIssues.isEmpty
                     ? null
@@ -1133,14 +1133,14 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${issues.length}件の敬称を修正しました'),
-          backgroundColor: Colors.green.shade700,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
       await _loadCustomers();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -1192,11 +1192,11 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 }
               },
               itemBuilder: (BuildContext context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'honor_screening',
                   child: Row(
                     children: [
-                      Icon(Icons.manage_search, size: 18, color: Colors.orange),
+                      Icon(Icons.manage_search, size: 18, color: Theme.of(context).colorScheme.secondary),
                       SizedBox(width: 8),
                       Text('敬称スクリーニング'),
                     ],
@@ -1224,11 +1224,11 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   ),
                 ),
                 const PopupMenuDivider(),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'cleanup_versions',
                   child: Row(
                     children: [
-                      Icon(Icons.merge_type, size: 18, color: Colors.indigo),
+                      Icon(Icons.merge_type, size: 18, color: Theme.of(context).colorScheme.tertiary),
                       SizedBox(width: 8),
                       Text('重複顧客を整理'),
                     ],
@@ -1326,12 +1326,12 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                               child: Icon(Icons.person, color: theme.colorScheme.primary),
                             ),
                             if (c.isLocked)
-                              const Align(
+                              Align(
                                 alignment: Alignment.bottomRight,
                                 child: Icon(
                                   Icons.link,
                                   size: 14,
-                                  color: Colors.redAccent,
+                                  color: Theme.of(context).colorScheme.error,
                                 ),
                               ),
                           ],
@@ -1399,7 +1399,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
             onPressed: _showAddMenu,
             icon: const Icon(Icons.add),
             label: Text(widget.selectionMode ? "選択" : "追加"),
-            backgroundColor: Colors.indigo,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: theme.cardColor,
           );
         },
@@ -1480,13 +1480,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.delete_outline,
-                color: Colors.redAccent,
+                color: Theme.of(context).colorScheme.error,
               ),
-              title: const Text(
+              title: Text(
                 '削除',
-                style: TextStyle(color: Colors.redAccent),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               enabled: true,
               onTap: () async {
@@ -1505,9 +1505,9 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text(
+                        child: Text(
                           '削除',
-                          style: TextStyle(color: Colors.red),
+                          style: TextStyle(color: Theme.of(context).colorScheme.error),
                         ),
                       ),
                     ],
@@ -1544,7 +1544,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                 children: [
                   Icon(
                     c.isLocked ? Icons.link : Icons.person,
-                    color: c.isLocked ? Colors.redAccent : Colors.indigo,
+                    color: c.isLocked ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -1591,7 +1591,7 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Colors.grey[700],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1639,13 +1639,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                                 onPressed: () => Navigator.pop(context, false),
                                 child: const Text("キャンセル"),
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text(
-                                  "削除",
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
+TextButton(
+                                 onPressed: () => Navigator.pop(context, true),
+child: Text(
+                                    "削除",
+                                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                                  ),
+                               ),
                             ],
                           ),
                         );
@@ -1657,13 +1657,13 @@ class _CustomerMasterScreenState extends State<CustomerMasterScreen> {
                           _loadCustomers();
                         }
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.redAccent,
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      label: const Text(
+                      label: Text(
                         "削除",
-                        style: TextStyle(color: Colors.redAccent),
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
                       ),
                     ),
                   if (c.isLocked)
