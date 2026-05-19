@@ -97,11 +97,12 @@ class _InventoryValueReportScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('IR:在庫評価額レポート'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -195,6 +196,7 @@ class _InventoryValueReportScreenState
   }
 
   Widget _buildValueSummary() {
+    final colorScheme = Theme.of(context).colorScheme;
     final totalValue = _statistics['totalValue'] as double? ?? 0;
     final totalProducts = _statistics['totalProducts'] as int? ?? 0;
     final avgValuePerProduct = totalProducts > 0
@@ -208,7 +210,7 @@ class _InventoryValueReportScreenState
             '総評価額',
             '¥${totalValue.toStringAsFixed(0)}',
             Icons.account_balance,
-            Colors.purple,
+            colorScheme.tertiary,
           ),
         ),
         const SizedBox(width: 8),
@@ -217,7 +219,7 @@ class _InventoryValueReportScreenState
             '製品数',
             totalProducts.toString(),
             Icons.inventory,
-            Colors.blue,
+            colorScheme.primary,
           ),
         ),
         const SizedBox(width: 8),
@@ -226,7 +228,7 @@ class _InventoryValueReportScreenState
             '平均単価',
             '¥${avgValuePerProduct.toStringAsFixed(0)}',
             Icons.calculate,
-            Colors.orange,
+            colorScheme.secondary,
           ),
         ),
         const SizedBox(width: 8),
@@ -235,7 +237,7 @@ class _InventoryValueReportScreenState
             '評価日時',
             DateTime.now().toString().substring(0, 10),
             Icons.calendar_today,
-            Colors.green,
+            colorScheme.tertiaryContainer,
           ),
         ),
       ],
@@ -261,7 +263,10 @@ class _InventoryValueReportScreenState
             ),
             Text(
               title,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -289,26 +294,27 @@ class _InventoryValueReportScreenState
   }
 
   Widget _buildPieChart() {
+    final colorScheme = Theme.of(context).colorScheme;
     final statusData = [
       {
         'status': '正常',
         'count': _statistics['normalStock'] as int? ?? 0,
-        'color': Colors.green,
+        'color': colorScheme.primary,
       },
       {
         'status': '低在庫',
         'count': _statistics['lowStock'] as int? ?? 0,
-        'color': Colors.orange,
+        'color': colorScheme.secondary,
       },
       {
         'status': '欠品',
         'count': _statistics['outOfStock'] as int? ?? 0,
-        'color': Colors.red,
+        'color': colorScheme.error,
       },
       {
         'status': '過剰在庫',
         'count': _statistics['overstock'] as int? ?? 0,
-        'color': Colors.purple,
+        'color': colorScheme.tertiary,
       },
     ];
 
@@ -343,13 +349,14 @@ class _InventoryValueReportScreenState
   }
 
   Widget _buildWarehouseBarChart(Map<String, double> warehouseData) {
+    final colorScheme = Theme.of(context).colorScheme;
     final data = warehouseData.values.map((value) => value / 1000000).toList();
     final labels = warehouseData.keys.toList();
 
     return CustomPaint(
       painter: BarChartPainter(
         data: data,
-        color: Colors.purple,
+        color: colorScheme.primary,
         maxValue: data.isNotEmpty
             ? data.reduce((a, b) => a > b ? a : b) * 1.2
             : 1.0,
@@ -360,6 +367,7 @@ class _InventoryValueReportScreenState
   }
 
   Widget _buildInventoryStatusAnalysis() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -377,7 +385,7 @@ class _InventoryValueReportScreenState
                   child: _buildStatusCard(
                     '正常',
                     _statistics['normalStock'] as int? ?? 0,
-                    Colors.green,
+                    colorScheme.primary,
                     Icons.check_circle,
                   ),
                 ),
@@ -386,7 +394,7 @@ class _InventoryValueReportScreenState
                   child: _buildStatusCard(
                     '低在庫',
                     _statistics['lowStock'] as int? ?? 0,
-                    Colors.orange,
+                    colorScheme.secondary,
                     Icons.warning,
                   ),
                 ),
@@ -395,7 +403,7 @@ class _InventoryValueReportScreenState
                   child: _buildStatusCard(
                     '欠品',
                     _statistics['outOfStock'] as int? ?? 0,
-                    Colors.red,
+                    colorScheme.error,
                     Icons.error,
                   ),
                 ),
@@ -404,7 +412,7 @@ class _InventoryValueReportScreenState
                   child: _buildStatusCard(
                     '過剰在庫',
                     _statistics['overstock'] as int? ?? 0,
-                    Colors.purple,
+                    colorScheme.tertiary,
                     Icons.inventory_2,
                   ),
                 ),
@@ -448,6 +456,7 @@ class _InventoryValueReportScreenState
   }
 
   Widget _buildDetailedTable() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -472,7 +481,7 @@ class _InventoryValueReportScreenState
                 ],
                 rows: _inventories.map((inventory) {
                   final status = inventory['status'] as String;
-                  final statusColor = _getStatusColor(status);
+                  final statusColor = _getStatusColor(colorScheme, status);
                   final statusDisplayName = _getStatusDisplayName(status);
 
                   return DataRow(
@@ -525,18 +534,18 @@ class _InventoryValueReportScreenState
     );
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(ColorScheme colorScheme, String status) {
     switch (status) {
       case 'normal':
-        return Colors.green;
+        return colorScheme.primary;
       case 'low_stock':
-        return Colors.orange;
+        return colorScheme.secondary;
       case 'out_of_stock':
-        return Colors.red;
+        return colorScheme.error;
       case 'overstock':
-        return Colors.purple;
+        return colorScheme.tertiary;
       default:
-        return Colors.grey;
+        return colorScheme.onSurfaceVariant;
     }
   }
 
