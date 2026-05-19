@@ -139,9 +139,9 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
             Text('2. 失われる情報は顧客メモに記録\n'),
             Text('3. HASH チェーン断絶レコードを削除\n'),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '⚠️ この操作は取り消せません。',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -152,7 +152,7 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('修復を実行'),
           ),
         ],
@@ -344,11 +344,11 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
               ],
               if (_brokenChainCustomers.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '🔗 HASH チェーン断絶リスト:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                    color: Theme.of(context).colorScheme.error,
                   ),
                 ),
                 ..._brokenChainCustomers.map(
@@ -356,7 +356,7 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       '- ${c['display_name']} (ID: ${c['id']})',
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ),
                 ),
@@ -373,7 +373,7 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
             onPressed: _repairAll,
             icon: const Icon(Icons.build),
             label: const Text('自動修復を実行'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.secondary),
           ),
         ],
       ),
@@ -445,15 +445,15 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '事故物件（重複・HASH チェーン断絶）を検出・自動修復します',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -501,8 +501,8 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
                         backgroundColor:
                             _duplicateCustomers.isEmpty &&
                                 _brokenChainCustomers.isEmpty
-                            ? Colors.grey
-                            : Colors.orange,
+                            ? Theme.of(context).colorScheme.outlineVariant
+                            : Theme.of(context).colorScheme.secondary,
                       ),
                     ),
                   ),
@@ -512,7 +512,7 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.blue),
+                border: Border.all(color: Theme.of(context).colorScheme.primary),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('📝 ステータス：$_statusMessage'),
