@@ -59,7 +59,7 @@ class _CustomFieldReorderScreenState extends State<CustomFieldReorderScreen> {
               title: Text(field.fieldLabel),
               subtitle: Text(field.fieldName),
               trailing: const Icon(Icons.drag_handle),
-              tileColor: Colors.white,
+              tileColor: Theme.of(context).colorScheme.surface,
             ),
           );
         },

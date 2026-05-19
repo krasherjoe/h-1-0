@@ -32,8 +32,8 @@ class InvoiceHistoryList extends StatelessWidget {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey),
+          children: [
+            Icon(Icons.folder_open, size: 64, color: Theme.of(context).colorScheme.outline),
             SizedBox(height: 16),
             Text("保存された伝票がありません"),
           ],

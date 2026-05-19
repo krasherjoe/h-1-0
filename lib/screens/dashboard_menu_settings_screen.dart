@@ -63,7 +63,7 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         title: const Text('D2:ダッシュボード設定'),
         actions: [
@@ -148,7 +148,7 @@ class _DashboardMenuSettingsScreenState extends State<DashboardMenuSettingsScree
         const SizedBox(height: 4),
         Text(
           item.description!,
-          style: const TextStyle(color: Colors.black54, fontSize: 12),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 12),
         ),
       ],
     );
