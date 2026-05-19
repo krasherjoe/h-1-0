@@ -246,7 +246,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(color: Theme.of(context).colorScheme.outline),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
@@ -291,7 +291,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                                     if (available != null)
                                       Text(
                                         '移動元の残量: $available',
-                                        style: TextStyle(color: shortage ? Colors.red : Colors.grey.shade700),
+                                        style: TextStyle(color: shortage ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant),
                                       ),
                                   ],
                                 ),
