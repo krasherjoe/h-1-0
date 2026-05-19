@@ -56,8 +56,8 @@ class StaffPreviewCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: Colors.teal.shade100,
-                  child: const Icon(Icons.person, color: Colors.teal, size: 32),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  child: Icon(Icons.person, color: Theme.of(context).colorScheme.primary, size: 32),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -111,7 +111,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: Colors.teal.shade700),
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.secondary),
         const SizedBox(width: 6),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
@@ -266,7 +266,7 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('ST:担当者マスター'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -339,7 +339,7 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditDialog(),
-        backgroundColor: Colors.teal.shade800,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: theme.cardColor,
         child: const Icon(Icons.add),
       ),
