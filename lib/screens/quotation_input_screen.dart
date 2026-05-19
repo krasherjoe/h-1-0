@@ -76,10 +76,10 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
 
   bool get _isA2Style => _listStyle == InvoiceListStyle.a2;
 
-  Widget? _buildStatusChip(bool isDraft, InvoiceListStyleTheme theme) {
+  Widget? _buildStatusChip(bool isDraft, InvoiceListStyleTheme theme, ColorScheme cs) {
     if (!theme.showStatusChip) return null;
-    final bg = isDraft ? Colors.orange.shade50 : Colors.blue.shade50;
-    final color = isDraft ? Colors.orange.shade800 : Colors.blue.shade800;
+    final bg = isDraft ? cs.secondaryContainer.withValues(alpha: 0.3) : cs.primaryContainer.withValues(alpha: 0.3);
+    final color = isDraft ? cs.secondary : cs.primary;
     final label = isDraft ? '下書き' : '確定';
     return Chip(
       label: Text(label),
@@ -358,7 +358,7 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                             hintText: '顧客名・伝票番号で検索',
                             prefixIcon: const Icon(Icons.search),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: Theme.of(context).colorScheme.surface,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
@@ -428,7 +428,7 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
 
                           final confirming = _confirming[quotation.id] ?? false;
                           final bool isDraft = quotation.isDraft;
-                          final statusChip = _buildStatusChip(isDraft, styleTheme);
+                          final statusChip = _buildStatusChip(isDraft, styleTheme, Theme.of(context).colorScheme);
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             color: styleTheme.cardColor(isDraft),
