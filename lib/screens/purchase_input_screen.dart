@@ -308,7 +308,7 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
             onPressed: _saving ? null : _save,
             child: _saving
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('保存', style: TextStyle(color: Colors.white)),
+                : Text('保存', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
           ),
         ],
       ),
@@ -405,10 +405,10 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
+              child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
+                    Icon(Icons.inventory_2_outlined, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     SizedBox(height: 8),
                     Text('商品を追加してください'),
                   ],
@@ -564,7 +564,7 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                   onPressed: () => _removeItem(item.id),
                 ),
               ],
