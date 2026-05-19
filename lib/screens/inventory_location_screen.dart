@@ -137,7 +137,7 @@ class _InventoryLocationScreenState extends State<InventoryLocationScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('削除'),
           ),
         ],
@@ -171,7 +171,7 @@ class _InventoryLocationScreenState extends State<InventoryLocationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('WL:在庫ロケーション'),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: _loadData,
@@ -233,7 +233,7 @@ class _InventoryLocationScreenState extends State<InventoryLocationScreen> {
                               child: ListTile(
                                 leading: Icon(
                                   Icons.location_on,
-                                  color: location.isActive ? Colors.green : Colors.grey,
+                                  color: location.isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                                 title: Text(location.locationName),
                                 subtitle: Text(
