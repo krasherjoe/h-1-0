@@ -115,9 +115,9 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('検索インデックスを再構築しました'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('検索インデックスを再構築しました'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -138,8 +138,8 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FS:高速検索'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -251,11 +251,11 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
     }
     
     if (_searchResults.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey),
+            Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
             SizedBox(height: 16),
             Text('検索結果がありません'),
             SizedBox(height: 8),
@@ -360,8 +360,8 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade100,
-          child: Icon(icon, color: Colors.blue),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
         ),
         title: Text(title),
         subtitle: Column(
@@ -372,7 +372,7 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
               '関連度: ${rank}',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
