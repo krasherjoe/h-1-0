@@ -72,7 +72,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('ES:見積入力'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -81,7 +81,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.description, size: 64, color: Colors.grey),
+                      Icon(Icons.description, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(height: 16),
                       const Text('見積が登録されていません'),
                       const SizedBox(height: 8),
@@ -124,15 +124,15 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                             children: [
                               CircleAvatar(
                                 backgroundColor: est.isDraft
-                                    ? Colors.orange.shade100
-                                    : Colors.blue.shade100,
+                                    ? Theme.of(context).colorScheme.secondaryContainer
+                                    : Theme.of(context).colorScheme.primaryContainer,
                                 child: Icon(
                                   est.isDraft
                                       ? Icons.edit_note
                                       : Icons.description,
                                   color: est.isDraft
-                                      ? Colors.orange
-                                      : Colors.blue,
+                                      ? Theme.of(context).colorScheme.secondary
+                                      : Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -148,24 +148,24 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                                           fontSize: 15),
                                     ),
                                     const SizedBox(height: 2),
-                                    Text(
-                                      '${est.date.year}/${est.date.month.toString().padLeft(2, '0')}/${est.date.day.toString().padLeft(2, '0')}　${est.isDraft ? '下書き' : '確定'}',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600),
-                                    ),
+Text(
+                                       '${est.date.year}/${est.date.month.toString().padLeft(2, '0')}/${est.date.day.toString().padLeft(2, '0')}  ${est.isDraft ? '下書き' : '確定'}',
+                                       style: TextStyle(
+                                           fontSize: 12,
+                                           color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                     ),
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
-                                        Expanded(
-                                          child: Text(
-                                            subjectText,
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade700),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
+Expanded(
+                                           child: Text(
+                                             subjectText,
+                                             style: TextStyle(
+                                                 fontSize: 12,
+                                                 color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                             overflow: TextOverflow.ellipsis,
+                                           ),
+                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           amountText,
@@ -179,8 +179,8 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right,
-                                  color: Colors.grey),
+                              Icon(Icons.chevron_right,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ],
                           ),
                         ),
@@ -190,8 +190,8 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createNewEstimate,
-        backgroundColor: Colors.blue.shade800,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         child: const Icon(Icons.add),
       ),
     );
