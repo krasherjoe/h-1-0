@@ -93,14 +93,14 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('削除しました')));
   }
 
-  Color _statusColor(PurchasePaymentStatus status) {
+  Color _statusColor(ColorScheme cs, PurchasePaymentStatus status) {
     switch (status) {
       case PurchasePaymentStatus.scheduled:
-        return Colors.orange;
+        return cs.secondary;
       case PurchasePaymentStatus.paid:
-        return Colors.green;
+        return cs.primary;
       case PurchasePaymentStatus.cancelled:
-        return Colors.red;
+        return cs.error;
     }
   }
 
@@ -134,7 +134,7 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
               value: status,
               child: Row(
                 children: [
-                  Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), color: _statusColor(status)),
+                  Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), color: _statusColor(Theme.of(context).colorScheme, status)),
                   Text(status.displayName),
                 ],
               ),
@@ -170,7 +170,8 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
   }
 
   Widget _buildPaymentCard(PurchasePayment payment) {
-    final statusColor = _statusColor(payment.status);
+    final cs = Theme.of(context).colorScheme;
+    final statusColor = _statusColor(cs, payment.status);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
