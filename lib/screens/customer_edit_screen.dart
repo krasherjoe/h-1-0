@@ -129,7 +129,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
     final Contact? picked = await showModalBottomSheet<Contact>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.5),
       builder: (ctx) => ContactPickerSheet(
         contacts: contacts,
         title: _isEdit ? '電話帳から上書き' : '電話帳から新規入力',
@@ -215,11 +215,11 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
         actions: [
           TextButton.icon(
             onPressed: _save,
-            icon: const Icon(Icons.check, color: Colors.white),
-            label: const Text(
+            icon: Icon(Icons.check, color: Theme.of(context).colorScheme.onPrimary),
+            label: Text(
               '保存',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -244,12 +244,12 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                     CircleAvatar(
                       radius: 36,
                       backgroundColor: _isCompany
-                          ? Colors.indigo.shade100
-                          : Colors.teal.shade100,
+                          ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                          : Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
                       child: Icon(
                         _isCompany ? Icons.business : Icons.person,
                         size: 36,
-                        color: _isCompany ? Colors.indigo : Colors.teal,
+                        color: _isCompany ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -263,7 +263,7 @@ class _CustomerEditScreenState extends State<CustomerEditScreen> {
                     Text(
                       '必須項目（*）を入力してください',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -583,13 +583,13 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.indigo),
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.indigo,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
       ],
