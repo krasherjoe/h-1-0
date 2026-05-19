@@ -49,10 +49,10 @@ class CategoryPreviewCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.teal.shade100,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.category, color: Colors.teal),
+                  child: Icon(Icons.category, color: Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -199,7 +199,7 @@ class _ProductCategoryMasterScreenState
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
               child: const Text('非表示にする'),
             ),
           ],
@@ -221,7 +221,7 @@ class _ProductCategoryMasterScreenState
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PC:商品カテゴリーマスター'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             tooltip: _showInactive ? '有効のみ表示' : '非表示も表示',
@@ -244,7 +244,7 @@ class _ProductCategoryMasterScreenState
                 hintText: 'カテゴリー名・説明で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -269,18 +269,18 @@ class _ProductCategoryMasterScreenState
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: c.isActive
-                            ? Colors.teal.shade100
-                            : Colors.grey.shade300,
+                            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5)
+                            : Theme.of(context).colorScheme.outlineVariant,
                         child: Icon(
                           Icons.category,
-                          color: c.isActive ? Colors.teal : Colors.grey,
+                          color: c.isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline,
                         ),
                       ),
                       title: Text(
                         c.name + (c.isActive ? '' : ' (非表示)'),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: c.isActive ? Colors.black87 : Colors.grey,
+                          color: c.isActive ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       subtitle: c.description != null &&
@@ -305,9 +305,9 @@ class _ProductCategoryMasterScreenState
                                     c.isActive
                                         ? Icons.visibility_off
                                         : Icons.restore,
-                                    color: c.isActive
-                                        ? Colors.red.shade300
-                                        : Colors.green,
+color: c.isActive
+                                         ? Theme.of(context).colorScheme.error
+                                         : Theme.of(context).colorScheme.primary,
                                   ),
                                   tooltip: c.isActive ? '非表示にする' : '復元',
                                   onPressed: () => _toggleActive(c),
@@ -326,8 +326,8 @@ class _ProductCategoryMasterScreenState
           ? null
           : FloatingActionButton(
               onPressed: () => _showEditDialog(),
-              backgroundColor: Colors.teal.shade800,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               child: const Icon(Icons.add),
             ),
     );
