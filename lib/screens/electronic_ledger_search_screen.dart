@@ -87,9 +87,9 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('E2:電子帳簿検索'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        title: Text('E2:電子帳簿検索'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download),
@@ -169,7 +169,7 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
                       child: Text(
                         _formatDateRange(),
                         style: TextStyle(
-                          color: (_startDate != null && _endDate != null) ? null : Colors.grey,
+                          color: (_startDate != null && _endDate != null) ? null : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -192,15 +192,16 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
             const SizedBox(height: 8),
             
             // 検索結果数
-            if (_searchResults.isNotEmpty)
+if (_searchResults.isNotEmpty)
               Text(
                 '検索結果: $_totalCount件',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -212,6 +213,7 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
     }
 
     if (_searchResults.isEmpty) {
+      final cs = Theme.of(context).colorScheme;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -219,14 +221,14 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
             Icon(
               Icons.search_off,
               size: 64,
-              color: Colors.grey[400],
+              color: cs.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               '検索結果がありません',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey[600],
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -234,7 +236,7 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
               '検索条件を変更して再試行してください',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: cs.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -254,10 +256,10 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Colors.indigo.shade100,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                     child: Icon(
                       _getDocumentTypeIcon(ledger['documentType']),
-                      color: Colors.indigo,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
                   ),
