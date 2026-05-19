@@ -393,12 +393,12 @@ class _CustomFieldEditScreenState extends State<CustomFieldEditScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
+                            border: Border.all(color: Theme.of(context).colorScheme.outline),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '選択肢を追加してください',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         )
                       else
@@ -410,7 +410,7 @@ class _CustomFieldEditScreenState extends State<CustomFieldEditScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
+                                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(option),
@@ -419,7 +419,7 @@ class _CustomFieldEditScreenState extends State<CustomFieldEditScreen> {
                               const SizedBox(width: 8),
                               IconButton(
                                 onPressed: () => _removeOption(option),
-                                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                icon: Icon(Icons.remove_circle, color: Theme.of(context).colorScheme.error),
                               ),
                             ],
                           ),
