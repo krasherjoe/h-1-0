@@ -179,7 +179,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
               builder: (context, snapshot) {
                 final hasSales = snapshot.data ?? false;
                 return ListTile(
-                  leading: Icon(Icons.receipt_long, color: hasSales ? Colors.green : Colors.grey),
+                  leading: Icon(Icons.receipt_long, color: hasSales ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant),
                   title: const Text('売上伝票'),
                   subtitle: Text(hasSales ? '作成済み' : '未作成'),
                 );
@@ -196,10 +196,10 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
     );
   }
 
-  Widget? _buildStatusChip(bool isDraft, InvoiceListStyleTheme theme) {
+  Widget? _buildStatusChip(bool isDraft, InvoiceListStyleTheme theme, ColorScheme cs) {
     if (!theme.showStatusChip) return null;
-    final bg = isDraft ? Colors.orange.shade50 : Colors.green.shade50;
-    final color = isDraft ? Colors.orange.shade800 : Colors.green.shade800;
+    final bg = isDraft ? cs.primary.withValues(alpha: 0.12) : cs.primaryContainer.withValues(alpha: 0.3);
+    final color = isDraft ? cs.onSurfaceVariant : cs.primary;
     final label = isDraft ? '未発行' : '発行済';
     return Chip(
       label: Text(label),
@@ -361,7 +361,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                             hintText: '顧客名・伝票番号で検索',
                             prefixIcon: const Icon(Icons.search),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
@@ -433,20 +433,21 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                           final issuing = _issuing[invoice.id] ?? false;
                           final bool isDraft = invoice.isDraft;
                           final bool isRed = invoice.isRedInvoice;
-                          final bool isCancelled = _redInvoiceSourceIds.contains(invoice.id);
-                          final statusChip = _buildStatusChip(isDraft, styleTheme);
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            color: isRed
-                                ? Colors.red.shade50
-                                : (isCancelled ? Colors.red.shade50.withValues(alpha: 0.5) : styleTheme.cardColor(isDraft)),
-                            elevation: styleTheme.cardElevation(isDraft),
-                            shape: (isRed || isCancelled)
-                                ? RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(color: Colors.red.shade200, width: 1.5),
-                                  )
-                                : styleTheme.cardShape,
+                           final bool isCancelled = _redInvoiceSourceIds.contains(invoice.id);
+                           final cs = Theme.of(context).colorScheme;
+                           final statusChip = _buildStatusChip(isDraft, styleTheme, cs);
+                           return Card(
+                             margin: const EdgeInsets.only(bottom: 12),
+                             color: isRed
+                                 ? cs.error.withValues(alpha: 0.08)
+                                 : (isCancelled ? cs.error.withValues(alpha: 0.04) : styleTheme.cardColor(isDraft)),
+                             elevation: styleTheme.cardElevation(isDraft),
+                             shape: (isRed || isCancelled)
+                                 ? RoundedRectangleBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                     side: BorderSide(color: cs.error.withValues(alpha: 0.3), width: 1.5),
+                                   )
+                                 : styleTheme.cardShape,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -460,40 +461,40 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                         ),
                                       ),
-                                      if (isRed)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          margin: const EdgeInsets.only(right: 6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red.shade100,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: const Text(
-                                            '赤伝',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        )
-                                      else if (isCancelled)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          margin: const EdgeInsets.only(right: 6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red.shade100,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: const Text(
-                                            '赤伝済',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        )
+if (isRed)
+                                         Container(
+                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                           margin: const EdgeInsets.only(right: 6),
+                                           decoration: BoxDecoration(
+                                             color: cs.error.withValues(alpha: 0.12),
+                                             borderRadius: BorderRadius.circular(10),
+                                           ),
+                                           child: Text(
+                                             '赤伝',
+                                             style: TextStyle(
+                                               fontSize: 11,
+                                               fontWeight: FontWeight.w700,
+                                               color: cs.error,
+                                             ),
+                                           ),
+                                         )
+                                       else if (isCancelled)
+                                         Container(
+                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                           margin: const EdgeInsets.only(right: 6),
+                                           decoration: BoxDecoration(
+                                             color: cs.error.withValues(alpha: 0.12),
+                                             borderRadius: BorderRadius.circular(10),
+                                           ),
+                                           child: Text(
+                                             '赤伝済',
+                                             style: TextStyle(
+                                               fontSize: 11,
+                                               fontWeight: FontWeight.w700,
+                                               color: cs.error,
+                                             ),
+                                           ),
+                                         )
                                       else if (statusChip != null) ...[
                                         const SizedBox(width: 8),
                                         statusChip,
