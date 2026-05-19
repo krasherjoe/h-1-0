@@ -76,8 +76,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('U1:ユーザー管理'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -105,7 +105,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.grey.shade100,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         children: [
           TextField(
@@ -174,8 +174,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (_filteredUsers.isEmpty) {
       return const Center(
         child: Text(
-          'ユーザーが見つかりません',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+                   'ユーザーが見つかりません',
+          style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -195,11 +195,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: user.isActive ? Colors.green : Colors.grey,
+          backgroundColor: user.isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
           child: Text(
             user.fullName.isNotEmpty ? user.fullName[0] : 'U',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -227,13 +227,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             IconButton(
               icon: Icon(
                 user.isActive ? Icons.toggle_on : Icons.toggle_off,
-                color: user.isActive ? Colors.green : Colors.grey,
+                color: user.isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               onPressed: () => _toggleUserStatus(user),
               tooltip: user.isActive ? '無効化' : '有効化',
             ),
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
               onPressed: () => _deleteUser(user),
               tooltip: '削除',
             ),
@@ -334,7 +334,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('削除'),
           ),
         ],
