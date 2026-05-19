@@ -62,10 +62,10 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: isCurrent ? Colors.green : Colors.grey,
+                          backgroundColor: isCurrent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                           child: Icon(
                             isCurrent ? Icons.check : Icons.history,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                         title: Text(
@@ -81,10 +81,7 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
                             if (customer.validFrom != null)
                               Text('有効開始: ${customer.validFrom}'),
                             if (isHidden)
-                              const Text(
-                                '非表示',
-                                style: TextStyle(color: Colors.red),
-                              ),
+                              Text('非表示', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                           ],
                         ),
                         trailing: Row(
@@ -97,7 +94,7 @@ class _CustomerHistoryScreenState extends State<CustomerHistoryScreen> {
                                 tooltip: "PDFを生成",
                               ),
                             if (isCurrent)
-                              const Icon(Icons.star, color: Colors.amber),
+                              Icon(Icons.star, color: Theme.of(context).colorScheme.tertiary),
                           ],
                         ),
                       ),
