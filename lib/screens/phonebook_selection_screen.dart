@@ -159,7 +159,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -181,7 +181,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                         Icon(
                           Icons.search_off,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 16),
                         Text('一致する連絡先が見つかりません'),
@@ -190,7 +190,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               '検索条件を変更して再度お試しください',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ),
                       ],
@@ -208,8 +208,8 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.indigo.shade100,
-                            child: Icon(Icons.person, color: Colors.indigo),
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                            child: Icon(Icons.person, color: Theme.of(context).colorScheme.primary),
                           ),
                           title: Text(
                             contact.displayName,
@@ -239,7 +239,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
       parts.add(
         Text(
           contact.phones.first.number,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -250,7 +250,7 @@ class _PhonebookSelectionScreenState extends State<PhonebookSelectionScreen> {
       parts.add(
         Text(
           contact.emails.first.address,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
