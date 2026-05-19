@@ -36,8 +36,8 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("アクティビティ履歴 (Gitログ風)"),
-        backgroundColor: Colors.blueGrey.shade800,
+        title: Text("アクティビティ履歴 (Gitログ風)"),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadLogs),
         ],
@@ -50,43 +50,44 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                   itemCount: _logs.length,
                   itemBuilder: (context, index) {
                     final log = _logs[index];
-                    return _buildLogTile(log, dateFormat);
+                    return _buildLogTile(log, dateFormat, context);
                   },
                 ),
     );
   }
 
-  Widget _buildLogTile(ActivityLog log, DateFormat fmt) {
+  Widget _buildLogTile(ActivityLog log, DateFormat fmt, BuildContext ctx) {
     IconData icon;
     Color color;
+    final cs = Theme.of(ctx).colorScheme;
 
     switch (log.action) {
       case "SAVE_INVOICE":
       case "SAVE_PRODUCT":
       case "SAVE_CUSTOMER":
         icon = Icons.save;
-        color = Colors.green;
+        color = cs.primary;
         break;
       case "DELETE_INVOICE":
       case "DELETE_PRODUCT":
       case "DELETE_CUSTOMER":
         icon = Icons.delete_forever;
-        color = Colors.red;
+        color = cs.error;
         break;
       case "GENERATE_PDF":
         icon = Icons.picture_as_pdf;
-        color = Colors.orange;
+        color = cs.tertiary;
         break;
       default:
         icon = Icons.info_outline;
-        color = Colors.blueGrey;
+        color = cs.onSurfaceVariant;
     }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: cs.surfaceContainerHighest.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
@@ -102,9 +103,9 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (log.details != null)
-              Text(log.details!, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+              Text(log.details!, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface)),
             const SizedBox(height: 4),
-            Text(fmt.format(log.timestamp), style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            Text(fmt.format(log.timestamp), style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
         isThreeLine: log.details != null,
