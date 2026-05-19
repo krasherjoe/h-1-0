@@ -40,6 +40,13 @@ import 'delivery_list_screen.dart';
 import 'purchase_order_screen.dart';
 import 'purchase_payment_screen.dart';
 import 'screen_pj1_project_list.dart';
+import 'sales_report_screen.dart';
+import 'customer_sales_trend_screen.dart';
+import 'product_profit_analysis_screen.dart';
+import 'activity_log_screen.dart';
+import 'role_management_screen.dart';
+import 'inventory_valuation_report_screen.dart';
+import 'stock_adjustment_screen.dart';
 import '../models/invoice_models.dart';
 import '../services/location_service.dart';
 import '../services/customer_repository.dart';
@@ -210,6 +217,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const InventoryLocationScreen();
       case 'inventory_movement':
         return const InventoryMovementScreen();
+      case 'sales_report':
+        return const SalesReportScreen();
+      case 'customer_sales_report':
+        return const CustomerSalesTrendScreen();
+      case 'product_margin_report':
+        return const ProductProfitAnalysisScreen();
+      case 'log_management':
+        return const ActivityLogScreen();
+      case 'user_permissions':
+        return const RoleManagementScreen();
+      case 'inventory_valuation_report':
+        return const InventoryValuationReportScreen();
+      case 'stock_adjustment':
+        return const StockAdjustmentScreen();
       default:
         return MenuPlaceholderScreen(item: item);
     }
@@ -220,10 +241,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onTap: () => _navigate(item),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
           ],
         ),
         padding: const EdgeInsets.all(16),
@@ -237,15 +258,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text(_subtitle(item), style: const TextStyle(color: Colors.grey)),
+                  Text(_subtitle(item), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   if (_showCategoryDescriptions && item.description != null) ...[
                     const SizedBox(height: 4),
-                    Text(item.description!, style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                    Text(item.description!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
                   ]
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),
@@ -258,8 +279,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     return CircleAvatar(
       radius: 22,
-      backgroundColor: Colors.indigo.shade50,
-      foregroundColor: Colors.indigo.shade700,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      foregroundColor: Theme.of(context).colorScheme.primary,
       child: Icon(_iconForName(item.iconName ?? 'list_alt')),
     );
   }
@@ -362,7 +383,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _historyUnlocked
                         ? Row(
                             children: [
-                              const Icon(Icons.lock_open, color: Colors.green),
+                              Icon(Icons.lock_open, color: Theme.of(context).colorScheme.primary),
                               const SizedBox(width: 8),
                               const Expanded(child: Text('A2 ロック解除済')),
                               OutlinedButton.icon(
@@ -391,13 +412,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.all(16),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade200),
+                        border: Border.all(color: Theme.of(context).colorScheme.secondary),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: Colors.orange),
+                          Icon(Icons.info_outline, color: Theme.of(context).colorScheme.secondary),
                           const SizedBox(width: 12),
                           Expanded(child: Text(_statusText, style: const TextStyle(fontWeight: FontWeight.bold))),
                         ],
