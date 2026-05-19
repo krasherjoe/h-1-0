@@ -98,7 +98,7 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('削除'),
           ),
         ],
@@ -220,14 +220,14 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
           Icon(
             Icons.dashboard_customize,
             size: 64,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
             'カスタムフィールドがありません',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -235,7 +235,7 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
             '業種に合わせた独自フィールドを追加できます',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 24),
@@ -247,8 +247,8 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
                 icon: const Icon(Icons.dashboard_customize),
                 label: const Text('業種テンプレート選択'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
               OutlinedButton.icon(
@@ -285,7 +285,7 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
                   field.fieldTypeName,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -320,8 +320,8 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
                     const PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
-                        leading: Icon(Icons.delete, color: Colors.red),
-                        title: Text('削除', style: TextStyle(color: Colors.red)),
+                        leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                        title: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
