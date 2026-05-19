@@ -69,15 +69,15 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
         ],
       ),
       body: _warehouses.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.warehouse, size: 64, color: Colors.grey),
+                  Icon(Icons.warehouse, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   SizedBox(height: 16),
                   Text(
                     '倉庫データがありません',
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
                   ),
                 ],
               ),
@@ -118,7 +118,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                             '総商品数',
                             '${_selectedWarehouse!['totalProducts']}',
                             Icons.inventory_2,
-                            Colors.blue,
+                            Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -127,7 +127,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                             '在庫総額',
                             '¥${_formatNumber(_selectedWarehouse!['totalValue'])}',
                             Icons.attach_money,
-                            Colors.green,
+                            Theme.of(context).colorScheme.secondary,
                           ),
                         ),
                       ],
@@ -143,7 +143,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                             '低在庫',
                             '${_selectedWarehouse!['lowStockItems']}',
                             Icons.warning,
-                            Colors.orange,
+                            Theme.of(context).colorScheme.tertiary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -152,7 +152,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                             '欠品',
                             '${_selectedWarehouse!['outOfStockItems']}',
                             Icons.error,
-                            Colors.red,
+                            Theme.of(context).colorScheme.error,
                           ),
                         ),
                       ],
@@ -221,9 +221,9 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -244,7 +244,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
   Widget _buildActionButton(String label, IconData icon, VoidCallback onTap) {
     return Card(
       child: ListTile(
-        leading: Icon(icon, color: Colors.indigo),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(label),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
