@@ -104,7 +104,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.radar, color: Colors.green),
+                            Icon(Icons.radar, color: Theme.of(context).colorScheme.secondary),
                             const SizedBox(width: 8),
                             const Expanded(
                               child: Text(
@@ -141,7 +141,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                         const SizedBox(height: 8),
                         const Text(
                           'この範囲内に記憶された場所があれば、お局様への直接通信を優先します',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -156,7 +156,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.location_on, color: Colors.blue),
+                            const Icon(Icons.location_on, color: Color(0xFF1976D2)),
                             const SizedBox(width: 8),
                             const Expanded(
                               child: Text(
@@ -177,10 +177,10 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                           child: FilledButton.icon(
                             onPressed: _discovering ? null : _recordCurrentLocation,
                             icon: _discovering
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
                                   )
                                 : const Icon(Icons.add_location),
                             label: Text(_discovering ? '検出中...' : 'この場所を記憶'),
@@ -199,7 +199,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.storage, color: Colors.orange),
+                            const Icon(Icons.storage, color: Color(0xFFFFA726)),
                             const SizedBox(width: 8),
                             const Expanded(
                               child: Text(
@@ -211,12 +211,12 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                         ),
                         const SizedBox(height: 12),
                         if (_locations.isEmpty)
-                          const Center(
+                          Center(
                             child: Padding(
                               padding: EdgeInsets.all(24),
                               child: Text(
                                 'まだ場所が記憶されていません',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                             ),
                           )
@@ -237,7 +237,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: const Icon(Icons.place, color: Colors.green),
+        leading: Icon(Icons.place, color: Theme.of(context).colorScheme.secondary),
         title: Text(
           location.host,
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -249,7 +249,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
         ),
         isThreeLine: true,
         trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
+          icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
           onPressed: () async {
             final confirm = await showDialog<bool>(
               context: context,
