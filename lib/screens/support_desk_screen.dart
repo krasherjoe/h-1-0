@@ -60,18 +60,18 @@ class _SupportDeskScreenState extends State<SupportDeskScreen> {
     }
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(ColorScheme cs, String status) {
     switch (status) {
       case 'open':
-        return Colors.red;
+        return cs.error;
       case 'in_progress':
-        return Colors.orange;
+        return cs.secondary;
       case 'resolved':
-        return Colors.green;
+        return cs.primary;
       case 'closed':
-        return Colors.grey;
+        return cs.onSurfaceVariant;
       default:
-        return Colors.blue;
+        return cs.tertiary;
     }
   }
 
@@ -130,11 +130,11 @@ class _SupportDeskScreenState extends State<SupportDeskScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.support_agent, size: 64, color: Colors.grey),
+                        Icon(Icons.support_agent, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         SizedBox(height: 16),
                         Text(
                           'サポートチケットがありません',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
                         ),
                       ],
                     ),
@@ -150,8 +150,8 @@ class _SupportDeskScreenState extends State<SupportDeskScreen> {
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _getStatusColor(ticket['status']),
-                            child: const Icon(Icons.support_agent, color: Colors.white),
+                            backgroundColor: _getStatusColor(Theme.of(context).colorScheme, ticket['status']),
+                            child: Icon(Icons.support_agent, color: Theme.of(context).colorScheme.onPrimary),
                           ),
                           title: Text(
                             ticket['subject'],
@@ -167,16 +167,16 @@ class _SupportDeskScreenState extends State<SupportDeskScreen> {
                                 children: [
                                   Chip(
                                     label: Text(_getStatusLabel(ticket['status'])),
-                                    backgroundColor: _getStatusColor(ticket['status']).withValues(alpha: 0.2),
+                                    backgroundColor: _getStatusColor(Theme.of(context).colorScheme, ticket['status']).withValues(alpha: 0.2),
                                     labelStyle: TextStyle(
-                                      color: _getStatusColor(ticket['status']),
+                                      color: _getStatusColor(Theme.of(context).colorScheme, ticket['status']),
                                       fontSize: 12,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Chip(
                                     label: Text('優先度: ${_getPriorityLabel(ticket['priority'])}'),
-                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                     labelStyle: const TextStyle(fontSize: 12),
                                   ),
                                 ],
