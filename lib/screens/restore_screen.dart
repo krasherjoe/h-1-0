@@ -39,8 +39,8 @@ class _RestoreScreenState extends State<RestoreScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('DB:データベースリストア'),
-        backgroundColor: Colors.orange.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        foregroundColor: Theme.of(context).colorScheme.onSecondary,
       ),
       body: SafeArea(
         child: Padding(
@@ -109,19 +109,19 @@ class _RestoreScreenState extends State<RestoreScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isActive
-                              ? (isCurrent ? Colors.orange : Colors.green)
-                              : Colors.grey.shade300,
+                              ? (isCurrent ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary)
+                              : Theme.of(context).colorScheme.surfaceContainerHighest,
                           border: isCurrent
-                              ? Border.all(color: Colors.orange.shade700, width: 3)
+                              ? Border.all(color: Theme.of(context).colorScheme.secondary, width: 3)
                               : null,
                         ),
                         child: Center(
                           child: isActive && !isCurrent
-                              ? const Icon(Icons.check, size: 16, color: Colors.white)
+                              ? Icon(Icons.check, size: 16, color: Theme.of(context).colorScheme.onPrimary)
                               : Text(
                                   number,
                                   style: TextStyle(
-                                    color: isActive ? Colors.white : Colors.grey.shade600,
+                                    color: isActive ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -133,8 +133,8 @@ class _RestoreScreenState extends State<RestoreScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           color: isCurrent
-                              ? Colors.orange.shade700
-                              : (isActive ? Colors.black : Colors.grey),
+                              ? Theme.of(context).colorScheme.secondary
+                              : (isActive ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant),
                           fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
@@ -158,73 +158,51 @@ class _RestoreScreenState extends State<RestoreScreen> {
     switch (_currentStep) {
       case RestoreStep.initial:
         icon = Icons.folder_open;
-        color = Colors.blue;
+        color = Theme.of(context).colorScheme.primary;
         title = '待機中';
         subtitle = 'バックアップファイルを選択してください';
         break;
       case RestoreStep.selecting:
         icon = Icons.search;
-        color = Colors.blue;
+        color = Theme.of(context).colorScheme.primary;
         title = 'ファイル選択中';
         subtitle = 'ファイルを探しています...';
         break;
       case RestoreStep.validating:
         icon = Icons.verified_user;
-        color = Colors.orange;
+        color = Theme.of(context).colorScheme.secondary;
         title = '検証中';
         subtitle = 'バックアップファイルを検証しています...';
         break;
       case RestoreStep.confirming:
         icon = Icons.warning_amber;
-        color = Colors.orange;
+        color = Theme.of(context).colorScheme.secondary;
         title = '確認が必要';
         subtitle = 'このバックアップでリストアしますか？';
         break;
       case RestoreStep.restoring:
         icon = Icons.restore;
-        color = Colors.orange;
+        color = Theme.of(context).colorScheme.secondary;
         title = 'リストア中';
         subtitle = 'データを復元しています...';
         break;
       case RestoreStep.success:
         icon = Icons.check_circle;
-        color = Colors.green;
+        color = Theme.of(context).colorScheme.primary;
         title = 'リストア完了';
         subtitle = 'データが正常に復元されました';
         break;
       case RestoreStep.error:
         icon = Icons.error;
-        color = Colors.red;
+        color = Theme.of(context).colorScheme.error;
         title = 'エラー';
         subtitle = _errorMessage ?? '不明なエラーが発生しました';
         break;
     }
 
-    // MaterialColor の shade を取得
-    Color shade50;
-    Color shade100;
-    Color shade700;
-    if (color == Colors.blue) {
-      shade50 = Colors.blue.shade50;
-      shade100 = Colors.blue.shade100;
-      shade700 = Colors.blue.shade700;
-    } else if (color == Colors.orange) {
-      shade50 = Colors.orange.shade50;
-      shade100 = Colors.orange.shade100;
-      shade700 = Colors.orange.shade700;
-    } else if (color == Colors.green) {
-      shade50 = Colors.green.shade50;
-      shade100 = Colors.green.shade100;
-      shade700 = Colors.green.shade700;
-    } else if (color == Colors.red) {
-      shade50 = Colors.red.shade50;
-      shade100 = Colors.red.shade100;
-      shade700 = Colors.red.shade700;
-    } else {
-      shade50 = color.withOpacity(0.1);
-      shade100 = color.withOpacity(0.2);
-      shade700 = color;
-    }
+    final shade50 = color.withValues(alpha: 0.1);
+    final shade100 = color.withValues(alpha: 0.2);
+    final shade700 = color;
 
     return Card(
       color: shade50,
@@ -256,7 +234,7 @@ class _RestoreScreenState extends State<RestoreScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: shade700.withOpacity(0.7)),
+                    style: TextStyle(color: shade700.withValues(alpha: 0.7)),
                   ),
                 ],
               ),
@@ -287,19 +265,19 @@ class _RestoreScreenState extends State<RestoreScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.info_outline, size: 64, color: Colors.grey.shade300),
+                      Icon(Icons.info_outline, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(height: 16),
                       Text(
                         '「ファイルを選択」ボタンから\nバックアップファイル(.db)を選んでください',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'ダウンロードフォルダにある\n「販売アシスト 1 号_backup_*.db」\nというファイルを選びます',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.grey.shade500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 12,
                         ),
                       ),
@@ -322,13 +300,13 @@ class _RestoreScreenState extends State<RestoreScreen> {
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: _progress > 0 ? _progress : null,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade700),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.secondary),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _statusMessage,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                 ),
               ],
               if (_currentStep == RestoreStep.success) ...[
@@ -336,26 +314,26 @@ class _RestoreScreenState extends State<RestoreScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary),
                   ),
                   child: Column(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green.shade700, size: 48),
+                      Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 48),
                       const SizedBox(height: 8),
                       Text(
                         'リストアが完了しました',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'アプリを再起動してください',
-                        style: TextStyle(color: Colors.green.shade600),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
                       ),
                     ],
                   ),
@@ -379,7 +357,7 @@ class _RestoreScreenState extends State<RestoreScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -406,8 +384,8 @@ class _RestoreScreenState extends State<RestoreScreen> {
           icon: const Icon(Icons.folder_open),
           label: const Text('バックアップファイルを選択'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange.shade700,
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            foregroundColor: Theme.of(context).colorScheme.onSecondary,
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
         );
@@ -451,8 +429,8 @@ class _RestoreScreenState extends State<RestoreScreen> {
                 icon: const Icon(Icons.restore),
                 label: const Text('リストア実行'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade700,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -479,8 +457,8 @@ class _RestoreScreenState extends State<RestoreScreen> {
               icon: const Icon(Icons.check),
               label: const Text('完了'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
