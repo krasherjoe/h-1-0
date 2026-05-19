@@ -68,9 +68,9 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('設定を保存しました'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('設定を保存しました'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -105,7 +105,7 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('リセット'),
           ),
         ],
@@ -125,9 +125,9 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('設定をデフォルト値にリセットしました'),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: const Text('設定をデフォルト値にリセットしました'),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
           ),
         );
       }
@@ -152,8 +152,8 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
       return Scaffold(
         appBar: AppBar(
           title: const Text('E3:電子帳簿設定'),
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
         body: const Center(
           child: Text('設定を読み込めませんでした'),
@@ -164,8 +164,8 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
     return Scaffold(
       appBar: AppBar(
         title: const Text('E3:電子帳簿設定'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -211,10 +211,10 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.indigo,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
@@ -234,7 +234,7 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
             const SizedBox(height: 8),
             Text(
               '電子帳簿データの保存期間を設定します。',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<ElectronicLedgerRetentionPeriod>(
@@ -260,7 +260,7 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
             const SizedBox(height: 8),
             Text(
               _getRetentionPeriodDescription(_settings!.retentionPeriod),
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -331,7 +331,7 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
             const SizedBox(height: 8),
             Text(
               '注: 暗号化を有効にするとパフォーマンスが低下する可能性があります。',
-              style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.secondary),
             ),
           ],
         ),
@@ -381,12 +381,12 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
           child: ElevatedButton(
             onPressed: _isSaving ? null : _saveSettings,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: _isSaving
-                ? const Row(
+                ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
@@ -394,7 +394,7 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                         ),
                       ),
                       SizedBox(width: 8),
@@ -410,12 +410,12 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
           child: OutlinedButton(
             onPressed: _resetToDefault,
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.red),
+              side: BorderSide(color: Theme.of(context).colorScheme.error),
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: Text(
               'デフォルトにリセット',
-              style: TextStyle(color: Colors.red[700]),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         ),
