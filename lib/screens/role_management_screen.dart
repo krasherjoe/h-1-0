@@ -68,8 +68,8 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('R1:ロール管理'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -97,7 +97,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.grey.shade100,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         children: [
           TextField(
@@ -135,10 +135,10 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
 
   Widget _buildRoleList() {
     if (_filteredRoles.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'ロールが見つかりません',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -158,11 +158,11 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: role.isActive ? Colors.purple : Colors.grey,
+          backgroundColor: role.isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
           child: Text(
             role.name.isNotEmpty ? role.name[0] : 'R',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -178,7 +178,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
             IconButton(
               icon: Icon(
                 role.isActive ? Icons.toggle_on : Icons.toggle_off,
-                color: role.isActive ? Colors.purple : Colors.grey,
+                color: role.isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               onPressed: () => _toggleRoleStatus(role),
               tooltip: role.isActive ? '無効化' : '有効化',
@@ -189,7 +189,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
               tooltip: '編集',
             ),
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
               onPressed: () => _deleteRole(role),
               tooltip: '削除',
             ),
@@ -213,7 +213,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
                       .map(
                         (permission) => Chip(
                           label: Text(permission.displayName),
-                          backgroundColor: Colors.blue.shade100,
+                          backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
                         ),
                       )
                       .toList(),
@@ -313,7 +313,7 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: const Text('削除'),
           ),
         ],
