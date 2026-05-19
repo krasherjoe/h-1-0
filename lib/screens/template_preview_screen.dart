@@ -95,16 +95,16 @@ class TemplatePreviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('T2:${_getBusinessTypeName(businessType)}業種プレビュー'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: fields.isEmpty
-          ? _buildEmptyState()
+          ? _buildEmptyState(Theme.of(context).colorScheme)
           : _buildFieldsList(),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ColorScheme cs) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -112,14 +112,14 @@ class TemplatePreviewScreen extends StatelessWidget {
           Icon(
             Icons.dashboard_customize,
             size: 64,
-            color: Colors.grey[400],
+            color: cs.onSurfaceVariant,
           ),
           const SizedBox(height: 16),
           Text(
             '${_getBusinessTypeName(businessType)}業種のテンプレートがありません',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
+              color: cs.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -127,7 +127,7 @@ class TemplatePreviewScreen extends StatelessWidget {
             'この業種の標準フィールドはまだ定義されていません',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: cs.onSurfaceVariant,
             ),
           ),
         ],
@@ -151,10 +151,10 @@ class TemplatePreviewScreen extends StatelessWidget {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Colors.indigo.shade100,
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                       child: Icon(
                         _getFieldTypeIcon(field.fieldType),
-                        color: Colors.indigo,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 20,
                       ),
                     ),
@@ -174,7 +174,7 @@ class TemplatePreviewScreen extends StatelessWidget {
                             field.fieldName,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -183,7 +183,7 @@ class TemplatePreviewScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -202,7 +202,7 @@ class TemplatePreviewScreen extends StatelessWidget {
                     field.description!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[700],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -213,14 +213,14 @@ class TemplatePreviewScreen extends StatelessWidget {
                       Icon(
                         Icons.star,
                         size: 16,
-                        color: Colors.red[400],
+                        color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '必須項目',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.red[400],
+                          color: Theme.of(context).colorScheme.error,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -233,7 +233,7 @@ class TemplatePreviewScreen extends StatelessWidget {
                     '選択肢: ${field.validation.options!.join(', ')}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -244,14 +244,14 @@ class TemplatePreviewScreen extends StatelessWidget {
                       Icon(
                         Icons.settings,
                         size: 16,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '既定値: ${field.defaultValue}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -263,9 +263,9 @@ class TemplatePreviewScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,11 +275,11 @@ class TemplatePreviewScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[700],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        ..._buildValidationRules(field),
+                        ..._buildValidationRules(field, Theme.of(context).colorScheme),
                       ],
                     ),
                   ),
@@ -301,42 +301,42 @@ class TemplatePreviewScreen extends StatelessWidget {
            validation.pattern != null;
   }
 
-  List<Widget> _buildValidationRules(CustomField field) {
+  List<Widget> _buildValidationRules(CustomField field, ColorScheme cs) {
     final validation = field.validation;
     final rules = <Widget>[];
 
     if (validation.minLength != null) {
       rules.add(Text(
         '最小文字数: ${validation.minLength}',
-        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
       ));
     }
 
     if (validation.maxLength != null) {
       rules.add(Text(
         '最大文字数: ${validation.maxLength}',
-        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
       ));
     }
 
     if (validation.min != null) {
       rules.add(Text(
         '最小値: ${validation.min}',
-        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
       ));
     }
 
     if (validation.max != null) {
       rules.add(Text(
         '最大値: ${validation.max}',
-        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
       ));
     }
 
     if (validation.pattern != null) {
       rules.add(Text(
         '正規表現: ${validation.pattern}',
-        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+        style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
       ));
     }
 
