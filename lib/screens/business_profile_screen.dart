@@ -238,7 +238,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('F2:自社情報'),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(onPressed: _save, icon: const Icon(Icons.save)),
         ],
@@ -337,7 +337,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         final ctrl = _bankCtrls[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          color: ctrl.isActive ? Colors.green.shade50 : null,
+          color: ctrl.isActive ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2) : null,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -438,12 +438,12 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           height: 180,
           width: double.infinity,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
             borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: _sealPath == null
-              ? const Center(child: Icon(Icons.crop_original, size: 48, color: Colors.grey))
+              ? Center(child: Icon(Icons.crop_original, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant))
               : ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.file(File(_sealPath!), fit: BoxFit.contain),
@@ -467,7 +467,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           ],
         ),
         const SizedBox(height: 6),
-        const Text('白い紙に押した判子を真上から撮影してください', style: TextStyle(fontSize: 12, color: Colors.grey)),
+        Text('白い紙に押した判子を真上から撮影してください', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -476,9 +476,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '業種に合わせた独自のフィールドを追加できます。\n例：店舗面積、サービス提供エリア、資格情報など',
-          style: TextStyle(fontSize: 14, color: Colors.grey),
+          style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
@@ -497,9 +497,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
           },
           icon: const Icon(Icons.dashboard_customize),
           label: const Text('カスタムフィールドを設定'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
+style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
       ],
