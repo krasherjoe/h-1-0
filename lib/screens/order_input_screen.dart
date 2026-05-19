@@ -114,11 +114,11 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.assignment_turned_in, size: 64, color: Colors.grey),
+                      Icon(Icons.assignment_turned_in, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         '受注が登録されていません',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton.icon(
@@ -140,10 +140,10 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: isDraft ? Colors.orange.shade100 : Colors.teal.shade100,
+                          backgroundColor: isDraft ? Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3) : Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                           child: Icon(
                             isDraft ? Icons.edit_note : Icons.assignment_turned_in,
-                            color: isDraft ? Colors.orange : Colors.teal,
+                            color: isDraft ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         title: Text(
