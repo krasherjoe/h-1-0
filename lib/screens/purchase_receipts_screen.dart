@@ -165,10 +165,10 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
             onRefresh: _handleRefresh,
             child: _receipts.isEmpty
                 ? ListView(
-                    children: const [
-                      SizedBox(height: 140),
-                      Icon(Icons.account_balance_wallet_outlined, size: 64, color: Colors.grey),
-                      SizedBox(height: 12),
+                    children: [
+                      const SizedBox(height: 140),
+                      Icon(Icons.account_balance_wallet_outlined, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(height: 12),
                       Center(child: Text('支払データがありません。右下のボタンから登録してください。')),
                     ],
                   )
@@ -207,7 +207,7 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
                 preferredSize: const Size.fromHeight(32),
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(filterLabel, style: const TextStyle(color: Colors.white70)),
+                  child: Text(filterLabel, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               ),
       ),
@@ -223,11 +223,12 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
   Widget _buildReceiptCard(PurchaseReceipt receipt) {
     final allocated = _receiptAllocations[receipt.id] ?? 0;
     final allocationRatio = receipt.amount == 0 ? 0.0 : allocated / receipt.amount;
+    final cs = Theme.of(context).colorScheme;
     final statusColor = allocationRatio >= 0.999
-        ? Colors.green
+        ? cs.primary
         : allocationRatio <= 0
-            ? Colors.orange
-            : Colors.blue;
+            ? cs.secondary
+            : cs.tertiary;
     final supplier = _supplierLabel(receipt);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -247,7 +248,7 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
               Text('割当: ${_currencyFormat.format(allocated)} / ${_currencyFormat.format(receipt.amount)}'),
               if (receipt.notes?.isNotEmpty == true) ...[
                 const SizedBox(height: 4),
-                Text(receipt.notes!, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                Text(receipt.notes!, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface)),
               ],
             ],
           ),
@@ -257,7 +258,7 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
           children: [
             Text(_dateFormat.format(receipt.paymentDate)),
             const SizedBox(height: 4),
-            Text(receipt.method ?? '未設定', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            Text(receipt.method ?? '未設定', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(color: statusColor.withAlpha(32), borderRadius: BorderRadius.circular(12)),
@@ -275,7 +276,7 @@ class _PurchaseReceiptsScreenState extends State<PurchaseReceiptsScreen> {
         ),
         isThreeLine: true,
         contentPadding: const EdgeInsets.all(16),
-        tileColor: Colors.white,
+        tileColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onLongPress: () => _confirmDelete(receipt),
       ),
@@ -600,7 +601,7 @@ class _PurchaseReceiptEditorPageState extends State<PurchaseReceiptEditorPage> {
                         const Spacer(),
                         Text(
                           remaining >= 0 ? '残り: ${_currencyFormat.format(remaining)}' : '超過: ${_currencyFormat.format(remaining.abs())}',
-                          style: TextStyle(color: remaining >= 0 ? Colors.black87 : Colors.red),
+                          style: TextStyle(color: remaining >= 0 ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.error),
                         ),
                       ],
                     ),
@@ -692,8 +693,8 @@ class _PurchaseEntryPickerSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -722,9 +723,9 @@ class _PurchaseEntryPickerSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('残余', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                        Text('残余', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         Text(currencyFormat.format(outstanding),
-                            style: TextStyle(color: outstanding > 0 ? Colors.green.shade700 : Colors.redAccent)),
+                            style: TextStyle(color: outstanding > 0 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error)),
                       ],
                     ),
                     onTap: () => Navigator.pop(context, entry),
