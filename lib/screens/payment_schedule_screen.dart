@@ -22,7 +22,7 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
       screenId: 'PY',
       title: '支払予定',
       icon: Icons.payment,
-      themeColor: Colors.blue,
+      themeColor: Theme.of(context).colorScheme.primary,
 
       // データ取得
       fetchData: () => repo.getAllSchedules(),
@@ -114,7 +114,7 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
         title: '支払予定がありません',
         subtitle: '仕入データを登録すると支払予定が自動生成されます',
         actionLabel: '仕入入力へ',
-        iconColor: Colors.blue,
+        iconColor: Theme.of(context).colorScheme.primary,
         onAction: () {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +156,7 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
             if (schedule.daysUntilDue >= 0)
               Text('期日まで: ${schedule.daysUntilDue}日')
             else
-              Text('延滞日数: ${-schedule.daysUntilDue}日', style: TextStyle(color: Colors.red)),
+              Text('延滞日数: ${-schedule.daysUntilDue}日', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             const SizedBox(height: 8),
             Text('仕入伝票: ${schedule.purchase.documentNumber}'),
             Text('仕入日: ${schedule.purchase.date.year}/${schedule.purchase.date.month}/${schedule.purchase.date.day}'),
