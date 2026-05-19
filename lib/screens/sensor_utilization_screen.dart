@@ -63,10 +63,10 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
       
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text('ドキュメントスキャン機能は準備中です'),
-          backgroundColor: Colors.blue,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -96,10 +96,10 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
         _lastRecordingPath = result['audio']?['path'];
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text('音声録音を開始しました'),
-          backgroundColor: Colors.blue,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -126,10 +126,10 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
       
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text('位置情報付き写真機能は準備中です'),
-          backgroundColor: Colors.blue,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -150,8 +150,8 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('S2:センサー活用'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -199,8 +199,8 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
                   icon: const Icon(Icons.document_scanner),
                   label: const Text('ドキュメントスキャン'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
                 ElevatedButton.icon(
@@ -208,26 +208,26 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
                   icon: const Icon(Icons.photo_camera),
                   label: const Text('位置情報付き写真'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
                 ElevatedButton.icon(
                   onPressed: _isRecording ? null : _recordVoiceMemo,
                   icon: _isRecording 
-                      ? const SizedBox(
+                       ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.mic),
-                  label: Text(_isRecording ? '録音中...' : '音声メモ'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+                           valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
+                         ),
+                       )
+                     : const Icon(Icons.mic),
+                label: Text(_isRecording ? '録音中...' : '音声メモ'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.tertiary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               ],
@@ -281,9 +281,9 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
       children: [
         Row(
           children: [
-            Icon(
+             Icon(
               isActive ? Icons.location_on : Icons.location_off,
-              color: isActive ? Colors.green : Colors.grey,
+              color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             const Text(
@@ -314,9 +314,9 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
       children: [
         Row(
           children: [
-            Icon(
+             Icon(
               isInitialized ? Icons.camera : Icons.camera_alt_outlined,
-              color: isInitialized ? Colors.green : Colors.grey,
+              color: isInitialized ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             const Text(
@@ -343,9 +343,9 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
       children: [
         Row(
           children: [
-            Icon(
+          Icon(
               isRecording ? Icons.mic : Icons.mic_none,
-              color: isRecording ? Colors.red : Colors.grey,
+              color: isRecording ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             const Text(
@@ -362,12 +362,12 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
     );
   }
   
-  Widget _buildRecentActivity() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final subtitleColor = isDark ? Colors.grey.shade400 : Colors.grey.shade700;
-    final hintColor = isDark ? Colors.grey.shade500 : Colors.grey;
+   Widget _buildRecentActivity() {
+    final cs = Theme.of(context).colorScheme;
+    final cardColor = cs.surfaceContainerHighest;
+    final textColor = cs.onSurface;
+    final subtitleColor = cs.onSurfaceVariant;
+    final hintColor = cs.outline;
 
     return Card(
       color: cardColor,
