@@ -86,18 +86,18 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('削除しました')));
   }
 
-  Color _statusColor(PurchaseOrderStatus status) {
+  Color _statusColor(ColorScheme cs, PurchaseOrderStatus status) {
     switch (status) {
       case PurchaseOrderStatus.draft:
-        return Colors.orange;
+        return cs.secondary;
       case PurchaseOrderStatus.approved:
-        return Colors.blueGrey;
+        return cs.onSurfaceVariant;
       case PurchaseOrderStatus.partiallyReceived:
-        return Colors.blue;
+        return cs.primary;
       case PurchaseOrderStatus.received:
-        return Colors.green;
+        return cs.primaryContainer;
       case PurchaseOrderStatus.cancelled:
-        return Colors.red;
+        return cs.error;
     }
   }
 
@@ -127,7 +127,7 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
               value: status,
               child: Row(
                 children: [
-                  Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), color: _statusColor(status)),
+                  Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), color: _statusColor(Theme.of(context).colorScheme, status)),
                   Text(status.displayName),
                 ],
               ),
@@ -163,7 +163,8 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
   }
 
   Widget _buildOrderCard(PurchaseOrder order) {
-    final statusColor = _statusColor(order.status);
+    final cs = Theme.of(context).colorScheme;
+    final statusColor = _statusColor(cs, order.status);
     final supplier = _supplierLabel(order);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
