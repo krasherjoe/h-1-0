@@ -109,8 +109,8 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('GP:粗利分析'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -239,7 +239,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '総売上',
                 '¥${totalRevenue.toStringAsFixed(0)}',
                 Icons.trending_up,
-                Colors.blue,
+                Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(width: 8),
@@ -248,7 +248,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '総売上原価',
                 '¥${totalCost.toStringAsFixed(0)}',
                 Icons.inventory,
-                Colors.red,
+                Theme.of(context).colorScheme.error,
               ),
             ),
             const SizedBox(width: 8),
@@ -257,7 +257,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '粗利益',
                 '¥${totalGrossProfit.toStringAsFixed(0)}',
                 Icons.show_chart,
-                Colors.green,
+                Theme.of(context).colorScheme.secondary,
               ),
             ),
             const SizedBox(width: 8),
@@ -266,7 +266,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '純利益',
                 '¥${totalNetProfit.toStringAsFixed(0)}',
                 Icons.account_balance,
-                Colors.purple,
+                Theme.of(context).colorScheme.tertiary,
               ),
             ),
           ],
@@ -279,7 +279,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '粗利率',
                 '${grossMargin.toStringAsFixed(1)}%',
                 Icons.percent,
-                Colors.orange,
+                Theme.of(context).colorScheme.primaryContainer,
               ),
             ),
             const SizedBox(width: 8),
@@ -288,7 +288,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '営業利益率',
                 '${operatingMargin.toStringAsFixed(1)}%',
                 Icons.percent,
-                Colors.teal,
+                Theme.of(context).colorScheme.secondaryContainer,
               ),
             ),
             const SizedBox(width: 8),
@@ -297,7 +297,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
                 '営業費用',
                 '¥${totalOperatingCost.toStringAsFixed(0)}',
                 Icons.business,
-                Colors.grey,
+                Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 8),
@@ -327,7 +327,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
             ),
             Text(
               title,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -376,7 +376,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
         .toList();
 
     return CustomPaint(
-      painter: LineChartPainter(data: data, color: Colors.green, maxValue: 0.6),
+      painter: LineChartPainter(data: data, color: Theme.of(context).colorScheme.primary, maxValue: 0.6),
       child: Container(),
     );
   }
@@ -423,7 +423,7 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
     return CustomPaint(
       painter: BarChartPainter(
         data: data,
-        color: Colors.green,
+        color: Theme.of(context).colorScheme.secondary,
         maxValue: 1.0,
         labels: _productProfitData
             .map((item) => item['product'] as String)
