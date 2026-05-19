@@ -73,7 +73,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('IQ:在庫照会'),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
@@ -101,7 +101,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                 hintText: '商品名・カテゴリ・バーコードで検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -117,14 +117,14 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.green.shade50,
+            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.2),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('合計在庫数', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Text('合計在庫数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       Text(
                         '$_totalStock 個',
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -136,13 +136,13 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('少在庫品目', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Text('少在庫品目', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       Text(
                         '$_lowStockCount 品',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: _lowStockCount > 0 ? Colors.orange : Colors.black87,
+                          color: _lowStockCount > 0 ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -152,7 +152,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('登録商品数', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Text('登録商品数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       Text(
                         '${_filtered.length} 品',
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -179,10 +179,10 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: isLowStock ? Colors.orange.shade100 : Colors.green.shade100,
+                                backgroundColor: isLowStock ? Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3) : Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                                 child: Icon(
                                   Icons.inventory_2,
-                                  color: isLowStock ? Colors.orange : Colors.green,
+                                  color: isLowStock ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                               title: Text(
@@ -201,10 +201,10 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: isLowStock ? Colors.orange : Colors.green,
+                                      color: isLowStock ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
-                                  const Text('個', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  const Text('個', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 ],
                               ),
                             ),
