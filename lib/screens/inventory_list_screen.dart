@@ -45,7 +45,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('IL:在庫一覧'),
-        backgroundColor: Colors.orange,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -58,7 +58,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                     itemBuilder: (context, index) {
                       final inventory = _inventories[index];
                       return ListTile(
-                        leading: const Icon(Icons.inventory_2, color: Colors.orange),
+                        leading: Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.onPrimary),
                         title: Text(inventory.productName),
                         subtitle: Text('倉庫: ${inventory.warehouseName}'),
                         trailing: Text(
@@ -66,7 +66,7 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: inventory.quantity > 0 ? Colors.green : Colors.red,
+                            color: inventory.quantity > 0 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
                           ),
                         ),
                       );
