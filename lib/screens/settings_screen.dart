@@ -207,9 +207,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('✅ Google アカウントにサインインしました'),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -218,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ サインインに失敗しました：$e'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     } finally {
@@ -243,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('サインアウト'),
           ),
         ],
@@ -264,9 +264,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _currentGoogleAccount = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('✅ Google アカウントからサインアウトしました'),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -276,7 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ サインアウトに失敗しました：$e'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     } finally {
@@ -296,7 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ エラー：$e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('❌ エラー：$e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -324,6 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final result = await runner();
       stopwatch.stop();
       if (!mounted) return;
+      final cs = Theme.of(context).colorScheme;
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -331,7 +332,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Icon(
                 result.isHealthy ? Icons.check_circle : Icons.error,
-                color: result.isHealthy ? Colors.teal : Colors.red,
+                color: result.isHealthy ? cs.primary : cs.error,
               ),
               const SizedBox(width: 8),
               Expanded(child: Text(title)),
@@ -349,21 +350,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     : '⚠ 改ざん検出: ${result.brokenCount} 件',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: result.isHealthy ? Colors.teal : Colors.red,
+                  color: result.isHealthy ? cs.primary : cs.error,
                 ),
               ),
               if (!result.isHealthy) ...[
                 const SizedBox(height: 8),
-                const Text('改ざん検出された伝票ID:', style: TextStyle(fontSize: 12)),
+                Text('改ざん検出された伝票ID:', style: TextStyle(fontSize: 12)),
                 ...result.brokenIds.map((id) => Text(
                       '・$id',
-                      style: const TextStyle(fontSize: 11, color: Colors.red),
+                      style: TextStyle(fontSize: 11, color: cs.error),
                     )),
               ],
               const SizedBox(height: 8),
               Text(
                 '処理時間: ${stopwatch.elapsedMilliseconds} ms',
-                style: const TextStyle(fontSize: 11, color: Colors.black54),
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
               ),
             ],
           ),
@@ -378,7 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('検証エラー: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('検証エラー: $e'), backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
   }
@@ -468,8 +469,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.blue),
+children: [
+               Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
               SizedBox(width: 8),
               Text('バージョン情報'),
             ],
@@ -595,13 +596,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.shade300),
+                border: Border.all(color: Theme.of(context).colorScheme.primaryContainer),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.backup, color: Colors.green.shade700, size: 28),
+                  Icon(Icons.backup, color: Theme.of(context).colorScheme.primary, size: 28),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -612,18 +613,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                            color: Colors.green.shade800,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'ローカル: $_localBackupStatus${_googleFeaturesEnabled ? " / Drive: $_driveBackupStatus" : ""}',
-                          style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: Colors.green.shade600),
+                  Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
                 ],
               ),
             ),
@@ -632,15 +633,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.home_outlined, color: Colors.indigo),
+                  children: [
+                    Icon(Icons.home_outlined, color: Theme.of(context).colorScheme.secondary),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -681,7 +682,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'アプリ起動時や戻る操作で開くホーム画面を選択できます。',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -692,7 +693,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade50,
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -700,7 +701,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.palette, color: Colors.purple),
+                    Icon(Icons.palette, color: Theme.of(context).colorScheme.secondary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -739,7 +740,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade50,
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -747,7 +748,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.receipt_long, color: Colors.blue),
+                    Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -784,7 +785,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade50,
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -792,7 +793,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.home, color: Colors.green),
+                    Icon(Icons.home, color: Theme.of(context).colorScheme.secondary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -830,15 +831,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? const Color(0xFF1E1E1E)
-                  : Colors.grey.shade50,
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.view_carousel, color: Colors.blue),
+                  children: [
+                    Icon(Icons.view_carousel, color: Theme.of(context).colorScheme.primary),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -875,7 +876,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   '※将来的にその他のスタイルを追加予定です。'
                   '設定変更後は IV/Q1 画面を再表示すると反映されます。',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -884,7 +885,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -892,7 +893,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.info_outline, color: Colors.orange),
+                    Icon(Icons.info_outline, color: Theme.of(context).colorScheme.tertiary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -931,7 +932,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -939,7 +940,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.mail, color: Colors.blue),
+                    Icon(Icons.mail, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -966,7 +967,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 ListTile(
-                  leading: Icon(Icons.storage, color: Colors.red),
+                  leading: Icon(Icons.storage, color: Theme.of(context).colorScheme.error),
                   title: const Text('DB デバッグ画面'),
                   subtitle: const Text('SQLite テーブルスキーマ確認・データ照会'),
                   trailing: const Icon(Icons.chevron_right),
@@ -978,7 +979,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: Icon(Icons.cleaning_services, color: Colors.orange),
+                  leading: Icon(Icons.cleaning_services, color: Theme.of(context).colorScheme.tertiary),
                   title: const Text('顧客データの重複を整理'),
                   subtitle: const Text('同じ顧客が2つ以上表示されている場合、古い方を非表示にします'),
                   trailing: const Icon(Icons.chevron_right),
@@ -993,23 +994,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onPressed: () => Navigator.pop(context, false),
                             child: const Text('キャンセル'),
                           ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('整理する'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true) {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('force_cleanup_forked_records', true);
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('アプリを再起動して顧客データを整理します'),
+ElevatedButton(
+                             onPressed: () => Navigator.pop(context, true),
+                             child: const Text('整理する'),
+                             style: ElevatedButton.styleFrom(
+                               backgroundColor: Theme.of(context).colorScheme.secondary,
+                             ),
+                           ),
+                         ],
+                       ),
+                     );
+                     if (confirmed == true) {
+                       final prefs = await SharedPreferences.getInstance();
+                       await prefs.setBool('force_cleanup_forked_records', true);
+                       if (!mounted) return;
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(
+                           content: const Text('アプリを再起動して顧客データを整理します'),
                           duration: Duration(seconds: 3),
                         ),
                       );
@@ -1020,18 +1021,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.cloud_upload, color: Colors.deepPurple),
+Container(
+             padding: const EdgeInsets.all(16),
+             decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surfaceContainerHighest,
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Row(
+                   children: [
+                     Icon(Icons.cloud_upload, color: Theme.of(context).colorScheme.secondary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -1044,7 +1045,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.storage, color: Colors.orange),
+                    Icon(Icons.storage, color: Theme.of(context).colorScheme.secondary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -1055,44 +1056,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '端末内のバックアップファイルを確認・復元できます',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => _showLocalBackupManagement(),
                   icon: const Icon(Icons.folder_open),
                   label: const Text('バックアップ一覧・復元'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 4),
+style: OutlinedButton.styleFrom(
+                     foregroundColor: Theme.of(context).colorScheme.secondary,
+                   ),
+                 ),
+                 const SizedBox(height: 4),
 
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _resetRestoreCheck,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('復元ダイアログを再表示'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+                 const SizedBox(height: 8),
+                 OutlinedButton.icon(
+                   onPressed: _resetRestoreCheck,
+                   icon: const Icon(Icons.refresh),
+                   label: const Text('復元ダイアログを再表示'),
+                   style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant),
+                 ),
+               ],
+             ),
+           ),
+           const SizedBox(height: 12),
+           Container(
+             padding: const EdgeInsets.all(16),
+             decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.verified_user, color: Colors.teal),
+                  children: [
+                    Icon(Icons.verified_user, color: Theme.of(context).colorScheme.primary),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1103,32 +1104,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'ロック済み伝票の改ざんを検出します。電子帳簿保存法対応の監査機能です。',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _verifyHashChainTail,
                   icon: const Icon(Icons.speed),
                   label: const Text('直近5件を検証（高速）'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.teal),
-                ),
-                const SizedBox(height: 4),
-                OutlinedButton.icon(
-                  onPressed: _verifyHashChainAll,
-                  icon: const Icon(Icons.fact_check),
-                  label: const Text('全ロック済み伝票を検証'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.teal),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
+                 ),
+                 const SizedBox(height: 4),
+                 OutlinedButton.icon(
+                   onPressed: _verifyHashChainAll,
+                   icon: const Icon(Icons.fact_check),
+                   label: const Text('全ロック済み伝票を検証'),
+                   style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
+                 ),
+               ],
+             ),
+           ),
+           const SizedBox(height: 12),
+           Container(
+             padding: const EdgeInsets.all(16),
+             decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -1136,7 +1137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.sync, color: Colors.indigo),
+                    Icon(Icons.sync, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -1225,16 +1226,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.storage, color: Colors.brown),
+decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surfaceContainerHighest,
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Row(
+                   children: [
+                     Icon(Icons.storage, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -1262,7 +1263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('エラー：$e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
@@ -1285,7 +1286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('エラー：$e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
@@ -1308,7 +1309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('エラー：$e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );
                     }
@@ -1320,16 +1321,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.category, color: Colors.purple),
+decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surfaceContainerHighest,
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Row(
+                   children: [
+                     Icon(Icons.category, color: Theme.of(context).colorScheme.secondary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -1357,16 +1358,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.cloud_queue, color: Colors.deepPurple),
+decoration: BoxDecoration(
+               color: Theme.of(context).colorScheme.surfaceContainerHighest,
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Row(
+                   children: [
+                     Icon(Icons.cloud_queue, color: Theme.of(context).colorScheme.secondary),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
@@ -1397,23 +1398,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade50,
+                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade200),
+                          border: Border.all(color: Theme.of(context).colorScheme.primaryContainer),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.check_circle, color: Colors.green),
+                              children: [
+                                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
                                 SizedBox(width: 8),
                                 Text(
                                   '✅ サインイン済み',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ],
@@ -1434,109 +1435,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               onPressed: _handleGoogleSignOut,
                               icon: const Icon(Icons.logout),
                               label: const Text('サインアウト'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _handleGoogleSignIn(switchAccount: true),
-                              icon: const Icon(Icons.swap_horiz),
-                              label: const Text('アカウント切り替え'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.shade200),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.orange),
+style: OutlinedButton.styleFrom(
+                                 foregroundColor: Theme.of(context).colorScheme.error,
+                               ),
+                             ),
+                           ),
+                           const SizedBox(width: 8),
+                           Expanded(
+                             child: OutlinedButton.icon(
+                               onPressed: () => _handleGoogleSignIn(switchAccount: true),
+                               icon: const Icon(Icons.swap_horiz),
+                               label: const Text('アカウント切り替え'),
+                             ),
+                           ),
+                         ],
+                       ),
+                     ],
+                   )
+                 else
+                   Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       Container(
+                         padding: const EdgeInsets.all(12),
+                         decoration: BoxDecoration(
+                           color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                           borderRadius: BorderRadius.circular(8),
+                           border: Border.all(color: Theme.of(context).colorScheme.secondaryContainer),
+                         ),
+                         child: Row(
+                           children: [
+                             Icon(Icons.info_outline, color: Theme.of(context).colorScheme.secondary),
                             SizedBox(width: 8),
                             Expanded(
-                              child: Text(
-                                '⚠️ Google アカウントのサインインが必要です',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
+Text(
+                                 '⚠️ Google アカウントのサインインが必要です',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: _handleGoogleSignIn,
-                        icon: const Icon(Icons.login),
-                        label: const Text('Google アカウントにサインイン'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 40),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: _handleGoogleSignIn,
+                          icon: const Icon(Icons.login),
+                          label: const Text('Google アカウントにサインイン'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.secondary,
+                            foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                            minimumSize: const Size(double.infinity, 40),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '• Google Drive へのバックアップ',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                      const Text(
-                        '• Gmail を使用したデータ同期',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                      const Text(
-                        '• ブラウザでの OAuth 認証（安全に実施）',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.deepPurple.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        '⚠️ 重要なお知らせ',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
+                        const SizedBox(height: 8),
+                        Text(
+                          '• Google Drive へのバックアップ',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '• Google Drive バックアップは自動バックアップと重複します',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
-                      Text(
-                        '• ローカルバックアップを優先してご利用ください',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
-                      Text(
-                        '• Google 連携を無効にしてもデータは安全に保存されます',
-                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                      ),
+                        Text(
+                          '• Gmail を使用したデータ同期',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        Text(
+                          '• ブラウザでの OAuth 認証（安全に実施）',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Theme.of(context).colorScheme.secondaryContainer),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '⚠️ 重要なお知らせ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '• Google Drive バックアップは自動バックアップと重複します',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        Text(
+                          '• ローカルバックアップを優先してご利用ください',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        Text(
+                          '• Google 連携を無効にしてもデータは安全に保存されます',
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
                     ],
                   ),
                 ),
@@ -1583,9 +1584,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
+style: TextButton.styleFrom(
+                           foregroundColor: Theme.of(context).colorScheme.error,
+                         ),
                         child: const Text('リストアする'),
                       ),
                     ],
