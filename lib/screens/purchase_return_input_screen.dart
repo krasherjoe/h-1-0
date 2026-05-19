@@ -22,7 +22,7 @@ class _PurchaseReturnInputScreenState extends State<PurchaseReturnInputScreen> {
       screenId: 'PR1',
       title: '仕入返品',
       icon: Icons.assignment_return,
-      themeColor: Colors.red,
+      themeColor: Theme.of(context).colorScheme.error,
 
       // データ取得（返品は負の金額の仕入として扱う）
       fetchData: () async {
@@ -38,7 +38,7 @@ class _PurchaseReturnInputScreenState extends State<PurchaseReturnInputScreen> {
           amount: purchase.getDisplayAmount(),
           date: purchase.date,
           status: purchase.status,
-          themeColor: Colors.red,
+          themeColor: Theme.of(context).colorScheme.error,
           onTap: () {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
@@ -126,7 +126,7 @@ class _PurchaseReturnInputScreenState extends State<PurchaseReturnInputScreen> {
         title: '返品がありません',
         subtitle: '返品処理を登録してください',
         actionLabel: '新規返品',
-        iconColor: Colors.red,
+        iconColor: Theme.of(context).colorScheme.error,
         onAction: () {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
