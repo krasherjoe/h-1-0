@@ -72,7 +72,7 @@ class ReportDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Table(
-              border: TableBorder.all(color: Colors.grey.shade300),
+              border: TableBorder.all(color: Theme.of(context).colorScheme.outline),
               columnWidths: const {
                 0: FlexColumnWidth(2),
                 1: FlexColumnWidth(1),
@@ -80,8 +80,8 @@ class ReportDetailScreen extends StatelessWidget {
                 3: FlexColumnWidth(1),
               },
               children: [
-                const TableRow(
-                  decoration: BoxDecoration(color: Colors.grey),
+                TableRow(
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest),
                   children: [
                     Padding(
                       padding: EdgeInsets.all(8),
