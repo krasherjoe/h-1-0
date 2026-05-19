@@ -86,9 +86,9 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
 
       if (issues.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('データ整合性チェック完了：問題はありません'),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           ),
         );
       } else {
@@ -106,7 +106,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                   return ListTile(
                     title: Text('ドキュメントID: ${issue['documentId']}'),
                     subtitle: Text('問題: ${issue['issue']}'),
-                    leading: const Icon(Icons.warning, color: Colors.orange),
+                    leading: Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
                   );
                 },
               ),
@@ -164,9 +164,9 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('古いデータをアーカイブしました'),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         ),
       );
       
@@ -219,7 +219,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('削除', style: TextStyle(color: Colors.white)),
           ),
@@ -242,9 +242,9 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('バックアップを削除しました'),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         ),
       );
       await _loadQuarantine();
@@ -270,7 +270,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
           return AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.warning_amber, color: Colors.orange),
+                Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.error),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
@@ -299,9 +299,9 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                             final backup = _quarantinedBackups[index];
                             return Card(
                               child: ListTile(
-                                leading: const Icon(
+                                leading: Icon(
                                   Icons.folder_zip,
-                                  color: Colors.grey,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                                 title: Text(
                                   DateFormat('yyyy-MM-dd HH:mm:ss')
@@ -314,7 +314,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                                 ),
                                 isThreeLine: true,
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
                                   tooltip: '削除',
                                   onPressed: () async {
                                     await _deleteQuarantinedBackup(backup);
@@ -351,7 +351,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: Theme.of(context).colorScheme.error,
                             ),
                             onPressed: () => Navigator.pop(context, true),
                             child: const Text(
@@ -381,7 +381,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                       setDialogState(() {});
                     }
                   },
-                  child: const Text('すべて削除', style: TextStyle(color: Colors.red)),
+                  child: Text('すべて削除', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ),
             ],
           );
@@ -395,8 +395,8 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
     return Scaffold(
       appBar: AppBar(
         title: const Text('E1:電子帳簿管理'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep),
@@ -431,7 +431,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
             onPressed: _verifyDataIntegrity,
             icon: const Icon(Icons.security),
             label: const Text('整合性チェック'),
-            backgroundColor: Colors.orange,
+            backgroundColor: Theme.of(context).colorScheme.error,
             heroTag: 'integrity',
           ),
           const SizedBox(height: 8),
@@ -439,7 +439,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
             onPressed: _archiveOldData,
             icon: const Icon(Icons.archive),
             label: const Text('アーカイブ'),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             heroTag: 'archive',
           ),
         ],
@@ -508,7 +508,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, size: 24, color: Colors.indigo),
+        Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 4),
         Text(
           value,
@@ -516,7 +516,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -581,7 +581,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                       child: Text(
                         _formatDateRange(),
                         style: TextStyle(
-                          color: (_startDate != null && _endDate != null) ? null : Colors.grey,
+                          color: (_startDate != null && _endDate != null) ? null : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -609,14 +609,14 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
             Icon(
               Icons.description_outlined,
               size: 64,
-              color: Colors.grey[400],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               '電子帳簿データがありません',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
@@ -624,7 +624,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
               '検索条件を変更して再試行してください',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -641,10 +641,10 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.indigo.shade100,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
               child: Icon(
                 _getDocumentTypeIcon(ledger['documentType']),
-                color: Colors.indigo,
+                color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),
             ),
