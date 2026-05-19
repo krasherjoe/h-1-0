@@ -163,8 +163,8 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOutbound = message.direction == ChatDirection.outbound;
     final theme = Theme.of(context);
-    final bubbleColor = isOutbound ? theme.colorScheme.primary : Colors.grey.shade200;
-    final textColor = isOutbound ? Colors.white : Colors.grey.shade900;
+    final bubbleColor = isOutbound ? theme.colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest;
+    final textColor = isOutbound ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant;
     final align = isOutbound ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final borderRadius = BorderRadius.only(
       topLeft: const Radius.circular(16),
@@ -188,7 +188,7 @@ class _MessageBubble extends StatelessWidget {
               borderRadius: borderRadius,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
