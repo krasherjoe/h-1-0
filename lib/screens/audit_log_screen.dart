@@ -198,8 +198,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('AL:監査ログ'),
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
@@ -216,9 +216,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
             ),
           ],
           bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
+            labelColor: Theme.of(context).colorScheme.onPrimary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            indicatorColor: Theme.of(context).colorScheme.onPrimary,
             tabs: [
               Tab(icon: Icon(Icons.lock_outline), text: '認証ログ'),
               Tab(icon: Icon(Icons.history), text: '操作ログ'),
@@ -259,7 +259,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   Widget _buildActivityFilterSection() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey.shade100,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         children: [
           TextField(
@@ -315,7 +315,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     final logs = _filteredActivityLogs;
     if (logs.isEmpty) {
       return const Center(
-        child: Text('操作ログが見つかりません', style: TextStyle(color: Colors.grey)),
+        child: Text('操作ログが見つかりません', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       );
     }
     return RefreshIndicator(
@@ -333,10 +333,10 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     final isBackup = log.targetType == 'BACKUP';
     final isDelete = log.action.contains('DELETE');
     final color = isBackup && isDelete
-        ? Colors.red
+        ? Theme.of(context).colorScheme.error
         : isDelete
-            ? Colors.orange
-            : Colors.teal;
+            ? Theme.of(context).colorScheme.errorContainer
+            : Theme.of(context).colorScheme.primaryContainer;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
@@ -344,7 +344,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           backgroundColor: color,
           child: Icon(
             isBackup ? Icons.backup : Icons.history,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 18,
           ),
         ),
@@ -365,7 +365,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               ),
             Text(
               DateFormat('yyyy-MM-dd HH:mm:ss').format(log.timestamp),
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
             ),
           ],
         ),
@@ -407,7 +407,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.grey.shade100,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         children: [
           TextField(
@@ -538,7 +538,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       return const Center(
         child: Text(
           '監査ログが見つかりません',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+          style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -574,7 +574,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           backgroundColor: _getActionColor(log.action),
           child: Icon(
             _getActionIcon(log.action),
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 20,
           ),
         ),
@@ -589,7 +589,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
             if (log.resourceId != null) Text('ID: ${log.resourceId}'),
             Text(
               DateFormat('yyyy-MM-dd HH:mm:ss').format(log.createdAt),
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),
@@ -608,16 +608,17 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   }
 
   Color _getActionColor(String action) {
+    final cs = Theme.of(context).colorScheme;
     if (action.contains('作成') || action.contains('追加')) {
-      return Colors.green;
+      return cs.primaryContainer;
     } else if (action.contains('更新') || action.contains('編集')) {
-      return Colors.blue;
+      return cs.secondaryContainer;
     } else if (action.contains('削除')) {
-      return Colors.red;
+      return cs.errorContainer;
     } else if (action.contains('ログイン')) {
-      return Colors.purple;
+      return cs.tertiaryContainer;
     } else {
-      return Colors.grey;
+      return cs.surfaceContainerHighest;
     }
   }
 
@@ -733,7 +734,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(value, style: TextStyle(color: Colors.grey.shade700)),
+            child: Text(value, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
         ],
       ),
