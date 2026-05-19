@@ -111,7 +111,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("電話帳名: $displayName", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text("電話帳名: $displayName", style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 16),
                 TextField(
                   controller: formalNameController,
@@ -218,7 +218,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
               Navigator.pop(context);
               _onSearch("");
             },
-            child: const Text("削除する", style: TextStyle(color: Colors.red)),
+            child: Text("削除する", style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -265,7 +265,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Icon(Icons.contact_phone),
                         label: const Text("電話帳から新規取り込み"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey.shade700, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.secondary, foregroundColor: Theme.of(context).colorScheme.onSecondary),
                       ),
                     ),
                   ],
@@ -299,7 +299,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blueGrey, size: 20),
+                            icon: const Icon(Icons.edit, size: 20),
                             onPressed: () => _showCustomerEditDialog(
                               displayName: customer.displayName,
                               initialFormalName: customer.formalName,
@@ -307,7 +307,7 @@ class _CustomerPickerModalState extends State<CustomerPickerModal> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                            icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
                             onPressed: () => _confirmDelete(customer),
                           ),
                         ],
