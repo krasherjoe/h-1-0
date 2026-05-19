@@ -43,12 +43,12 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
         : _all.where((p) => p.status == _filterStatus).toList();
   }
 
-  Color _statusColor(ProjectStatus s) {
+  Color _statusColor(ProjectStatus s, BuildContext ctx) {
     switch (s) {
-      case ProjectStatus.active:    return Colors.indigo;
-      case ProjectStatus.won:       return Colors.green;
-      case ProjectStatus.lost:      return Colors.red;
-      case ProjectStatus.suspended: return Colors.orange;
+      case ProjectStatus.active:    return Theme.of(ctx).colorScheme.primary;
+      case ProjectStatus.won:       return Theme.of(ctx).colorScheme.primary;
+      case ProjectStatus.lost:      return Theme.of(ctx).colorScheme.error;
+      case ProjectStatus.suspended: return Theme.of(ctx).colorScheme.secondary;
     }
   }
 
@@ -151,24 +151,24 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PJ1:案件管理'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateDialog,
         icon: const Icon(Icons.add),
         label: const Text('新規案件'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: Column(
         children: [
-          _buildFilterBar(),
+          _buildFilterBar(context),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _filtered.isEmpty
-                    ? _buildEmpty()
+                    ? _buildEmpty(context)
                     : RefreshIndicator(
                         onRefresh: _load,
                         child: ListView.builder(
@@ -176,7 +176,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           itemCount: _filtered.length,
                           itemBuilder: (_, i) => _ProjectCard(
                             project: _filtered[i],
-                            statusColor: _statusColor(_filtered[i].status),
+                            statusColor: _statusColor(_filtered[i].status, context),
                             onTap: () async {
                               await Navigator.push(
                                 context,
@@ -195,10 +195,10 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     );
   }
 
-  Widget _buildFilterBar() {
+  Widget _buildFilterBar(BuildContext ctx) {
     final statuses = [null, ...ProjectStatus.values];
     return Container(
-      color: Colors.indigo.shade50,
+      color: Theme.of(ctx).colorScheme.primaryContainer.withValues(alpha: 0.2),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -211,8 +211,8 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
               child: FilterChip(
                 label: Text(label),
                 selected: selected,
-                selectedColor: s == null ? Colors.indigo.shade200 : _statusColor(s).withOpacity(0.3),
-                checkmarkColor: Colors.indigo,
+                selectedColor: s == null ? Theme.of(ctx).colorScheme.primaryContainer.withValues(alpha: 0.5) : _statusColor(s, ctx).withValues(alpha: 0.3),
+                checkmarkColor: Theme.of(ctx).colorScheme.primary,
                 onSelected: (_) {
                   setState(() {
                     _filterStatus = s;
@@ -227,16 +227,16 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(BuildContext ctx) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.folder_open, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.folder_open, size: 64, color: Theme.of(ctx).colorScheme.outlineVariant),
           const SizedBox(height: 12),
           Text(
             _filterStatus == null ? '案件がまだありません' : '${_filterStatus!.displayName}の案件はありません',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -284,9 +284,9 @@ class _ProjectCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
+                      color: statusColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: statusColor.withOpacity(0.5)),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       project.status.displayName,
@@ -299,11 +299,11 @@ class _ProjectCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.business, size: 13, color: Colors.grey.shade500),
+                    Icon(Icons.business, size: 13, color: Theme.of(context).colorScheme.outlineVariant),
                     const SizedBox(width: 4),
                     Text(
                       project.customerName!,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -312,17 +312,17 @@ class _ProjectCard extends StatelessWidget {
               Row(
                 children: [
                   if (project.startDate != null) ...[
-                    Icon(Icons.calendar_month, size: 13, color: Colors.grey.shade500),
+                    Icon(Icons.calendar_month, size: 13, color: Theme.of(context).colorScheme.outlineVariant),
                     const SizedBox(width: 4),
                     Text(
                       dateFmt.format(project.startDate!),
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     if (project.endDate != null) ...[
-                      Text(' 〜 ', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                      Text(' 〜 ', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outlineVariant)),
                       Text(
                         dateFmt.format(project.endDate!),
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                     const Spacer(),
@@ -331,7 +331,7 @@ class _ProjectCard extends StatelessWidget {
                   if (project.totalAmount > 0)
                     Text(
                       '¥${fmt.format(project.totalAmount)}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                     ),
                 ],
               ),
