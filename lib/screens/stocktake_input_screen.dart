@@ -125,10 +125,10 @@ class _StocktakeInputScreenState extends State<StocktakeInputScreen> {
           IconButton(
             onPressed: _loading ? null : _saveStocktake,
             icon: _saving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
                   )
                 : const Icon(Icons.save),
             tooltip: '棚卸結果を保存',
@@ -218,12 +218,12 @@ class _StocktakeInputScreenState extends State<StocktakeInputScreen> {
                                           const SizedBox(height: 4),
                                           Text(
                                             'カテゴリ: ${product.category ?? '未分類'}',
-                                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                           ),
                                           if (product.barcode != null)
                                             Text(
                                               'バーコード: ${product.barcode}',
-                                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                             ),
                                         ],
                                       ),
