@@ -27,14 +27,14 @@ class InvoiceHistoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
-    final draftTint = isDark ? const Color(0xFF3D3020) : Colors.orange.shade50;
+    final cs = Theme.of(context).colorScheme;
+    final surfaceColor = cs.surface;
+    final draftTint = cs.secondaryContainer.withValues(alpha: 0.25);
     final cardColor = invoice.isDraft ? draftTint : surfaceColor;
     final iconBg = isUnlocked
-        ? _docTypeColor(invoice.documentType).withValues(alpha: 0.18)
-        : (isDark ? Colors.grey.shade700 : Colors.grey.shade200);
-    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType) : Colors.grey;
+        ? _docTypeColor(invoice.documentType, cs).withValues(alpha: 0.18)
+        : cs.surfaceContainerHighest;
+    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType, cs) : cs.outline;
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
     final firstItemDesc = invoice.items.isNotEmpty ? invoice.items.first.description : '';
@@ -47,12 +47,12 @@ class InvoiceHistoryItem extends StatelessWidget {
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
     final subjectColor = invoice.isLocked
-        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade500)
-        : (isDark ? Colors.indigo.shade300 : Colors.indigo.shade700);
+        ? cs.outline
+        : cs.primary;
     final amountColor = invoice.isLocked
-        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade500)
-        : (isDark ? Colors.white : Colors.black87);
-    final dateColor = isDark ? Colors.white70 : Colors.black87;
+        ? cs.outline
+        : cs.onSurface;
+    final dateColor = cs.onSurfaceVariant;
 
     return Card(
       color: cardColor,
@@ -79,10 +79,10 @@ class InvoiceHistoryItem extends StatelessWidget {
                         color: iconColor,
                       ),
                     ),
-                    if (invoice.isLocked)
-                      const Align(
+                      if (invoice.isLocked)
+                      Align(
                         alignment: Alignment.bottomRight,
-                        child: Icon(Icons.link, size: 14, color: Colors.redAccent),
+                        child: Icon(Icons.link, size: 14, color: Theme.of(context).colorScheme.error),
                       ),
                   ],
                 ),
@@ -103,13 +103,13 @@ class InvoiceHistoryItem extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             margin: const EdgeInsets.only(left: 6),
                             decoration: BoxDecoration(
-                              color: Colors.orange.shade100,
+                              color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              '下書き',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange),
-                            ),
+                  child: Text(
+                               '下書き',
+                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.secondary),
+                             ),
                           ),
                       ],
                     ),
@@ -119,7 +119,7 @@ class InvoiceHistoryItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: invoice.isLocked ? Colors.grey : Colors.black87,
+                        color: invoice.isLocked ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -127,7 +127,7 @@ class InvoiceHistoryItem extends StatelessWidget {
                     if (showInvoiceNumber) ...[                      const SizedBox(height: 2),
                       Text(
                         invoice.invoiceNumber,
-                        style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                          style: TextStyle(fontSize: 10.5, color: Theme.of(context).colorScheme.outline),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -182,18 +182,18 @@ class InvoiceHistoryItem extends StatelessWidget {
     }
   }
 
-  Color _docTypeColor(DocumentType type) {
+   Color _docTypeColor(DocumentType type, ColorScheme cs) {
     switch (type) {
       case DocumentType.estimation:
-        return Colors.blue;
+        return cs.primary;
       case DocumentType.order:
-        return Colors.orange;
+        return cs.secondary;
       case DocumentType.delivery:
-        return Colors.teal;
+        return cs.tertiary;
       case DocumentType.invoice:
-        return Colors.indigo;
+        return cs.primaryContainer;
       case DocumentType.receipt:
-        return Colors.green;
+        return cs.secondaryContainer;
     }
   }
 }
