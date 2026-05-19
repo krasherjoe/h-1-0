@@ -109,14 +109,14 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('今月支払済', style: TextStyle(color: Colors.grey)),
+                  Text('今月支払済', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Text(
                     '¥${thisMonthPayments.toString().replaceAllMapped(RegExp(r'(?=(?!^)(\d{3})+$)'), (Match m) => ',')}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ],
@@ -132,14 +132,14 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('今月予定', style: TextStyle(color: Colors.grey)),
+                  Text('今月予定', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Text(
                     '¥${thisMonthSchedules.toString().replaceAllMapped(RegExp(r'(?=(?!^)(\d{3})+$)'), (Match m) => ',')}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
                   ),
                 ],
@@ -204,13 +204,13 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                       Container(
                         width: 20,
                         height: (payment / maxValue) * 150,
-                        color: Colors.green,
+                        color: Theme.of(context).colorScheme.primaryContainer,
                       ),
                     if (schedule > 0)
                       Container(
                         width: 20,
                         height: (schedule / maxValue) * 150,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.secondaryContainer,
                       ),
                   ],
                 ),
@@ -264,7 +264,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                         children: [
                           Icon(
                             _getPaymentMethodIcon(method),
-                            color: _getPaymentMethodColor(method),
+                            color: _getPaymentMethodColor(method, Theme.of(context).colorScheme),
                           ),
                           const SizedBox(width: 8),
                           Text(_getPaymentMethodDisplayName(method)),
@@ -312,7 +312,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                   trailing: Text(schedule.displayAmount),
                   leading: CircleAvatar(
                     backgroundColor: schedule.getStatusColor(),
-                    child: Icon(Icons.payment, color: Colors.white, size: 20),
+                    child: Icon(Icons.payment, color: Theme.of(context).colorScheme.onPrimary, size: 20),
                   ),
                 ),
               ),
@@ -336,9 +336,9 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
           children: [
             Text(
               '延滞中（${overdueSchedules.length}件）',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.red,
+                color: Theme.of(context).colorScheme.error,
               ),
             ),
             const SizedBox(height: 16),
@@ -351,8 +351,8 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                   subtitle: Text('延滞日数: ${-schedule.daysUntilDue}日'),
                   trailing: Text(schedule.displayAmount),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.red,
-                    child: Icon(Icons.warning, color: Colors.white, size: 20),
+                    backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                    child: Icon(Icons.warning, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
                   ),
                 ),
               ),
@@ -375,16 +375,16 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
     }
   }
 
-  Color _getPaymentMethodColor(PaymentMethod method) {
+  Color _getPaymentMethodColor(PaymentMethod method, ColorScheme cs) {
     switch (method) {
       case PaymentMethod.bankTransfer:
-        return Colors.blue;
+        return cs.primary;
       case PaymentMethod.cash:
-        return Colors.green;
+        return cs.secondary;
       case PaymentMethod.creditCard:
-        return Colors.purple;
+        return cs.tertiary;
       case PaymentMethod.other:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 
