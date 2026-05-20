@@ -27,6 +27,23 @@ import 'services/invoice_repository.dart';
 import 'services/activity_log_repository.dart';
 import 'utils/build_expiry_info.dart';
 
+// --- Hue分離ユーティリティ ---
+// シードカラーから二次色・三次色を45°/90°ずらして生成し、同系色衝突を防止
+ColorScheme _generateSeparatedScheme({
+  required Color seed,
+  required Brightness brightness,
+  double secondaryOffset = 45,
+  double tertiaryOffset = 90,
+}) {
+  final hsl = HSLColor.fromColor(seed);
+  final secondary = hsl.withHue((hsl.hue + secondaryOffset) % 360).toColor();
+  final tertiary = hsl.withHue((hsl.hue + tertiaryOffset) % 360).toColor();
+  return ColorScheme.fromSeed(
+    seedColor: seed,
+    brightness: brightness,
+  ).copyWith(secondary: secondary, tertiary: tertiary);
+}
+
 // --- バックアップ進捗状態のデータクラス ---
 /// バックアップ進捗表示用の状態管理クラス
 class BackupProgressState {
@@ -476,8 +493,8 @@ class _MyAppState extends State<MyApp> {
         if (themeString == 'dark') {
           theme = ThemeData(
             brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.indigo,
+            colorScheme: _generateSeparatedScheme(
+              seed: Colors.indigo,
               brightness: Brightness.dark,
             ),
             scaffoldBackgroundColor: const Color(0xFF121212),
@@ -544,13 +561,13 @@ class _MyAppState extends State<MyApp> {
           // より明るいダークグレーテーマ
           theme = ThemeData(
             brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.grey.shade600,
-              brightness: Brightness.dark,
-              primary: Colors.grey.shade300,
-              secondary: Colors.blueGrey.shade300,
-              surface: const Color(0xFF4A4A4A),
-              onSurface: Colors.grey.shade100,
+            colorScheme: _generateSeparatedScheme(
+              seed: Colors.grey.shade600,
+              brightness: Brightness.light,
+            ).copyWith(
+              primary: Colors.grey.shade700,
+              surface: const Color(0xFFF0F0F0),
+              onSurface: Colors.grey.shade800,
             ),
             scaffoldBackgroundColor: const Color(0xFF3A3A3A),
             appBarTheme: const AppBarTheme(
@@ -616,12 +633,20 @@ class _MyAppState extends State<MyApp> {
           // グレーテーマ（少し暗め）
           theme = ThemeData(
             brightness: Brightness.light,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.grey.shade600,
-              primary: Colors.grey.shade600,
-              secondary: Colors.blueGrey.shade400,
-              surface: const Color(0xFFE0E0E0),
+            colorScheme: _generateSeparatedScheme(
+              seed: Colors.blue.shade600,
+              brightness: Brightness.light,
+            ).copyWith(
+              primary: Colors.blue.shade700,
+              onPrimary: Colors.white,
+              onSecondary: Colors.white,
+              surface: Colors.white,
               onSurface: Colors.grey.shade800,
+              surfaceContainerHighest: Colors.grey.shade100,
+              onSurfaceVariant: Colors.grey.shade700,
+              error: Colors.red.shade600,
+              onError: Colors.white,
+              onTertiary: Colors.white,
             ),
             scaffoldBackgroundColor: const Color(0xFFD0D0D0),
             appBarTheme: AppBarTheme(
@@ -671,22 +696,31 @@ class _MyAppState extends State<MyApp> {
         } else {
           // light or system (default to light)
           theme = ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700)
-                .copyWith(
-                  primary: Colors.indigo.shade700,
-                  secondary: Colors.deepOrange.shade400,
-                  surface: Colors.grey.shade100,
-                  onSurface: Colors.blueGrey.shade900,
-                ),
-            scaffoldBackgroundColor: Colors.grey.shade100,
+            colorScheme: _generateSeparatedScheme(
+              seed: Colors.blueGrey,
+              brightness: Brightness.dark,
+            ).copyWith(
+              primary: Colors.grey.shade300,
+              surface: const Color(0xFF4A4A4A),
+              onSurface: Colors.grey.shade100,
+            ),
+            scaffoldBackgroundColor: Colors.grey.shade50,
             appBarTheme: AppBarTheme(
-              backgroundColor: Colors.indigo.shade700,
+              backgroundColor: Colors.blue.shade700,
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
             ),
+            cardTheme: const CardThemeData(
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade700,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -699,17 +733,29 @@ class _MyAppState extends State<MyApp> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                side: BorderSide(color: Colors.indigo.shade700),
+                side: BorderSide(color: Colors.blue.shade700),
+                foregroundColor: Colors.blue.shade700,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
             inputDecorationTheme: InputDecorationTheme(
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.indigo.shade700, width: 1.4),
+                borderSide: BorderSide(color: Colors.blue.shade700, width: 1.4),
               ),
+              labelStyle: TextStyle(color: Colors.grey.shade700),
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+            ),
+            snackBarTheme: const SnackBarThemeData(
+              backgroundColor: Color(0xFF333333),
+              contentTextStyle: TextStyle(color: Colors.white),
             ),
             visualDensity: VisualDensity.adaptivePlatformDensity,
             useMaterial3: true,
