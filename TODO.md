@@ -313,9 +313,19 @@ adb uninstall com.example.h_1
     - Q1見積入力 → primary色（ダーク時は18% lightness）
     - A3詳細画面 → DocumentType動的判定 + ダーク対応
 
-### 進行中
+### 完了
 
-- [ ] C2:顧客マスター HASH チェーンバグ修正 (2026-04-14, **修復画面テスト実行中**)
+- [x] C2:顧客マスター HASH チェーンバグ修正 (2026-04-14, 完了)
+  - 関連：`lib/screens/customer_edit_screen.dart`, `lib/services/customer_repository.dart`, `lib/screens/screen_debug_fork_break.dart`, `lib/screens/settings_screen.dart`
+  - 内容:
+    - バグ原因特定：ロック時フォーク処理で新しい UUID を生成し、古いバージョンが is_current=1 のまま残る問題
+    - customer_repository.dart saveCustomer() 修正：フォーク時に is_current=0 で履歴化
+    - customer_repository.dart getAllCustomers() 修正：WHERE 条件に valid_to > datetime('now') を追加
+    - フォーク時の previous_hash 設定ロジック追加（HASH チェーン接続）
+    - 修復画面実装完了：`screen_debug_fork_break.dart`（事故物件検出・自動マージ機能付き）
+    - 設定画面にHASHチェーン修復画面への遷移を追加
+
+### 進行中
   - 関連：`lib/screens/customer_edit_screen.dart`, `lib/services/customer_repository.dart`, `lib/screens/screen_debug_fork_break.dart`
   - 内容:
     - バグ原因特定：ロック時フォーク処理で新しい UUID を生成し、古いバージョンが is_current=1 のまま残る問題
