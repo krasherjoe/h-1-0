@@ -22,6 +22,7 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -31,14 +32,14 @@ class EmptyStateWidget extends StatelessWidget {
             Icon(
               icon,
               size: 64,
-              color: iconColor ?? Colors.grey,
+              color: iconColor ?? cs.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
+                color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -47,9 +48,9 @@ class EmptyStateWidget extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey,
+                  color: cs.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),

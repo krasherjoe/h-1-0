@@ -25,7 +25,8 @@ class MenuCategoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
-    final descriptionStyle = Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54);
+    final cs = Theme.of(context).colorScheme;
+    final descriptionStyle = Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant);
 
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,10 +81,11 @@ class MenuCategoryDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Colors.grey.shade300;
+    final cs = Theme.of(context).colorScheme;
+    final color = cs.outlineVariant;
     final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.bold,
-          color: Colors.black54,
+          color: cs.onSurfaceVariant,
         );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),

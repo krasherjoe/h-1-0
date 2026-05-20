@@ -13,10 +13,11 @@ class StorageWarningDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
       icon: Icon(
         isBlocking ? Icons.error : Icons.warning,
-        color: isBlocking ? Colors.red : Colors.orange,
+        color: isBlocking ? cs.error : cs.secondary,
         size: 48,
       ),
       title: Text(isBlocking ? 'ストレージ容量不足' : 'ストレージ容量警告'),
@@ -86,10 +87,11 @@ class DatabaseRecoveryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
-      icon: const Icon(
+      icon: Icon(
         Icons.restore,
-        color: Colors.blue,
+        color: cs.primary,
         size: 48,
       ),
       title: const Text('データベース復旧完了'),
@@ -110,7 +112,7 @@ class DatabaseRecoveryDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -121,7 +123,7 @@ class DatabaseRecoveryDialog extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'アプリは正常に起動しましたが、以前のデータは失われています。',
-            style: TextStyle(fontSize: 14, color: Colors.red),
+            style: TextStyle(fontSize: 14),
           ),
         ],
       ),

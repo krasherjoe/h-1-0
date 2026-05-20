@@ -17,6 +17,7 @@ class CustomFieldDisplayWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (fields.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -32,7 +33,7 @@ class CustomFieldDisplayWidget extends StatelessWidget {
           return Text(
             'カスタムフィールドの読み込みに失敗しました',
             style: TextStyle(
-              color: Colors.red[400],
+              color: cs.error,
               fontSize: 12,
             ),
           );
@@ -44,7 +45,7 @@ class CustomFieldDisplayWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final field in fields) ...[
-              _buildFieldValue(field, values[field.fieldName]),
+              _buildFieldValue(context, field, values[field.fieldName]),
               const SizedBox(height: 8),
             ],
           ],
@@ -53,7 +54,8 @@ class CustomFieldDisplayWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildFieldValue(CustomField field, dynamic value) {
+  Widget _buildFieldValue(BuildContext context, CustomField field, dynamic value) {
+    final cs = Theme.of(context).colorScheme;
     if (value == null || value.toString().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -65,10 +67,10 @@ class CustomFieldDisplayWidget extends StatelessWidget {
           width: 120,
           child: Text(
             field.fieldLabel,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
               fontSize: 14,
-              color: Colors.grey,
+              color: cs.onSurfaceVariant,
             ),
           ),
         ),
@@ -76,9 +78,9 @@ class CustomFieldDisplayWidget extends StatelessWidget {
         Expanded(
           child: Text(
             _formatValue(field.fieldType, value),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors.black87,
+              color: cs.onSurface,
             ),
           ),
         ),

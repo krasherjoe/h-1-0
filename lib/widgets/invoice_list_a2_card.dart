@@ -27,15 +27,16 @@ class InvoiceListA2Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isDraft = invoice.isDraft;
     final isRed = invoice.isRedInvoice;
     final isCancelled = hasRedInvoice && !isRed; // 元伝票で赤伝済み
 
     final cardColor = isRed
-        ? Colors.red.shade50
-        : (isCancelled ? Colors.red.shade50.withValues(alpha: 0.55) : (isDraft ? Colors.orange.shade50 : Colors.white));
-    final borderColor = isRed || isCancelled ? Colors.red.shade200 : null;
-    final iconColor = isRed ? Colors.red : _docTypeColor(invoice.documentType);
+        ? cs.errorContainer
+        : (isCancelled ? cs.errorContainer.withValues(alpha: 0.55) : (isDraft ? cs.secondaryContainer : cs.surface));
+    final borderColor = isRed || isCancelled ? cs.error : null;
+    final iconColor = isRed ? cs.error : _docTypeColor(invoice.documentType, cs);
     final iconBg = iconColor.withValues(alpha: 0.18);
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
@@ -48,8 +49,8 @@ class InvoiceListA2Card extends StatelessWidget {
     final customerName = invoice.customerNameForDisplay.endsWith('様')
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
-    final subjectColor = invoice.isLocked ? Colors.grey.shade500 : Colors.indigo.shade700;
-    final amountColor = isRed ? Colors.red : (invoice.isLocked ? Colors.grey.shade500 : Colors.black87);
+    final subjectColor = invoice.isLocked ? cs.onSurfaceVariant : cs.primary;
+    final amountColor = isRed ? cs.error : (invoice.isLocked ? cs.onSurfaceVariant : cs.onSurface);
 
     return Card(
       color: cardColor,
@@ -82,7 +83,7 @@ class InvoiceListA2Card extends StatelessWidget {
                     if (invoice.isLocked && showLockedBadge)
                       const Align(
                         alignment: Alignment.bottomRight,
-                        child: Icon(Icons.lock, size: 14, color: Colors.redAccent),
+                        child: Icon(Icons.lock, size: 14),
                       ),
                   ],
                 ),
@@ -101,7 +102,7 @@ class InvoiceListA2Card extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: invoice.isLocked ? Colors.grey : Colors.black87,
+                              color: invoice.isLocked ? cs.onSurfaceVariant : cs.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -113,7 +114,7 @@ class InvoiceListA2Card extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: isRed ? Colors.red.shade700 : subjectColor,
+                                color: isRed ? cs.onErrorContainer : subjectColor,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -134,15 +135,15 @@ class InvoiceListA2Card extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 margin: const EdgeInsets.only(right: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.shade100,
+                                  color: cs.errorContainer,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   '赤伝',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.red,
+                                    color: cs.onErrorContainer,
                                   ),
                                 ),
                               )
@@ -151,15 +152,15 @@ class InvoiceListA2Card extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 margin: const EdgeInsets.only(right: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.shade100,
+                                  color: cs.errorContainer,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   '赤伝済',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.red,
+                                    color: cs.onErrorContainer,
                                   ),
                                 ),
                               )
@@ -168,34 +169,26 @@ class InvoiceListA2Card extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 margin: const EdgeInsets.only(right: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.shade100,
+                                  color: cs.secondaryContainer,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   draftLabel,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.orange,
+                                    color: cs.onSecondaryContainer,
                                   ),
                                 ),
                               ),
                             Text(
-                              dateFormatter.format(invoice.date),
-                              style: const TextStyle(fontSize: 12, color: Colors.black87),
+                              invoice.invoiceNumber,
+                              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 2),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 140),
-                          child: Text(
-                            invoice.invoiceNumber,
-                            style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -230,18 +223,18 @@ class InvoiceListA2Card extends StatelessWidget {
     }
   }
 
-  Color _docTypeColor(DocumentType type) {
+  Color _docTypeColor(DocumentType type, ColorScheme cs) {
     switch (type) {
       case DocumentType.estimation:
-        return Colors.blue;
+        return cs.primary;
       case DocumentType.order:
-        return Colors.orange;
+        return cs.secondary;
       case DocumentType.delivery:
-        return Colors.teal;
+        return cs.tertiary;
       case DocumentType.invoice:
-        return Colors.indigo;
+        return cs.primary;
       case DocumentType.receipt:
-        return Colors.green;
+        return cs.tertiary;
     }
   }
 }

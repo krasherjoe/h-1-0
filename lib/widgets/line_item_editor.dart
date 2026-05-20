@@ -84,9 +84,10 @@ class LineItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.white,
+      color: cs.surface,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
         child: Column(
@@ -102,9 +103,9 @@ class LineItemCard extends StatelessWidget {
               ),
               subtitle: data.hasProduct
                   ? null
-                  : const Text(
+                  : Text(
                       '商品マスタから選択してください',
-                      style: TextStyle(color: Colors.redAccent),
+                      style: TextStyle(color: cs.error),
                     ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,

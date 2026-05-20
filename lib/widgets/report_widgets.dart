@@ -55,6 +55,7 @@ class ReportWidgets {
     required Color color,
     String? subtitle,
     VoidCallback? onTap,
+    ColorScheme? cs,
   }) {
     return Card(
       elevation: 4,
@@ -78,13 +79,13 @@ class ReportWidgets {
               const SizedBox(height: 4),
               Text(
                 title,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: cs?.onSurfaceVariant ?? Colors.grey.shade600),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: cs?.outlineVariant ?? Colors.grey.shade500),
                 ),
               ],
             ],
@@ -102,7 +103,10 @@ class ReportWidgets {
     required Color color,
     double? percentage,
     String? trend,
+    ColorScheme? cs,
   }) {
+    final greenColor = cs?.tertiary ?? Colors.green;
+    final redColor = cs?.error ?? Colors.red;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -114,13 +118,13 @@ class ReportWidgets {
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: cs?.onSurfaceVariant ?? Colors.grey.shade600),
                 ),
                 if (trend != null) ...[
                   const Spacer(),
                   Icon(
                     trend == 'up' ? Icons.trending_up : Icons.trending_down,
-                    color: trend == 'up' ? Colors.green : Colors.red,
+                    color: trend == 'up' ? greenColor : redColor,
                     size: 16,
                   ),
                 ],
@@ -137,7 +141,7 @@ class ReportWidgets {
                 '${percentage.toStringAsFixed(1)}%',
                 style: TextStyle(
                   fontSize: 12,
-                  color: percentage > 0 ? Colors.green : Colors.red,
+                  color: percentage > 0 ? greenColor : redColor,
                 ),
               ),
             ],
@@ -242,6 +246,7 @@ class ReportWidgets {
     required Color color,
     String? label,
     double? height,
+    ColorScheme? cs,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +259,7 @@ class ReportWidgets {
           height: height ?? 8,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            color: Colors.grey.shade300,
+            color: cs?.surfaceContainerHighest ?? Colors.grey.shade300,
           ),
           child: FractionallySizedBox(
             alignment: Alignment.centerLeft,
@@ -277,6 +282,7 @@ class ReportWidgets {
     required String previousValue,
     required IconData icon,
     required Color color,
+    ColorScheme? cs,
   }) {
     final current =
         double.tryParse(currentValue.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
@@ -285,6 +291,9 @@ class ReportWidgets {
     final change = current - previous;
     final changePercent = previous > 0 ? (change / previous * 100) : 0;
     final isPositive = change >= 0;
+    final greenColor = cs?.tertiary ?? Colors.green;
+    final redColor = cs?.error ?? Colors.red;
+    final greyColor = cs?.onSurfaceVariant ?? Colors.grey;
 
     return Card(
       child: Padding(
@@ -312,9 +321,9 @@ class ReportWidgets {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '現在',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: greyColor),
                     ),
                     Text(
                       currentValue,
@@ -328,15 +337,15 @@ class ReportWidgets {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       '前期比',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: greyColor),
                     ),
                     Row(
                       children: [
                         Icon(
                           isPositive ? Icons.trending_up : Icons.trending_down,
-                          color: isPositive ? Colors.green : Colors.red,
+                          color: isPositive ? greenColor : redColor,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
@@ -345,7 +354,7 @@ class ReportWidgets {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isPositive ? Colors.green : Colors.red,
+                            color: isPositive ? greenColor : redColor,
                           ),
                         ),
                       ],

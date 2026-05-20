@@ -108,6 +108,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
     final cm1Size = shortestSide * 0.15; // 約1cm相当
     final cm2Size = shortestSide * 0.30; // 約2cm相当
     final sealSize = shortestSide * 0.25; // 角印標準21mmに近いサイズ
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -124,6 +125,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
               cm1Size: cm1Size,
               cm2Size: cm2Size,
               sealSize: sealSize,
+              cs: cs,
             ),
           ),
 
@@ -248,11 +250,13 @@ class _GuideOverlayPainter extends CustomPainter {
   final double cm1Size;
   final double cm2Size;
   final double sealSize;
+  final ColorScheme cs;
 
   _GuideOverlayPainter({
     required this.cm1Size,
     required this.cm2Size,
     required this.sealSize,
+    required this.cs,
   });
 
   @override
@@ -261,12 +265,12 @@ class _GuideOverlayPainter extends CustomPainter {
 
     // ペイント設定
     final sealPaint = Paint()
-      ..color = Colors.red.withValues(alpha: 0.8)
+      ..color = cs.error.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
     final guide2cmPaint = Paint()
-      ..color = Colors.yellow.withValues(alpha: 0.6)
+      ..color = cs.secondary.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
@@ -314,13 +318,13 @@ class _GuideOverlayPainter extends CustomPainter {
       canvas,
       Offset(center.dx + sealSize / 2 + 8, center.dy),
       '21mm',
-      Colors.red,
+      cs.error,
     );
     _drawSizeLabel(
       canvas,
       Offset(center.dx + cm2Size / 2 + 8, center.dy - cm2Size / 2 + 10),
       '2cm',
-      Colors.yellow,
+      cs.secondary,
     );
     _drawSizeLabel(
       canvas,

@@ -149,6 +149,7 @@ class _CustomFieldInputWidgetState extends State<CustomFieldInputWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -159,7 +160,7 @@ class _CustomFieldInputWidgetState extends State<CustomFieldInputWidget> {
         child: Text(
           'カスタムフィールドがありません',
           style: TextStyle(
-            color: Colors.grey[600],
+            color: cs.onSurfaceVariant,
             fontSize: 14,
           ),
         ),
@@ -310,7 +311,7 @@ class _CustomFieldInputWidgetState extends State<CustomFieldInputWidget> {
             child: Text(
               _values[field.fieldName] != null ? _formatDate(_values[field.fieldName]) : '日付を選択',
               style: TextStyle(
-                color: _values[field.fieldName] != null ? null : Colors.grey,
+                color: _values[field.fieldName] != null ? null : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -328,7 +329,7 @@ class _CustomFieldInputWidgetState extends State<CustomFieldInputWidget> {
             child: Text(
               _values[field.fieldName] != null ? _formatDateTime(_values[field.fieldName]) : '日時を選択',
               style: TextStyle(
-                color: _values[field.fieldName] != null ? null : Colors.grey,
+                color: _values[field.fieldName] != null ? null : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
