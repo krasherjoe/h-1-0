@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/theme_controller.dart';
 
 /// TH2: カラーカスタマイズ画面
@@ -153,6 +159,97 @@ class _ScreenTh2ThemeCustomizerState extends State<ScreenTh2ThemeCustomizer> {
     });
   }
 
+  /// カスタムテーマをJSONファイルとしてダウンロードフォルダにエクスポート
+  Future<void> _exportTheme() async {
+    try {
+      final dir = await _getDownloadDirectory();
+      final stamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final file = File('${dir.path}/theme_custom_$stamp.json');
+      final Map<String, dynamic> data = {
+        'version': 1,
+        'colors': Map<String, int>.from(_colors),
+      };
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(data),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('📤 エクスポート完了: ${file.path}'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ エクスポート失敗: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  /// ファイルからカスタムテーマをインポート
+  Future<void> _importTheme() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        initialDirectory: Platform.isAndroid
+            ? '/storage/emulated/0/Download'
+            : (await getApplicationDocumentsDirectory()).path,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null) return;
+      final content = await File(path).readAsString();
+      final decoded = jsonDecode(content);
+      final Map<String, dynamic> raw = decoded is Map
+          ? (decoded['colors'] as Map<String, dynamic>? ?? decoded.cast<String, dynamic>())
+          : {};
+      final imported = <String, int>{};
+      raw.forEach((k, v) {
+        if (v is int) imported[k] = v;
+      });
+      if (imported.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ 有効な色データが見つかりませんでした')),
+        );
+        return;
+      }
+      setState(() {
+        _colors = Map<String, int>.from({
+          ...AppThemeController.defaultCustomColors(),
+          ...imported,
+        });
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('📥 インポート完了: ${imported.length}色'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ インポート失敗: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  static Future<Directory> _getDownloadDirectory() async {
+    if (Platform.isAndroid) {
+      final dir = Directory('/storage/emulated/0/Download');
+      if (await dir.exists()) return dir;
+    }
+    return getApplicationDocumentsDirectory();
+  }
+
   @override
   Widget build(BuildContext context) {
     final primary = _c('primary');
@@ -167,6 +264,16 @@ class _ScreenTh2ThemeCustomizerState extends State<ScreenTh2ThemeCustomizer> {
             icon: const Icon(Icons.restore),
             tooltip: 'デフォルトに戻す',
             onPressed: _reset,
+          ),
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: 'JSONをインポート',
+            onPressed: _importTheme,
+          ),
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'JSONをエクスポート',
+            onPressed: _exportTheme,
           ),
           IconButton(
             icon: const Icon(Icons.check),
