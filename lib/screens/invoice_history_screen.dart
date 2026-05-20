@@ -327,7 +327,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+        titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
         leading: _useDashboardHome
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
