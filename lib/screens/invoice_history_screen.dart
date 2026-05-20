@@ -323,8 +323,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 ),
               ),
             ),
+      backgroundColor: _isUnlocked ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.surfaceVariant,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
         leading: _useDashboardHome
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -352,8 +356,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           },
           child: Text("IH:履歴リスト v$_appVersion"),
         ),
-      backgroundColor: _isUnlocked ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.surfaceVariant,
-         actions: [
+        actions: [
            if (_isUnlocked)
              IconButton(
                icon: Icon(Icons.lock_open, color: Theme.of(context).colorScheme.secondary),
