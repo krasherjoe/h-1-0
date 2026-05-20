@@ -85,7 +85,6 @@ class _InventoryValuationReportScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('R4:在庫評価額一覧'),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

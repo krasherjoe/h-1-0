@@ -150,7 +150,6 @@ class _SensorUtilizationScreenState extends State<SensorUtilizationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('S2:センサー活用'),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

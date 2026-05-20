@@ -239,7 +239,6 @@ class _StockAdjustmentScreenState extends State<StockAdjustmentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('IA:在庫調整'),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

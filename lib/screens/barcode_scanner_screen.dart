@@ -14,7 +14,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("バーコードスキャン"),
-        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: MobileScanner(
         onDetect: (capture) {

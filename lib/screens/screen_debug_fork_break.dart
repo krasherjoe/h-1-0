@@ -433,7 +433,6 @@ class _DebugForkBreakScreenState extends State<DebugForkBreakScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FK:フォーク修復 - HASH チェーン管理'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

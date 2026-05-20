@@ -76,7 +76,6 @@ products.is_current カラム存在：$hasProductIsCurrent
     return Scaffold(
       appBar: AppBar(
         title: const Text('DB デバッグ情報'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

@@ -37,7 +37,6 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("アクティビティ履歴 (Gitログ風)"),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadLogs),
         ],

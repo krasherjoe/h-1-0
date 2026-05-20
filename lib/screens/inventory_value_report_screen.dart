@@ -101,7 +101,6 @@ class _InventoryValueReportScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('IR:在庫評価額レポート'),
-        backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         actions: [
           IconButton(

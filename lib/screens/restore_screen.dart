@@ -39,7 +39,6 @@ class _RestoreScreenState extends State<RestoreScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('DB:データベースリストア'),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         foregroundColor: Theme.of(context).colorScheme.onSecondary,
       ),
       body: SafeArea(
