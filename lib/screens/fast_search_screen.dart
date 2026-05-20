@@ -138,7 +138,6 @@ class _FastSearchScreenState extends State<FastSearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FS:高速検索'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

@@ -395,7 +395,6 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
     return Scaffold(
       appBar: AppBar(
         title: const Text('E1:電子帳簿管理'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

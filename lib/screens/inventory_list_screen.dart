@@ -45,7 +45,6 @@ class _InventoryListScreenState extends State<InventoryListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('IL:在庫一覧'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

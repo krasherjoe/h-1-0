@@ -72,7 +72,6 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('ES:見積入力'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

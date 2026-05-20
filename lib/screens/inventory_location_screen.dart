@@ -171,7 +171,6 @@ class _InventoryLocationScreenState extends State<InventoryLocationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('WL:在庫ロケーション'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: _loadData,

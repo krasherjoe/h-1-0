@@ -175,7 +175,6 @@ ScaffoldMessenger.of(context).showSnackBar(
     return Scaffold(
       appBar: AppBar(
         title: const Text('S3:高度検索'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

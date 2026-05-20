@@ -148,7 +148,6 @@ class _SalesFlowManagementScreenState extends State<SalesFlowManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('F1:販売フロー管理'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

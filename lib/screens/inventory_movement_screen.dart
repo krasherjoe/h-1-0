@@ -200,7 +200,6 @@ class _InventoryMovementScreenState extends State<InventoryMovementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('IMC:在庫移動・棚卸'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: _loadData,

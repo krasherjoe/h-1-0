@@ -24,7 +24,6 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('IQ:在庫照会'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: () {

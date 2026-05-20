@@ -517,7 +517,6 @@ ElevatedButton(
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("P1:商品マスター"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           DropdownButtonHideUnderline(

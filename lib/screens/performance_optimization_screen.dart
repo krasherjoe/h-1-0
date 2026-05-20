@@ -93,7 +93,6 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
     return Scaffold(
       appBar: AppBar(
         title: const Text('PO:パフォーマンス最適化'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

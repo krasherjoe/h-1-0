@@ -49,7 +49,6 @@ class _CameraDeliveryPhotoScreenState extends State<CameraDeliveryPhotoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('納品写真管理'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: _isLoading

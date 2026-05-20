@@ -68,7 +68,6 @@ class _RoleManagementScreenState extends State<RoleManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('R1:ロール管理'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

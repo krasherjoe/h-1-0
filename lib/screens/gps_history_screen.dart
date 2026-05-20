@@ -34,7 +34,6 @@ class _GpsHistoryScreenState extends State<GpsHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("GPS位置情報履歴"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(onPressed: _loadHistory, icon: const Icon(Icons.refresh)),
         ],

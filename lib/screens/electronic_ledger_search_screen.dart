@@ -88,7 +88,6 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
     return Scaffold(
       appBar: AppBar(
         title: Text('E2:電子帳簿検索'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

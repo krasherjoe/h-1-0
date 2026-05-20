@@ -221,7 +221,6 @@ class _ProductCategoryMasterScreenState
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PC:商品カテゴリーマスター'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             tooltip: _showInactive ? '有効のみ表示' : '非表示も表示',

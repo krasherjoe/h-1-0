@@ -73,7 +73,6 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('IQ:在庫照会'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),

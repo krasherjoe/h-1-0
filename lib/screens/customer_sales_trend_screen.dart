@@ -76,7 +76,6 @@ class _CustomerSalesTrendScreenState extends State<CustomerSalesTrendScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('CS:得意先別売上推移'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.date_range),

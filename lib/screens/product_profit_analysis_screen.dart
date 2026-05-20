@@ -79,7 +79,6 @@ class _ProductProfitAnalysisScreenState extends State<ProductProfitAnalysisScree
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PA:商品別粗利分析'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.date_range),

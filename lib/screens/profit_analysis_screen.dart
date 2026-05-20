@@ -109,7 +109,6 @@ class _ProfitAnalysisScreenState extends State<ProfitAnalysisScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('GP:粗利分析'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

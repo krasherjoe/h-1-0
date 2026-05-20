@@ -151,7 +151,6 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PJ1:案件管理'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       floatingActionButton: FloatingActionButton.extended(

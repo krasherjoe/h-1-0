@@ -266,7 +266,6 @@ class _StaffMasterScreenState extends State<StaffMasterScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('ST:担当者マスター'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(

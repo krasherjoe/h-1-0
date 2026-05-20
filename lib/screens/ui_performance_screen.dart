@@ -156,7 +156,6 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('UP:UIパフォーマンス最適化'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

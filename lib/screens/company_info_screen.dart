@@ -371,7 +371,6 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("F1:自社情報"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           PopupMenuButton<String>(
@@ -1136,7 +1135,6 @@ class _SealOffsetAdjustPageState extends State<_SealOffsetAdjustPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('F1:角印位置調整'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           TextButton.icon(

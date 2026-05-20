@@ -80,7 +80,6 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('BP:業種設定'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: _saveProfile,

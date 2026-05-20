@@ -226,7 +226,6 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('T1:業種テンプレート選択'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: _isLoading

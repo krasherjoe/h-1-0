@@ -206,7 +206,6 @@ class _WarehouseMasterScreenState extends State<WarehouseMasterScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('WH:倉庫マスター'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(

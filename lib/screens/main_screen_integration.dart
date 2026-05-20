@@ -42,7 +42,6 @@ class _MainScreenIntegrationState extends State<MainScreenIntegration> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_getPageTitle()),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         leading: _currentIndex == 0
             ? Builder(

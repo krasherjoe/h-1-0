@@ -259,7 +259,6 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('S4:拡張センサー'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

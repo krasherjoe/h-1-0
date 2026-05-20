@@ -238,7 +238,6 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('F2:自社情報'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(onPressed: _save, icon: const Icon(Icons.save)),
         ],

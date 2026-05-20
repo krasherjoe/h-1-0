@@ -125,7 +125,6 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('GD:Google Drive バックアップ'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           if (_currentStep == DriveStep.listBackups)

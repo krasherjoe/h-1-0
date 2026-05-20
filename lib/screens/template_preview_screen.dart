@@ -95,7 +95,6 @@ class TemplatePreviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('T2:${_getBusinessTypeName(businessType)}業種プレビュー'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: fields.isEmpty

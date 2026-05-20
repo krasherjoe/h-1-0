@@ -35,7 +35,6 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('SA:売上分析'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

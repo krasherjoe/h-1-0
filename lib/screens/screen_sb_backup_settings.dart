@@ -286,7 +286,6 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('SB:バックアップ・リストア'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: SafeArea(

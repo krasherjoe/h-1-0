@@ -198,7 +198,6 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('AL:監査ログ'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           actions: [
             IconButton(

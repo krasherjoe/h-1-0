@@ -31,7 +31,6 @@ class _ManagementScreenState extends State<ManagementScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text("マスター管理・同期"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: ListView(
         children: [

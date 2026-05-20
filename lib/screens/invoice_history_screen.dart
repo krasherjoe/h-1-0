@@ -326,7 +326,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       backgroundColor: _isUnlocked ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.surfaceVariant,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
         leading: _useDashboardHome

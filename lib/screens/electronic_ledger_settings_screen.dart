@@ -152,7 +152,6 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
       return Scaffold(
         appBar: AppBar(
           title: const Text('E3:電子帳簿設定'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
         body: const Center(
@@ -164,7 +163,6 @@ class _ElectronicLedgerSettingsScreenState extends State<ElectronicLedgerSetting
     return Scaffold(
       appBar: AppBar(
         title: const Text('E3:電子帳簿設定'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(

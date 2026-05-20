@@ -303,7 +303,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: Text('PJ2:${_project.name}', overflow: TextOverflow.ellipsis),
-           backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(icon: const Icon(Icons.edit), onPressed: _showEditDialog),
