@@ -25,6 +25,7 @@ import 'product_master_screen.dart';
 import 'screen_s1_theme_selection.dart';
 import 'screen_s8_email_settings.dart';
 import 'db_debug_screen.dart' show DatabaseDebugScreen;
+import 'screen_debug_fork_break.dart' show DebugForkBreakScreen;
 import 'drive_backup_screen.dart';
 import 'screen_sb_backup_settings.dart';
 
@@ -979,6 +980,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const DatabaseDebugScreen(),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: Icon(Icons.security, color: Theme.of(context).colorScheme.secondary),
+                  title: const Text('HASHチェーン修復'),
+                  subtitle: const Text('顧客マスターの重複・HASH断絶を検出・修復'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DebugForkBreakScreen(),
                     ),
                   ),
                 ),
