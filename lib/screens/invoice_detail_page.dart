@@ -125,6 +125,20 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     }
   }
 
+  Color _documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
+    final base = switch (type) {
+      DocumentType.estimation => cs.primary,
+      DocumentType.order => cs.secondary,
+      DocumentType.delivery => cs.tertiary,
+      DocumentType.invoice => cs.primaryContainer,
+      DocumentType.receipt => cs.secondaryContainer,
+    };
+    if (isDark) {
+      return HSLColor.fromColor(base).withLightness(0.18).toColor();
+    }
+    return base;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -285,6 +299,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final docTypeName = _currentInvoice.documentTypeName;
     final themeColor = Theme.of(context).scaffoldBackgroundColor;
     final textColor = Theme.of(context).colorScheme.onSurface;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final locked = _currentInvoice.isLocked;
 
@@ -316,7 +332,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             ),
           ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: _documentTypeColor(_currentInvoice.documentType, cs, isDark),
         actions: [
           if (locked)
             Padding(

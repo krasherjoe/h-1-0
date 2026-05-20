@@ -143,6 +143,14 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
     });
   }
 
+  Color _documentTypeColor(ColorScheme cs, bool isDark) {
+    final base = cs.primary;
+    if (isDark) {
+      return HSLColor.fromColor(base).withLightness(0.18).toColor();
+    }
+    return base;
+  }
+
   Future<void> _createQuotation() async {
     await Navigator.push(
       context,
@@ -332,9 +340,12 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
     final quotations = _visibleQuotations;
     final styleTheme = _currentListTheme;
     final isA2Style = _isA2Style;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        backgroundColor: _documentTypeColor(cs, isDark),
         title: const Text('Q1:見積入力'),
       ),
       floatingActionButton: FloatingActionButton.extended(

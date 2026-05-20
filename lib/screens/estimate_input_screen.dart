@@ -37,6 +37,14 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
     });
   }
 
+  Color _documentTypeColor(ColorScheme cs, bool isDark) {
+    final base = cs.primary;
+    if (isDark) {
+      return HSLColor.fromColor(base).withLightness(0.18).toColor();
+    }
+    return base;
+  }
+
   Future<void> _createNewEstimate() async {
     final customer = await Navigator.push<Customer?>(
       context,
@@ -68,8 +76,11 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: _documentTypeColor(cs, isDark),
         leading: const BackButton(),
         title: const Text('ES:見積入力'),
       ),
