@@ -471,19 +471,22 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                                       ),
                                       const SizedBox(width: 12),
                                       if (quotation.isDraft && !quotation.isLocked)
-                                        FilledButton.icon(
-                                          onPressed: confirming
-                                              ? null
-                                              : () {
-                                                  final messenger = ScaffoldMessenger.of(context);
-                                                  messenger.hideCurrentSnackBar();
-                                                  messenger.showSnackBar(const SnackBar(content: Text('長押しで確定します')));
-                                                },
+                                        GestureDetector(
                                           onLongPress: confirming ? null : () => _handleConfirmLongPress(quotation),
-                                          icon: confirming
-                                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                              : const Icon(Icons.check_circle),
-                                          label: Text(confirming ? '確定中...' : '確定'),
+                                          behavior: HitTestBehavior.opaque,
+                                          child: FilledButton.icon(
+                                            onPressed: confirming
+                                                ? null
+                                                : () {
+                                                    final messenger = ScaffoldMessenger.of(context);
+                                                    messenger.hideCurrentSnackBar();
+                                                    messenger.showSnackBar(const SnackBar(content: Text('長押しで確定します')));
+                                                  },
+                                            icon: confirming
+                                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                                : const Icon(Icons.check_circle),
+                                            label: Text(confirming ? '確定中...' : '確定'),
+                                          ),
                                         )
                                       else
                                         TextButton.icon(
