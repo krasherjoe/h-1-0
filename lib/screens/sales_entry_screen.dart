@@ -134,7 +134,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
             amount: sales.getDisplayAmount(),
             date: sales.date,
             status: sales.status,
-            themeColor: sales.getThemeColor(),
+            themeColor: sales.getThemeColor(Theme.of(context).colorScheme),
             grossProfit: grossProfitText,
             onTap: () async {
               final result = await Navigator.push(

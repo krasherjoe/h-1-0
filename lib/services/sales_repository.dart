@@ -2,9 +2,11 @@ import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/sales_model.dart';
 import '../models/customer_model.dart';
+import '../models/base_document.dart';
 import '../widgets/document_card.dart';
 import 'database_helper.dart';
 import 'customer_repository.dart';
+import 'product_repository.dart';
 
 /// 売上リポジトリ
 class SalesRepository {
@@ -165,5 +167,85 @@ class SalesRepository {
     
     final count = result.first['count'] as int;
     return '$prefix-${(count + 1).toString().padLeft(4, '0')}';
+  }
+
+  /// 売上の明細をロード
+  Future<List<DocumentItem>> _loadSalesItems(String salesId) async {
+    final database = await _db.database;
+    final maps = await database.query(
+      'sales_items',
+      where: 'sales_id = ?',
+      whereArgs: [salesId],
+    );
+    return maps.map((map) => DocumentItem.fromMap(map)).toList();
+  }
+
+  /// 粗利を計算（売上 - 仕入原価）
+  Future<int> calculateGrossProfit(Sales sales) async {
+    final productRepo = ProductRepository();
+    int totalProfit = 0;
+    
+    for (final item in sales.items) {
+      final product = await productRepo.getProduct(item.productId);
+      if (product != null) {
+        final cost = product.wholesalePrice * item.quantity;
+        final revenue = item.subtotal;
+        totalProfit += (revenue - cost);
+      }
+    }
+    
+    return totalProfit;
+  }
+
+  /// 粗利率を計算（パーセント）
+  Future<double> calculateGrossMargin(Sales sales) async {
+    if (sales.total == 0) return 0.0;
+    final profit = await calculateGrossProfit(sales);
+    return (profit / sales.total) * 100;
+  }
+
+  /// すべての売上を明細付きで取得（粗利計算用）
+  Future<List<Sales>> getAllSalesWithItems() async {
+    final database = await _db.database;
+    final customers = await _customerRepo.getAllCustomers();
+    final productRepo = ProductRepository();
+    
+    final maps = await database.query(
+      'sales',
+      orderBy: 'date DESC',
+    );
+
+    List<Sales> salesList = [];
+    for (var map in maps) {
+      final customerId = map['customer_id'] as String?;
+      final customer = customerId != null
+          ? customers.firstWhere(
+              (c) => c.id == customerId,
+              orElse: () => Customer(
+                id: customerId,
+                displayName: '不明な顧客',
+                formalName: '不明な顧客',
+              ),
+            )
+          : null;
+
+      final sales = Sales.fromMap(map, customer);
+      sales.items = await _loadSalesItems(sales.id);
+      
+      int totalProfit = 0;
+      for (final item in sales.items) {
+        final product = await productRepo.getProduct(item.productId);
+        if (product != null) {
+          final cost = product.wholesalePrice * item.quantity;
+          final revenue = item.subtotal;
+          totalProfit += (revenue - cost);
+        }
+      }
+      sales.grossProfit = totalProfit;
+
+      salesList.add(sales);
+    }
+
+    return salesList;
   }
 }

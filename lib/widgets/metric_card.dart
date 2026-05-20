@@ -31,7 +31,7 @@ class MetricCard extends StatelessWidget {
                 if (metric.trend != MetricTrend.flat)
                   Icon(
                     _getTrendIcon(),
-                    color: metric.trendColor,
+                    color: metric.getTrendColor(Theme.of(context).colorScheme),
                     size: 16,
                   ),
               ],
@@ -49,7 +49,7 @@ class MetricCard extends StatelessWidget {
                 _formatDelta(),
                 style: TextStyle(
                   fontSize: 12,
-                  color: metric.trendColor,
+                  color: metric.getTrendColor(Theme.of(context).colorScheme),
                 ),
               ),
             ],

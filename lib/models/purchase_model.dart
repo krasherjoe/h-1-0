@@ -35,22 +35,22 @@ class Purchase extends BaseDocument {
   });
 
   @override
-  Color getStatusColor() {
+  Color getStatusColor(ColorScheme cs) {
     switch (purchaseStatus) {
       case PurchaseStatus.draft:
-        return Colors.orange;
+        return cs.secondary;
       case PurchaseStatus.confirmed:
-        return Colors.blue;
+        return cs.primary;
       case PurchaseStatus.received:
-        return Colors.green;
+        return cs.tertiary;
       case PurchaseStatus.cancelled:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 
   @override
-  Color getThemeColor() {
-    return Colors.orange;
+  Color getThemeColor(ColorScheme cs) {
+    return cs.secondary;
   }
 
   @override

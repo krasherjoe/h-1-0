@@ -9,7 +9,7 @@ abstract class BaseDocument {
   final String documentNumber;      // 伝票番号
   final DateTime date;              // 伝票日付
   final Customer? customer;         // 顧客
-  final List<DocumentItem> items;   // 明細
+  List<DocumentItem> items;         // 明細
   final int subtotal;               // 小計
   final int taxAmount;              // 消費税額
   final int total;                  // 合計
@@ -56,10 +56,10 @@ abstract class BaseDocument {
   }
 
   /// ステータスカラーを取得
-  Color getStatusColor();
+  Color getStatusColor(ColorScheme cs);
 
   /// テーマカラーを取得（伝票種類ごとに異なる）
-  Color getThemeColor();
+  Color getThemeColor(ColorScheme cs);
 
   /// Map形式に変換
   Map<String, dynamic> toMap();

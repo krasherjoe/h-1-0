@@ -125,10 +125,10 @@ class Inventory {
   }
 
   /// 在庫状態の色を取得
-  Color getStockStatusColor() {
-    if (isOutOfStock) return Colors.red;
-    if (isLowStock) return Colors.orange;
-    if (isOverReserved) return Colors.purple;
-    return Colors.green;
+  Color getStockStatusColor(ColorScheme cs) {
+    if (isOutOfStock) return cs.error;
+    if (isLowStock) return cs.secondary;
+    if (isOverReserved) return cs.secondary;
+    return cs.tertiary;
   }
 }

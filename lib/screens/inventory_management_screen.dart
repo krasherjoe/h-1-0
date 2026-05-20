@@ -64,7 +64,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
             amount: '${inventory.quantity}個',
             date: inventory.updatedAt,
             status: _getDocumentStatus(inventory),
-            themeColor: inventory.getStockStatusColor(),
+            themeColor: inventory.getStockStatusColor(Theme.of(context).colorScheme),
             onTap: () {
               if (!mounted) return;
               _showInventoryDialog(inventory);

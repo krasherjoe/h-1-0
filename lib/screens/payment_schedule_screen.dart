@@ -35,7 +35,7 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
           amount: schedule.displayAmount,
           date: schedule.dueDate,
           status: _getDocumentStatus(schedule),
-          themeColor: schedule.getThemeColor(),
+          themeColor: schedule.getThemeColor(Theme.of(context).colorScheme),
           onTap: () {
             if (!mounted) return;
             _showScheduleDialog(schedule);

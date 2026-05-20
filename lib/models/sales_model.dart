@@ -24,22 +24,23 @@ class Sales extends BaseDocument {
   });
 
   final String? invoiceId; // 紐づく請求書ID
+  int? grossProfit; // 粗利額（計算済み）
 
   @override
-  Color getStatusColor() {
+  Color getStatusColor(ColorScheme cs) {
     switch (status) {
       case DocumentStatus.draft:
-        return Colors.orange;
+        return cs.secondary;
       case DocumentStatus.confirmed:
-        return Colors.green;
+        return cs.tertiary;
       case DocumentStatus.cancelled:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 
   @override
-  Color getThemeColor() {
-    return Colors.green;
+  Color getThemeColor(ColorScheme cs) {
+    return cs.tertiary;
   }
 
   @override

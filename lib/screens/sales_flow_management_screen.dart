@@ -413,7 +413,7 @@ return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: status.color,
+          backgroundColor: status.getColor(Theme.of(context).colorScheme),
           child: Icon(status.icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
         ),
         title: Text(
@@ -442,14 +442,14 @@ return Container(
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: status.color.withValues(alpha: 0.2),
+                color: status.getColor(Theme.of(context).colorScheme).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 status.displayName,
                 style: TextStyle(
                   fontSize: 12,
-                  color: status.color,
+                  color: status.getColor(Theme.of(context).colorScheme),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -497,7 +497,7 @@ return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: status.color,
+          backgroundColor: status.getColor(Theme.of(context).colorScheme),
           child: Icon(status.icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
         ),
         title: Text(
@@ -527,14 +527,14 @@ return Container(
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: status.color.withValues(alpha: 0.2),
+                color: status.getColor(Theme.of(context).colorScheme).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 status.displayName,
                 style: TextStyle(
                   fontSize: 12,
-                  color: status.color,
+                  color: status.getColor(Theme.of(context).colorScheme),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -574,7 +574,7 @@ return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: status.color,
+              backgroundColor: status.getColor(Theme.of(context).colorScheme),
               child: Icon(status.icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
             title: Text(sale['sales_no'] ?? '売上'),
@@ -606,14 +606,14 @@ return Container(
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: status.color.withValues(alpha: 0.2),
+                    color: status.getColor(Theme.of(context).colorScheme).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status.displayName,
                     style: TextStyle(
                       fontSize: 12,
-                      color: status.color,
+                      color: status.getColor(Theme.of(context).colorScheme),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -647,7 +647,7 @@ return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: status.color,
+              backgroundColor: status.getColor(Theme.of(context).colorScheme),
               child: Icon(Icons.local_shipping, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
             title: Text(delivery['delivery_no'] ?? '配送'),
@@ -655,7 +655,7 @@ return Container(
             trailing: Text(
               status.displayName,
               style: TextStyle(
-                color: status.color,
+                color: status.getColor(Theme.of(context).colorScheme),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -686,7 +686,7 @@ return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: status.color,
+              backgroundColor: status.getColor(Theme.of(context).colorScheme),
               child: Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
             title: Text(invoice['invoice_no'] ?? '請求書'),
@@ -711,7 +711,7 @@ return Container(
                     fontSize: 16,
                   ),
                 ),
-                Text(status.displayName, style: TextStyle(color: status.color)),
+                Text(status.displayName, style: TextStyle(color: status.getColor(Theme.of(context).colorScheme))),
               ],
             ),
           ),

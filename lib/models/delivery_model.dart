@@ -27,19 +27,19 @@ class Delivery extends BaseDocument {
   });
 
   @override
-  Color getStatusColor() {
+  Color getStatusColor(ColorScheme cs) {
     switch (status) {
       case DocumentStatus.draft:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
       case DocumentStatus.confirmed:
-        return Colors.blue;
+        return cs.primary;
       case DocumentStatus.cancelled:
-        return Colors.red;
+        return cs.error;
     }
   }
 
   @override
-  Color getThemeColor() => Colors.green;
+  Color getThemeColor(ColorScheme cs) => cs.tertiary;
 
   @override
   String getDocumentTypeName() => '配送';

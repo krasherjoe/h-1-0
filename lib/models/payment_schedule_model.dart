@@ -130,24 +130,24 @@ class PaymentSchedule {
   }
 
   /// ステータスに応じた色
-  Color getStatusColor() {
+  Color getStatusColor(ColorScheme cs) {
     switch (status) {
       case PaymentStatus.unpaid:
-        if (isOverdue) return Colors.red;
-        if (isDueSoon) return Colors.orange;
-        return Colors.blue;
+        if (isOverdue) return cs.error;
+        if (isDueSoon) return cs.secondary;
+        return cs.primary;
       case PaymentStatus.partial:
-        return Colors.amber;
+        return cs.tertiary;
       case PaymentStatus.paid:
-        return Colors.green;
+        return cs.onSurfaceVariant;
       case PaymentStatus.overdue:
-        return Colors.red;
+        return cs.error;
     }
   }
 
   /// テーマカラー
-  Color getThemeColor() {
-    return getStatusColor();
+  Color getThemeColor(ColorScheme cs) {
+    return getStatusColor(cs);
   }
 }
 

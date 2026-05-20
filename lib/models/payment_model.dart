@@ -123,16 +123,16 @@ class Payment {
   String get displaySubtitle => '${paymentDate.year}/${paymentDate.month}/${paymentDate.day} ${paymentMethodDisplayName}';
 
   /// テーマカラー
-  Color getThemeColor() {
+  Color getThemeColor(ColorScheme cs) {
     switch (paymentMethod) {
       case PaymentMethod.bankTransfer:
-        return Colors.blue;
+        return cs.primary;
       case PaymentMethod.cash:
-        return Colors.green;
+        return cs.tertiary;
       case PaymentMethod.creditCard:
-        return Colors.purple;
+        return cs.secondary;
       case PaymentMethod.other:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 }

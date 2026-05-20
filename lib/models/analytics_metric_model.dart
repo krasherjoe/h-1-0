@@ -82,14 +82,14 @@ class AnalyticsMetric {
     return diff > 0 ? MetricTrend.up : MetricTrend.down;
   }
 
-  Color get trendColor {
+  Color getTrendColor(ColorScheme cs) {
     switch (trend) {
       case MetricTrend.up:
-        return Colors.green;
+        return cs.tertiary;
       case MetricTrend.down:
-        return Colors.red;
+        return cs.error;
       case MetricTrend.flat:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 

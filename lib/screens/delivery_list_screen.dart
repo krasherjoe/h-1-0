@@ -27,7 +27,7 @@ class DeliveryListScreen extends StatelessWidget {
         )}',
         date: delivery.date,
         status: delivery.status,
-        themeColor: delivery.getThemeColor(),
+        themeColor: delivery.getThemeColor(Theme.of(context).colorScheme),
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('配送記録: ${delivery.documentNumber}')),

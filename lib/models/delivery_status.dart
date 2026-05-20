@@ -21,16 +21,16 @@ extension DeliveryStatusExtension on DeliveryStatus {
     }
   }
 
-  Color get color {
+  Color getColor(ColorScheme cs) {
     switch (this) {
       case DeliveryStatus.pending:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
       case DeliveryStatus.inProgress:
-        return Colors.blue;
+        return cs.primary;
       case DeliveryStatus.completed:
-        return Colors.green;
+        return cs.tertiary;
       case DeliveryStatus.cancelled:
-        return Colors.red;
+        return cs.error;
     }
   }
 }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 import '../models/invoice_models.dart';
 import '../models/customer_model.dart';
 import '../models/customer_contact.dart';
@@ -15,6 +16,7 @@ import 'activity_log_repository.dart';
 import 'company_repository.dart';
 import 'electronic_ledger_repository.dart';
 import 'storage_monitor.dart';
+import 'customer_repository.dart';
 
 /// 在庫処理の除外対象とする商品カテゴリ名
 /// サービスやサポート系の有形財でない品目は在庫引当/減算を行わない
@@ -877,5 +879,193 @@ class InvoiceRepository {
         await txn.insert('invoice_items', copy, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
+  }
+
+  /// 未入金合計を取得（全顧客）
+  Future<int> getTotalUnpaidAmount() async {
+    final db = await _dbHelper.database;
+    final results = await db.rawQuery('''
+      SELECT COALESCE(SUM(total_amount - received_amount), 0) as total
+      FROM invoices
+      WHERE document_type = 'invoice' AND (payment_status = 'unpaid' OR payment_status = 'partial')
+    ''');
+    return (results.first['total'] as num).toInt();
+  }
+
+  /// 顧客別の未入金合計を取得
+  Future<Map<String, int>> getUnpaidAmountByCustomer() async {
+    final db = await _dbHelper.database;
+    final results = await db.rawQuery('''
+      SELECT customer_id, SUM(total_amount - received_amount) as unpaid
+      FROM invoices
+      WHERE document_type = 'invoice' AND (payment_status = 'unpaid' OR payment_status = 'partial')
+      GROUP BY customer_id
+      ORDER BY unpaid DESC
+    ''');
+    Map<String, int> map = {};
+    for (var r in results) {
+      map[r['customer_id'] as String] = (r['unpaid'] as num).toInt();
+    }
+    return map;
+  }
+
+  /// 指定顧客の未入金合計を取得
+  Future<int> getUnpaidAmountByCustomerId(String customerId) async {
+    final db = await _dbHelper.database;
+    final results = await db.rawQuery('''
+      SELECT COALESCE(SUM(total_amount - received_amount), 0) as unpaid
+      FROM invoices
+      WHERE document_type = 'invoice' AND customer_id = ? AND (payment_status = 'unpaid' OR payment_status = 'partial')
+    ''', [customerId]);
+    return (results.first['unpaid'] as num).toInt();
+  }
+
+  /// 未使用の請求書一覧を取得（売上に変換できていないもの）
+  Future<List<Invoice>> getUnusedInvoices() async {
+    final db = await _dbHelper.database;
+    final customerRepo = CustomerRepository();
+    final customers = await customerRepo.getAllCustomers();
+
+    final invoiceMaps = await db.rawQuery('''
+      SELECT i.*, c.display_name, c.formal_name
+      FROM invoices i
+      LEFT JOIN customers c ON i.customer_id = c.id
+      WHERE i.document_type = 'invoice'
+        AND (i.linked_invoice_id IS NULL OR i.linked_invoice_id = '')
+      ORDER BY i.date DESC
+    ''');
+
+    List<Invoice> invoices = [];
+    
+    for (var iMap in invoiceMaps) {
+      final customerId = iMap['customer_id'] as String?;
+      Customer customer;
+      if (customerId != null) {
+        customer = customers.firstWhere(
+          (c) => c.id == customerId,
+          orElse: () => Customer(id: customerId, displayName: '不明な顧客', formalName: '不明な顧客'),
+        );
+      } else {
+        customer = Customer(id: '', displayName: '不明な顧客', formalName: '不明な顧客');
+      }
+
+      final itemMaps = await db.query(
+        'invoice_items',
+        where: 'invoice_id = ?',
+        whereArgs: [iMap['id']],
+      );
+
+      final items = List.generate(itemMaps.length, (i) => InvoiceItem.fromMap(itemMaps[i]));
+
+      PaymentStatus paymentStatus = PaymentStatus.unpaid;
+      final psRaw = iMap['payment_status'];
+      if (psRaw is String) {
+        try {
+          paymentStatus = PaymentStatus.values.firstWhere((e) => e.name == psRaw);
+        } catch (_) {}
+      }
+
+      int receivedAmount = 0;
+      final ra = iMap['received_amount'];
+      if (ra != null) receivedAmount = (ra as num).toInt();
+
+      invoices.add(Invoice(
+         id: iMap['id'] as String,
+         customer: customer,
+         date: DateTime.parse(iMap['date'] as String),
+         items: items,
+         taxRate: (iMap['tax_rate'] as num?)?.toDouble() ?? 0.10,
+         documentType: DocumentType.invoice,
+         paymentStatus: paymentStatus,
+         receivedAmount: receivedAmount,
+       ));
+    }
+
+    return invoices;
+  }
+
+  /// 請求書を売上に変換（排他的な1:1紐付け）
+  Future<void> convertInvoiceToSales(String invoiceId) async {
+    final db = await _dbHelper.database;
+    
+    // 既に売上に紐づいているか確認
+    final existingSales = await db.query(
+      'sales',
+      where: 'invoice_id = ?',
+      whereArgs: [invoiceId],
+    );
+    if (existingSales.isNotEmpty) {
+      throw Exception('この請求書は既に売上に登録されています');
+    }
+
+    // 請求書の情報を取得
+    final invoiceMaps = await db.query(
+      'invoices',
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
+    if (invoiceMaps.isEmpty) {
+      throw Exception('請求書が見つかりません');
+    }
+
+    final invoiceMap = invoiceMaps.first;
+    final items = await db.query(
+      'invoice_items',
+      where: 'invoice_id = ?',
+      whereArgs: [invoiceId],
+    );
+
+    // 売上伝票を生成
+    final salesId = const Uuid().v4();
+    final now = DateTime.now();
+    final prefix = 'S${now.year}${now.month.toString().padLeft(2, '0')}';
+    final countResult = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM sales WHERE document_number LIKE ?',
+      ['$prefix%'],
+    );
+    final count = countResult.first['count'] as int;
+    final documentNumber = '$prefix-${(count + 1).toString().padLeft(4, '0')}';
+
+    final totalAmount = (invoiceMap['total_amount'] as num?)?.toInt() ?? 0;
+
+    await db.insert('sales', {
+      'id': salesId,
+      'document_number': documentNumber,
+      'date': now.toIso8601String(),
+      'customer_id': invoiceMap['customer_id'],
+      'subtotal': totalAmount,
+      'tax_amount': 0,
+      'total': totalAmount,
+      'tax_rate': 0.10,
+      'notes': null,
+      'subject': null,
+      'status': 'confirmed',
+      'invoice_id': invoiceId,
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+    });
+
+    // 売上明細を生成（invoice_itemsからsales_itemsへ変換）
+    for (final item in items) {
+      final newItemId = const Uuid().v4();
+      await db.insert('sales_items', {
+        'id': newItemId,
+        'sales_id': salesId,
+        'product_id': item['product_id'],
+        'product_name': item['product_name'] ?? item['description'],
+        'quantity': item['quantity'],
+        'unit_price': item['unit_price'],
+        'subtotal': item['subtotal'],
+        'tax_rate': item['tax_rate'] ?? 0.10,
+      });
+    }
+
+    // 請求書の linked_invoice_id を更新（紐付け済みフラグ）
+    await db.update(
+      'invoices',
+      {'linked_invoice_id': salesId},
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
   }
 }

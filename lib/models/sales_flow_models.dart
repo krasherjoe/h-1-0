@@ -102,45 +102,43 @@ extension SalesFlowStatusExtension on SalesFlowStatus {
     }
   }
   
-  Color get color {
+  Color getColor(ColorScheme cs) {
     switch (this) {
       case SalesFlowStatus.quoteDraft:
       case SalesFlowStatus.orderDraft:
       case SalesFlowStatus.salesDraft:
       case SalesFlowStatus.invoiceDraft:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
       case SalesFlowStatus.quoteSubmitted:
       case SalesFlowStatus.orderSubmitted:
-        return Colors.blue;
+        return cs.primary;
       case SalesFlowStatus.quoteApproved:
       case SalesFlowStatus.orderConfirmed:
       case SalesFlowStatus.salesConfirmed:
-        return Colors.green;
+        return cs.tertiary;
       case SalesFlowStatus.quoteRejected:
       case SalesFlowStatus.orderCancelled:
       case SalesFlowStatus.salesCancelled:
       case SalesFlowStatus.invoiceCancelled:
-        return Colors.red;
+      case SalesFlowStatus.deliveryFailed:
+      case SalesFlowStatus.invoiceOverdue:
+        return cs.error;
       case SalesFlowStatus.quoteExpired:
-        return Colors.orange;
+        return cs.secondary;
       case SalesFlowStatus.salesInvoiced:
       case SalesFlowStatus.invoiceIssued:
-        return Colors.purple;
+        return cs.secondary;
       case SalesFlowStatus.salesPaid:
       case SalesFlowStatus.invoicePaid:
-        return Colors.teal;
+        return cs.tertiary;
       case SalesFlowStatus.deliveryPending:
-        return Colors.amber;
+        return cs.secondary;
       case SalesFlowStatus.deliveryPreparing:
-        return Colors.indigo;
+        return cs.primary;
       case SalesFlowStatus.deliveryShipped:
-        return Colors.cyan;
+        return cs.primary;
       case SalesFlowStatus.deliveryDelivered:
-        return Colors.lightGreen;
-      case SalesFlowStatus.deliveryFailed:
-        return Colors.deepOrange;
-      case SalesFlowStatus.invoiceOverdue:
-        return Colors.redAccent;
+        return cs.tertiary;
     }
   }
   
@@ -320,14 +318,14 @@ extension DeliveryLinkStatusExtension on DeliveryLinkStatus {
     }
   }
   
-  Color get color {
+  Color getColor(ColorScheme cs) {
     switch (this) {
-      case DeliveryLinkStatus.notLinked: return Colors.grey;
-      case DeliveryLinkStatus.linked: return Colors.blue;
-      case DeliveryLinkStatus.inTransit: return Colors.orange;
-      case DeliveryLinkStatus.completed: return Colors.green;
-      case DeliveryLinkStatus.failed: return Colors.red;
-      case DeliveryLinkStatus.cancelled: return Colors.purple;
+      case DeliveryLinkStatus.notLinked: return cs.onSurfaceVariant;
+      case DeliveryLinkStatus.linked: return cs.primary;
+      case DeliveryLinkStatus.inTransit: return cs.secondary;
+      case DeliveryLinkStatus.completed: return cs.tertiary;
+      case DeliveryLinkStatus.failed: return cs.error;
+      case DeliveryLinkStatus.cancelled: return cs.secondary;
     }
   }
 }
@@ -355,14 +353,14 @@ extension InvoiceLinkStatusExtension on InvoiceLinkStatus {
     }
   }
   
-  Color get color {
+  Color getColor(ColorScheme cs) {
     switch (this) {
-      case InvoiceLinkStatus.notLinked: return Colors.grey;
-      case InvoiceLinkStatus.linked: return Colors.blue;
-      case InvoiceLinkStatus.issued: return Colors.purple;
-      case InvoiceLinkStatus.overdue: return Colors.red;
-      case InvoiceLinkStatus.paid: return Colors.green;
-      case InvoiceLinkStatus.cancelled: return Colors.orange;
+      case InvoiceLinkStatus.notLinked: return cs.onSurfaceVariant;
+      case InvoiceLinkStatus.linked: return cs.primary;
+      case InvoiceLinkStatus.issued: return cs.secondary;
+      case InvoiceLinkStatus.overdue: return cs.error;
+      case InvoiceLinkStatus.paid: return cs.tertiary;
+      case InvoiceLinkStatus.cancelled: return cs.secondary;
     }
   }
 }

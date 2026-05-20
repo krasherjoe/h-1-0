@@ -23,20 +23,20 @@ class Quotation extends BaseDocument {
   });
 
   @override
-  Color getStatusColor() {
+  Color getStatusColor(ColorScheme cs) {
     switch (status) {
       case DocumentStatus.draft:
-        return Colors.orange;
+        return cs.secondary;
       case DocumentStatus.confirmed:
-        return Colors.blue;
+        return cs.primary;
       case DocumentStatus.cancelled:
-        return Colors.grey;
+        return cs.onSurfaceVariant;
     }
   }
 
   @override
-  Color getThemeColor() {
-    return Colors.blue;
+  Color getThemeColor(ColorScheme cs) {
+    return cs.primary;
   }
 
   @override

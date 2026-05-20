@@ -12,6 +12,7 @@ class DocumentCard extends StatelessWidget {
   final Color themeColor;
   final VoidCallback? onTap;
   final List<CardAction>? actions;
+  final String? grossProfit;
 
   const DocumentCard({
     super.key,
@@ -23,6 +24,7 @@ class DocumentCard extends StatelessWidget {
     required this.themeColor,
     this.onTap,
     this.actions,
+    this.grossProfit,
   });
 
   @override
@@ -90,6 +92,15 @@ class DocumentCard extends StatelessWidget {
                 children: [
                   _buildStatusChip(status),
                   const Spacer(),
+                  if (grossProfit != null && grossProfit!.isNotEmpty)
+                    Text(
+                      grossProfit!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   if (actions != null)
                     ...actions!.map((action) => Padding(
                           padding: const EdgeInsets.only(left: 8),

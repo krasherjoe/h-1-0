@@ -311,7 +311,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                   subtitle: Text(schedule.displaySubtitle),
                   trailing: Text(schedule.displayAmount),
                   leading: CircleAvatar(
-                    backgroundColor: schedule.getStatusColor(),
+                    backgroundColor: schedule.getStatusColor(Theme.of(context).colorScheme),
                     child: Icon(Icons.payment, color: Theme.of(context).colorScheme.onPrimary, size: 20),
                   ),
                 ),
