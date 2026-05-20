@@ -366,6 +366,7 @@ Future<pw.Document> buildInvoiceDocument(
             ),
           ],
           ...(() {
+            if (invoice.documentType != DocumentType.invoice) return <pw.Widget>[];
             final activeAccounts = _decodeBankAccounts(companyInfo.bankAccounts)
                 .where((a) => a.isActive)
                 .take(3)
