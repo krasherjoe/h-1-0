@@ -47,9 +47,12 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
         final double progressRatio = trackWidth == 0 ? 0 : (_position / trackWidth).clamp(0, 1);
         final double innerWidth = thumbSize + trackWidth;
         final double progressWidth = (innerWidth * progressRatio + thumbSize * (1 - progressRatio)).clamp(thumbSize, innerWidth);
-        final Color background = widget.backgroundColor ?? Colors.blueGrey.shade900;
-        final Color accentStart = (widget.accentColor ?? Colors.indigo.shade600).withValues(alpha: 0.9);
-        final Color accentEnd = (widget.accentColor ?? Colors.indigo.shade600);
+        final ColorScheme cs = Theme.of(context).colorScheme;
+        final Color background = widget.backgroundColor ?? cs.surfaceContainerHighest;
+        final Color accentStart = (widget.accentColor ?? cs.primary).withValues(alpha: 0.9);
+        final Color accentEnd = widget.accentColor ?? cs.primary;
+        final Color textColor = cs.onSurfaceVariant;
+        final Color iconColor = cs.onSurfaceVariant;
 
         return Container(
           height: widget.height ?? 72,
@@ -97,20 +100,20 @@ class _SlideToUnlockState extends State<SlideToUnlock> {
                           mainAxisSize: MainAxisSize.min,
                           key: const ValueKey('unlocked'),
                           children: [
-                            Icon(widget.unlockedIcon, color: Colors.white, size: 24),
+                            Icon(widget.unlockedIcon, color: textColor, size: 24),
                             const SizedBox(width: 6),
-                            Text(widget.unlockedText, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Text(widget.unlockedText, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
                           ],
                         )
                       : Row(
                           key: const ValueKey('locked'),
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(widget.lockedIcon, color: Colors.white.withValues(alpha: 0.85), size: 20),
+                            Icon(widget.lockedIcon, color: iconColor.withValues(alpha: 0.85), size: 20),
                             const SizedBox(width: 8),
                             Text(
                               widget.lockedText,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                              style: TextStyle(color: textColor, fontWeight: FontWeight.bold, letterSpacing: 1.1),
                             ),
                           ],
                         ),
