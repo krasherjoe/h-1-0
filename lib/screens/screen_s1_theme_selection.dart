@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
 import '../services/theme_controller.dart';
 import 'invoice_input_screen.dart';
+import 'screen_th2_theme_customizer.dart';
 
 class ThemeSelectionScreen extends StatefulWidget {
   const ThemeSelectionScreen({super.key});
@@ -91,6 +92,31 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                     subtitle: '黒ベースのダークテーマ',
                     icon: Icons.dark_mode,
                     color: Theme.of(context).colorScheme.primary,
+                  ),
+                  _buildThemeListTile(
+                    value: 'custom',
+                    title: 'カスタム',
+                    subtitle: '色を自由にカスタマイズ',
+                    icon: Icons.palette,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  const SizedBox(height: 8),
+                  // カスタムテーマ編集ボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.tune),
+                      label: const Text('カラーをカスタマイズ (TH2)'),
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ScreenTh2ThemeCustomizer(),
+                          ),
+                        );
+                        if (mounted) await _loadSettings();
+                      },
+                    ),
                   ),
                 ],
               ),

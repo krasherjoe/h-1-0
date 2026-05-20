@@ -472,8 +472,88 @@ class _MyAppState extends State<MyApp> {
     return ValueListenableBuilder<String>(
       valueListenable: AppThemeController.instance.notifier,
       builder: (context, themeString, _) {
+        return ValueListenableBuilder<Map<String, int>>(
+          valueListenable: AppThemeController.instance.customColorsNotifier,
+          builder: (context, customColors, __) {
         ThemeData theme;
-        if (themeString == 'dark') {
+        if (themeString == 'custom') {
+          final cmap = customColors.isEmpty
+              ? AppThemeController.defaultCustomColors()
+              : customColors;
+          Color c(String key, int fallback) =>
+              Color(cmap[key] ?? fallback);
+          final primary = c('primary', 0xFF303F9F);
+          final onPrimary = c('onPrimary', 0xFFFFFFFF);
+          final secondary = c('secondary', 0xFFFF7043);
+          final surface = c('surface', 0xFFF5F5F5);
+          final onSurface = c('onSurface', 0xFF263238);
+          final error = c('error', 0xFFB00020);
+          final scaffoldBg = c('scaffoldBg', 0xFFF5F5F5);
+          // 明度から brightness を判定
+          final brightness = ThemeData.estimateBrightnessForColor(surface);
+          theme = ThemeData(
+            brightness: brightness,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: primary,
+              brightness: brightness,
+            ).copyWith(
+              primary: primary,
+              onPrimary: onPrimary,
+              secondary: secondary,
+              surface: surface,
+              onSurface: onSurface,
+              error: error,
+            ),
+            scaffoldBackgroundColor: scaffoldBg,
+            appBarTheme: AppBarTheme(
+              backgroundColor: primary,
+              foregroundColor: onPrimary,
+              elevation: 0,
+              titleTextStyle: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: onPrimary,
+              ),
+              iconTheme: IconThemeData(color: onPrimary),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primary,
+                side: BorderSide(color: primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: primary, width: 1.4),
+              ),
+            ),
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            useMaterial3: true,
+            fontFamily: 'IPAexGothic',
+          );
+        } else if (themeString == 'dark') {
           theme = ThemeData(
             brightness: Brightness.dark,
             colorScheme: ColorScheme.fromSeed(
@@ -793,6 +873,8 @@ class _MyAppState extends State<MyApp> {
           return widget;
         },
           home: _buildHome(),
+        );
+          },
         );
       },
     );

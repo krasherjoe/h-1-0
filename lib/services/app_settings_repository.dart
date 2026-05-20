@@ -20,6 +20,7 @@ class AppSettingsRepository {
   static const _kDashboardShowCategoryDescriptions =
       'dashboard_show_category_desc';
   static const _kTheme = 'app_theme';
+  static const _kCustomThemeColors = 'app_custom_theme_colors';
   static const _kSummaryTheme = 'summary_theme';
   static const _kInvoiceListStyle = 'invoice_list_style';
   static const _kShowHistoryInvoiceNumber = 'history_show_invoice_number';
@@ -146,6 +147,28 @@ class AppSettingsRepository {
 
   Future<String> getTheme() async => await getString(_kTheme) ?? 'light';
   Future<void> setTheme(String theme) async => setString(_kTheme, theme);
+
+  /// カスタムテーマの色（ARGB int 値）を Map で取得。未設定なら空 Map。
+  /// キー例: 'primary', 'onPrimary', 'secondary', 'surface', 'onSurface', 'error'
+  Future<Map<String, int>> getCustomThemeColors() async {
+    final raw = await getString(_kCustomThemeColors);
+    if (raw == null || raw.isEmpty) return <String, int>{};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        final result = <String, int>{};
+        decoded.forEach((k, v) {
+          if (k is String && v is int) result[k] = v;
+        });
+        return result;
+      }
+    } catch (_) {}
+    return <String, int>{};
+  }
+
+  Future<void> setCustomThemeColors(Map<String, int> colors) async {
+    await setString(_kCustomThemeColors, jsonEncode(colors));
+  }
 
   Future<String> getSummaryTheme() async =>
       await getString(_kSummaryTheme) ?? 'white';
