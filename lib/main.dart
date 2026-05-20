@@ -482,7 +482,6 @@ class _MyAppState extends State<MyApp> {
             ),
             scaffoldBackgroundColor: const Color(0xFF121212),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1E1E1E),
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
@@ -554,7 +553,6 @@ class _MyAppState extends State<MyApp> {
             ),
             scaffoldBackgroundColor: const Color(0xFF3A3A3A),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF4A4A4A),
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
@@ -625,7 +623,6 @@ class _MyAppState extends State<MyApp> {
             ),
             scaffoldBackgroundColor: const Color(0xFFD0D0D0),
             appBarTheme: AppBarTheme(
-              backgroundColor: Colors.grey.shade800,
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
@@ -680,7 +677,6 @@ class _MyAppState extends State<MyApp> {
                 ),
             scaffoldBackgroundColor: Colors.grey.shade100,
             appBarTheme: AppBarTheme(
-              backgroundColor: Colors.indigo.shade700,
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
