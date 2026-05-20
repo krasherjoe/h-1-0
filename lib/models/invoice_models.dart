@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/material.dart' show Colors, Color;
+import 'package:flutter/material.dart' show Colors, Color, ColorScheme;
 import 'package:intl/intl.dart';
 import '../models/customer_model.dart';
 import '../models/customer_model.dart' show HonorificCode;
@@ -394,16 +394,16 @@ class Invoice {
   }
 
   /// 入金ステータスに応じた色
-  Color get paymentStatusColor {
+  Color getPaymentStatusColor(ColorScheme cs) {
     switch (paymentStatus) {
       case PaymentStatus.unpaid:
-        return Colors.orange;
+        return cs.secondary;
       case PaymentStatus.partial:
-        return Colors.amber;
+        return cs.secondary;
       case PaymentStatus.paid:
-        return Colors.green;
+        return cs.tertiary;
       case PaymentStatus.overdue:
-        return Colors.red;
+        return cs.error;
     }
   }
 

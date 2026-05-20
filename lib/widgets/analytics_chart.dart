@@ -24,20 +24,21 @@ class AnalyticsChart extends StatelessWidget {
       height: height,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(8),
       ),
       child: CustomPaint(
-        painter: _ChartPainter(metrics),
+        painter: _ChartPainter(metrics, Theme.of(context).colorScheme),
       ),
     );
   }
 }
 
 class _ChartPainter extends CustomPainter {
-  _ChartPainter(this.metrics);
+  _ChartPainter(this.metrics, this.cs);
 
   final List<AnalyticsMetric> metrics;
+  final ColorScheme cs;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -56,7 +57,7 @@ class _ChartPainter extends CustomPainter {
         Offset(padding, y),
         Offset(size.width - padding, y),
         Paint()
-          ..color = Colors.grey.shade300
+          ..color = cs.outlineVariant
           ..strokeWidth = 1,
       );
     }
@@ -71,7 +72,7 @@ class _ChartPainter extends CustomPainter {
     }
 
     final paint = Paint()
-      ..color = Colors.blue
+      ..color = cs.primary
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
@@ -84,7 +85,7 @@ class _ChartPainter extends CustomPainter {
       canvas.drawCircle(
         point,
         4,
-        Paint()..color = Colors.blue,
+        Paint()..color = cs.primary,
       );
     }
   }

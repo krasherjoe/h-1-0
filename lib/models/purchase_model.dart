@@ -188,14 +188,14 @@ class Purchase extends BaseDocument {
     }
   }
 
-  Color getPaymentStatusColor() {
+  Color getPaymentStatusColor(ColorScheme cs) {
     switch (paymentStatus) {
       case PaymentStatus.unpaid:
-        return Colors.red;
+        return cs.error;
       case PaymentStatus.partial:
-        return Colors.orange;
+        return cs.secondary;
       case PaymentStatus.paid:
-        return Colors.green;
+        return cs.tertiary;
     }
   }
 }

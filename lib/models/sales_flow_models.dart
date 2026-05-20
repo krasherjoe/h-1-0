@@ -284,13 +284,13 @@ extension StockAllocationStatusExtension on StockAllocationStatus {
     }
   }
   
-  Color get color {
+  Color getColor(ColorScheme cs) {
     switch (this) {
-      case StockAllocationStatus.notAllocated: return Colors.grey;
-      case StockAllocationStatus.allocated: return Colors.green;
-      case StockAllocationStatus.partiallyAllocated: return Colors.orange;
-      case StockAllocationStatus.overAllocated: return Colors.red;
-      case StockAllocationStatus.released: return Colors.blue;
+      case StockAllocationStatus.notAllocated: return cs.onSurfaceVariant;
+      case StockAllocationStatus.allocated: return cs.tertiary;
+      case StockAllocationStatus.partiallyAllocated: return cs.secondary;
+      case StockAllocationStatus.overAllocated: return cs.error;
+      case StockAllocationStatus.released: return cs.primary;
     }
   }
 }

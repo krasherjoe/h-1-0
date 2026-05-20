@@ -186,7 +186,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.payments, color: invoice.paymentStatusColor),
+              leading: Icon(Icons.payments, color: invoice.getPaymentStatusColor(Theme.of(context).colorScheme)),
               title: const Text('入金状況'),
               subtitle: Text(invoice.paymentStatusDisplay),
             ),

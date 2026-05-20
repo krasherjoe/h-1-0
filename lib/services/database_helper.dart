@@ -3167,7 +3167,7 @@ class DatabaseHelper {
                                 backup.isLatest
                                     ? Icons.file_present
                                     : Icons.history,
-                                color: backup.isLatest ? Colors.green : null,
+                                color: backup.isLatest ? Theme.of(context).colorScheme.tertiary : null,
                               ),
                               title: Text(
                                 backup.createdTime
@@ -3186,7 +3186,7 @@ class DatabaseHelper {
                                     Text(
                                       '（最新）',
                                       style: TextStyle(
-                                        color: Colors.green.shade600,
+                                        color: Theme.of(context).colorScheme.tertiary,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -3395,7 +3395,7 @@ class _BackupProgressDialogState extends State<BackupProgressDialog> {
             Text(
               _statusMessage!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.orange,
+                color: Theme.of(context).colorScheme.secondary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -3405,12 +3405,12 @@ class _BackupProgressDialogState extends State<BackupProgressDialog> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 _errorMessage!,
-                style: TextStyle(color: Colors.red.shade700),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
           ],
@@ -3461,7 +3461,7 @@ class BackupListDialog extends StatelessWidget {
                     child: ListTile(
                       leading: Icon(
                         backup.isLatest ? Icons.file_present : Icons.history,
-                        color: backup.isLatest ? Colors.green : null,
+                        color: backup.isLatest ? Theme.of(context).colorScheme.tertiary : null,
                       ),
                       title: Text(
                         backup.createdTime.toIso8601String().split('T').first,
@@ -3475,7 +3475,7 @@ class BackupListDialog extends StatelessWidget {
                             Text(
                               '（最新）',
                               style: TextStyle(
-                                color: Colors.green.shade600,
+                                color: Theme.of(context).colorScheme.tertiary,
                                 fontSize: 12,
                               ),
                             ),
@@ -3501,7 +3501,7 @@ class BackupListDialog extends StatelessWidget {
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, true),
                                   style: TextButton.styleFrom(
-                                    foregroundColor: Colors.red,
+                                    foregroundColor: Theme.of(context).colorScheme.error,
                                   ),
                                   child: const Text('リストアする'),
                                 ),

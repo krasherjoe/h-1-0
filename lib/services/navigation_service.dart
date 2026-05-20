@@ -287,8 +287,8 @@ class AppNavigationDrawer extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.blue.shade800,
-                  Colors.blue.shade600,
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 ],
               ),
             ),

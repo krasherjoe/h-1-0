@@ -61,7 +61,7 @@ class _ContactPickerSheetState extends State<ContactPickerSheet> {
                 Container(
                   width: 48,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(999)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(999)),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
