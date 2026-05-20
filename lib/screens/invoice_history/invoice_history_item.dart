@@ -208,9 +208,9 @@ class InvoiceHistoryItem extends StatelessWidget {
     switch (type) {
       case DocumentType.estimation: return const Color(0xFF1976D2);
       case DocumentType.order: return const Color(0xFF7B1FA2);
-      case DocumentType.delivery: return const Color(0xFF388E3C);
+      case DocumentType.delivery: return const Color(0xFFF57C00);
       case DocumentType.invoice: return const Color(0xFFD32F2F);
-      case DocumentType.receipt: return const Color(0xFFF57C00);
+      case DocumentType.receipt: return const Color(0xFF388E3C);
     }
   }
 
@@ -218,9 +218,9 @@ class InvoiceHistoryItem extends StatelessWidget {
     switch (type) {
       case DocumentType.estimation: return const Color(0xFF1976D2).withValues(alpha: 0.12);
       case DocumentType.order: return const Color(0xFF7B1FA2).withValues(alpha: 0.12);
-      case DocumentType.delivery: return const Color(0xFF388E3C).withValues(alpha: 0.12);
+      case DocumentType.delivery: return const Color(0xFFF57C00).withValues(alpha: 0.12);
       case DocumentType.invoice: return const Color(0xFFD32F2F).withValues(alpha: 0.12);
-      case DocumentType.receipt: return const Color(0xFFF57C00).withValues(alpha: 0.12);
+      case DocumentType.receipt: return const Color(0xFF388E3C).withValues(alpha: 0.12);
     }
   }
 }

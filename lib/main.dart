@@ -617,15 +617,15 @@ class _MyAppState extends State<MyApp> {
           theme = ThemeData(
             brightness: Brightness.light,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.grey.shade600,
-              primary: Colors.grey.shade600,
-              secondary: Colors.blueGrey.shade400,
+              seedColor: Colors.grey.shade800,
+              primary: Colors.grey.shade800,
+              secondary: Colors.blueGrey.shade600,
               surface: const Color(0xFFE0E0E0),
               onSurface: Colors.grey.shade800,
             ),
             scaffoldBackgroundColor: const Color(0xFFD0D0D0),
             appBarTheme: AppBarTheme(
-              backgroundColor: Colors.grey.shade600,
+              backgroundColor: Colors.grey.shade800,
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
