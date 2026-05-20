@@ -83,6 +83,15 @@
 
 ## ✅ 完了 (直近7日)
 
+- [x] F1:会社情報に年度開始月UIを追加し、S1バックアップ設定の未認証バグを修正
+  - 関連: `lib/screens/company_info_screen.dart`, `lib/screens/settings_screen.dart`
+  - 内容:
+    - F1:決算年度設定スロットを追加（1-12月のドロップダウン）
+    - S1:バックアップ状況読み込み関数(_loadBackupStatus)が呼ばれていなかったバグを修正
+    - initState/リロード/Googleサインイン時/連携ON-OFF時に_backupStatus()を呼び出すように修正
+
+## ✅ 完了 (直近7日)
+
 - [x] SUP/WH/STテンプレート画面実装 (2026-03-07)
   - 関連: `lib/screens/support_desk_screen.dart`, `lib/screens/warehouse_dashboard_screen.dart`, `lib/screens/staff_management_screen.dart`, `lib/constants/menu_catalog.dart`, `lib/screens/dashboard_screen.dart`
   - 内容:
@@ -292,6 +301,17 @@ adb uninstall com.example.h_1
     - LocalOffer アイコンボタン（値引き設定）を削除
     - 全体的な値引き機能は既存動作のまま維持
     - `flutter analyze --no-fatal-infos` 実行（エラーなし）
+
+### 完了 (直近7日)
+
+- [x] 全入力画面のAppBar背景色をDocumentType基準に統一しダークテーマ対応
+  - 関連: `lib/screens/estimate_input_screen.dart`, `lib/screens/order_input_screen.dart`, `lib/screens/invoice_issue_screen.dart`, `lib/screens/quotation_input_screen.dart`, `lib/screens/invoice_detail_page.dart`
+  - 内容:
+    - ES見積入力 → primary色（ダーク時は18% lightness）
+    - OR受注入力 → secondary色（ダーク時は18% lightness）
+    - IV請求書発行 → primaryContainer色（ダーク時は18% lightness）
+    - Q1見積入力 → primary色（ダーク時は18% lightness）
+    - A3詳細画面 → DocumentType動的判定 + ダーク対応
 
 ### 進行中
 
