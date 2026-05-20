@@ -32,9 +32,11 @@ class InvoiceHistoryItem extends StatelessWidget {
     final draftTint = cs.secondaryContainer.withValues(alpha: 0.25);
     final cardColor = invoice.isDraft ? draftTint : surfaceColor;
     final iconBg = isUnlocked
-        ? _docTypeColor(invoice.documentType, cs).withValues(alpha: 0.18)
+        ? _docTypeBgColor(invoice.documentType)
         : cs.surfaceContainerHighest;
-    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType, cs) : cs.outline;
+    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType) : cs.outline;
+    final docLabel = _docTypeLabel(invoice.documentType);
+    final docLabelColor = _docTypeColor(invoice.documentType);
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
     final firstItemDesc = invoice.items.isNotEmpty ? invoice.items.first.description : '';
@@ -68,24 +70,39 @@ class InvoiceHistoryItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                backgroundColor: iconBg,
-                child: Stack(
-                  children: [
-                    Align(
-                      alignment: Alignment.center,
-                      child: Icon(
-                        _docTypeIcon(invoice.documentType),
-                        color: iconColor,
-                      ),
+              Column(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: iconBg,
+                    child: Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: Icon(
+                            _docTypeIcon(invoice.documentType),
+                            color: iconColor,
+                            size: 20,
+                          ),
+                        ),
+                        if (invoice.isLocked)
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Icon(Icons.link, size: 12, color: Theme.of(context).colorScheme.error),
+                          ),
+                      ],
                     ),
-                      if (invoice.isLocked)
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Icon(Icons.link, size: 14, color: Theme.of(context).colorScheme.error),
-                      ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    docLabel,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: docLabelColor,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -169,31 +186,41 @@ class InvoiceHistoryItem extends StatelessWidget {
 
   IconData _docTypeIcon(DocumentType type) {
     switch (type) {
-      case DocumentType.estimation:
-        return Icons.request_quote;
-      case DocumentType.order:
-        return Icons.assignment;
-      case DocumentType.delivery:
-        return Icons.local_shipping;
-      case DocumentType.invoice:
-        return Icons.receipt_long;
-      case DocumentType.receipt:
-        return Icons.task_alt;
+      case DocumentType.estimation: return Icons.request_quote;
+      case DocumentType.order: return Icons.assignment;
+      case DocumentType.delivery: return Icons.local_shipping;
+      case DocumentType.invoice: return Icons.receipt_long;
+      case DocumentType.receipt: return Icons.task_alt;
     }
   }
 
-   Color _docTypeColor(DocumentType type, ColorScheme cs) {
+  String _docTypeLabel(DocumentType type) {
     switch (type) {
-      case DocumentType.estimation:
-        return cs.primary;
-      case DocumentType.order:
-        return cs.secondary;
-      case DocumentType.delivery:
-        return cs.tertiary;
-      case DocumentType.invoice:
-        return cs.primaryContainer;
-      case DocumentType.receipt:
-        return cs.secondaryContainer;
+      case DocumentType.estimation: return '見積';
+      case DocumentType.order: return '受注';
+      case DocumentType.delivery: return '納品';
+      case DocumentType.invoice: return '請';
+      case DocumentType.receipt: return '領';
+    }
+  }
+
+  Color _docTypeColor(DocumentType type) {
+    switch (type) {
+      case DocumentType.estimation: return const Color(0xFF1976D2);
+      case DocumentType.order: return const Color(0xFF7B1FA2);
+      case DocumentType.delivery: return const Color(0xFF388E3C);
+      case DocumentType.invoice: return const Color(0xFFD32F2F);
+      case DocumentType.receipt: return const Color(0xFFF57C00);
+    }
+  }
+
+  Color _docTypeBgColor(DocumentType type) {
+    switch (type) {
+      case DocumentType.estimation: return const Color(0xFF1976D2).withValues(alpha: 0.12);
+      case DocumentType.order: return const Color(0xFF7B1FA2).withValues(alpha: 0.12);
+      case DocumentType.delivery: return const Color(0xFF388E3C).withValues(alpha: 0.12);
+      case DocumentType.invoice: return const Color(0xFFD32F2F).withValues(alpha: 0.12);
+      case DocumentType.receipt: return const Color(0xFFF57C00).withValues(alpha: 0.12);
     }
   }
 }
