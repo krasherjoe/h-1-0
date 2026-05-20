@@ -123,19 +123,18 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     }
   }
 
-   Color _documentTypeColor(DocumentType type, ColorScheme cs) {
-    switch (type) {
-      case DocumentType.estimation:
-        return cs.primary;
-      case DocumentType.order:
-        return cs.secondary;
-      case DocumentType.delivery:
-        return cs.tertiary;
-      case DocumentType.invoice:
-        return cs.primaryContainer;
-      case DocumentType.receipt:
-        return cs.secondaryContainer;
+   Color _documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
+    final base = switch (type) {
+      DocumentType.estimation => cs.primary,
+      DocumentType.order => cs.secondary,
+      DocumentType.delivery => cs.tertiary,
+      DocumentType.invoice => cs.primaryContainer,
+      DocumentType.receipt => cs.secondaryContainer,
+    };
+    if (isDark) {
+      return HSLColor.fromColor(base).withLightness(0.18).toColor();
     }
+    return base;
   }
 
   String _customerNameWithHonorific(Customer customer) {
@@ -708,7 +707,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
 
-     final docColor = _documentTypeColor(_documentType, Theme.of(context).colorScheme);
+     final docColor = _documentTypeColor(_documentType, Theme.of(context).colorScheme, isDark);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     // 閲覧モードのみZoomableAppBarを使用（編集モードは入力フィールドと競合するため）

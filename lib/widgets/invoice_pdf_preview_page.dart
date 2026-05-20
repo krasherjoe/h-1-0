@@ -213,12 +213,30 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     );
   }
 
+  Color _documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
+    final base = switch (type) {
+      DocumentType.estimation => cs.primary,
+      DocumentType.order => cs.secondary,
+      DocumentType.delivery => cs.tertiary,
+      DocumentType.invoice => cs.primaryContainer,
+      DocumentType.receipt => cs.secondaryContainer,
+    };
+    if (isDark) {
+      return HSLColor.fromColor(base).withLightness(0.18).toColor();
+    }
+    return base;
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveIsLocked = widget.isLocked || _issued;
     final isDraft = widget.invoice.isDraft && !_issued;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final docColor = _documentTypeColor(widget.invoice.documentType, cs, isDark);
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: docColor,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
