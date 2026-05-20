@@ -1748,7 +1748,7 @@ color: Theme.of(context).cardColor,
               _buildSummaryRow(
                 "値引き",
                 "-￥${formatAmount(itemDiscountAmount)}",
-                isDark ? Colors.red.shade300 : Theme.of(context).colorScheme.error,
+                Theme.of(context).colorScheme.error,
               ),
             ],
             if (priceAdjustmentDiscount > 0 ||

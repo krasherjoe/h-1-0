@@ -13,7 +13,7 @@ class DeliveryListScreen extends StatelessWidget {
       screenId: 'DL1',
       title: '配送記録一覧',
       icon: Icons.local_shipping,
-      themeColor: Colors.green,
+      themeColor: Theme.of(context).colorScheme.tertiary,
       fetchData: () async {
         final repo = DeliveryRepository();
         return await repo.getAll();
