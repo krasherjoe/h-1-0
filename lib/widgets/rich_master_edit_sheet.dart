@@ -163,10 +163,10 @@ class _RichMasterEditDialogState<T>
     final label = field.required ? '${field.label} *' : field.label;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor = isDark ? colorScheme.surfaceContainerHighest : Colors.white;
-    final borderColor = isDark ? colorScheme.outline : Colors.grey.shade300;
+    final fillColor = isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface;
+    final borderColor = isDark ? colorScheme.outline : colorScheme.outlineVariant;
     final focusedBorderColor = colorScheme.primary;
-    final shadowColor = isDark ? Colors.transparent : Colors.black.withOpacity(0.08);
+    final shadowColor = isDark ? Colors.transparent : colorScheme.shadow.withValues(alpha: 0.08);
 
     // ドロップダウン選択肢が指定されている場合は DropdownButtonFormField を描画
     if (field.dropdownOptions != null && field.dropdownOptions!.isNotEmpty) {
@@ -281,11 +281,11 @@ class _RichMasterEditDialogState<T>
   ) {
     final cardColor = Theme.of(context).brightness == Brightness.dark
         ? Theme.of(context).colorScheme.surfaceContainer
-        : Colors.grey.shade200;
+        : Theme.of(context).colorScheme.surfaceContainerLow;
     return Card(
       elevation: 8,
       color: cardColor,
-      shadowColor: Colors.black.withOpacity(0.15),
+      shadowColor: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -323,7 +323,7 @@ class _RichMasterEditDialogState<T>
                 const SizedBox(height: 4),
                 Text(
                   section.description,
-                  style: const TextStyle(color: Colors.black54),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 16),
                 Wrap(spacing: gap, runSpacing: gap, children: children),
@@ -435,17 +435,7 @@ class _RichMasterEditDialogState<T>
                                     : widget.titleEdit,
                                 style: Theme.of(context).textTheme.titleLarge,
                                 overflow: TextOverflow.ellipsis,
-                                softWrap: false,
                               ),
-                              if (widget.existing != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  _values['displayName'] ?? '',
-                                  style: const TextStyle(color: Colors.black54),
-                                  softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
                             ],
                           ),
                         ),

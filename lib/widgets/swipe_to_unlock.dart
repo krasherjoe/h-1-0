@@ -61,7 +61,7 @@ class _SwipeToUnlockState extends State<SwipeToUnlock>
       return const SizedBox.shrink();
     }
 
-    final Color accent = widget.accentColor ?? Colors.indigo.shade400;
+    final Color accent = widget.accentColor ?? Theme.of(context).colorScheme.primary;
     final double opacity = (0.35 - (_dragProgress * 0.25)).clamp(0.05, 0.35);
 
     return GestureDetector(
@@ -115,7 +115,7 @@ class _SwipeToUnlockState extends State<SwipeToUnlock>
                                   mainAxisSize: MainAxisSize.min,
                                   key: const ValueKey('unlocked'),
                                   children: [
-                                    Icon(widget.unlockedIcon, color: Colors.green, size: 64),
+                                    Icon(widget.unlockedIcon, color: Theme.of(context).colorScheme.tertiary, size: 64),
                                     const SizedBox(height: 16),
                                     Text(
                                       widget.unlockedText,

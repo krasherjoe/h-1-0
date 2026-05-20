@@ -122,7 +122,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.secondary),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('下書きのまま送信'),
           ),
@@ -185,14 +185,15 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     VoidCallback? onLongPress,
     Color? color,
   }) {
-    final bg = color ?? Colors.blue;
+    final cs = Theme.of(context).colorScheme;
+    final bg = color ?? cs.primary;
     return Expanded(
       child: ElevatedButton(
         onPressed: enabled ? onPressed : null,
         onLongPress: enabled ? onLongPress : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: enabled ? bg : null,
-          foregroundColor: Colors.white,
+          foregroundColor: cs.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 8),
         ),
         child: Column(
@@ -220,11 +221,11 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text("PP:PDF プレビュー"),
+          children: [
+            const Text("PP:PDF プレビュー"),
             Text(
               "拡大する時はダブルタップしてからピンチインしてください",
-              style: TextStyle(fontSize: 11, color: Colors.white70),
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
             ),
           ],
         ),
@@ -248,15 +249,15 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  color: Colors.blue.shade50,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 18, color: Colors.blue),
+                      const Icon(Icons.info_outline, size: 18),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           '拡大する時はダブルタップしてからピンチインしてください',
-                          style: TextStyle(fontSize: 12, color: Colors.blue),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onPrimaryContainer),
                         ),
                       ),
                     ],
@@ -274,7 +275,7 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                       _ppButton(
                         icon: Icons.check_circle_outline,
                         label: (!isDraft || effectiveIsLocked) ? '正式発行🔒' : '正式発行',
-                        color: Colors.orange,
+                        color: Theme.of(context).colorScheme.secondary,
                         enabled: _canFormalIssue,
                         onPressed: _canFormalIssue
                             ? () {

@@ -18,7 +18,7 @@ class InvoiceRedInvoiceButton extends StatelessWidget {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 0.5,
-      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+      color: isDark ? const Color(0xFF2C2C2C) : theme.colorScheme.surface,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -32,7 +32,7 @@ class InvoiceRedInvoiceButton extends StatelessWidget {
               '電子帳簿保存法対応',
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? Colors.grey.shade400 : Colors.black54,
+                color: isDark ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
@@ -42,7 +42,7 @@ class InvoiceRedInvoiceButton extends StatelessWidget {
                 onPressed: onPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.error,
-                  foregroundColor: Colors.white,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -63,7 +63,7 @@ class InvoiceRedInvoiceButton extends StatelessWidget {
               'ロック済みの伝票を取消す場合、電子帳簿保存法に基づき元伝票を保持したまま、全明細をマイナスにした赤伝を自動生成・ロックします。',
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                color: isDark ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5) : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
             ),
           ],

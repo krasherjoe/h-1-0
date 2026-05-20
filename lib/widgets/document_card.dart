@@ -29,6 +29,7 @@ class DocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
@@ -58,7 +59,7 @@ class DocumentCard extends StatelessWidget {
                               subtitle,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -80,7 +81,7 @@ class DocumentCard extends StatelessWidget {
                         DateFormat('yyyy/MM/dd').format(date),
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -90,14 +91,14 @@ class DocumentCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _buildStatusChip(status),
+                  _buildStatusChip(status, cs),
                   const Spacer(),
                   if (grossProfit != null && grossProfit!.isNotEmpty)
                     Text(
                       grossProfit!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.green[700],
+                        color: Theme.of(context).colorScheme.tertiary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -121,30 +122,30 @@ class DocumentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(DocumentStatus status) {
+  Widget _buildStatusChip(DocumentStatus status, ColorScheme cs) {
     Color color;
     String label;
 
     switch (status) {
       case DocumentStatus.draft:
-        color = Colors.orange;
+        color = cs.secondary;
         label = '下書き';
         break;
       case DocumentStatus.confirmed:
-        color = Colors.green;
+        color = cs.tertiary;
         label = '確定';
         break;
       case DocumentStatus.cancelled:
-        color = Colors.grey;
+        color = cs.outline;
         label = 'キャンセル';
         break;
     }
 
     return Chip(
       label: Text(label),
-      backgroundColor: color is MaterialColor ? color.shade100 : color.withValues(alpha: 0.2),
+      backgroundColor: color.withValues(alpha: 0.2),
       labelStyle: TextStyle(
-        color: color is MaterialColor ? color.shade700 : color,
+        color: color,
         fontSize: 12,
         fontWeight: FontWeight.w500,
       ),

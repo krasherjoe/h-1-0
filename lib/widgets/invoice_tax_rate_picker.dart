@@ -34,7 +34,7 @@ class InvoiceTaxRatePicker extends StatelessWidget {
         SimpleDialogOption(
           onPressed: () => Navigator.pop(context, 'tax_inclusive_10'),
           child: ListTile(
-            leading: Icon(Icons.shopping_cart, color: isDark ? theme.colorScheme.tertiary : Colors.orange),
+            leading: Icon(Icons.shopping_cart, color: isDark ? theme.colorScheme.tertiary : theme.colorScheme.secondary),
             title: const Text('税込み (10%)'),
             subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
           ),
@@ -42,7 +42,7 @@ class InvoiceTaxRatePicker extends StatelessWidget {
         SimpleDialogOption(
           onPressed: () => Navigator.pop(context, 'tax_inclusive_8'),
           child: ListTile(
-            leading: Icon(Icons.shopping_cart, color: isDark ? theme.colorScheme.tertiary : Colors.orange),
+            leading: Icon(Icons.shopping_cart, color: isDark ? theme.colorScheme.tertiary : theme.colorScheme.secondary),
             title: const Text('税込み (8%)'),
             subtitle: Text('単価を税込価格として扱い、消費税を逆算', style: TextStyle(fontSize: 11)),
           ),

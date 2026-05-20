@@ -17,8 +17,8 @@ class InvoiceCalculatorKeypad extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final defaultBg = isDark ? theme.colorScheme.surfaceContainerHighest : theme.colorScheme.primaryContainer;
     final defaultFg = isDark ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onPrimaryContainer;
-    final clearBg = isDark ? theme.colorScheme.errorContainer : Colors.red.shade100;
-    final clearFg = isDark ? theme.colorScheme.onErrorContainer : Colors.red.shade900;
+    final clearBg = isDark ? theme.colorScheme.errorContainer : theme.colorScheme.errorContainer.withValues(alpha: 0.3);
+    final clearFg = isDark ? theme.colorScheme.onErrorContainer : theme.colorScheme.error;
 
     return GridView.count(
       shrinkWrap: true,

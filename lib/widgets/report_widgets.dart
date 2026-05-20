@@ -36,7 +36,7 @@ class ReportWidgets {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+                  style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.7)),
                 ),
               ],
             ),
@@ -79,13 +79,13 @@ class ReportWidgets {
               const SizedBox(height: 4),
               Text(
                 title,
-                style: TextStyle(fontSize: 14, color: cs?.onSurfaceVariant ?? Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: cs?.onSurfaceVariant),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: cs?.outlineVariant ?? Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: cs?.outlineVariant),
                 ),
               ],
             ],
@@ -105,8 +105,8 @@ class ReportWidgets {
     String? trend,
     ColorScheme? cs,
   }) {
-    final greenColor = cs?.tertiary ?? Colors.green;
-    final redColor = cs?.error ?? Colors.red;
+    final greenColor = cs?.tertiary;
+    final redColor = cs?.error;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -118,7 +118,7 @@ class ReportWidgets {
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: TextStyle(fontSize: 12, color: cs?.onSurfaceVariant ?? Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: cs?.onSurfaceVariant),
                 ),
                 if (trend != null) ...[
                   const Spacer(),
@@ -259,7 +259,7 @@ class ReportWidgets {
           height: height ?? 8,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            color: cs?.surfaceContainerHighest ?? Colors.grey.shade300,
+            color: cs?.surfaceContainerHighest,
           ),
           child: FractionallySizedBox(
             alignment: Alignment.centerLeft,
@@ -291,9 +291,9 @@ class ReportWidgets {
     final change = current - previous;
     final changePercent = previous > 0 ? (change / previous * 100) : 0;
     final isPositive = change >= 0;
-    final greenColor = cs?.tertiary ?? Colors.green;
-    final redColor = cs?.error ?? Colors.red;
-    final greyColor = cs?.onSurfaceVariant ?? Colors.grey;
+    final greenColor = cs?.tertiary;
+    final redColor = cs?.error;
+    final greyColor = cs?.onSurfaceVariant;
 
     return Card(
       child: Padding(

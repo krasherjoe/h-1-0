@@ -11,7 +11,7 @@ class InvoiceDraftBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.tertiaryContainer : Colors.orange.shade100,
+        color: isDark ? theme.colorScheme.tertiaryContainer : theme.colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -19,7 +19,7 @@ class InvoiceDraftBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: isDark ? theme.colorScheme.onTertiaryContainer : Colors.orange,
+          color: isDark ? theme.colorScheme.onTertiaryContainer : theme.colorScheme.onSecondaryContainer,
         ),
       ),
     );

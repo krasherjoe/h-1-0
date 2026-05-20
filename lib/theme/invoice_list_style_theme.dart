@@ -25,13 +25,13 @@ class InvoiceListStyleTheme {
 }
 
 class InvoiceListStyleThemes {
-  static InvoiceListStyleTheme resolve(InvoiceListStyle style) {
+  static InvoiceListStyleTheme resolve(InvoiceListStyle style, ColorScheme cs) {
     switch (style) {
       case InvoiceListStyle.a2:
         return InvoiceListStyleTheme(
           showStatusChip: false,
-          draftCardColor: Colors.orange.shade50,
-          confirmedCardColor: Colors.white,
+          draftCardColor: cs.secondaryContainer.withValues(alpha: 0.3),
+          confirmedCardColor: cs.surface,
           draftElevation: 2,
           confirmedElevation: 0.5,
           cardShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

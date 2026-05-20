@@ -184,8 +184,8 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 4),
                             color: _isCapturing
-                                ? Colors.grey
-                                : Colors.white.withValues(alpha: 0.3),
+                                ? cs.outline
+                                : cs.surface.withValues(alpha: 0.3),
                           ),
                           child: Center(
                             child: Container(
@@ -223,7 +223,7 @@ class _SealCameraScreenState extends State<SealCameraScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black54,
+                  color: cs.surface.withValues(alpha: 0.54),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -437,7 +437,7 @@ class _GuideOverlayPainter extends CustomPainter {
           color: color,
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          backgroundColor: Colors.black54,
+                      backgroundColor: cs.surface.withValues(alpha: 0.54),
         ),
       ),
       textDirection: TextDirection.ltr,

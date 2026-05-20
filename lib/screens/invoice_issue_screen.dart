@@ -121,7 +121,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
     setState(() => _listStyle = style);
   }
 
-  InvoiceListStyleTheme get _currentListTheme => InvoiceListStyleThemes.resolve(_listStyle);
+  InvoiceListStyleTheme get _currentListTheme => InvoiceListStyleThemes.resolve(_listStyle, Theme.of(context).colorScheme);
 
   bool get _isA2Style => _listStyle == InvoiceListStyle.a2;
 
