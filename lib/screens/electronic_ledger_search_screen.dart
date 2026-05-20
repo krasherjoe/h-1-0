@@ -192,7 +192,7 @@ class _ElectronicLedgerSearchScreenState extends State<ElectronicLedgerSearchScr
             const SizedBox(height: 8),
             
             // 検索結果数
-if (_searchResults.isNotEmpty)
+            if (_searchResults.isNotEmpty)
               Text(
                 '検索結果: $_totalCount件',
                 style: TextStyle(
@@ -200,8 +200,7 @@ if (_searchResults.isNotEmpty)
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

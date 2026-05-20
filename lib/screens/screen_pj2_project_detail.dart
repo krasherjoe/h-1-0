@@ -203,7 +203,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('削除'),
           ),
@@ -280,7 +280,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
                     subtitle: Text(date.length >= 10 ? date.substring(0, 10) : date),
                     trailing: Text('¥${fmt.format(amount)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(ctx).colorScheme.primary)),
                     onTap: () async {
                       Navigator.pop(ctx);
                       await _repo.linkDocument(
@@ -303,17 +303,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: Text('PJ2:${_project.name}', overflow: TextOverflow.ellipsis),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+           backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(icon: const Icon(Icons.edit), onPressed: _showEditDialog),
           PopupMenuButton<String>(
             onSelected: (v) {
               if (v == 'delete') _showDeleteConfirm();
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'delete', child: Text('案件を削除', style: TextStyle(color: Colors.red))),
-            ],
+           itemBuilder: (ctx) => [
+                PopupMenuItem(value: 'delete', child: Text('案件を削除', style: TextStyle(color: Theme.of(ctx).colorScheme.error))),
+              ],
           ),
         ],
       ),
@@ -365,7 +365,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget _buildInfoCard() {
     final fmt = NumberFormat('#,###');
     final dateFmt = DateFormat('yyyy/MM/dd');
-    final statusColor = _statusColorOf(_project.status);
+    final statusColor = _statusColorOf(_project.status, Theme.of(context).colorScheme);
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -385,29 +385,29 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             if (_project.customerName != null) ...[
               const SizedBox(height: 6),
               Row(children: [
-                Icon(Icons.business, size: 14, color: Colors.grey.shade500),
+                Icon(Icons.business, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
-                Text(_project.customerName!, style: TextStyle(color: Colors.grey.shade700)),
+                Text(_project.customerName!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ]),
             ],
             if (_project.startDate != null || _project.endDate != null) ...[
               const SizedBox(height: 4),
               Row(children: [
-                Icon(Icons.calendar_month, size: 14, color: Colors.grey.shade500),
+                Icon(Icons.calendar_month, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   [
                     if (_project.startDate != null) dateFmt.format(_project.startDate!),
                     if (_project.endDate != null) '〜 ${dateFmt.format(_project.endDate!)}',
                   ].join(' '),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-              ]),
-            ],
-            if (_project.notes != null && _project.notes!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(_project.notes!,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600), maxLines: 2),
+style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ]),
+              ],
+              if (_project.notes != null && _project.notes!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(_project.notes!,
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant), maxLines: 2),
             ],
             if (_project.totalAmount > 0) ...[
               const Divider(height: 16),
@@ -415,7 +415,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 const Text('案件合計', style: TextStyle(fontSize: 12)),
                 const Spacer(),
                 Text('¥${fmt.format(_project.totalAmount)}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
               ]),
             ],
           ],
@@ -436,7 +436,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
-        leading: Icon(icon, color: Colors.indigo),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(label),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -445,11 +445,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.shade100,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text('${docs.length}件',
-                    style: const TextStyle(fontSize: 12, color: Colors.indigo)),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
               ),
             const SizedBox(width: 4),
             const Icon(Icons.chevron_right),
@@ -462,7 +462,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             final date = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
             final lbl = doc[labelKey] as String? ?? id.substring(0, 8);
             final amount = doc[amountKey] as int? ?? 0;
-            final statusInfo = _docStatusInfo(table, doc);
+            final statusInfo = _docStatusInfo(table, doc, Theme.of(context).colorScheme);
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
               title: Row(
@@ -490,7 +490,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   Text('¥${fmt.format(amount)}',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   IconButton(
-                    icon: const Icon(Icons.link_off, size: 18, color: Colors.red),
+                    icon: Icon(Icons.link_off, size: 18, color: Theme.of(context).colorScheme.error),
                     tooltip: '紐づけ解除',
                     onPressed: () async {
                       await _repo.unlinkDocument(table: table, documentId: id);
@@ -502,7 +502,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             );
           }),
           ListTile(
-            leading: const Icon(Icons.add_link, color: Colors.indigo),
+            leading: Icon(Icons.add_link, color: Theme.of(context).colorScheme.primary),
             title: Text('$labelを紐づける'),
             onTap: () => _showLinkDialog(table, label),
           ),
@@ -511,23 +511,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  ({String label, Color color}) _docStatusInfo(String table, Map<String, dynamic> doc) {
+  ({String label, Color color}) _docStatusInfo(String table, Map<String, dynamic> doc, ColorScheme cs) {
     if (table == 'invoices' || table == 'quotations') {
       final isDraft = doc['is_draft'] == 1 || doc['is_draft'] == true;
       if (isDraft) {
-        return (label: '下書き', color: Colors.grey);
+        return (label: '下書き', color: cs.onSurfaceVariant);
       }
-      return (label: '正式発行済', color: Colors.green);
+      return (label: '正式発行済', color: cs.primary);
     }
-    return (label: '完了', color: Colors.blue);
+    return (label: '完了', color: cs.tertiary);
   }
 
-  Color _statusColorOf(ProjectStatus s) {
+  Color _statusColorOf(ProjectStatus s, ColorScheme cs) {
     switch (s) {
-      case ProjectStatus.active:    return Colors.indigo;
-      case ProjectStatus.won:       return Colors.green;
-      case ProjectStatus.lost:      return Colors.red;
-      case ProjectStatus.suspended: return Colors.orange;
+      case ProjectStatus.active:    return cs.primary;
+      case ProjectStatus.won:       return cs.primary;
+      case ProjectStatus.lost:      return cs.error;
+      case ProjectStatus.suspended: return cs.secondary;
     }
   }
 }

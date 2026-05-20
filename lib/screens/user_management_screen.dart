@@ -172,7 +172,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Widget _buildUserList() {
     if (_filteredUsers.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
                    'ユーザーが見つかりません',
           style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),

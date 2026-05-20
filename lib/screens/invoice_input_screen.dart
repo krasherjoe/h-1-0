@@ -878,7 +878,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Padding(
+                            child: Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 40,
                                 vertical: 32,
@@ -1376,7 +1376,7 @@ color: Theme.of(context).cardColor,
           ],
         ),
         if (_items.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Center(
               child: Text("商品が追加されていません", style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),

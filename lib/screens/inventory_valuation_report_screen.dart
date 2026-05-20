@@ -112,7 +112,7 @@ class _InventoryValuationReportScreenState
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.2),
         border: Border(
-          bottom: BorderSide(color: Theme.of(context).colorScheme.secondaryContainer,
+          bottom: BorderSide(color: Theme.of(context).colorScheme.secondaryContainer),
         ),
       ),
       child: Column(

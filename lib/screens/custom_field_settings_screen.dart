@@ -317,7 +317,7 @@ class _CustomFieldSettingsScreenState extends State<CustomFieldSettingsScreen> {
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
                         leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),

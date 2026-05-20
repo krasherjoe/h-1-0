@@ -73,7 +73,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
           children: [
             Text('${_getBusinessTypeName(businessType)}業種のテンプレートを適用します。'),
             const SizedBox(height: 8),
-          const Text('既存のカスタムフィールドはすべて削除され、テンプレートのフィールドに置き換えられます。',
+          Text('既存のカスタムフィールドはすべて削除され、テンプレートのフィールドに置き換えられます。',
                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
              ),
             const SizedBox(height: 16),
@@ -250,7 +250,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.primaryContainer,
+        border: Border.all(color: Theme.of(context).colorScheme.primaryContainer),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +265,7 @@ class _IndustryTemplateScreenState extends State<IndustryTemplateScreen> {
               const SizedBox(width: 12),
               Text(
                 '現在の業種: ${_getBusinessTypeName(_currentProfile!.businessType)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,

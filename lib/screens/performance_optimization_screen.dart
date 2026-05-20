@@ -60,9 +60,9 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('パフォーマンス最適化が完了しました'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('パフォーマンス最適化が完了しました'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
       
@@ -93,8 +93,8 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
     return Scaffold(
       appBar: AppBar(
         title: const Text('PO:パフォーマンス最適化'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -136,10 +136,10 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'キャッシュクリア、メモリ解放、Isolate処理を実行してアプリのパフォーマンスを向上させます。',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
+    Text(
+               'キャッシュクリア、メモリ解放、Isolate処理を実行してアプリのパフォーマンスを向上させます。',
+               style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -147,10 +147,10 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
                 onPressed: _optimizePerformance,
                 icon: const Icon(Icons.speed),
                 label: const Text('最適化を実行'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+ style: ElevatedButton.styleFrom(
+                   backgroundColor: Theme.of(context).colorScheme.tertiary,
+                   foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
@@ -192,27 +192,27 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
   
   Widget _buildStatRow(String key, dynamic value) {
     String displayValue;
-    Color valueColor = Colors.black;
+    Color valueColor = Theme.of(context).colorScheme.onSurface;
     
     if (value is Duration) {
       displayValue = '${value.inMilliseconds}ms';
       if (value.inMilliseconds > 1000) {
-        valueColor = Colors.red;
+        valueColor = Theme.of(context).colorScheme.error;
       } else if (value.inMilliseconds > 500) {
-        valueColor = Colors.orange;
+        valueColor = Theme.of(context).colorScheme.secondary;
       } else {
-        valueColor = Colors.green;
+        valueColor = Theme.of(context).colorScheme.primary;
       }
     } else if (value is Map) {
       final avg = value['average'] ?? 0;
       displayValue = '${avg.toStringAsFixed(1)}';
       
       if (avg > 100 * 1024 * 1024) { // 100MB
-        valueColor = Colors.red;
+        valueColor = Theme.of(context).colorScheme.error;
       } else if (avg > 50 * 1024 * 1024) { // 50MB
-        valueColor = Colors.orange;
+        valueColor = Theme.of(context).colorScheme.secondary;
       } else {
-        valueColor = Colors.green;
+        valueColor = Theme.of(context).colorScheme.primary;
       }
     } else {
       displayValue = value.toString();
@@ -257,9 +257,9 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green),
+Row(
+                 children: [
+                   Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
                   SizedBox(width: 8),
                   Text('ボトルネックは検出されませんでした'),
                 ],
@@ -284,14 +284,14 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
             ..._bottlenecks!.map((bottleneck) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        bottleneck,
-                        style: const TextStyle(color: Colors.orange),
+child: Row(
+                   children: [
+                     Icon(Icons.warning, color: Theme.of(context).colorScheme.secondary),
+                     const SizedBox(width: 8),
+                     Expanded(
+                       child: Text(
+                         bottleneck,
+                         style: TextStyle(color: Theme.of(context).colorScheme.secondary),
                       ),
                     ),
                   ],
@@ -323,25 +323,25 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
                       ? Icons.memory
                       : Icons.check_circle,
                   color: _isolateService.activeIsolateCount > 0
-                      ? Colors.orange
-                      : Colors.green,
+                      ? Theme.of(context).colorScheme.secondary
+                      : Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'アクティブなIsolate: ${_isolateService.activeIsolateCount}',
                   style: TextStyle(
                     color: _isolateService.activeIsolateCount > 0
-                        ? Colors.orange
-                        : Colors.green,
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Isolateは重い処理をバックグラウンドで実行し、UIの応答性を維持します。',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -365,13 +365,13 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
             const SizedBox(height: 12),
             LinearProgressIndicator(
               value: (currentMemory / (500 * 1024 * 1024)).clamp(0.0, 1.0),
-              backgroundColor: Colors.grey[300],
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(
                 currentMemory > 400 * 1024 * 1024
-                    ? Colors.red
+                    ? Theme.of(context).colorScheme.error
                     : currentMemory > 250 * 1024 * 1024
-                        ? Colors.orange
-                        : Colors.green,
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
@@ -379,17 +379,17 @@ class _PerformanceOptimizationScreenState extends State<PerformanceOptimizationS
               '現在: ${(currentMemory / 1024 / 1024).toStringAsFixed(1)} MB',
               style: TextStyle(
                 color: currentMemory > 400 * 1024 * 1024
-                    ? Colors.red
+                    ? Theme.of(context).colorScheme.error
                     : currentMemory > 250 * 1024 * 1024
-                        ? Colors.orange
-                        : Colors.green,
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '上限: 500 MB',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),

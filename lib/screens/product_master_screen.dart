@@ -652,7 +652,7 @@ PopupMenuItem(
                             ),
                           ),
                           if (p.isLocked)
-                            const Align(
+                            Align(
                               alignment: Alignment.bottomRight,
                               child: Icon(
                                 Icons.link,

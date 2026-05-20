@@ -105,9 +105,9 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
     if (!mounted) return;
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('メモリクリーンアップを実行しました'),
-        backgroundColor: Colors.green,
+      SnackBar(
+        content: const Text('メモリクリーンアップを実行しました'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
     
@@ -156,8 +156,8 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('UP:UIパフォーマンス最適化'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -194,7 +194,7 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
   
   Widget _buildWarningsSection() {
     return Card(
-      color: Colors.orange.shade50,
+      color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.15),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -202,24 +202,24 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
           children: [
             Row(
               children: [
-                const Icon(Icons.warning, color: Colors.orange),
+                Icon(Icons.warning, color: Theme.of(context).colorScheme.secondary),
                 const SizedBox(width: 8),
-                const Text(
-                  'パフォーマンス警告',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                  ),
-                ),
+            Text(
+                   'パフォーマンス警告',
+                   style: TextStyle(
+                     fontSize: 18,
+                     fontWeight: FontWeight.bold,
+                     color: Theme.of(context).colorScheme.secondary,
+                   ),
+                 ),
               ],
             ),
             const SizedBox(height: 12),
             ..._warnings.map((warning) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, size: 16, color: Colors.orange),
+          child: Row(
+                 children: [
+                   Icon(Icons.error_outline, size: 16, color: Theme.of(context).colorScheme.secondary),
                   const SizedBox(width: 8),
                   Expanded(child: Text(warning)),
                 ],
@@ -292,14 +292,14 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
   Widget _buildPerformanceChart() {
     return Container(
       height: 100,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Center(
-        child: Text(
-          'パフォーマンスチャート\n(実装予定)',
-          style: TextStyle(color: Colors.grey),
+  decoration: BoxDecoration(
+         border: Border.all(color: Theme.of(context).colorScheme.outline),
+         borderRadius: BorderRadius.circular(4),
+       ),
+       child: Center(
+         child: Text(
+           'パフォーマンスチャート\n(実装予定)',
+           style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
       ),
@@ -336,13 +336,13 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
         const SizedBox(height: 12),
         Row(
           children: [
-            ElevatedButton.icon(
-              onPressed: _startDemoAnimation,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('デモアニメーション'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+          ElevatedButton.icon(
+               onPressed: _startDemoAnimation,
+               icon: const Icon(Icons.play_arrow),
+               label: const Text('デモアニメーション'),
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: Theme.of(context).colorScheme.primary,
+                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(width: 8),
@@ -355,39 +355,39 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
               },
               icon: const Icon(Icons.delete),
               label: const Text('すべて破棄'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildMemorySection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'メモリ最適化',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            if (_memoryStats != null) ...[
-              _buildMemoryStats(),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildMemoryStats() {
+            style: ElevatedButton.styleFrom(
+                 backgroundColor: Theme.of(context).colorScheme.error,
+                 foregroundColor: Theme.of(context).colorScheme.onError,
+               ),
+             ),
+           ],
+         ),
+       ],
+     );
+    }
+    
+    Widget _buildMemorySection() {
+     return Card(
+       child: Padding(
+         padding: const EdgeInsets.all(16),
+         child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+             const Text(
+               'メモリ最適化',
+               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+             ),
+             const SizedBox(height: 12),
+             if (_memoryStats != null) ...[
+               _buildMemoryStats(),
+             ],
+           ],
+         ),
+       ),
+     );
+   }
+   
+   Widget _buildMemoryStats() {
     return Column(
       children: [
         _buildStatRow('平均メモリ使用量', '${(_memoryStats!['averageMemoryUsage'] / 1024).toStringAsFixed(1)}KB'),
@@ -397,13 +397,13 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
         const SizedBox(height: 12),
         Row(
           children: [
-            ElevatedButton.icon(
-              onPressed: _performMemoryCleanup,
-              icon: const Icon(Icons.cleaning_services),
-              label: const Text('メモリクリーンアップ'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+         ElevatedButton.icon(
+               onPressed: _performMemoryCleanup,
+               icon: const Icon(Icons.cleaning_services),
+               label: const Text('メモリクリーンアップ'),
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: Theme.of(context).colorScheme.primary,
+                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(width: 8),
@@ -411,9 +411,9 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
               onPressed: _toggleMemoryMonitoring,
               icon: Icon(_isMemoryMonitoring ? Icons.stop : Icons.play_arrow),
               label: Text(_isMemoryMonitoring ? '監視停止' : '監視開始'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isMemoryMonitoring ? Colors.red : Colors.blue,
-                foregroundColor: Colors.white,
+            style: ElevatedButton.styleFrom(
+                 backgroundColor: _isMemoryMonitoring ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           ],
@@ -426,32 +426,32 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
   
   Widget _buildMemoryChart() {
     if (_memorySnapshots == null || _memorySnapshots!.isEmpty) {
-      return Container(
-        height: 100,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: const Center(
-          child: Text(
-            'メモリ使用量チャート\n(監視開始後に表示)',
-            style: TextStyle(color: Colors.grey),
+    return Container(
+         height: 100,
+         decoration: BoxDecoration(
+           border: Border.all(color: Theme.of(context).colorScheme.outline),
+           borderRadius: BorderRadius.circular(4),
+         ),
+         child: Center(
+           child: Text(
+             'メモリ使用量チャート\n(監視開始後に表示)',
+             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
     
-    return Container(
-      height: 100,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Center(
-        child: Text(
-          'メモリ使用量チャート\n(実装予定)',
-          style: TextStyle(color: Colors.grey),
+  return Container(
+       height: 100,
+       decoration: BoxDecoration(
+         border: Border.all(color: Theme.of(context).colorScheme.outline),
+         borderRadius: BorderRadius.circular(4),
+       ),
+       child: Center(
+         child: Text(
+           'メモリ使用量チャート\n(実装予定)',
+           style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
       ),
@@ -476,20 +476,20 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
                 return Container(
                   width: double.infinity,
                   height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.blue.withValues(alpha: _demoAnimation.value),
-                        Colors.purple.withValues(alpha: _demoAnimation.value),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'アニメーション進行: ${(_demoAnimation.value * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        color: Colors.white,
+                 decoration: BoxDecoration(
+                     gradient: LinearGradient(
+                       colors: [
+                         Theme.of(context).colorScheme.primary.withValues(alpha: _demoAnimation.value),
+                         Theme.of(context).colorScheme.tertiary.withValues(alpha: _demoAnimation.value),
+                       ],
+                     ),
+                     borderRadius: BorderRadius.circular(8),
+                   ),
+                   child: Center(
+                     child: Text(
+                       'アニメーション進行: ${(_demoAnimation.value * 100).toStringAsFixed(0)}%',
+                       style: TextStyle(
+                         color: Theme.of(context).colorScheme.onTertiary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -500,28 +500,28 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
             const SizedBox(height: 12),
             Row(
               children: [
-                ElevatedButton.icon(
-                  onPressed: _startDemoAnimation,
-                  icon: const Icon(Icons.animation),
-                  label: const Text('アニメーション実行'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
-                    foregroundColor: Colors.white,
+           ElevatedButton.icon(
+                   onPressed: _startDemoAnimation,
+                   icon: const Icon(Icons.animation),
+                   label: const Text('アニメーション実行'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.tertiary,
+                     foregroundColor: Theme.of(context).colorScheme.onTertiary,
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _performanceService.startTimer('demo_operation');
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      _performanceService.stopTimer('demo_operation');
-                    });
-                  },
-                  icon: const Icon(Icons.timer),
-                  label: const Text('パフォーマンステスト'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+           ElevatedButton.icon(
+                   onPressed: () {
+                     _performanceService.startTimer('demo_operation');
+                     Future.delayed(const Duration(milliseconds: 500), () {
+                       _performanceService.stopTimer('demo_operation');
+                     });
+                   },
+                   icon: const Icon(Icons.timer),
+                   label: const Text('パフォーマンステスト'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.secondary,
+                     foregroundColor: Theme.of(context).colorScheme.onSecondary,
                   ),
                 ),
               ],
@@ -569,13 +569,13 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
     Color color;
     IconData icon;
     
-    switch (event.type) {
-      case 'timer':
-        color = Colors.blue;
-        icon = Icons.timer;
-        break;
-      default:
-        color = Colors.grey;
+  switch (event.type) {
+       case 'timer':
+         color = Theme.of(context).colorScheme.primary;
+         icon = Icons.timer;
+         break;
+       default:
+         color = Theme.of(context).colorScheme.onSurfaceVariant;
         icon = Icons.info;
     }
     
@@ -585,13 +585,13 @@ class _UIPerformanceScreenState extends State<UIPerformanceScreen>
         event.key,
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
-      subtitle: Text(
-        '${event.duration.toStringAsFixed(2)}ms',
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
-      ),
-      trailing: Text(
-        _formatTime(event.timestamp),
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+    subtitle: Text(
+         '${event.duration.toStringAsFixed(2)}ms',
+         style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+       ),
+       trailing: Text(
+         _formatTime(event.timestamp),
+         style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
       dense: true,
     );

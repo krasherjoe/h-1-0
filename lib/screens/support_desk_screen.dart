@@ -126,7 +126,7 @@ class _SupportDeskScreenState extends State<SupportDeskScreen> {
           ),
           Expanded(
             child: _filteredTickets.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

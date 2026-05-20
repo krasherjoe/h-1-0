@@ -221,7 +221,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('削除', style: TextStyle(color: Colors.white)),
+            child: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
           ),
         ],
       ),
@@ -354,9 +354,9 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                               backgroundColor: Theme.of(context).colorScheme.error,
                             ),
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
+                            child: Text(
                               'すべて削除',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
                             ),
                           ),
                         ],

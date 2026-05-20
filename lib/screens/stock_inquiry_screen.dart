@@ -124,7 +124,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('合計在庫数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text('合計在庫数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       Text(
                         '$_totalStock 個',
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -136,7 +136,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('少在庫品目', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text('少在庫品目', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       Text(
                         '$_lowStockCount 品',
                         style: TextStyle(
@@ -152,7 +152,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('登録商品数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      Text('登録商品数', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       Text(
                         '${_filtered.length} 品',
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -204,7 +204,7 @@ class _StockInquiryScreenState extends State<StockInquiryScreen> {
                                       color: isLowStock ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
-                                  const Text('個', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                  Text('個', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                 ],
                               ),
                             ),

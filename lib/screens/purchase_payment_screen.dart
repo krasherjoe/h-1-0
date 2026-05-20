@@ -474,7 +474,7 @@ class _PurchaseOrderPickerSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 50, height: 4, margin: const EdgeInsets.only(bottom: 12), decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2))),
+          Container(width: 50, height: 4, margin: const EdgeInsets.only(bottom: 12), decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(2))),
           const Text('発注を選択', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Flexible(

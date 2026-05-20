@@ -65,12 +65,12 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('拡張位置情報サービスを開始しました'),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
-      
+
       // 定期的に統計を更新
       Timer.periodic(const Duration(seconds: 5), (_) => _loadStatistics());
     } catch (e) {
@@ -92,9 +92,9 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
     });
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('位置情報サービスを停止しました'),
-        backgroundColor: Colors.blue,
+    SnackBar(
+        content: Text('位置情報履歴からルートを作成しました'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -119,9 +119,9 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('拡張音声録音を開始しました'),
-          backgroundColor: Colors.green,
+    SnackBar(
+          content: Text('センサーデータをエクスポートしました'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
       
@@ -152,7 +152,7 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('音声録音を停止しました (${recording?.duration?.inSeconds ?? 0}秒)'),
-          backgroundColor: Colors.blue,
+          backgroundColor: Theme.of(context).colorScheme.secondary,
         ),
       );
       
@@ -219,9 +219,9 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
     );
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('位置情報履歴からルートを作成しました'),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -240,9 +240,9 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('センサーデータをエクスポートしました'),
-          backgroundColor: Colors.green,
+          backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
     } catch (e) {
@@ -259,8 +259,8 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('S4:拡張センサー'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -306,37 +306,37 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
-                  _isLocationActive ? Icons.location_on : Icons.location_off,
-                  color: _isLocationActive ? Colors.green : Colors.grey,
-                ),
+              Icon(
+                   _isLocationActive ? Icons.location_on : Icons.location_off,
+                   color: _isLocationActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                 ),
                 const SizedBox(width: 8),
                 Text(
                   _isLocationActive ? 'サービス実行中' : 'サービス停止中',
                   style: TextStyle(
-                    color: _isLocationActive ? Colors.green : Colors.grey,
+                    color: _isLocationActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 if (!_isLocationActive)
-                  ElevatedButton.icon(
-                    onPressed: _startLocationService,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('開始'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  )
+ElevatedButton.icon(
+                     onPressed: _startLocationService,
+                     icon: const Icon(Icons.play_arrow),
+                     label: const Text('開始'),
+                     style: ElevatedButton.styleFrom(
+                       backgroundColor: Theme.of(context).colorScheme.primary,
+                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                     ),
+                   )
                 else
                   ElevatedButton.icon(
                     onPressed: _stopLocationService,
                     icon: const Icon(Icons.stop),
                     label: const Text('停止'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
                     ),
                   ),
               ],
@@ -389,44 +389,44 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
-                  _isAudioRecording ? Icons.mic : Icons.mic_none,
-                  color: _isAudioRecording ? Colors.red : Colors.grey,
-                ),
+Icon(
+                   _isAudioRecording ? Icons.mic : Icons.mic_none,
+                   color: _isAudioRecording ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
+                 ),
                 const SizedBox(width: 8),
                 Text(
                   _isAudioRecording ? '録音中' : '待機中',
                   style: TextStyle(
-                    color: _isAudioRecording ? Colors.red : Colors.grey,
+                    color: _isAudioRecording ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 if (!_isAudioRecording)
-                  ElevatedButton.icon(
-                    onPressed: _startAudioRecording,
-                    icon: const Icon(Icons.mic),
-                    label: const Text('録音開始'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                  )
+ElevatedButton.icon(
+                     onPressed: _startAudioRecording,
+                     icon: const Icon(Icons.mic),
+                     label: const Text('録音開始'),
+                     style: ElevatedButton.styleFrom(
+                       backgroundColor: Theme.of(context).colorScheme.secondary,
+                       foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                     ),
+                   )
                 else
                   ElevatedButton.icon(
                     onPressed: _stopAudioRecording,
-                    icon: const SizedBox(
+                    icon: SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                       ),
                     ),
                     label: const Text('録音停止'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
                     ),
                   ),
               ],
@@ -481,41 +481,41 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ElevatedButton.icon(
-                  onPressed: _createRouteFromHistory,
-                  icon: const Icon(Icons.map),
-                  label: const Text('履歴ルート作成'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _mapService.addCurrentLocationMarker();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('現在位置マーカーを追加しました')),
-                    );
-                  },
-                  icon: const Icon(Icons.location_on),
-                  label: const Text('現在地マーカー'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _mapService.clearMarkers();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('すべてのマーカーをクリアしました')),
-                    );
-                  },
-                  icon: const Icon(Icons.clear),
-                  label: const Text('マーカークリア'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
-                    foregroundColor: Colors.white,
+ElevatedButton.icon(
+                   onPressed: _createRouteFromHistory,
+                   icon: const Icon(Icons.map),
+                   label: const Text('履歴ルート作成'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.secondary,
+                     foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                   ),
+                 ),
+                 ElevatedButton.icon(
+                   onPressed: () {
+                     _mapService.addCurrentLocationMarker();
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text('現在位置マーカーを追加しました')),
+                     );
+                   },
+                   icon: const Icon(Icons.location_on),
+                   label: const Text('現在地マーカー'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.primary,
+                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                   ),
+                 ),
+                 ElevatedButton.icon(
+                   onPressed: () {
+                     _mapService.clearMarkers();
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text('すべてのマーカーをクリアしました')),
+                     );
+                   },
+                   icon: const Icon(Icons.clear),
+                   label: const Text('マーカークリア'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                     foregroundColor: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -593,30 +593,31 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
   Widget _buildLocationEventItem(LocationEvent event) {
     Color color;
     IconData icon;
+    final cs = Theme.of(context).colorScheme;
     
     switch (event.type) {
       case 'info':
-        color = Colors.blue;
+        color = cs.secondary;
         icon = Icons.info;
         break;
       case 'warning':
-        color = Colors.orange;
+        color = cs.tertiary;
         icon = Icons.warning;
         break;
       case 'error':
-        color = Colors.red;
+        color = cs.error;
         icon = Icons.error;
         break;
       case 'position_update':
-        color = Colors.green;
+        color = cs.primary;
         icon = Icons.gps_fixed;
         break;
       case 'movement':
-        color = Colors.purple;
+        color = cs.primary;
         icon = Icons.directions_run;
         break;
       default:
-        color = Colors.grey;
+        color = cs.onSurfaceVariant;
         icon = Icons.info;
     }
     
@@ -628,7 +629,7 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
       ),
       subtitle: Text(
         _formatDateTime(event.timestamp),
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
       dense: true,
     );
@@ -651,34 +652,35 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
   Widget _buildAudioEventItem(AudioEvent event) {
     Color color;
     IconData icon;
+    final cs = Theme.of(context).colorScheme;
     
     switch (event.type) {
       case 'info':
-        color = Colors.blue;
+        color = cs.secondary;
         icon = Icons.info;
         break;
       case 'warning':
-        color = Colors.orange;
+        color = cs.tertiary;
         icon = Icons.warning;
         break;
       case 'error':
-        color = Colors.red;
+        color = cs.error;
         icon = Icons.error;
         break;
       case 'recording_start':
-        color = Colors.green;
+        color = cs.primary;
         icon = Icons.mic;
         break;
       case 'recording_stop':
-        color = Colors.red;
+        color = cs.onSurfaceVariant;
         icon = Icons.mic_off;
         break;
       case 'voice_activation':
-        color = Colors.purple;
+        color = cs.tertiary;
         icon = Icons.hearing;
         break;
       default:
-        color = Colors.grey;
+        color = cs.onSurfaceVariant;
         icon = Icons.info;
     }
     
@@ -690,7 +692,7 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
       ),
       subtitle: Text(
         _formatDateTime(event.timestamp),
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
       dense: true,
     );
@@ -700,7 +702,7 @@ class _EnhancedSensorScreenState extends State<EnhancedSensorScreen> {
     return Chip(
       avatar: Icon(icon, size: 16),
       label: Text('$label: $value'),
-      backgroundColor: Colors.purple.shade50,
+      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
     );
   }
   

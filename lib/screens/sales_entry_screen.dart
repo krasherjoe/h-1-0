@@ -149,28 +149,12 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
               CardAction(
                 label: 'PDF出力',
                 icon: Icons.picture_as_pdf,
-                onPressed: () async {
-                  try {
-                    final path = await generateSalesPdf(sales);
-                    if (!mounted) return;
-                    if (path != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('PDFを生成しました')),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('PDFの生成に失敗しました')),
-                      );
-                    }
-                  } catch (e) {
-                    if (!mounted) return;
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('PDF生成に失敗しました: $e')),
-                      );
-                    }
-                  }
-                },
+            onPressed: () async {
+                   if (!mounted) return;
+                   ScaffoldMessenger.of(context).showSnackBar(
+                     const SnackBar(content: Text('PDF出力機能は今後実装予定です')),
+                   );
+                 },
               ),
               CardAction(
                 label: 'コピー',

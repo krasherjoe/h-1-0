@@ -148,8 +148,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   : null,
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text("削除", style: TextStyle(color: Colors.redAccent)),
+         leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+               title: Text("削除", style: TextStyle(color: Theme.of(context).colorScheme.error)),
               onTap: _isUnlocked
                 ? () async {
                     Navigator.pop(context);
@@ -160,7 +160,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         content: Text("「${invoice.customerNameForDisplay}」の伝票(${invoice.invoiceNumber})を削除しますか？\nこの操作は取り消せません。"),
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
-                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("削除", style: TextStyle(color: Colors.red))),
+                          TextButton(onPressed: () => Navigator.pop(context, true), child: Text("削除", style: TextStyle(color: Theme.of(context).colorScheme.error))),
                         ],
                       ),
                     );
@@ -250,20 +250,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
-                    DrawerHeader(
-                      decoration: const BoxDecoration(color: Colors.indigo),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("販売アシスト1号", style: TextStyle(color: Colors.white, fontSize: 20)),
-                          SizedBox(height: 8),
-                          Text("クイックメニュー", style: TextStyle(color: Colors.white70)),
-                        ],
-                      ),
-                    ),
+  DrawerHeader(
+                       decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           Text("販売アシスト1号", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 20)),
+                           const SizedBox(height: 8),
+                           Text("クイックメニュー", style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                         ],
+                       ),
+                     ),
                     _drawerHeading("アクション"),
                     ListTile(
-                      leading: const Icon(Icons.add_circle_outline, color: Colors.indigo),
+                      leading: Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.primary),
                       title: const Text("新しい伝票を作成"),
                       subtitle: const Text("ドキュメント種別を選択"),
                       onTap: () {
@@ -278,7 +278,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       onTap: () => Navigator.pop(context),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.folder_special, color: Colors.teal),
+                      leading: Icon(Icons.folder_special, color: Theme.of(context).colorScheme.secondary),
                       title: const Text("PJ1:案件管理"),
                       onTap: () {
                         Navigator.pop(context);
@@ -352,11 +352,11 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           },
           child: Text("IH:履歴リスト v$_appVersion"),
         ),
-        backgroundColor: _isUnlocked ? Colors.blueGrey : Colors.blueGrey.shade800,
-        actions: [
-          if (_isUnlocked)
-            IconButton(
-              icon: const Icon(Icons.lock_open, color: Colors.orangeAccent),
+      backgroundColor: _isUnlocked ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.surfaceVariant,
+         actions: [
+           if (_isUnlocked)
+             IconButton(
+               icon: Icon(Icons.lock_open, color: Theme.of(context).colorScheme.secondary),
               onPressed: _toggleUnlock,
               tooltip: "再度プロテクトする",
             ),
@@ -393,38 +393,30 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Builder(
-            builder: (context) {
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              final bgColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade50;
-              final hintColor = isDark ? Colors.grey.shade400 : Colors.black54;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.9),
-                        blurRadius: 4,
-                        spreadRadius: -4,
-                        offset: const Offset(-1, -1),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                    decoration: InputDecoration(
-                      hintText: "検索 (顧客名、伝票番号...)",
-                      hintStyle: TextStyle(color: hintColor),
-                      prefixIcon: Icon(Icons.search, color: hintColor),
-                      filled: true,
-                      fillColor: bgColor,
+           builder: (context) {
+               final cs = Theme.of(context).colorScheme;
+               return Padding(
+                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                 child: Container(
+                   decoration: BoxDecoration(
+                     color: cs.surfaceContainerHighest,
+                     borderRadius: BorderRadius.circular(16),
+                     boxShadow: [
+                       BoxShadow(
+                         color: cs.shadow.withOpacity(0.3),
+                         blurRadius: 12,
+                         offset: const Offset(0, 4),
+                       ),
+                     ],
+                   ),
+                   child: TextField(
+                     style: TextStyle(color: cs.onSurface),
+                     decoration: InputDecoration(
+                       hintText: "検索 (顧客名、伝票番号...)",
+                       hintStyle: TextStyle(color: cs.onSurfaceVariant),
+                       prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
+                       filled: true,
+                       fillColor: cs.surfaceContainerHighest,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -497,18 +489,18 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         onPressed: _isUnlocked
             ? () => _showCreateTypeMenu()
             : _requireUnlock,
-        label: const Text("新しい伝票"),
-        icon: const Icon(Icons.add),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+    label: const Text("新しい伝票"),
+         icon: const Icon(Icons.add),
+         backgroundColor: Theme.of(context).colorScheme.primary,
+         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
     );
   }
 
   Widget _drawerHeading(String label) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, letterSpacing: 0.5)),
+ return Padding(
+       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+       child: Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, letterSpacing: 0.5)),
     );
   }
 
@@ -521,37 +513,37 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  Text(
-                    'A2:伝票選択',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            ListTile(
-              leading: CircleAvatar(backgroundColor: Colors.blue.withValues(alpha: 0.12), child: const Icon(Icons.request_quote, color: Colors.blue)),
-              title: const Text('見積書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-              onTap: () => _startNew(DocumentType.estimation),
-            ),
-            ListTile(
-              leading: CircleAvatar(backgroundColor: Colors.teal.withValues(alpha: 0.12), child: const Icon(Icons.local_shipping, color: Colors.teal)),
-              title: const Text('納品書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-              onTap: () => _startNew(DocumentType.delivery),
-            ),
-            ListTile(
-              leading: CircleAvatar(backgroundColor: Colors.indigo.withValues(alpha: 0.12), child: const Icon(Icons.receipt_long, color: Colors.indigo)),
-              title: const Text('請求書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-              onTap: () => _startNew(DocumentType.invoice),
-            ),
-            ListTile(
-              leading: CircleAvatar(backgroundColor: Colors.green.withValues(alpha: 0.12), child: const Icon(Icons.task_alt, color: Colors.green)),
+          child: Row(
+                 children: [
+                   Text(
+                     'A2:伝票選択',
+                     style: TextStyle(
+                       fontSize: 18,
+                       fontWeight: FontWeight.bold,
+                       color: Theme.of(context).colorScheme.onSurface,
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+             const Divider(),
+             ListTile(
+               leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3), child: Icon(Icons.request_quote, color: Theme.of(context).colorScheme.primary)),
+               title: const Text('見積書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+               onTap: () => _startNew(DocumentType.estimation),
+             ),
+             ListTile(
+               leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3), child: Icon(Icons.local_shipping, color: Theme.of(context).colorScheme.secondary)),
+               title: const Text('納品書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+               onTap: () => _startNew(DocumentType.delivery),
+             ),
+             ListTile(
+               leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.3), child: Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.tertiary)),
+               title: const Text('請求書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+               onTap: () => _startNew(DocumentType.invoice),
+             ),
+             ListTile(
+               leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3), child: Icon(Icons.task_alt, color: Theme.of(context).colorScheme.primary)),
               title: const Text('領収書', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               onTap: () => _startNew(DocumentType.receipt),
             ),

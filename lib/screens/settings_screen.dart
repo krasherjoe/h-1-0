@@ -468,13 +468,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Row(
-children: [
-               Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
-              SizedBox(width: 8),
-              Text('バージョン情報'),
-            ],
-          ),
+        title: Row(
+ children: [
+                Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+               SizedBox(width: 8),
+               Text('バージョン情報'),
+             ],
+           ),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
@@ -1467,16 +1467,16 @@ style: OutlinedButton.styleFrom(
                            children: [
                              Icon(Icons.info_outline, color: Theme.of(context).colorScheme.secondary),
                             SizedBox(width: 8),
-                            Expanded(
-Text(
-                                 '⚠️ Google アカウントのサインインが必要です',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.secondary,
-                                  ),
-                                ),
-                              ),
+                           Expanded(
+                              child: Text(
+                                  '⚠️ Google アカウントのサインインが必要です',
+                                   style: TextStyle(
+                                     fontSize: 13,
+                                     fontWeight: FontWeight.bold,
+                                     color: Theme.of(context).colorScheme.secondary,
+                                   ),
+                                 ),
+                               ),
                             ],
                           ),
                         ),

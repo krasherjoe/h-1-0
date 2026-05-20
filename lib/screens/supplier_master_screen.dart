@@ -524,14 +524,14 @@ Row(
               ],
             ),
             const SizedBox(height: 12),
-            ...rows.map(_buildRow),
+            ...rows.map((row) => _buildRow(row, context)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRow(_PreviewRow row) {
+  Widget _buildRow(_PreviewRow row, BuildContext ctx) {
     final value = row.value.trim();
     final isEmpty = value.isEmpty;
     return Padding(
@@ -546,7 +546,7 @@ Row(
           Expanded(
             child: Text(
               isEmpty ? '—' : value,
-              style: TextStyle(color: isEmpty ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface),
+              style: TextStyle(color: isEmpty ? Theme.of(ctx).colorScheme.onSurfaceVariant : Theme.of(ctx).colorScheme.onSurface),
             ),
           ),
         ],

@@ -215,7 +215,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               tooltip: 'エクスポート（認証ログ）',
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: Theme.of(context).colorScheme.onPrimary,
             unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
             indicatorColor: Theme.of(context).colorScheme.onPrimary,
@@ -314,7 +314,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   Widget _buildActivityLogList() {
     final logs = _filteredActivityLogs;
     if (logs.isEmpty) {
-      return const Center(
+      return Center(
         child: Text('操作ログが見つかりません', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       );
     }
@@ -535,7 +535,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     final filteredLogs = _filteredLogs;
 
     if (filteredLogs.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           '監査ログが見つかりません',
           style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),

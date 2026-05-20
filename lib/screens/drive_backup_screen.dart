@@ -125,8 +125,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('GD:Google Drive バックアップ'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           if (_currentStep == DriveStep.listBackups)
             IconButton(
@@ -172,13 +172,13 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
       case DriveStep.checkingAuth:
       case DriveStep.loadingBackups:
         icon = Icons.sync;
-        color = Colors.blue;
+        color = Theme.of(context).colorScheme.primary;
         title = '読み込み中...';
         subtitle = 'しばらくお待ちください';
         break;
       case DriveStep.needsAuth:
         icon = Icons.account_circle;
-        color = Colors.orange;
+        color = Theme.of(context).colorScheme.secondary;
         title = '認証が必要';
         subtitle = 'Google アカウントでサインインしてください';
         break;
@@ -186,19 +186,19 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
       case DriveStep.backingUp:
       case DriveStep.restoring:
         icon = Icons.cloud_done;
-        color = Colors.green;
+        color = Theme.of(context).colorScheme.primary;
         title = '認証済み';
         subtitle = _currentUserEmail ?? 'アカウント情報なし';
         break;
       case DriveStep.success:
         icon = Icons.check_circle;
-        color = Colors.green;
+        color = Theme.of(context).colorScheme.primary;
         title = '完了';
         subtitle = _statusMessage;
         break;
       case DriveStep.error:
         icon = Icons.error;
-        color = Colors.red;
+        color = Theme.of(context).colorScheme.error;
         title = 'エラー';
         subtitle = _errorMessage ?? '不明なエラー';
         break;
@@ -234,7 +234,10 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -259,7 +262,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
                 _currentStep == DriveStep.checkingAuth
                     ? '認証を確認中...'
                     : 'バックアップ一覧を読み込み中...',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -269,12 +272,12 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.cloud_off, size: 64, color: Colors.grey.shade300),
+              Icon(Icons.cloud_off, size: 64, color: Theme.of(context).colorScheme.surfaceContainerHighest),
               const SizedBox(height: 16),
               Text(
                 'Google Drive にアクセスするには\nサインインが必要です',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -291,21 +294,21 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
               Text(
                 'エラーが発生しました',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700,
+                  color: Theme.of(context).colorScheme.error,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 _errorMessage ?? '',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -319,18 +322,18 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, size: 64, color: Colors.grey.shade300),
+            Icon(Icons.cloud_off, size: 64, color: Theme.of(context).colorScheme.surfaceContainerHighest),
             const SizedBox(height: 16),
             Text(
               'Google Drive にバックアップがありません',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             Text(
               '「今すぐバックアップ」ボタンから\n新規バックアップを作成できます',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.grey.shade500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -369,11 +372,11 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
               final size = backup.size;
 
               return Card(
-                color: isSelected ? Colors.green.shade50 : null,
+                color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3) : null,
                 child: ListTile(
                   leading: Icon(
                     isSelected ? Icons.check_circle : Icons.backup,
-                    color: isSelected ? Colors.green : Colors.grey,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   title: Text(
                     backup.name ?? '不明',
@@ -383,7 +386,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
                     '${_formatDateTime(modifiedTime)}${_formatFileSize(size)}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   trailing: Row(
@@ -393,8 +396,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
                         ElevatedButton(
                           onPressed: () => _showRestoreConfirm(backup),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange.shade700,
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.secondary,
+                            foregroundColor: Theme.of(context).colorScheme.onSecondary,
                           ),
                           child: const Text('リストア'),
                         )
@@ -430,8 +433,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
             child: CircularProgressIndicator(
               value: _progress > 0 ? _progress : null,
               strokeWidth: 8,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade700),
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
             ),
           ),
           const SizedBox(height: 24),
@@ -447,7 +450,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           const SizedBox(height: 8),
           Text(
             _statusMessage,
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           if (_progress > 0) ...[
             const SizedBox(height: 8),
@@ -456,7 +459,7 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.green.shade700,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ],
@@ -471,21 +474,21 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle, size: 80, color: Colors.green.shade400),
+          Icon(Icons.check_circle, size: 80, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 24),
           Text(
             isBackup ? 'バックアップ完了' : 'リストア完了',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             _statusMessage,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
@@ -506,8 +509,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
             icon: const Icon(Icons.check),
             label: const Text('確認'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade700,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
             ),
           ),
@@ -527,8 +530,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           icon: const Icon(Icons.login),
           label: const Text('Google アカウントでサインイン'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green.shade700,
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
         );
@@ -538,8 +541,12 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _handleSignOut,
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text('サインアウト', style: TextStyle(color: Colors.red)),
+                icon: const Icon(Icons.logout),
+                label: const Text('サインアウト'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -550,8 +557,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
                 icon: const Icon(Icons.backup),
                 label: const Text('今すぐバックアップ'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -574,8 +581,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           icon: const Icon(Icons.check),
           label: const Text('完了'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
         );
@@ -716,8 +723,8 @@ class _DriveBackupScreenState extends State<DriveBackupScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange.shade700,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
             ),
             child: const Text('リストア実行'),
           ),

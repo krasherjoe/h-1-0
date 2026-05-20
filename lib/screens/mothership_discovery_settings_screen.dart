@@ -139,7 +139,7 @@ class _MothershipDiscoverySettingsScreenState extends State<MothershipDiscoveryS
                           onChangeEnd: _updateRange,
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'この範囲内に記憶された場所があれば、お局様への直接通信を優先します',
                           style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),

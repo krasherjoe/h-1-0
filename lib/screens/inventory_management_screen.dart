@@ -24,7 +24,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('IQ:在庫照会'),
-        backgroundColor: Colors.purple,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           IconButton(
             onPressed: () {
@@ -52,7 +52,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
         screenId: 'IMC',
         title: '在庫移動・棚卸',
         icon: Icons.inventory,
-        themeColor: Colors.purple,
+        themeColor: Theme.of(context).colorScheme.primary,
 
         // データ取得
         fetchData: () => repo.getAllInventory(),

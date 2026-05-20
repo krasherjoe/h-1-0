@@ -661,7 +661,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     _info.sealPath != null
                         ? "タップして再編集 | 長押しで削除・変更"
                         : "ギャラリーから読み込むか、カメラで撮影してください",
-                    style: const TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   if (_info.sealPath != null) ...[
                     const SizedBox(height: 12),
