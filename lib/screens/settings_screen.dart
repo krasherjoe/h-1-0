@@ -181,6 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(enabled ? 'Google 連携機能を有効化しました' : 'Google 連携機能を無効化しました'),
       ),
     );
+    await _loadBackupStatus();
   }
 
   Future<void> _handleGoogleSignIn({bool switchAccount = false}) async {
@@ -204,6 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // 認証後のアカウント情報を再取得
       await _loadGoogleAccountInfo();
+      await _loadBackupStatus();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -428,6 +430,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _loadBackupSettings();
     if (!mounted) return;
     setState(() => _transportMode = transport);
+    await _loadBackupStatus();
   }
 
   /// アプリバージョン情報を取得

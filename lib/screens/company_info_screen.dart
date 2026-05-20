@@ -43,6 +43,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   bool _hasRegistrationNumber = false;
   final _regNumberController = TextEditingController();
   int _defaultBankIndex = 0;
+  int _fiscalYearStart = 4;
   final List<List<TextEditingController>> _bankControllers = [
     [TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController()],
     [TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController(), TextEditingController()],
@@ -88,6 +89,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
           _bankActive[i] = false;
         }
       }
+      _fiscalYearStart = _info.fiscalYearStart;
       setState(() => _isLoading = false);
     } catch (e) {
       print('F1 会社情報読み込みエラー: $e');
@@ -186,6 +188,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
           : null,
       bankAccounts: _encodeBankAccounts(),
       defaultBankAccountIndex: _defaultBankIndex,
+      fiscalYearStart: _fiscalYearStart,
     );
     print('DEBUG: _save() - _hasRegistrationNumber: $_hasRegistrationNumber');
     print('DEBUG: _save() - registrationNumber: ${updated.registrationNumber}');
@@ -350,6 +353,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
         _urlController.text = imported.url ?? '';
         _taxRate = imported.defaultTaxRate;
         _taxDisplayMode = imported.taxDisplayMode;
+        _fiscalYearStart = imported.fiscalYearStart;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -538,10 +542,41 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
            ),
                 ],
-              ),
-              const SizedBox(height: 20),
+               ),
+               const SizedBox(height: 20),
 
-              // スロット3: インボイス登録番号
+               // スロット3: 決算年度設定
+               _buildSlot(
+                 title: '決算年度設定',
+                 icon: Icons.calendar_month,
+                 children: [
+                   Text('年度の開始月を選択してください', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                   const SizedBox(height: 12),
+                   DropdownButtonFormField<int>(
+                     value: _fiscalYearStart >= 1 && _fiscalYearStart <= 12 ? _fiscalYearStart : 4,
+                     decoration: const InputDecoration(
+                       labelText: '年度開始月',
+                       border: OutlineInputBorder(),
+                     ),
+                     items: List.generate(12, (index) {
+                       final month = index + 1;
+                       return DropdownMenuItem(
+                         value: month,
+                         child: Text('${month}月'),
+                       );
+                     }),
+                     onChanged: (v) => setState(() => _fiscalYearStart = v ?? 4),
+                   ),
+                   const SizedBox(height: 8),
+                  Text(
+                      '※ ${_fiscalYearStart}月から新年度が始まります',
+                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                 ],
+               ),
+               const SizedBox(height: 20),
+
+               // スロット4: インボイス登録番号
               _buildSlot(
                 title: 'インボイス登録番号',
                 icon: Icons.receipt_long,
@@ -580,7 +615,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               ),
               const SizedBox(height: 20),
 
-              // スロット4: 銀行口座
+              // スロット5: 銀行口座
               _buildSlot(
                 title: '銀行口座',
                 icon: Icons.account_balance,
@@ -618,7 +653,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
               ),
               const SizedBox(height: 20),
 
-              // スロット5: 角印
+               // スロット6: 角印
               _buildSlot(
                 title: '印影（角印）',
                 icon: Icons.image,
