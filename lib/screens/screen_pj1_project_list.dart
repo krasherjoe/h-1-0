@@ -134,7 +134,6 @@ class _ProjectListScreenState extends State<ProjectListScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: const Text('PJ1:案件管理'),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
