@@ -562,9 +562,11 @@ class _MyAppState extends State<MyApp> {
             ),
             scaffoldBackgroundColor: const Color(0xFF121212),
             appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF1A237E),
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+              iconTheme: IconThemeData(color: Colors.white),
             ),
             cardTheme: const CardThemeData(
               color: Color(0xFF1E1E1E),
@@ -633,9 +635,11 @@ class _MyAppState extends State<MyApp> {
             ),
             scaffoldBackgroundColor: const Color(0xFF3A3A3A),
             appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF2A2A2A),
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+              iconTheme: IconThemeData(color: Colors.white),
             ),
             cardTheme: const CardThemeData(
               color: Color(0xFF4A4A4A),
@@ -703,9 +707,11 @@ class _MyAppState extends State<MyApp> {
             ),
             scaffoldBackgroundColor: const Color(0xFFD0D0D0),
             appBarTheme: AppBarTheme(
+              backgroundColor: Colors.grey.shade800,
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+              iconTheme: const IconThemeData(color: Colors.white),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
@@ -751,15 +757,18 @@ class _MyAppState extends State<MyApp> {
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo.shade700)
                 .copyWith(
                   primary: Colors.indigo.shade700,
+                  onPrimary: Colors.white,
                   secondary: Colors.deepOrange.shade400,
                   surface: Colors.grey.shade100,
                   onSurface: Colors.blueGrey.shade900,
                 ),
             scaffoldBackgroundColor: Colors.grey.shade100,
             appBarTheme: AppBarTheme(
+              backgroundColor: Colors.indigo.shade700,
               foregroundColor: Colors.white,
               elevation: 0,
               titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+              iconTheme: const IconThemeData(color: Colors.white),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(

@@ -359,9 +359,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         title: const Text('D1:ダッシュボード'),
-        titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
           IconButton(

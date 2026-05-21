@@ -620,9 +620,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         title: const Text('A1:ダッシュボード'),
-        titleTextStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
           IconButton(
