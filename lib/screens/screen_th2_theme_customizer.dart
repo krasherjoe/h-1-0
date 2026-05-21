@@ -127,6 +127,8 @@ class _ScreenTh2ThemeCustomizerState extends State<ScreenTh2ThemeCustomizer> {
     setState(() => _selectedKey = key);
     final picked = await showModalBottomSheet<int>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -592,13 +594,13 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    final bottomPad = MediaQuery.of(context).viewInsets.bottom;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad + 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             Row(
               children: [
                 Container(
@@ -693,7 +695,6 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
             ),
           ],
         ),
-      ),
     );
   }
 
