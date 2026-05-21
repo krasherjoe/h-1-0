@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/theme_controller.dart';
+import '../utils/theme_utils.dart';
 
 /// TH2: カラーカスタマイズ画面
 /// プレビュー上の各要素をタップして色を割り当てるエディタ。
@@ -139,7 +140,29 @@ class _ScreenTh2ThemeCustomizerState extends State<ScreenTh2ThemeCustomizer> {
       ),
     );
     if (picked != null) {
-      setState(() => _colors[key] = picked);
+      setState(() {
+        _colors[key] = picked;
+        // 背景色変更時、対になる文字色を自動でコントラスト計算して更新
+        final bg = Color(picked);
+        if (key == 'primary') {
+          _colors['onPrimary'] = appBarForeground(bg).toARGB32();
+        } else if (key == 'surface' || key == 'scaffoldBg') {
+          _colors['onSurface'] = appBarForeground(bg).toARGB32();
+        }
+      });
+      if (!mounted) return;
+      if (key == 'primary' || key == 'surface' || key == 'scaffoldBg') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              key == 'primary'
+                  ? '💡 onPrimary（タイトル文字）を自動調整しました'
+                  : '💡 onSurface（本文色）を自動調整しました',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
