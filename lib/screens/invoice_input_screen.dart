@@ -707,7 +707,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat("#,###");
-    final themeColor = Theme.of(context).scaffoldBackgroundColor;
+    final themeColor = Color.alphaBlend(
+      Colors.black.withOpacity(0.08),
+      Theme.of(context).scaffoldBackgroundColor,
+    );
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
 
