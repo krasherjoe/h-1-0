@@ -16,47 +16,9 @@ import '../models/company_model.dart';
 import '../utils/theme_utils.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 import '../services/app_settings_repository.dart';
-
-class _DetailSnapshot {
-  final String formalName;
-  final String notes;
-  final List<InvoiceItem> items;
-  final double taxRate;
-  final bool includeTax;
-  final bool isDraft;
-
-  const _DetailSnapshot({
-    required this.formalName,
-    required this.notes,
-    required this.items,
-    required this.taxRate,
-    required this.includeTax,
-    required this.isDraft,
-  });
-}
-
-class _DraftBadge extends StatelessWidget {
-  const _DraftBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        '下書き',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-      ),
-    );
-  }
-}
+import '../widgets/draft_badge.dart';
+import 'invoice_detail/detail_snapshot.dart';
+import 'invoice_detail/invoice_table_cells.dart';
 
 List<InvoiceItem> _cloneItemsDetail(List<InvoiceItem> source) {
   return source
@@ -103,8 +65,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   final AppSettingsRepository _settingsRepo = AppSettingsRepository(); // 追加
   CompanyInfo? _companyInfo;
   bool _showFormalWarning = true;
-  final List<_DetailSnapshot> _undoStack = [];
-  final List<_DetailSnapshot> _redoStack = [];
+  final List<InvoiceDetailSnapshot> _undoStack = [];
+  final List<InvoiceDetailSnapshot> _redoStack = [];
   bool _isApplyingSnapshot = false;
   bool _summaryIsBlue = false; // デフォルトは白
   bool _titleBarFlash = false; // タイトルバータップエフェクト用
@@ -768,11 +730,11 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             color: isDraft ? Theme.of(context).colorScheme.surfaceVariant : Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           children: [
-            _TableCell("品名", textColor: textColor),
-            _TableCell("数量", textColor: textColor),
-            _TableCell("単価", textColor: textColor),
-            _TableCell("金額", textColor: textColor),
-            const _TableCell(""),
+            InvoiceTableCell("品名", textColor: textColor),
+            InvoiceTableCell("数量", textColor: textColor),
+            InvoiceTableCell("単価", textColor: textColor),
+            InvoiceTableCell("金額", textColor: textColor),
+            const InvoiceTableCell(""),
           ],
         ),
         ..._items.asMap().entries.map((entry) {
@@ -781,7 +743,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           if (_isEditing) {
             return TableRow(
               children: [
-                _EditableCell(
+                InvoiceEditableCell(
                   initialValue: item.description,
                   textColor: textColor,
                   onChanged: (val) {
@@ -789,7 +751,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     _pushHistory();
                   },
                 ),
-                _EditableCell(
+                InvoiceEditableCell(
                   initialValue: item.quantity.toString(),
                   textColor: textColor,
                   keyboardType: TextInputType.number,
@@ -798,7 +760,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     _pushHistory();
                   },
                 ),
-                _EditableCell(
+                InvoiceEditableCell(
                   initialValue: item.unitPrice.toString(),
                   textColor: textColor,
                   keyboardType: TextInputType.number,
@@ -807,7 +769,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                     _pushHistory();
                   },
                 ),
-                _TableCell(
+                InvoiceTableCell(
                   formatter.format(item.subtotal),
                   textColor: textColor,
                 ),
@@ -820,13 +782,13 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           } else {
             return TableRow(
               children: [
-                _TableCell(item.description, textColor: textColor),
-                _TableCell(item.quantity.toString(), textColor: textColor),
-                _TableCell(
+                InvoiceTableCell(item.description, textColor: textColor),
+                InvoiceTableCell(item.quantity.toString(), textColor: textColor),
+                InvoiceTableCell(
                   formatter.format(item.unitPrice),
                   textColor: textColor,
                 ),
-                _TableCell(
+                InvoiceTableCell(
                   formatter.format(item.subtotal),
                   textColor: textColor,
                 ),
@@ -950,7 +912,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     if (!_isEditing || _isApplyingSnapshot) return;
     if (_undoStack.length >= 30) _undoStack.removeAt(0);
     _undoStack.add(
-      _DetailSnapshot(
+      InvoiceDetailSnapshot(
         formalName: _formalNameController.text,
         notes: _notesController.text,
         items: _cloneItemsDetail(_items),
@@ -967,7 +929,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     if (_undoStack.isEmpty) return;
     final snapshot = _undoStack.removeLast();
     _redoStack.add(
-      _DetailSnapshot(
+      InvoiceDetailSnapshot(
         formalName: _formalNameController.text,
         notes: _notesController.text,
         items: _cloneItemsDetail(_items),
@@ -983,7 +945,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     if (_redoStack.isEmpty) return;
     final snapshot = _redoStack.removeLast();
     _undoStack.add(
-      _DetailSnapshot(
+      InvoiceDetailSnapshot(
         formalName: _formalNameController.text,
         notes: _notesController.text,
         items: _cloneItemsDetail(_items),
@@ -995,7 +957,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     _applySnapshot(snapshot);
   }
 
-  void _applySnapshot(_DetailSnapshot snapshot) {
+  void _applySnapshot(InvoiceDetailSnapshot snapshot) {
     _isApplyingSnapshot = true;
     setState(() {
       _formalNameController.text = snapshot.formalName;
@@ -1171,7 +1133,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               children: [
                 Row(
                   children: const [
-                    _DraftBadge(),
+                    DraftBadge(),
                     SizedBox(width: 8),
                     Expanded(child: Text("この伝票を「確定」として正式に発行しますか？")),
                   ],
@@ -1250,7 +1212,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
           const Expanded(
             child: Row(
               children: [
-                _DraftBadge(),
+                DraftBadge(),
                 SizedBox(width: 8),
                 Text("状態として保持", style: TextStyle(fontWeight: FontWeight.bold)),
               ],
@@ -1300,51 +1262,3 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
   }
 }
 
-class _TableCell extends StatelessWidget {
-  final String text;
-  final Color? textColor;
-  const _TableCell(this.text, {this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Text(
-        text,
-        textAlign: TextAlign.right,
-        style: TextStyle(fontSize: 12, color: textColor),
-      ),
-    );
-  }
-}
-
-class _EditableCell extends StatelessWidget {
-  final String initialValue;
-  final TextInputType keyboardType;
-  final Function(String) onChanged;
-  final Color? textColor;
-
-  const _EditableCell({
-    required this.initialValue,
-    required this.onChanged,
-    this.keyboardType = TextInputType.text,
-    this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: TextField(
-        controller: TextEditingController(text: initialValue),
-        keyboardType: keyboardType,
-        style: TextStyle(fontSize: 14, color: textColor),
-        onChanged: onChanged,
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.all(8),
-        ),
-      ),
-    );
-  }
-}

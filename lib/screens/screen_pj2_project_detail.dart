@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'project_detail/status_badge.dart';
 
 import '../models/customer_model.dart';
 import '../models/invoice_models.dart';
@@ -759,7 +760,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
                   child: Text(_project.name,
                       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                 ),
-                _StatusBadge(status: _project.status, color: statusColor),
+                ProjectStatusBadge(status: _project.status, color: statusColor),
               ],
             ),
             if (_project.customerName != null) ...[
@@ -1374,26 +1375,5 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
       case ProjectStatus.lost:      return cs.error;
       case ProjectStatus.suspended: return cs.secondary;
     }
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final ProjectStatus status;
-  final Color color;
-  const _StatusBadge({required this.status, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Text(status.displayName,
-          style: TextStyle(
-              fontSize: 12, color: color, fontWeight: FontWeight.bold)),
-    );
   }
 }

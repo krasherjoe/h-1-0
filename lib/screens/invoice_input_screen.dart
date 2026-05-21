@@ -21,6 +21,9 @@ import '../services/company_profile_service.dart';
 import '../services/edit_log_repository.dart';
 import '../models/project_model.dart';
 import '../services/project_repository.dart';
+import 'invoice_input/draft_badge.dart';
+import 'invoice_input/invoice_snapshot.dart';
+import 'invoice_input/calculator_keypad.dart';
 
 class InvoiceInputForm extends StatefulWidget {
   final Function(Invoice invoice, String filePath) onInvoiceGenerated;
@@ -82,8 +85,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   String? _currentId; // 保存対象のID（コピー時に新規になる）
   Invoice? _currentInvoice; // 現在編集中の伝票
   bool _isLocked = false;
-  final List<_InvoiceSnapshot> _undoStack = [];
-  final List<_InvoiceSnapshot> _redoStack = [];
+  final List<InvoiceSnapshot> _undoStack = [];
+  final List<InvoiceSnapshot> _redoStack = [];
   // タイトルバースワイプズーム用の状態
   final _transformationController = TransformationController();
   double _titleBarStartScale = 1.0;
@@ -625,7 +628,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     setState(() {
       if (_undoStack.length >= 30) _undoStack.removeAt(0);
       _undoStack.add(
-        _InvoiceSnapshot(
+        InvoiceSnapshot(
           customer: _selectedCustomer,
           items: _cloneItems(_items),
           taxRate: _taxRate,
@@ -646,7 +649,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     setState(() {
       // 現在の状態をredoへ積む
       _redoStack.add(
-        _InvoiceSnapshot(
+        InvoiceSnapshot(
           customer: _selectedCustomer,
           items: _cloneItems(_items),
           taxRate: _taxRate,
@@ -681,7 +684,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     if (_redoStack.isEmpty) return;
     setState(() {
       _undoStack.add(
-        _InvoiceSnapshot(
+        InvoiceSnapshot(
           customer: _selectedCustomer,
           items: _cloneItems(_items),
           taxRate: _taxRate,
@@ -757,7 +760,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         if (_isDraft && _isViewMode)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            child: _DraftBadge(),
+            child: const DraftBadge(),
           ),
         IconButton(
           icon: AnimatedScale(
@@ -2810,7 +2813,7 @@ decoration: InputDecoration(
                       height: dialogHeight * 0.5,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildCalculatorKeypad(
+                        child: InvoiceCalculatorKeypad(
                           controller: manualDiscountController,
                           onUpdate: () {
                             updateCalculation();
@@ -2981,103 +2984,4 @@ decoration: InputDecoration(
       }
     }
   }
-
-  Widget _buildCalculatorKeypad({
-    required TextEditingController controller,
-    required VoidCallback onUpdate,
-  }) {
-    return GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 4,
-        childAspectRatio: 1.0,
-        mainAxisSpacing: 4,
-        crossAxisSpacing: 4,
-        children: [
-          for (final num in ['7', '8', '9', 'C'])
-            ElevatedButton(
-              onPressed: () {
-                if (num == 'C') {
-                  controller.text = '';
-                } else {
-                  controller.text += num;
-                }
-                onUpdate();
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: num == 'C' ? Theme.of(context).colorScheme.errorContainer : Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: num == 'C' ? Theme.of(context).colorScheme.onErrorContainer : Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              child: Text(
-                num,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          for (final num in ['4', '5', '6', '00'])
-            ElevatedButton(
-              onPressed: () {
-                controller.text += num;
-                onUpdate();
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              child: Text(
-                num,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-        ],
-    );
-  }
-}
-
-class _DraftBadge extends StatelessWidget {
-  const _DraftBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        '下書き',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onTertiaryContainer,
-        ),
-      ),
-    );
-  }
-}
-
-class _InvoiceSnapshot {
-  final Customer? customer;
-  final List<InvoiceItem> items;
-  final double taxRate;
-  final bool includeTax;
-  final bool isTaxInclusiveMode;
-  final DocumentType documentType;
-  final DateTime date;
-  final bool isDraft;
-  final String subject;
-
-  _InvoiceSnapshot({
-    required this.customer,
-    required this.items,
-    required this.taxRate,
-    required this.includeTax,
-    required this.isTaxInclusiveMode,
-    required this.documentType,
-    required this.date,
-    required this.isDraft,
-    required this.subject,
-  });
 }
