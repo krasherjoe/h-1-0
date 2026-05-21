@@ -96,8 +96,9 @@ class InvoiceHistoryItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     docLabel,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: docLabelColor,
                     ),
@@ -199,8 +200,8 @@ class InvoiceHistoryItem extends StatelessWidget {
       case DocumentType.estimation: return '見積';
       case DocumentType.order: return '受注';
       case DocumentType.delivery: return '納品';
-      case DocumentType.invoice: return '請';
-      case DocumentType.receipt: return '領';
+      case DocumentType.invoice: return '請求';
+      case DocumentType.receipt: return '領収';
     }
   }
 
