@@ -291,6 +291,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   @override
   void initState() {
     super.initState();
+    // 初期フレームで正しいDocType色を表示するため非同期ロード前に設定
+    _documentType =
+        widget.existingInvoice?.documentType ?? widget.initialDocumentType;
     _subjectController.addListener(_onSubjectChanged); // ← 1回だけ登録
     _subjectFocusNode.addListener(() {
       if (!_subjectFocusNode.hasFocus) {
