@@ -1113,13 +1113,21 @@ color: Theme.of(context).cardColor,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: isDark
+            ? Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 0.8,
+              )
+            : null,
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: ListTile(
         leading: Icon(Icons.business, color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -2075,6 +2083,7 @@ color: Theme.of(context).cardColor,
   }
 
   Widget _buildSubjectSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2090,13 +2099,21 @@ color: Theme.of(context).cardColor,
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            border: isDark
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    width: 0.8,
+                  )
+                : null,
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
           ),
           child: TextField(
             focusNode: _subjectFocusNode,
