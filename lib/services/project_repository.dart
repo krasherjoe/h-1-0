@@ -112,18 +112,13 @@ class ProjectRepository {
     final db = await _dbHelper.database;
 
     // 紐づく工数ログ・タスク・マイルストーンを削除（project_id NOT NULL のため）
-    await db.delete('time_logs', where: 'project_id = ?', whereArgs: [projectId]);
-    await db.delete('tasks', where: 'project_id = ?', whereArgs: [projectId]);
-    await db.delete('milestones', where: 'project_id = ?', whereArgs: [projectId]);
+    await _safeDelete(db, 'time_logs', projectId);
+    await _safeDelete(db, 'tasks', projectId);
+    await _safeDelete(db, 'milestones', projectId);
 
-    // 紐づく伝票の project_id を NULL にリセット
+    // 紐づく伝票の project_id を NULL にリセット（テーブルが存在しない場合はスキップ）
     for (final table in _linkedTables) {
-      await db.update(
-        table,
-        {'project_id': null},
-        where: 'project_id = ?',
-        whereArgs: [projectId],
-      );
+      await _safeNullProjectId(db, table, projectId);
     }
 
     await db.delete('projects', where: 'id = ?', whereArgs: [projectId]);
@@ -133,6 +128,31 @@ class ProjectRepository {
       targetId: projectId,
       details: '案件削除・マイルストーン/タスク/工数ログも削除、伝票のproject_idをNULLに',
     );
+  }
+
+  // ===== 内部ヘルパー =====
+
+  /// テーブルが存在しない場合はスキップして project_id を NULL に更新
+  Future<void> _safeNullProjectId(Database db, String table, String projectId) async {
+    try {
+      await db.update(
+        table,
+        {'project_id': null},
+        where: 'project_id = ?',
+        whereArgs: [projectId],
+      );
+    } catch (_) {
+      // テーブルが存在しない DB バージョンではスキップ
+    }
+  }
+
+  /// テーブルが存在しない場合はスキップして project_id に紐づくレコードを削除
+  Future<void> _safeDelete(Database db, String table, String projectId) async {
+    try {
+      await db.delete(table, where: 'project_id = ?', whereArgs: [projectId]);
+    } catch (_) {
+      // テーブルが存在しない DB バージョンではスキップ
+    }
   }
 
   // ===== 伝票リンク =====
