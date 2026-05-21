@@ -635,6 +635,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
       appBar: AppBar(
         leading: const BackButton(),
         title: Text('PJ2:${_project.name}', overflow: TextOverflow.ellipsis),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(icon: const Icon(Icons.edit), onPressed: _showEditDialog),
           PopupMenuButton<String>(
@@ -652,6 +653,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Theme.of(context).colorScheme.onPrimary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
+          indicatorColor: Theme.of(context).colorScheme.onPrimary,
           tabs: const [
             Tab(icon: Icon(Icons.info_outline), text: '概要'),
             Tab(icon: Icon(Icons.checklist), text: 'タスク'),
