@@ -358,18 +358,19 @@ class _KanbanCard extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'ステージを変更: ${project.name}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'ステージを変更: ${project.name}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            ...allStages.map((stage) {
+              ...allStages.map((stage) {
               final isCurrent = stage == project.pipelineStage;
               return ListTile(
                 leading: isCurrent
@@ -386,6 +387,7 @@ class _KanbanCard extends StatelessWidget {
             }),
           ],
         ),
+      ),
       ),
     );
   }
