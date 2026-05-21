@@ -52,11 +52,11 @@ class InvoiceHistoryItem extends StatelessWidget {
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
     final subjectColor = invoice.isLocked
-        ? cs.onSurfaceVariant
-        : cs.primary;
+        ? cs.primary // 青系（寒色）
+        : const Color(0xFFF57C00); // オレンジ（暖色）
     final amountColor = invoice.isLocked
         ? cs.onSurfaceVariant
-        : cs.onSurface;
+        : const Color(0xFFD32F2F); // 赤（暖色）
     final dateColor = cs.onSurfaceVariant;
 
     return Card(
