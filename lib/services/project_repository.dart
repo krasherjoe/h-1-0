@@ -111,7 +111,12 @@ class ProjectRepository {
   Future<void> deleteProject(String projectId) async {
     final db = await _dbHelper.database;
 
-    // 紐づく伝票のproject_idをNULLにリセット
+    // 紐づく工数ログ・タスク・マイルストーンを削除（project_id NOT NULL のため）
+    await db.delete('time_logs', where: 'project_id = ?', whereArgs: [projectId]);
+    await db.delete('tasks', where: 'project_id = ?', whereArgs: [projectId]);
+    await db.delete('milestones', where: 'project_id = ?', whereArgs: [projectId]);
+
+    // 紐づく伝票の project_id を NULL にリセット
     for (final table in _linkedTables) {
       await db.update(
         table,
@@ -126,7 +131,7 @@ class ProjectRepository {
       action: 'DELETE_PROJECT',
       targetType: 'PROJECT',
       targetId: projectId,
-      details: '案件削除・紐づき伝票のproject_idをNULLに',
+      details: '案件削除・マイルストーン/タスク/工数ログも削除、伝票のproject_idをNULLに',
     );
   }
 

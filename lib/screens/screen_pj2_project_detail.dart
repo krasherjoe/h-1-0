@@ -249,7 +249,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
       ),
     );
     if (ok != true) return;
-    await _repo.deleteProject(_project.id);
+    try {
+      await _repo.deleteProject(_project.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('削除に失敗しました: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
     if (!mounted) return;
     Navigator.pop(context);
   }
@@ -640,8 +651,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
         actions: [
           IconButton(icon: const Icon(Icons.edit), onPressed: _showEditDialog),
           PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'delete') _showDeleteConfirm();
+            onSelected: (v) async {
+              if (v == 'delete') await _showDeleteConfirm();
             },
             itemBuilder: (ctx) => [
               PopupMenuItem(
