@@ -7,6 +7,7 @@ import '../models/invoice_models.dart';
 import '../services/app_settings_repository.dart';
 import '../services/invoice_email_sender.dart';
 import '../services/pdf_generator.dart';
+import '../utils/theme_utils.dart';
 
 /// 請求書 PDF プレビューウィジェット
 ///
@@ -234,16 +235,19 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final docColor = _documentTypeColor(widget.invoice.documentType, cs, isDark);
+    final docFg = appBarForeground(docColor);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: docColor,
+        foregroundColor: docFg,
+        titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: docFg),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("PP:PDF プレビュー"),
             Text(
               "拡大する時はダブルタップしてからピンチインしてください",
-              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7)),
+              style: TextStyle(fontSize: 11, color: docFg.withValues(alpha: 0.7)),
             ),
           ],
         ),

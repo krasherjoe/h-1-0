@@ -13,6 +13,7 @@ import '../services/company_repository.dart';
 import '../services/edit_log_repository.dart';
 import 'product_picker_modal.dart';
 import '../models/company_model.dart';
+import '../utils/theme_utils.dart';
 import '../widgets/keyboard_inset_wrapper.dart';
 import '../services/app_settings_repository.dart';
 
@@ -130,8 +131,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
       DocumentType.estimation => cs.primary,
       DocumentType.order => cs.secondary,
       DocumentType.delivery => cs.tertiary,
-      DocumentType.invoice => cs.primaryContainer,
-      DocumentType.receipt => cs.secondaryContainer,
+      DocumentType.invoice => cs.error,
+      DocumentType.receipt => const Color(0xFF388E3C),
     };
     if (isDark) {
       return HSLColor.fromColor(base).withLightness(0.18).toColor();
@@ -303,12 +304,17 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final locked = _currentInvoice.isLocked;
+    final appBarBg = _documentTypeColor(_currentInvoice.documentType, cs, isDark);
+    final appBarFg = appBarForeground(appBarBg);
 
     return Scaffold(
       backgroundColor: themeColor,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: const BackButton(), // 常に表示
+        backgroundColor: appBarBg,
+        foregroundColor: appBarFg,
+        titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: appBarFg),
         title: GestureDetector(
           onTap: () async {
             // タップエフェクト
@@ -322,17 +328,15 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _titleBarFlash
-                  ? Theme.of(context).colorScheme.onSurface.withOpacity(0.3)
+                  ? appBarFg.withOpacity(0.25)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               "A3: ${_documentTypeLabel(_currentInvoice.documentType)}",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
         ),
-        backgroundColor: _documentTypeColor(_currentInvoice.documentType, cs, isDark),
         actions: [
           if (locked)
             Padding(
