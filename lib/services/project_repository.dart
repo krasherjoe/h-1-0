@@ -148,6 +148,48 @@ class ProjectRepository {
       where: 'id = ?',
       whereArgs: [documentId],
     );
+
+    // 自動ステージ更新：伝票種別に応じてパイプラインを進める
+    const stageAdvanceMap = {
+      'quotations': '見積',
+      'sales': '納品/発送',
+      'invoices': '請求',
+    };
+    final suggestedStage = stageAdvanceMap[table];
+    if (suggestedStage != null) {
+      final projRows = await db.query(
+        'projects',
+        columns: ['type', 'pipeline_stage'],
+        where: 'id = ?',
+        whereArgs: [projectId],
+        limit: 1,
+      );
+      if (projRows.isNotEmpty) {
+        final typeStr = projRows.first['type'] as String? ?? 'sales';
+        final currentStage = projRows.first['pipeline_stage'] as String? ?? '';
+        final type = typeStr == 'development'
+            ? ProjectType.development
+            : typeStr == 'sales'
+                ? ProjectType.sales
+                : ProjectType.other;
+        final stages = stagesFor(type);
+        final currentIdx = stages.indexOf(currentStage);
+        final newIdx = stages.indexOf(suggestedStage);
+        // 新ステージがパイプライン上で現在より後ろなら進める
+        if (newIdx != -1 && (currentIdx == -1 || newIdx > currentIdx)) {
+          await db.update(
+            'projects',
+            {
+              'pipeline_stage': suggestedStage,
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+            where: 'id = ?',
+            whereArgs: [projectId],
+          );
+        }
+      }
+    }
+
     await _recalcTotalAmount(projectId);
     await _logRepo.logAction(
       action: 'LINK_DOCUMENT',
