@@ -138,8 +138,8 @@ class InvoiceHistoryItem extends StatelessWidget {
                       customerName,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: invoice.isLocked ? cs.onSurface : cs.onSurface,
+                        fontWeight: invoice.isLocked ? FontWeight.normal : FontWeight.w700,
+                        color: cs.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
