@@ -1317,8 +1317,8 @@ TextSpan(
                       child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: c.isLocked
-                            ? theme.dividerColor
-                            : theme.colorScheme.primaryContainer,
+                            ? theme.colorScheme.primaryContainer // 青系（寒色）
+                            : const Color(0xFFFFF3E0), // オレンジ系（暖色）
                         child: Stack(
                           children: [
                             Align(
@@ -1344,8 +1344,8 @@ TextSpan(
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: c.isLocked
-                                  ? theme.hintColor
-                                  : theme.textTheme.bodyMedium?.color,
+                                  ? theme.colorScheme.primary // 青系（寒色）
+                                  : const Color(0xFFF57C00), // オレンジ（暖色）
                             ),
                           );
                         }

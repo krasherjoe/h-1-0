@@ -639,8 +639,8 @@ PopupMenuItem(
                     child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: p.isLocked
-                          ? theme.dividerColor
-                          : theme.colorScheme.primaryContainer,
+                          ? theme.colorScheme.primaryContainer // 青系（寒色）
+                          : const Color(0xFFFFF3E0), // オレンジ系（暖色）
                       child: Stack(
                         children: [
                           Align(
@@ -671,8 +671,8 @@ PopupMenuItem(
                             color: p.isHidden
                                 ? Theme.of(context).colorScheme.error
                                 : (p.isLocked
-                                    ? theme.hintColor
-                                    : theme.textTheme.bodyMedium?.color),
+                                    ? theme.colorScheme.primary // 青系（寒色）
+                                    : const Color(0xFFF57C00)), // オレンジ（暖色）
                           ),
                         );
                       }
