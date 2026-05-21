@@ -9,6 +9,7 @@ import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import '../widgets/zoomable_app_bar.dart';
+import '../utils/theme_utils.dart';
 import '../services/gps_service.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
@@ -128,8 +129,8 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       DocumentType.estimation => cs.primary,
       DocumentType.order => cs.secondary,
       DocumentType.delivery => cs.tertiary,
-      DocumentType.invoice => cs.primaryContainer,
-      DocumentType.receipt => cs.secondaryContainer,
+      DocumentType.invoice => cs.error,
+      DocumentType.receipt => const Color(0xFF388E3C),
     };
     if (isDark) {
       return HSLColor.fromColor(base).withLightness(0.18).toColor();
@@ -707,12 +708,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
 
-     final docColor = _documentTypeColor(_documentType, Theme.of(context).colorScheme, isDark);
+    final docColor = _documentTypeColor(_documentType, Theme.of(context).colorScheme, isDark);
+    final docFgColor = appBarForeground(docColor);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     // 閲覧モードのみZoomableAppBarを使用（編集モードは入力フィールドと競合するため）
     final appBar = AppBar(
       backgroundColor: docColor,
+      foregroundColor: docFgColor,
       leading: const BackButton(),
       title: GestureDetector(
         onTap: _isDraft && !_isLocked && _isViewMode

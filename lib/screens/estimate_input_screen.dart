@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/theme_utils.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/customer_model.dart';
@@ -81,6 +82,7 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: _documentTypeColor(cs, isDark),
+        foregroundColor: appBarForeground(_documentTypeColor(cs, isDark)),
         leading: const BackButton(),
         title: const Text('ES:見積入力'),
       ),

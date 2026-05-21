@@ -10,6 +10,7 @@ import '../services/app_settings_repository.dart';
 import '../services/invoice_repository.dart';
 import '../services/pdf_generator.dart';
 import '../services/storage_monitor.dart';
+import '../utils/theme_utils.dart';
 import '../theme/invoice_list_style_theme.dart';
 import '../widgets/invoice_list_a2_card.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
@@ -346,6 +347,7 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: _documentTypeColor(cs, isDark),
+        foregroundColor: appBarForeground(_documentTypeColor(cs, isDark)),
         title: const Text('Q1:見積入力'),
       ),
       floatingActionButton: FloatingActionButton.extended(

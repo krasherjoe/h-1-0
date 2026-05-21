@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../utils/theme_utils.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/customer_model.dart';
@@ -116,6 +117,7 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: _documentTypeColor(cs, isDark),
+        foregroundColor: appBarForeground(_documentTypeColor(cs, isDark)),
         title: const Text('OR:受注入力'),
       ),
       body: _isLoading
