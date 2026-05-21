@@ -1107,27 +1107,52 @@ color: Theme.of(context).cardColor,
     );
   }
 
-  Widget _buildCustomerSection() {
+  /// ダーク時: グラデーション＋白ぼかし影＋アウトライン。ライト時: 単色＋ドロップ影。
+  BoxDecoration _cardDecoration({Color? baseColor}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+    baseColor ??= Theme.of(context).cardColor;
+    if (isDark) {
+      return BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(Colors.white.withOpacity(0.10), baseColor),
+            baseColor,
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: isDark
-            ? Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                width: 0.8,
-              )
-            : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withOpacity(0.06),
+            blurRadius: 6,
+            spreadRadius: 0.5,
+          ),
+        ],
+      );
+    } else {
+      return BoxDecoration(
+        color: baseColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildCustomerSection() {
+    return Container(
+      decoration: _cardDecoration(
+        baseColor: Theme.of(context).colorScheme.surface,
       ),
       child: ListTile(
         leading: Icon(Icons.business, color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -2096,25 +2121,7 @@ color: Theme.of(context).cardColor,
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: isDark
-                ? Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    width: 0.8,
-                  )
-                : null,
-            boxShadow: isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-          ),
+          decoration: _cardDecoration(),
           child: TextField(
             focusNode: _subjectFocusNode,
             controller: _subjectController,
