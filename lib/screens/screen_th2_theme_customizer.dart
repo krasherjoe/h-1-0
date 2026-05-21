@@ -282,7 +282,9 @@ class _ScreenTh2ThemeCustomizerState extends State<ScreenTh2ThemeCustomizer> {
           ),
         ],
       ),
-      body: Column(
+      body: SafeArea(
+        top: false,
+        child: Column(
         children: [
           // ===== 上半分: ライブプレビュー =====
           Expanded(
@@ -368,6 +370,7 @@ class _ScreenTh2ThemeCustomizerState extends State<ScreenTh2ThemeCustomizer> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
