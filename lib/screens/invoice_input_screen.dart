@@ -732,7 +732,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: _titleBarFlash
-                ? Theme.of(context).colorScheme.onPrimary.withOpacity(0.3)
+                ? docFgColor.withOpacity(0.3)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
