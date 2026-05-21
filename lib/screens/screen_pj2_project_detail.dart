@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/customer_model.dart';
+import '../models/invoice_models.dart';
 import '../models/milestone_model.dart';
 import '../models/pipeline_stages.dart';
 import '../models/project_model.dart';
 import '../models/task_model.dart';
 import '../models/time_log_model.dart';
+import '../services/customer_repository.dart';
 import '../services/database_helper.dart';
 import '../services/milestone_repository.dart';
 import '../services/project_repository.dart';
 import '../services/task_repository.dart';
 import '../services/time_log_repository.dart';
 import 'customer_picker_modal.dart';
+import 'invoice_input_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final Project project;
@@ -687,6 +691,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
             docs: _invoices,
             amountKey: 'total_amount',
             labelKey: 'subject',
+            onCreate: () => _createInvoiceFromProject(DocumentType.invoice),
           ),
           if (_quotationsTableExists) ...[
             const SizedBox(height: 8),
@@ -697,6 +702,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
               docs: _quotations,
               amountKey: 'total_amount',
               labelKey: 'subject',
+              onCreate: () => _createInvoiceFromProject(DocumentType.estimation),
             ),
           ],
           if (_salesTableExists) ...[
@@ -708,6 +714,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
               docs: _sales,
               amountKey: 'total',
               labelKey: 'document_number',
+              onCreate: () => _createInvoiceFromProject(DocumentType.delivery),
             ),
           ],
         ],
@@ -920,6 +927,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
     required List<Map<String, dynamic>> docs,
     required String amountKey,
     required String labelKey,
+    VoidCallback? onCreate,
   }) {
     final fmt = NumberFormat('#,###');
     return Card(
@@ -1003,6 +1011,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
               ),
             );
           }),
+          if (onCreate != null)
+            ListTile(
+              leading: Icon(Icons.add_circle_outline,
+                  color: Theme.of(context).colorScheme.primary),
+              title: Text('$labelを新規作成'),
+              onTap: onCreate,
+            ),
           ListTile(
             leading: Icon(Icons.add_link,
                 color: Theme.of(context).colorScheme.primary),
@@ -1012,6 +1027,30 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _createInvoiceFromProject(DocumentType type) async {
+    Customer? preselected;
+    if (_project.customerId != null) {
+      final repo = CustomerRepository();
+      preselected = (await repo.getAllCustomers())
+          .where((c) => c.id == _project.customerId)
+          .firstOrNull;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoiceInputForm(
+          onInvoiceGenerated: (invoice, path) {},
+          initialDocumentType: type,
+          startViewMode: false,
+          showNewBadge: true,
+          preselectedCustomer: preselected,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    _loadDocs();
   }
 
   // ===== タスクタブ =====

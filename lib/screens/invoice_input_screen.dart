@@ -29,6 +29,7 @@ class InvoiceInputForm extends StatefulWidget {
   final bool startViewMode;
   final bool showNewBadge;
   final bool showCopyBadge;
+  final Customer? preselectedCustomer;
 
   const InvoiceInputForm({
     super.key,
@@ -38,6 +39,7 @@ class InvoiceInputForm extends StatefulWidget {
     this.startViewMode = true,
     this.showNewBadge = false,
     this.showCopyBadge = false,
+    this.preselectedCustomer,
   });
 
   @override
@@ -364,6 +366,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         _isLocked = false;
         _currentInvoice = null;
         _selectedBankIndex = defaultBankIdx < bankAccounts.length ? defaultBankIdx : -1;
+      }
+      // 案件から顧客が渡された場合は事前選択
+      if (widget.preselectedCustomer != null) {
+        _selectedCustomer = widget.preselectedCustomer;
       }
     });
     _isViewMode = widget.startViewMode; // 指定に従う
