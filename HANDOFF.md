@@ -153,6 +153,24 @@
 
 ## 📝 最近の主要変更（直近3セッション）
 
+### 2026-05-21 セッション（コミット: a315690〜c32ed71）
+
+#### 変更内容
+1. **IH画面 下書きカード色** → amber系黄色ティントに変更（`Color.alphaBlend`で solid化）
+2. **テーマ4段階の背景色均等化** → light(245)→gray(170)→dark-gray(80)→dark(18) に整理
+3. **D3/D4 背景色** → `scaffoldBackgroundColor + 黒8%ブレンド` でScaffoldより常に暗く
+4. **D3/D4 ダークテーマのフレーム溶け問題修正**
+   - `_cardDecoration()` ヘルパーを追加
+   - ダーク時: グラデーション（白10%）＋白ぼかし影＋outlineVariantボーダー
+   - ライト時: 単色＋ドロップシャドウ
+5. **次期機能設計**: 案件パイプライン＆タスク管理の仕様策定
+   - 詳細: `docs/tasks/PROJECT_PIPELINE_SPEC.md`
+
+#### 影響ファイル
+- `lib/main.dart`: 4テーマのscaffoldBackgroundColor調整
+- `lib/screens/invoice_history/invoice_history_item.dart`: 下書きカード色
+- `lib/screens/invoice_input_screen.dart`: D3/D4背景色・_cardDecorationヘルパー
+
 ### 2026-03-07 セッション（コミット: 255859c, 90fa9d7, 73f7cea）
 
 #### 変更内容
