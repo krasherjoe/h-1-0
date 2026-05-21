@@ -136,6 +136,7 @@ class _ProjectListScreenState extends State<ProjectListScreen>
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('PJ1:案件管理'),
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -145,6 +146,9 @@ class _ProjectListScreenState extends State<ProjectListScreen>
         ],
         bottom: TabBar(
           controller: _typeTab,
+          labelColor: Theme.of(context).colorScheme.onPrimary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
+          indicatorColor: Theme.of(context).colorScheme.onPrimary,
           tabs: _typeLabels
               .map((l) => Tab(text: l))
               .toList(),
