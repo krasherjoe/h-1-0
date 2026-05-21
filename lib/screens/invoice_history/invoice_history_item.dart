@@ -30,7 +30,7 @@ class InvoiceHistoryItem extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final surfaceColor = cs.surface;
     final draftTint = Color.alphaBlend(
-      cs.secondaryContainer.withOpacity(0.12),
+      const Color(0xFFFFC107).withOpacity(0.15),
       cs.surface,
     );
     final cardColor = invoice.isDraft ? draftTint : surfaceColor;
