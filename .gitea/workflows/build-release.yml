@@ -1,0 +1,57 @@
+name: Build and Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.10.7'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK (release)
+        run: flutter build apk --release
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload APK
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          API_URL="${{ github.api_url }}/repos/${{ github.repository }}/releases"
+          
+          # Create release
+          curl -X POST "$API_URL" \
+            -H "Authorization: token $GITEA_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"tag_name\": \"$GITHUB_REF_NAME\",
+              \"name\": \"Release $VERSION\",
+              \"draft\": false,
+              \"prerelease\": false
+            }"
+          
+          # Get upload URL
+          RELEASE_URL="${{ github.server_url }}/${{ github.repository }}/releases/tags/$GITHUB_REF_NAME"
+          
+          # Upload APK
+          curl -X POST "$RELEASE_URL/assets" \
+            -H "Authorization: token $GITEA_TOKEN" \
+            -F "name=h-1-$VERSION.apk" \
+            -F "attachment=@build/app/outputs/flutter-apk/app-release.apk"
