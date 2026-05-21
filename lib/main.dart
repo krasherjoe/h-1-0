@@ -630,10 +630,10 @@ class _MyAppState extends State<MyApp> {
               brightness: Brightness.dark,
               primary: Colors.grey.shade300,
               secondary: Colors.blueGrey.shade300,
-              surface: const Color(0xFF4A4A4A),
+              surface: const Color(0xFF606060),
               onSurface: Colors.grey.shade100,
             ),
-            scaffoldBackgroundColor: const Color(0xFF3A3A3A),
+            scaffoldBackgroundColor: const Color(0xFF505050),
             appBarTheme: const AppBarTheme(
               backgroundColor: Color(0xFF2A2A2A),
               foregroundColor: Colors.white,
@@ -642,7 +642,7 @@ class _MyAppState extends State<MyApp> {
               iconTheme: IconThemeData(color: Colors.white),
             ),
             cardTheme: const CardThemeData(
-              color: Color(0xFF4A4A4A),
+              color: Color(0xFF606060),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
@@ -705,7 +705,7 @@ class _MyAppState extends State<MyApp> {
               surface: const Color(0xFFE0E0E0),
               onSurface: Colors.grey.shade800,
             ),
-            scaffoldBackgroundColor: const Color(0xFFD0D0D0),
+            scaffoldBackgroundColor: const Color(0xFFAAAAAA),
             appBarTheme: AppBarTheme(
               backgroundColor: Colors.grey.shade800,
               foregroundColor: Colors.white,
