@@ -1156,6 +1156,28 @@ TextSpan(
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         title: Text(widget.selectionMode ? "C2:顧客選択" : "C1:顧客一覧"),
         actions: [
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _sortKey,
+              icon: Icon(Icons.sort, color: Theme.of(context).colorScheme.onPrimary),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+              selectedItemBuilder: (context) => [
+                const SizedBox.shrink(),
+                const SizedBox.shrink(),
+              ],
+              items: [
+                DropdownMenuItem(value: 'name_asc', child: Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+                DropdownMenuItem(value: 'name_desc', child: Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+              ],
+              onChanged: (v) {
+                setState(() {
+                  _sortKey = v ?? 'name_asc';
+                  _applyFilter();
+                });
+              },
+            ),
+          ),
           if (!widget.selectionMode) ...[
             PopupMenuButton<String>(
               onSelected: (value) {
