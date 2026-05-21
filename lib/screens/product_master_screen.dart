@@ -519,30 +519,6 @@ ElevatedButton(
         title: const Text("P1:商品マスター"),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _sortKey,
-              icon: Icon(Icons.sort, color: Theme.of(context).colorScheme.onPrimary),
-              dropdownColor: Theme.of(context).colorScheme.surface,
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-              selectedItemBuilder: (context) => [
-                Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
-                Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
-                Text('カテゴリ昇順', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
-              ],
-              items: [
-                DropdownMenuItem(value: 'name_asc', child: Text('名前昇順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
-                DropdownMenuItem(value: 'name_desc', child: Text('名前降順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
-                DropdownMenuItem(value: 'category_asc', child: Text('カテゴリ昇順', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
-              ],
-              onChanged: (v) {
-                setState(() {
-                  _sortKey = v ?? 'name_asc';
-                  _applyFilter();
-                });
-              },
-            ),
-          ),
           if (!widget.selectionMode)
             PopupMenuButton<String>(
               onSelected: (value) {
