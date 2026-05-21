@@ -351,7 +351,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
                         children: [
                           Expanded(
                             child: Text(
-                              '$tableLabelを紐づける',
+                              '$tableLabelを紐付け',
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -428,7 +428,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
                                   Text(
                                     searchCtrl.text.isNotEmpty
                                         ? '検索条件に一致する$tableLabelがありません'
-                                        : '紐づけ可能な$tableLabelがありません',
+                                        : '紐付け可能な$tableLabelがありません',
                                     style: TextStyle(
                                         color: Theme.of(ctx).colorScheme.onSurfaceVariant),
                                   ),
@@ -1001,7 +1001,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
                     icon: Icon(Icons.link_off,
                         size: 18,
                         color: Theme.of(context).colorScheme.error),
-                    tooltip: '紐づけ解除',
+                    tooltip: '紐付け解除',
                     onPressed: () async {
                       await _repo.unlinkDocument(table: table, documentId: id);
                       _loadDocs();
@@ -1021,7 +1021,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
           ListTile(
             leading: Icon(Icons.add_link,
                 color: Theme.of(context).colorScheme.primary),
-            title: Text('$labelを紐づける'),
+            title: Text('$labelを紐付け'),
             onTap: () => _showLinkDialog(table, label),
           ),
         ],

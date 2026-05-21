@@ -195,7 +195,7 @@ class ProjectRepository {
       action: 'LINK_DOCUMENT',
       targetType: 'PROJECT',
       targetId: projectId,
-      details: '$table / $documentId を案件に紐づけ',
+      details: '$table / $documentId の案件紐付け',
     );
   }
 
