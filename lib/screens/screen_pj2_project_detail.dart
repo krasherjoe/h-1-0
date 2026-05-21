@@ -261,80 +261,243 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
       return;
     }
 
-    final rows = await db.query(
-      table,
-      columns: [
-        'id',
-        'date',
-        if (table == 'invoices') 'subject',
-        if (table == 'invoices') 'total_amount',
-        if (table == 'sales') 'document_number',
-        if (table == 'sales') 'total',
-        if (table == 'quotations') 'subject',
-        if (table == 'quotations') 'total_amount',
-      ],
-      where: 'project_id IS NULL',
-      orderBy: 'date DESC',
-      limit: 50,
-    );
+    // 得意先名マッピングを取得
+    final customerRows = await db.query('customers', columns: ['id', 'display_name']);
+    final customerMap = {for (final r in customerRows) r['id'] as String: r['display_name'] as String};
+
+    final hasProjectCustomer = _project.customerId != null;
 
     if (!mounted) return;
-    if (rows.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('紐づけ可能な$tableLabelがありません')),
-      );
-      return;
-    }
 
     final fmt = NumberFormat('#,###');
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        builder: (ctx, scroll) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('$tableLabelを案件に紐づける',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          final searchCtrl = TextEditingController();
+          bool showAllCustomers = false;
+          bool isSearching = false;
+
+          Future<List<Map<String, dynamic>>> loadRows() async {
+            final where = StringBuffer('project_id IS NULL');
+            final whereArgs = <Object?>[];
+
+            // 案件の得意先で絞り込み（全顧客表示OFF時）
+            if (!showAllCustomers && hasProjectCustomer) {
+              where.write(' AND customer_id = ?');
+              whereArgs.add(_project.customerId);
+            }
+
+            final rows = await db.query(
+              table,
+              columns: [
+                'id',
+                'date',
+                'customer_id',
+                if (table == 'invoices') 'subject',
+                if (table == 'invoices') 'total_amount',
+                if (table == 'sales') 'document_number',
+                if (table == 'sales') 'total',
+                if (table == 'quotations') 'subject',
+                if (table == 'quotations') 'total_amount',
+              ],
+              where: where.toString(),
+              whereArgs: whereArgs.isEmpty ? null : whereArgs,
+              orderBy: 'date DESC',
+              limit: 200,
+            );
+            return rows;
+          }
+
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.7,
+            minChildSize: 0.3,
+            maxChildSize: 0.95,
+            builder: (ctx, scroll) => FutureBuilder<List<Map<String, dynamic>>>(
+              future: loadRows(),
+              builder: (ctx, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final rows = snap.data ?? [];
+
+                // 検索フィルタ
+                var filtered = rows;
+                if (searchCtrl.text.isNotEmpty) {
+                  final q = searchCtrl.text.toLowerCase();
+                  filtered = rows.where((r) {
+                    final label = table == 'sales'
+                        ? (r['document_number'] as String? ?? '')
+                        : (r['subject'] as String? ?? '');
+                    final custId = r['customer_id'] as String?;
+                    final custName = customerMap[custId] ?? '';
+                    return label.toLowerCase().contains(q) ||
+                        custName.toLowerCase().contains(q);
+                  }).toList();
+                }
+
+                return Column(
+                  children: [
+                    // ヘッダー
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '$tableLabelを紐づける',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Text('${filtered.length}件',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                    // 検索バー
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: TextField(
+                        controller: searchCtrl,
+                        decoration: InputDecoration(
+                          hintText: '顧客名・件名で検索',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: searchCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    searchCtrl.clear();
+                                    setSt(() {});
+                                  },
+                                )
+                              : null,
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onChanged: (_) => setSt(() {}),
+                      ),
+                    ),
+                    // 顧客絞り込みトグル
+                    if (hasProjectCustomer)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.filter_alt,
+                                size: 16,
+                                color: Theme.of(ctx).colorScheme.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              showAllCustomers
+                                  ? '全顧客の$tableLabelを表示中'
+                                  : '${_project.customerName ?? "この顧客"}の$tableLabelのみ',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(ctx).colorScheme.primary),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => setSt(() => showAllCustomers = !showAllCustomers),
+                              child: Text(showAllCustomers ? '顧客で絞る' : '全顧客表示'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    // リスト
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.folder_open,
+                                      size: 48,
+                                      color: Theme.of(ctx).colorScheme.outlineVariant),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    searchCtrl.text.isNotEmpty
+                                        ? '検索条件に一致する$tableLabelがありません'
+                                        : '紐づけ可能な$tableLabelがありません',
+                                    style: TextStyle(
+                                        color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: scroll,
+                              itemCount: filtered.length,
+                              itemBuilder: (_, i) {
+                                final r = filtered[i];
+                                final id = r['id'] as String;
+                                final date = r['date'] as String? ?? '';
+                                final label = table == 'sales'
+                                    ? (r['document_number'] as String? ?? id.substring(0, 8))
+                                    : (r['subject'] as String? ?? id.substring(0, 8));
+                                final amount = table == 'sales'
+                                    ? (r['total'] as int? ?? 0)
+                                    : (r['total_amount'] as int? ?? 0);
+                                final custId = r['customer_id'] as String?;
+                                final custName = customerMap[custId] ?? '不明な顧客';
+
+                                return ListTile(
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                                  title: Text(label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 14)),
+                                  subtitle: Row(
+                                    children: [
+                                      Icon(Icons.business,
+                                          size: 12,
+                                          color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                                      const SizedBox(width: 3),
+                                      Text(custName,
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(ctx)
+                                                  .colorScheme
+                                                  .onSurfaceVariant)),
+                                      const SizedBox(width: 8),
+                                      Text(date.length >= 10 ? date.substring(0, 10) : date,
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: Theme.of(ctx)
+                                                  .colorScheme
+                                                  .onSurfaceVariant)),
+                                    ],
+                                  ),
+                                  trailing: Text('¥${fmt.format(amount)}',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Theme.of(ctx).colorScheme.primary)),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    await _repo.linkDocument(
+                                        projectId: _project.id,
+                                        table: table,
+                                        documentId: id);
+                                    _loadDocs();
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
             ),
-            Expanded(
-              child: ListView.builder(
-                controller: scroll,
-                itemCount: rows.length,
-                itemBuilder: (_, i) {
-                  final r = rows[i];
-                  final id = r['id'] as String;
-                  final date = r['date'] as String? ?? '';
-                  final label = table == 'sales'
-                      ? (r['document_number'] as String? ?? id.substring(0, 8))
-                      : (r['subject'] as String? ?? id.substring(0, 8));
-                  final amount = table == 'sales'
-                      ? (r['total'] as int? ?? 0)
-                      : (r['total_amount'] as int? ?? 0);
-                  return ListTile(
-                    title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    subtitle: Text(date.length >= 10 ? date.substring(0, 10) : date),
-                    trailing: Text('¥${fmt.format(amount)}',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(ctx).colorScheme.primary)),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _repo.linkDocument(
-                          projectId: _project.id, table: table, documentId: id);
-                      _loadDocs();
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
