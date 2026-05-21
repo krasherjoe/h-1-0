@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../models/pipeline_stages.dart';
 import '../models/project_model.dart';
 import 'activity_log_repository.dart';
 import 'database_helper.dart';
@@ -56,9 +57,12 @@ class ProjectRepository {
     DateTime? startDate,
     DateTime? endDate,
     String? notes,
+    ProjectType type = ProjectType.sales,
+    String? pipelineStage,
   }) async {
     final db = await _dbHelper.database;
     final now = DateTime.now();
+    final stage = pipelineStage ?? stagesFor(type).first;
     final project = Project(
       id: const Uuid().v4(),
       name: name,
@@ -71,6 +75,8 @@ class ProjectRepository {
       totalAmount: 0,
       createdAt: now,
       updatedAt: now,
+      type: type,
+      pipelineStage: stage,
     );
 
     await db.insert('projects', project.toMap());

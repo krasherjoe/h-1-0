@@ -1,4 +1,21 @@
-/// 案件ステータス
+/// 案件種別
+enum ProjectType {
+  sales,       // 商品販売（短期）
+  development, // Web/アプリ開発（長期）
+  other,       // その他
+}
+
+extension ProjectTypeX on ProjectType {
+  String get displayName {
+    switch (this) {
+      case ProjectType.sales:       return '販売';
+      case ProjectType.development: return '開発';
+      case ProjectType.other:       return 'その他';
+    }
+  }
+}
+
+/// 案件ステータス（後方互換のため維持）
 enum ProjectStatus {
   active,    // 進行中
   won,       // 成約
@@ -31,6 +48,10 @@ class Project {
   final int totalAmount;     // 合計金額（集計キャッシュ）
   final DateTime createdAt;
   final DateTime updatedAt;
+  // パイプライン拡張フィールド
+  final ProjectType type;
+  final String pipelineStage;
+  final int progress;        // 進捗率 0〜100
 
   const Project({
     required this.id,
@@ -44,6 +65,9 @@ class Project {
     this.totalAmount = 0,
     required this.createdAt,
     required this.updatedAt,
+    this.type = ProjectType.sales,
+    this.pipelineStage = '見積',
+    this.progress = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -59,6 +83,9 @@ class Project {
       'total_amount': totalAmount,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'type': type.name,
+      'pipeline_stage': pipelineStage,
+      'progress': progress,
     };
   }
 
@@ -83,6 +110,12 @@ class Project {
       totalAmount: map['total_amount'] as int? ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+      type: ProjectType.values.firstWhere(
+        (e) => e.name == (map['type'] as String? ?? 'sales'),
+        orElse: () => ProjectType.sales,
+      ),
+      pipelineStage: map['pipeline_stage'] as String? ?? '見積',
+      progress: (map['progress'] as int?) ?? 0,
     );
   }
 
@@ -98,6 +131,9 @@ class Project {
     int? totalAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    ProjectType? type,
+    String? pipelineStage,
+    int? progress,
   }) {
     return Project(
       id: id ?? this.id,
@@ -111,6 +147,9 @@ class Project {
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      type: type ?? this.type,
+      pipelineStage: pipelineStage ?? this.pipelineStage,
+      progress: progress ?? this.progress,
     );
   }
 }

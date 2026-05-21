@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 62;
+  static const _databaseVersion = 63;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2097,6 +2097,75 @@ class DatabaseHelper {
     if (oldVersion < 62) {
       await _safeAddColumn(db, 'company_info', 'fiscal_year_start INTEGER DEFAULT 4');
     }
+
+    // v63: 案件パイプライン拡張＋マイルストーン・タスク・工数ログ
+    if (oldVersion < 63) {
+      // projects に種別・ステージ・進捗カラム追加
+      await _safeAddColumn(db, 'projects', "type TEXT NOT NULL DEFAULT 'sales'");
+      await _safeAddColumn(db, 'projects', "pipeline_stage TEXT NOT NULL DEFAULT '見積'");
+      await _safeAddColumn(db, 'projects', 'progress INTEGER NOT NULL DEFAULT 0');
+
+      // milestones テーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS milestones (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          due_date TEXT,
+          completed_date TEXT,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_milestones_project ON milestones(project_id)',
+      );
+
+      // tasks テーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+          id TEXT PRIMARY KEY,
+          project_id TEXT NOT NULL,
+          milestone_id TEXT,
+          title TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT \'todo\',
+          due_date TEXT,
+          estimated_hours REAL NOT NULL DEFAULT 0,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id),
+          FOREIGN KEY (milestone_id) REFERENCES milestones(id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_tasks_milestone ON tasks(milestone_id)',
+      );
+
+      // time_logs テーブル
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS time_logs (
+          id TEXT PRIMARY KEY,
+          task_id TEXT NOT NULL,
+          project_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          hours REAL NOT NULL,
+          memo TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (task_id) REFERENCES tasks(id),
+          FOREIGN KEY (project_id) REFERENCES projects(id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_time_logs_task ON time_logs(task_id)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_time_logs_project ON time_logs(project_id)',
+      );
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -3023,6 +3092,9 @@ class DatabaseHelper {
         total_amount INTEGER DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'sales',
+        pipeline_stage TEXT NOT NULL DEFAULT '見積',
+        progress INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY(customer_id) REFERENCES customers(id)
       )
     ''');
@@ -3032,6 +3104,57 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX idx_projects_status ON projects(status)',
     );
+
+    // マイルストーン
+    await db.execute('''
+      CREATE TABLE milestones (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        due_date TEXT,
+        completed_date TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_milestones_project ON milestones(project_id)');
+
+    // タスク
+    await db.execute('''
+      CREATE TABLE tasks (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        milestone_id TEXT,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT \'todo\',
+        due_date TEXT,
+        estimated_hours REAL NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id),
+        FOREIGN KEY (milestone_id) REFERENCES milestones(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_tasks_project ON tasks(project_id)');
+    await db.execute('CREATE INDEX idx_tasks_milestone ON tasks(milestone_id)');
+
+    // 工数ログ
+    await db.execute('''
+      CREATE TABLE time_logs (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        project_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        hours REAL NOT NULL,
+        memo TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (task_id) REFERENCES tasks(id),
+        FOREIGN KEY (project_id) REFERENCES projects(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_time_logs_task ON time_logs(task_id)');
+    await db.execute('CREATE INDEX idx_time_logs_project ON time_logs(project_id)');
   }
 
   Future<void> _safeAddColumn(
