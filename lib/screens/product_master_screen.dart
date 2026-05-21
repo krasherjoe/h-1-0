@@ -638,9 +638,7 @@ PopupMenuItem(
                     ),
                     child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: p.isLocked
-                          ? theme.colorScheme.primaryContainer // 青系（寒色）
-                          : const Color(0xFFFFF3E0), // オレンジ系（暖色）
+                      backgroundColor: theme.colorScheme.primaryContainer,
                       child: Stack(
                         children: [
                           Align(
@@ -667,12 +665,10 @@ PopupMenuItem(
                         return Text(
                           p.name + (p.isHidden ? " (非表示)" : ""),
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: p.isHidden || p.isLocked ? FontWeight.normal : FontWeight.bold,
                             color: p.isHidden
                                 ? Theme.of(context).colorScheme.error
-                                : (p.isLocked
-                                    ? theme.colorScheme.primary // 青系（寒色）
-                                    : const Color(0xFFF57C00)), // オレンジ（暖色）
+                                : theme.textTheme.bodyMedium?.color,
                           ),
                         );
                       }

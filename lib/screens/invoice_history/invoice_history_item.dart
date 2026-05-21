@@ -51,12 +51,10 @@ class InvoiceHistoryItem extends StatelessWidget {
     final customerName = invoice.customerNameForDisplay.endsWith('様')
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
-    final subjectColor = invoice.isLocked
-        ? cs.primary // 青系（寒色）
-        : const Color(0xFFF57C00); // オレンジ（暖色）
-    final amountColor = invoice.isLocked
-        ? cs.onSurfaceVariant
-        : const Color(0xFFD32F2F); // 赤（暖色）
+    final subjectColor = cs.primary;
+    final amountColor = cs.onSurface;
+    final subjectWeight = invoice.isLocked ? FontWeight.normal : FontWeight.bold;
+    final amountWeight = invoice.isLocked ? FontWeight.normal : FontWeight.bold;
     final dateColor = cs.onSurfaceVariant;
 
     return Card(
@@ -161,8 +159,8 @@ class InvoiceHistoryItem extends StatelessWidget {
                             subjectDisplay,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: subjectColor,
+                              fontWeight: subjectWeight,
+                              color: cs.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -172,7 +170,7 @@ class InvoiceHistoryItem extends StatelessWidget {
                         Text(
                           "￥${amountFormatter.format(invoice.totalAmount)}",
                           style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: amountWeight,
                               fontSize: 13,
                               color: amountColor),
                         ),

@@ -1316,9 +1316,7 @@ TextSpan(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: c.isLocked
-                            ? theme.colorScheme.primaryContainer // 青系（寒色）
-                            : const Color(0xFFFFF3E0), // オレンジ系（暖色）
+                        backgroundColor: theme.colorScheme.primaryContainer,
                         child: Stack(
                           children: [
                             Align(
@@ -1342,10 +1340,8 @@ TextSpan(
                           return Text(
                             c.displayName,
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: c.isLocked
-                                  ? theme.colorScheme.primary // 青系（寒色）
-                                  : const Color(0xFFF57C00), // オレンジ（暖色）
+                              fontWeight: c.isLocked ? FontWeight.normal : FontWeight.bold,
+                              color: theme.textTheme.bodyMedium?.color,
                             ),
                           );
                         }
