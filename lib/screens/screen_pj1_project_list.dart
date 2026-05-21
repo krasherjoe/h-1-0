@@ -17,8 +17,11 @@ class ProjectListScreen extends StatefulWidget {
 class _ProjectListScreenState extends State<ProjectListScreen>
     with SingleTickerProviderStateMixin {
   final _repo = ProjectRepository();
+  final _searchCtrl = TextEditingController();
   List<Project> _all = [];
   bool _loading = true;
+  bool _searchOpen = false;
+  bool _hideTerminal = true;
   late TabController _typeTab;
 
   static const _types = [ProjectType.sales, ProjectType.development, ProjectType.other];
@@ -29,12 +32,14 @@ class _ProjectListScreenState extends State<ProjectListScreen>
     super.initState();
     _typeTab = TabController(length: 3, vsync: this);
     _typeTab.addListener(() => setState(() {}));
+    _searchCtrl.addListener(() => setState(() {}));
     _load();
   }
 
   @override
   void dispose() {
     _typeTab.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -49,9 +54,26 @@ class _ProjectListScreenState extends State<ProjectListScreen>
 
   ProjectType get _currentType => _types[_typeTab.index];
 
-  List<Project> _projectsForStage(String stage) => _all
-      .where((p) => p.type == _currentType && p.pipelineStage == stage)
-      .toList();
+  String get _query => _searchCtrl.text.trim().toLowerCase();
+
+  List<Project> _projectsForStage(String stage) {
+    return _all.where((p) {
+      if (p.type != _currentType) return false;
+      if (p.pipelineStage != stage) return false;
+      if (_query.isNotEmpty) {
+        final name = p.name.toLowerCase();
+        final customer = (p.customerName ?? '').toLowerCase();
+        if (!name.contains(_query) && !customer.contains(_query)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  List<String> get _visibleStages {
+    final stages = stagesFor(_currentType);
+    if (!_hideTerminal) return stages;
+    return stages.where((s) => !isTerminalStage(s)).toList();
+  }
 
   Future<void> _showCreateDialog() async {
     final nameCtrl = TextEditingController();
@@ -132,11 +154,42 @@ class _ProjectListScreenState extends State<ProjectListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PJ1:案件管理'),
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        title: _searchOpen
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                style: TextStyle(color: cs.onPrimary),
+                cursorColor: cs.onPrimary,
+                decoration: InputDecoration(
+                  hintText: '案件名・得意先で検索...',
+                  hintStyle: TextStyle(color: cs.onPrimary.withValues(alpha: 0.6)),
+                  border: InputBorder.none,
+                ),
+              )
+            : const Text('PJ1:案件管理'),
+        foregroundColor: cs.onPrimary,
         actions: [
+          IconButton(
+            icon: Icon(_searchOpen ? Icons.close : Icons.search),
+            tooltip: _searchOpen ? '検索を閉じる' : '検索',
+            onPressed: () {
+              setState(() {
+                _searchOpen = !_searchOpen;
+                if (!_searchOpen) _searchCtrl.clear();
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              _hideTerminal ? Icons.visibility_off : Icons.visibility,
+              color: _hideTerminal ? cs.onPrimary.withValues(alpha: 0.5) : cs.onPrimary,
+            ),
+            tooltip: _hideTerminal ? '入金済みを表示' : '入金済みを非表示',
+            onPressed: () => setState(() => _hideTerminal = !_hideTerminal),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: '新規案件',
@@ -145,12 +198,10 @@ class _ProjectListScreenState extends State<ProjectListScreen>
         ],
         bottom: TabBar(
           controller: _typeTab,
-          labelColor: Theme.of(context).colorScheme.onPrimary,
-          unselectedLabelColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
-          indicatorColor: Theme.of(context).colorScheme.onPrimary,
-          tabs: _typeLabels
-              .map((l) => Tab(text: l))
-              .toList(),
+          labelColor: cs.onPrimary,
+          unselectedLabelColor: cs.onPrimary.withValues(alpha: 0.6),
+          indicatorColor: cs.onPrimary,
+          tabs: _typeLabels.map((l) => Tab(text: l)).toList(),
         ),
       ),
       body: _loading
@@ -163,8 +214,13 @@ class _ProjectListScreenState extends State<ProjectListScreen>
   }
 
   Widget _buildKanban() {
-    final stages = stagesFor(_currentType);
-
+    final stages = _visibleStages;
+    if (stages.isEmpty) {
+      return Center(
+        child: Text('表示するステージがありません',
+            style: TextStyle(color: Theme.of(context).colorScheme.outlineVariant)),
+      );
+    }
     return ListView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -175,59 +231,72 @@ class _ProjectListScreenState extends State<ProjectListScreen>
   Widget _buildColumn(String stage) {
     final projects = _projectsForStage(stage);
     final isTerminal = isTerminalStage(stage);
+    final cs = Theme.of(context).colorScheme;
+    final totalAmount = projects.fold<int>(0, (s, p) => s + p.totalAmount);
+    final fmt = NumberFormat('#,###');
 
     return SizedBox(
-      width: 220,
+      width: 230,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // カラムヘッダー
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 6),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isTerminal
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: isTerminal ? cs.primaryContainer : cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    stage,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: isTerminal
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                if (projects.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${projects.length}',
-                      style: TextStyle(
-                          fontSize: 11,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        stage,
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary),
+                          fontSize: 13,
+                          color: isTerminal ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (projects.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${projects.length}件',
+                          style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary),
+                        ),
+                      ),
+                  ],
+                ),
+                if (totalAmount > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '¥${fmt.format(totalAmount)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isTerminal ? cs.onPrimaryContainer : cs.primary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 6),
-          // カード一覧
           Expanded(
             child: projects.isEmpty
-                ? _buildEmptyColumn()
+                ? Center(
+                    child: Text('なし',
+                        style: TextStyle(fontSize: 12, color: cs.outlineVariant)))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     itemCount: projects.length,
@@ -237,15 +306,13 @@ class _ProjectListScreenState extends State<ProjectListScreen>
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                ProjectDetailScreen(project: projects[i]),
+                            builder: (_) => ProjectDetailScreen(project: projects[i]),
                           ),
                         );
                         _load();
                       },
                       onStageChange: (newStage) async {
-                        final updated =
-                            projects[i].copyWith(pipelineStage: newStage);
+                        final updated = projects[i].copyWith(pipelineStage: newStage);
                         await _repo.updateProject(updated);
                         _load();
                       },
@@ -254,18 +321,6 @@ class _ProjectListScreenState extends State<ProjectListScreen>
                   ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyColumn() {
-    return Center(
-      child: Text(
-        'なし',
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
       ),
     );
   }
@@ -288,12 +343,27 @@ class _KanbanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,###');
     final cs = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final isOverdue = project.endDate != null &&
+        project.endDate!.isBefore(now) &&
+        project.status == ProjectStatus.active;
+    final isDueSoon = !isOverdue &&
+        project.endDate != null &&
+        project.endDate!.difference(now).inDays <= 7 &&
+        project.status == ProjectStatus.active;
 
     return GestureDetector(
       onLongPress: () => _showStageSheet(context),
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: isOverdue
+              ? BorderSide(color: cs.error.withValues(alpha: 0.6), width: 1.5)
+              : isDueSoon
+                  ? BorderSide(color: cs.tertiary.withValues(alpha: 0.6), width: 1.5)
+                  : BorderSide.none,
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
@@ -302,11 +372,27 @@ class _KanbanCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ステータスバッジ行
+                Row(
+                  children: [
+                    _StatusChip(status: project.status),
+                    const Spacer(),
+                    if (project.totalAmount > 0)
+                      Text(
+                        '¥${fmt.format(project.totalAmount)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: cs.primary,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 5),
                 // 案件名
                 Text(
                   project.name,
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -326,16 +412,57 @@ class _KanbanCard extends StatelessWidget {
                     ),
                   ]),
                 ],
-                // 金額
-                if (project.totalAmount > 0) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '¥${fmt.format(project.totalAmount)}',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: cs.primary),
-                  ),
+                // 期限
+                if (project.endDate != null) ...[
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Icon(
+                      isOverdue ? Icons.warning_amber_rounded : Icons.event,
+                      size: 11,
+                      color: isOverdue
+                          ? cs.error
+                          : isDueSoon
+                              ? cs.tertiary
+                              : cs.outlineVariant,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      isOverdue
+                          ? '期限超過: ${DateFormat('MM/dd').format(project.endDate!)}'
+                          : DateFormat('MM/dd').format(project.endDate!),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isOverdue
+                            ? cs.error
+                            : isDueSoon
+                                ? cs.tertiary
+                                : cs.outlineVariant,
+                        fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ]),
+                ],
+                // 進捗バー
+                if (project.progress > 0) ...[
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: project.progress / 100,
+                          minHeight: 4,
+                          backgroundColor: cs.surfaceContainerHighest,
+                          color: project.progress >= 100 ? cs.tertiary : cs.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${project.progress}%',
+                      style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant),
+                    ),
+                  ]),
                 ],
                 // ロングプレスヒント
                 const SizedBox(height: 4),
@@ -370,24 +497,45 @@ class _KanbanCard extends StatelessWidget {
                 ),
               ),
               ...allStages.map((stage) {
-              final isCurrent = stage == project.pipelineStage;
-              return ListTile(
-                leading: isCurrent
-                    ? Icon(Icons.radio_button_checked,
-                        color: Theme.of(ctx).colorScheme.primary)
-                    : const Icon(Icons.radio_button_unchecked),
-                title: Text(stage),
-                selected: isCurrent,
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (!isCurrent) await onStageChange(stage);
-                },
-              );
-            }),
-          ],
+                final isCurrent = stage == project.pipelineStage;
+                return ListTile(
+                  leading: isCurrent
+                      ? Icon(Icons.radio_button_checked,
+                          color: Theme.of(ctx).colorScheme.primary)
+                      : const Icon(Icons.radio_button_unchecked),
+                  title: Text(stage),
+                  selected: isCurrent,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    if (!isCurrent) await onStageChange(stage);
+                  },
+                );
+              }),
+            ],
+          ),
         ),
       ),
-      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final ProjectStatus status;
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final (label, bg, fg) = switch (status) {
+      ProjectStatus.active    => ('進行中', cs.primaryContainer,    cs.onPrimaryContainer),
+      ProjectStatus.won       => ('成約',   cs.tertiaryContainer,   cs.onTertiaryContainer),
+      ProjectStatus.lost      => ('失注',   cs.errorContainer,      cs.onErrorContainer),
+      ProjectStatus.suspended => ('保留',   cs.surfaceContainerHighest, cs.onSurfaceVariant),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: fg)),
     );
   }
 }
