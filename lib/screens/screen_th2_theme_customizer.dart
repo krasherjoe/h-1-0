@@ -594,7 +594,8 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottomPad = mq.viewPadding.bottom + mq.viewInsets.bottom;
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad + 16),
       child: Column(
