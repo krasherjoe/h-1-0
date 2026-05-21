@@ -37,7 +37,7 @@ class InvoiceHistoryItem extends StatelessWidget {
     final iconBg = isUnlocked
         ? _docTypeBgColor(invoice.documentType)
         : cs.surfaceContainerHighest;
-    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType) : cs.outline;
+    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType) : cs.onSurfaceVariant;
     final docLabel = _docTypeLabel(invoice.documentType);
     final docLabelColor = _docTypeColor(invoice.documentType);
 
@@ -52,10 +52,10 @@ class InvoiceHistoryItem extends StatelessWidget {
         ? invoice.customerNameForDisplay
         : '${invoice.customerNameForDisplay} 様';
     final subjectColor = invoice.isLocked
-        ? cs.outline
+        ? cs.onSurfaceVariant
         : cs.primary;
     final amountColor = invoice.isLocked
-        ? cs.outline
+        ? cs.onSurfaceVariant
         : cs.onSurface;
     final dateColor = cs.onSurfaceVariant;
 
@@ -140,7 +140,7 @@ class InvoiceHistoryItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: invoice.isLocked ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
+                        color: invoice.isLocked ? cs.onSurface : cs.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

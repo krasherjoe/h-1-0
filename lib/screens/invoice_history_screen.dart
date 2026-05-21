@@ -273,7 +273,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                     ),
                     _drawerHeading("マスター"),
                     ListTile(
-                      leading: const Icon(Icons.receipt_long),
+                      leading: Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.onSurface),
                       title: const Text("伝票マスター"),
                       onTap: () => Navigator.pop(context),
                     ),
@@ -286,7 +286,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.people),
+                      leading: Icon(Icons.people, color: Theme.of(context).colorScheme.onSurface),
                       title: const Text("顧客マスター"),
                       onTap: () {
                         Navigator.pop(context);
@@ -294,7 +294,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.inventory_2),
+                      leading: Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.onSurface),
                       title: const Text("商品マスター"),
                       onTap: () {
                         Navigator.pop(context);
@@ -303,7 +303,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                     ),
                     _drawerHeading("システム"),
                     ListTile(
-                      leading: const Icon(Icons.settings),
+                      leading: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSurface),
                       title: const Text("設定"),
                       onTap: () {
                         Navigator.pop(context);
@@ -312,7 +312,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.admin_panel_settings),
+                      leading: Icon(Icons.admin_panel_settings, color: Theme.of(context).colorScheme.onSurface),
                       title: const Text("管理メニュー"),
                       onTap: () {
                         Navigator.pop(context);
