@@ -29,7 +29,7 @@ class InvoiceHistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final surfaceColor = cs.surface;
-    final draftTint = cs.secondaryContainer.withValues(alpha: 0.25);
+    final draftTint = cs.secondaryContainer.withValues(alpha: 0.10);
     final cardColor = invoice.isDraft ? draftTint : surfaceColor;
     final iconBg = isUnlocked
         ? _docTypeBgColor(invoice.documentType)
