@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/pipeline_stages.dart';
 import '../models/project_model.dart';
-import '../services/customer_repository.dart';
 import '../services/project_repository.dart';
 import 'customer_picker_modal.dart';
 import 'screen_pj2_project_detail.dart';
@@ -14,17 +14,28 @@ class ProjectListScreen extends StatefulWidget {
   State<ProjectListScreen> createState() => _ProjectListScreenState();
 }
 
-class _ProjectListScreenState extends State<ProjectListScreen> {
+class _ProjectListScreenState extends State<ProjectListScreen>
+    with SingleTickerProviderStateMixin {
   final _repo = ProjectRepository();
   List<Project> _all = [];
-  List<Project> _filtered = [];
-  ProjectStatus? _filterStatus; // null = 全て
   bool _loading = true;
+  late TabController _typeTab;
+
+  static const _types = [ProjectType.sales, ProjectType.development, ProjectType.other];
+  static const _typeLabels = ['販売', '開発', 'その他'];
 
   @override
   void initState() {
     super.initState();
+    _typeTab = TabController(length: 3, vsync: this);
+    _typeTab.addListener(() => setState(() {}));
     _load();
+  }
+
+  @override
+  void dispose() {
+    _typeTab.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -32,32 +43,21 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
     if (!mounted) return;
     setState(() {
       _all = list;
-      _applyFilter();
       _loading = false;
     });
   }
 
-  void _applyFilter() {
-    _filtered = _filterStatus == null
-        ? List.of(_all)
-        : _all.where((p) => p.status == _filterStatus).toList();
-  }
+  ProjectType get _currentType => _types[_typeTab.index];
 
-  Color _statusColor(ProjectStatus s, BuildContext ctx) {
-    switch (s) {
-      case ProjectStatus.active:    return Theme.of(ctx).colorScheme.primary;
-      case ProjectStatus.won:       return Theme.of(ctx).colorScheme.primary;
-      case ProjectStatus.lost:      return Theme.of(ctx).colorScheme.error;
-      case ProjectStatus.suspended: return Theme.of(ctx).colorScheme.secondary;
-    }
-  }
+  List<Project> _projectsForStage(String stage) => _all
+      .where((p) => p.type == _currentType && p.pipelineStage == stage)
+      .toList();
 
   Future<void> _showCreateDialog() async {
     final nameCtrl = TextEditingController();
     String? customerId;
     String? customerName;
-    ProjectStatus status = ProjectStatus.active;
-    DateTime? startDate;
+    ProjectType type = _currentType;
 
     await showDialog<void>(
       context: context,
@@ -67,6 +67,7 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: nameCtrl,
@@ -74,48 +75,33 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   autofocus: true,
                 ),
                 const SizedBox(height: 12),
+                const Text('種別', style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                SegmentedButton<ProjectType>(
+                  segments: ProjectType.values
+                      .map((t) => ButtonSegment(value: t, label: Text(t.displayName)))
+                      .toList(),
+                  selected: {type},
+                  onSelectionChanged: (s) => setSt(() => type = s.first),
+                ),
+                const SizedBox(height: 12),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.person_search),
                   label: Text(customerName ?? '得意先を選択（任意）'),
                   onPressed: () async {
-                    showModalBottomSheet<void>(
+                    await showModalBottomSheet<void>(
                       context: ctx,
                       isScrollControlled: true,
                       builder: (_) => CustomerPickerModal(
                         onCustomerSelected: (c) {
-                          Navigator.pop(ctx);
                           setSt(() {
                             customerId = c.id;
                             customerName = c.displayName;
                           });
+                          Navigator.pop(ctx);
                         },
                       ),
                     );
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<ProjectStatus>(
-                  value: status,
-                  decoration: const InputDecoration(labelText: 'ステータス'),
-                  items: ProjectStatus.values
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s.displayName)))
-                      .toList(),
-                  onChanged: (v) => setSt(() => status = v ?? status),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(startDate != null
-                      ? '開始: ${DateFormat('yyyy/MM/dd').format(startDate!)}'
-                      : '開始日を選択（任意）'),
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: ctx,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (d != null) setSt(() => startDate = d);
                   },
                 ),
               ],
@@ -123,18 +109,18 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
-            FilledButton(
+            ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
                 await _repo.createProject(
                   name: nameCtrl.text.trim(),
                   customerId: customerId,
                   customerName: customerName,
-                  status: status,
-                  startDate: startDate,
+                  type: type,
                 );
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
+                _load();
               },
               child: const Text('作成'),
             ),
@@ -142,200 +128,259 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
         ),
       ),
     );
-    _load();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(),
+        automaticallyImplyLeading: false,
         title: const Text('PJ1:案件管理'),
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('新規案件'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      body: Column(
-        children: [
-          _buildFilterBar(context),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _filtered.isEmpty
-                    ? _buildEmpty(context)
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
-                          itemCount: _filtered.length,
-                          itemBuilder: (_, i) => _ProjectCard(
-                            project: _filtered[i],
-                            statusColor: _statusColor(_filtered[i].status, context),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProjectDetailScreen(project: _filtered[i]),
-                                ),
-                              );
-                              _load();
-                            },
-                          ),
-                        ),
-                      ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: '新規案件',
+            onPressed: _showCreateDialog,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterBar(BuildContext ctx) {
-    final statuses = [null, ...ProjectStatus.values];
-    return Container(
-      color: Theme.of(ctx).colorScheme.primaryContainer.withValues(alpha: 0.2),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: statuses.map((s) {
-            final label = s == null ? '全て' : s.displayName;
-            final selected = _filterStatus == s;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(label),
-                selected: selected,
-                selectedColor: s == null ? Theme.of(ctx).colorScheme.primaryContainer.withValues(alpha: 0.5) : _statusColor(s, ctx).withValues(alpha: 0.3),
-                checkmarkColor: Theme.of(ctx).colorScheme.primary,
-                onSelected: (_) {
-                  setState(() {
-                    _filterStatus = s;
-                    _applyFilter();
-                  });
-                },
-              ),
-            );
-          }).toList(),
+        bottom: TabBar(
+          controller: _typeTab,
+          tabs: _typeLabels
+              .map((l) => Tab(text: l))
+              .toList(),
         ),
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: _buildKanban(),
+            ),
     );
   }
 
-  Widget _buildEmpty(BuildContext ctx) {
-    return Center(
+  Widget _buildKanban() {
+    final stages = stagesFor(_currentType);
+
+    return ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      children: stages.map((stage) => _buildColumn(stage)).toList(),
+    );
+  }
+
+  Widget _buildColumn(String stage) {
+    final projects = _projectsForStage(stage);
+    final isTerminal = isTerminalStage(stage);
+
+    return SizedBox(
+      width: 220,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.folder_open, size: 64, color: Theme.of(ctx).colorScheme.outlineVariant),
-          const SizedBox(height: 12),
-          Text(
-            _filterStatus == null ? '案件がまだありません' : '${_filterStatus!.displayName}の案件はありません',
-            style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+          // カラムヘッダー
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isTerminal
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    stage,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: isTerminal
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (projects.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${projects.length}',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          // カード一覧
+          Expanded(
+            child: projects.isEmpty
+                ? _buildEmptyColumn()
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    itemCount: projects.length,
+                    itemBuilder: (_, i) => _KanbanCard(
+                      project: projects[i],
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProjectDetailScreen(project: projects[i]),
+                          ),
+                        );
+                        _load();
+                      },
+                      onStageChange: (newStage) async {
+                        final updated =
+                            projects[i].copyWith(pipelineStage: newStage);
+                        await _repo.updateProject(updated);
+                        _load();
+                      },
+                      allStages: stagesFor(projects[i].type),
+                    ),
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyColumn() {
+    return Center(
+      child: Text(
+        'なし',
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
       ),
     );
   }
 }
 
-class _ProjectCard extends StatelessWidget {
+class _KanbanCard extends StatelessWidget {
   final Project project;
-  final Color statusColor;
   final VoidCallback onTap;
+  final Future<void> Function(String) onStageChange;
+  final List<String> allStages;
 
-  const _ProjectCard({
+  const _KanbanCard({
     required this.project,
-    required this.statusColor,
     required this.onTap,
+    required this.onStageChange,
+    required this.allStages,
   });
 
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,###');
-    final dateFmt = DateFormat('yyyy/MM/dd');
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      project.name,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-                    ),
-                    child: Text(
-                      project.status.displayName,
-                      style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-              if (project.customerName != null) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.business, size: 13, color: Theme.of(context).colorScheme.outlineVariant),
-                    const SizedBox(width: 4),
-                    Text(
-                      project.customerName!,
-                      style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                  ],
+    final cs = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onLongPress: () => _showStageSheet(context),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 案件名
+                Text(
+                  project.name,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  if (project.startDate != null) ...[
-                    Icon(Icons.calendar_month, size: 13, color: Theme.of(context).colorScheme.outlineVariant),
-                    const SizedBox(width: 4),
-                    Text(
-                      dateFmt.format(project.startDate!),
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                    if (project.endDate != null) ...[
-                      Text(' 〜 ', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outlineVariant)),
-                      Text(
-                        dateFmt.format(project.endDate!),
-                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                // 得意先
+                if (project.customerName != null) ...[
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Icon(Icons.business, size: 11, color: cs.outlineVariant),
+                    const SizedBox(width: 3),
+                    Expanded(
+                      child: Text(
+                        project.customerName!,
+                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                    const Spacer(),
-                  ] else
-                    const Spacer(),
-                  if (project.totalAmount > 0)
-                    Text(
-                      '¥${fmt.format(project.totalAmount)}',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                     ),
+                  ]),
                 ],
-              ),
-            ],
+                // 金額
+                if (project.totalAmount > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '¥${fmt.format(project.totalAmount)}',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: cs.primary),
+                  ),
+                ],
+                // ロングプレスヒント
+                const SizedBox(height: 4),
+                Row(children: [
+                  Icon(Icons.open_with, size: 10, color: cs.outlineVariant),
+                  const SizedBox(width: 2),
+                  Text('長押しでステージ変更',
+                      style: TextStyle(fontSize: 9, color: cs.outlineVariant)),
+                ]),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showStageSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'ステージを変更: ${project.name}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ...allStages.map((stage) {
+              final isCurrent = stage == project.pipelineStage;
+              return ListTile(
+                leading: isCurrent
+                    ? Icon(Icons.radio_button_checked,
+                        color: Theme.of(ctx).colorScheme.primary)
+                    : const Icon(Icons.radio_button_unchecked),
+                title: Text(stage),
+                selected: isCurrent,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  if (!isCurrent) await onStageChange(stage);
+                },
+              );
+            }),
+          ],
         ),
       ),
     );

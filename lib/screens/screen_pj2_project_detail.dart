@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../models/milestone_model.dart';
+import '../models/pipeline_stages.dart';
 import '../models/project_model.dart';
+import '../models/task_model.dart';
+import '../models/time_log_model.dart';
 import '../services/database_helper.dart';
+import '../services/milestone_repository.dart';
 import '../services/project_repository.dart';
+import '../services/task_repository.dart';
+import '../services/time_log_repository.dart';
 import 'customer_picker_modal.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
@@ -14,14 +21,24 @@ class ProjectDetailScreen extends StatefulWidget {
   State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
 }
 
-class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+class _ProjectDetailScreenState extends State<ProjectDetailScreen>
+    with SingleTickerProviderStateMixin {
   final _repo = ProjectRepository();
   final _db = DatabaseHelper();
+  final _milestoneRepo = MilestoneRepository();
+  final _taskRepo = TaskRepository();
+  final _timeLogRepo = TimeLogRepository();
+
   late Project _project;
+  late TabController _tabController;
 
   List<Map<String, dynamic>> _invoices = [];
   List<Map<String, dynamic>> _sales = [];
   List<Map<String, dynamic>> _quotations = [];
+  List<Milestone> _milestones = [];
+  List<Task> _tasks = [];
+  List<TimeLog> _timeLogs = [];
+
   bool _salesTableExists = false;
   bool _quotationsTableExists = false;
   bool _loading = true;
@@ -30,11 +47,24 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   void initState() {
     super.initState();
     _project = widget.project;
-    _loadDocs();
+    _tabController = TabController(length: 3, vsync: this);
+    _loadAll();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAll() async {
+    setState(() => _loading = true);
+    await Future.wait([_loadDocs(), _loadTasks(), _loadTimeLogs()]);
+    if (!mounted) return;
+    setState(() => _loading = false);
   }
 
   Future<void> _loadDocs() async {
-    setState(() => _loading = true);
     final db = await _db.database;
     final inv = await db.query('invoices',
         where: 'project_id = ?', whereArgs: [_project.id], orderBy: 'date DESC');
@@ -64,9 +94,35 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       _salesTableExists = salesExists.isNotEmpty;
       _quotationsTableExists = quotExists.isNotEmpty;
       if (fresh != null) _project = fresh;
-      _loading = false;
     });
   }
+
+  Future<void> _loadTasks() async {
+    final milestones = await _milestoneRepo.getByProject(_project.id);
+    final tasks = await _taskRepo.getByProject(_project.id);
+    if (!mounted) return;
+    setState(() {
+      _milestones = milestones;
+      _tasks = tasks;
+    });
+  }
+
+  Future<void> _loadTimeLogs() async {
+    final logs = await _timeLogRepo.getByProject(_project.id);
+    if (!mounted) return;
+    setState(() => _timeLogs = logs);
+  }
+
+  // ===== パイプラインステージ変更 =====
+
+  Future<void> _changeStage(String newStage) async {
+    final updated = _project.copyWith(pipelineStage: newStage);
+    await _repo.updateProject(updated);
+    if (!mounted) return;
+    setState(() => _project = updated);
+  }
+
+  // ===== 案件編集ダイアログ =====
 
   Future<void> _showEditDialog() async {
     final nameCtrl = TextEditingController(text: _project.name);
@@ -74,6 +130,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     String? customerId = _project.customerId;
     String? customerName = _project.customerName;
     ProjectStatus status = _project.status;
+    ProjectType type = _project.type;
     DateTime? startDate = _project.startDate;
     DateTime? endDate = _project.endDate;
 
@@ -85,79 +142,53 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: '案件名 *'),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 12),
+                // 種別選択
+                const Text('種別', style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                SegmentedButton<ProjectType>(
+                  segments: ProjectType.values
+                      .map((t) => ButtonSegment(value: t, label: Text(t.displayName)))
+                      .toList(),
+                  selected: {type},
+                  onSelectionChanged: (s) => setSt(() => type = s.first),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.person_search),
                   label: Text(customerName ?? '得意先を選択（任意）'),
                   onPressed: () async {
-                    showModalBottomSheet<void>(
+                    await showModalBottomSheet<void>(
                       context: ctx,
                       isScrollControlled: true,
                       builder: (_) => CustomerPickerModal(
                         onCustomerSelected: (c) {
-                          Navigator.pop(ctx);
                           setSt(() {
                             customerId = c.id;
                             customerName = c.displayName;
                           });
+                          Navigator.pop(ctx);
                         },
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 12),
+                // ステータス
                 DropdownButtonFormField<ProjectStatus>(
                   value: status,
                   decoration: const InputDecoration(labelText: 'ステータス'),
                   items: ProjectStatus.values
                       .map((s) => DropdownMenuItem(value: s, child: Text(s.displayName)))
                       .toList(),
-                  onChanged: (v) => setSt(() => status = v ?? status),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.calendar_today, size: 14),
-                        label: Text(startDate != null
-                            ? DateFormat('MM/dd').format(startDate!)
-                            : '開始日'),
-                        onPressed: () async {
-                          final d = await showDatePicker(
-                            context: ctx,
-                            initialDate: startDate ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (d != null) setSt(() => startDate = d);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.event, size: 14),
-                        label: Text(endDate != null
-                            ? DateFormat('MM/dd').format(endDate!)
-                            : '終了日'),
-                        onPressed: () async {
-                          final d = await showDatePicker(
-                            context: ctx,
-                            initialDate: endDate ?? DateTime.now(),
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (d != null) setSt(() => endDate = d);
-                        },
-                      ),
-                    ),
-                  ],
+                  onChanged: (v) => setSt(() => status = v!),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -170,20 +201,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
-            FilledButton(
+            ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
-                await _repo.updateProject(_project.copyWith(
+                final updated = _project.copyWith(
                   name: nameCtrl.text.trim(),
                   customerId: customerId,
                   customerName: customerName,
                   status: status,
+                  type: type,
                   startDate: startDate,
                   endDate: endDate,
                   notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
-                ));
+                );
+                await _repo.updateProject(updated);
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
+                _loadAll();
               },
               child: const Text('保存'),
             ),
@@ -191,7 +225,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ),
       ),
     );
-    _loadDocs();
   }
 
   Future<void> _showDeleteConfirm() async {
@@ -230,9 +263,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     final rows = await db.query(
       table,
-      columns: ['id', 'date', if (table == 'invoices') 'subject', if (table == 'invoices') 'total_amount',
-                if (table == 'sales') 'document_number', if (table == 'sales') 'total',
-                if (table == 'quotations') 'subject', if (table == 'quotations') 'total_amount'],
+      columns: [
+        'id',
+        'date',
+        if (table == 'invoices') 'subject',
+        if (table == 'invoices') 'total_amount',
+        if (table == 'sales') 'document_number',
+        if (table == 'sales') 'total',
+        if (table == 'quotations') 'subject',
+        if (table == 'quotations') 'total_amount',
+      ],
       where: 'project_id IS NULL',
       orderBy: 'date DESC',
       limit: 50,
@@ -280,7 +320,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
                     subtitle: Text(date.length >= 10 ? date.substring(0, 10) : date),
                     trailing: Text('¥${fmt.format(amount)}',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(ctx).colorScheme.primary)),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(ctx).colorScheme.primary)),
                     onTap: () async {
                       Navigator.pop(ctx);
                       await _repo.linkDocument(
@@ -297,67 +339,216 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
+  // ===== タスク操作 =====
+
+  Future<void> _showAddMilestoneDialog() async {
+    final ctrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('マイルストーン追加'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: 'マイルストーン名 *'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+          ElevatedButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isEmpty) return;
+              await _milestoneRepo.create(
+                projectId: _project.id,
+                title: ctrl.text.trim(),
+                sortOrder: _milestones.length,
+              );
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              _loadTasks();
+            },
+            child: const Text('追加'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAddTaskDialog({String? milestoneId}) async {
+    final ctrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('タスク追加'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: 'タスク名 *'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+          ElevatedButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isEmpty) return;
+              final tasksInScope = _tasks
+                  .where((t) => t.milestoneId == milestoneId)
+                  .length;
+              await _taskRepo.create(
+                projectId: _project.id,
+                milestoneId: milestoneId,
+                title: ctrl.text.trim(),
+                sortOrder: tasksInScope,
+              );
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              _loadTasks();
+            },
+            child: const Text('追加'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAddTimeLogDialog(Task task) async {
+    double hours = 1.0;
+    final memoCtrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: Text('工数入力\n${task.title}',
+              style: const TextStyle(fontSize: 14)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${hours.toStringAsFixed(1)} 時間',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Slider(
+                value: hours,
+                min: 0.5,
+                max: 12,
+                divisions: 23,
+                label: '${hours.toStringAsFixed(1)}h',
+                onChanged: (v) => setSt(() => hours = v),
+              ),
+              TextField(
+                controller: memoCtrl,
+                decoration: const InputDecoration(labelText: 'メモ（任意）'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+            ElevatedButton(
+              onPressed: () async {
+                await _timeLogRepo.add(
+                  taskId: task.id,
+                  projectId: _project.id,
+                  date: DateTime.now(),
+                  hours: hours,
+                  memo: memoCtrl.text.trim().isEmpty ? null : memoCtrl.text.trim(),
+                );
+                if (!ctx.mounted) return;
+                Navigator.pop(ctx);
+                _loadTimeLogs();
+              },
+              child: const Text('記録'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===== BUILD =====
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
         title: Text('PJ2:${_project.name}', overflow: TextOverflow.ellipsis),
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(icon: const Icon(Icons.edit), onPressed: _showEditDialog),
           PopupMenuButton<String>(
             onSelected: (v) {
               if (v == 'delete') _showDeleteConfirm();
             },
-           itemBuilder: (ctx) => [
-                PopupMenuItem(value: 'delete', child: Text('案件を削除', style: TextStyle(color: Theme.of(ctx).colorScheme.error))),
-              ],
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'delete',
+                child: Text('案件を削除',
+                    style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+              ),
+            ],
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.info_outline), text: '概要'),
+            Tab(icon: Icon(Icons.checklist), text: 'タスク'),
+            Tab(icon: Icon(Icons.timer_outlined), text: '工数'),
+          ],
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadDocs,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildInfoCard(),
-                  const SizedBox(height: 12),
-                  _buildDocSection(
-                    label: '請求書',
-                    icon: Icons.receipt_long,
-                    table: 'invoices',
-                    docs: _invoices,
-                    amountKey: 'total_amount',
-                    labelKey: 'subject',
-                  ),
-                  if (_quotationsTableExists) ...[
-                    const SizedBox(height: 8),
-                    _buildDocSection(
-                      label: '見積',
-                      icon: Icons.description,
-                      table: 'quotations',
-                      docs: _quotations,
-                      amountKey: 'total_amount',
-                      labelKey: 'subject',
-                    ),
-                  ],
-                  if (_salesTableExists) ...[
-                    const SizedBox(height: 8),
-                    _buildDocSection(
-                      label: '売上伝票',
-                      icon: Icons.point_of_sale,
-                      table: 'sales',
-                      docs: _sales,
-                      amountKey: 'total',
-                      labelKey: 'document_number',
-                    ),
-                  ],
-                ],
-              ),
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildOverviewTab(),
+                _buildTaskTab(),
+                _buildTimeLogTab(),
+              ],
             ),
+    );
+  }
+
+  // ===== 概要タブ =====
+
+  Widget _buildOverviewTab() {
+    return RefreshIndicator(
+      onRefresh: _loadAll,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildInfoCard(),
+          const SizedBox(height: 12),
+          _buildStageSelector(),
+          const SizedBox(height: 12),
+          _buildDocSection(
+            label: '請求書',
+            icon: Icons.receipt_long,
+            table: 'invoices',
+            docs: _invoices,
+            amountKey: 'total_amount',
+            labelKey: 'subject',
+          ),
+          if (_quotationsTableExists) ...[
+            const SizedBox(height: 8),
+            _buildDocSection(
+              label: '見積',
+              icon: Icons.description,
+              table: 'quotations',
+              docs: _quotations,
+              amountKey: 'total_amount',
+              labelKey: 'subject',
+            ),
+          ],
+          if (_salesTableExists) ...[
+            const SizedBox(height: 8),
+            _buildDocSection(
+              label: '売上伝票',
+              icon: Icons.point_of_sale,
+              table: 'sales',
+              docs: _sales,
+              amountKey: 'total',
+              labelKey: 'document_number',
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -365,6 +556,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final fmt = NumberFormat('#,###');
     final dateFmt = DateFormat('yyyy/MM/dd');
     final statusColor = _statusColorOf(_project.status, Theme.of(context).colorScheme);
+    final doneCount = _tasks.where((t) => t.isDone).length;
+    final totalCount = _tasks.length;
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -374,6 +568,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           children: [
             Row(
               children: [
+                // 種別バッジ
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(_project.type.displayName,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(_project.name,
                       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
@@ -384,29 +591,59 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             if (_project.customerName != null) ...[
               const SizedBox(height: 6),
               Row(children: [
-                Icon(Icons.business, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(Icons.business,
+                    size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
-                Text(_project.customerName!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(_project.customerName!,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ]),
             ],
             if (_project.startDate != null || _project.endDate != null) ...[
               const SizedBox(height: 4),
               Row(children: [
-                Icon(Icons.calendar_month, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(Icons.calendar_month,
+                    size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   [
                     if (_project.startDate != null) dateFmt.format(_project.startDate!),
-                    if (_project.endDate != null) '〜 ${dateFmt.format(_project.endDate!)}',
+                    if (_project.endDate != null)
+                      '〜 ${dateFmt.format(_project.endDate!)}',
                   ].join(' '),
-style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ]),
+            ],
+            if (_project.notes != null && _project.notes!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(_project.notes!,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  maxLines: 2),
+            ],
+            // タスク進捗バー
+            if (totalCount > 0) ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: doneCount / totalCount,
+                      minHeight: 8,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
                   ),
-                ]),
-              ],
-              if (_project.notes != null && _project.notes!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(_project.notes!,
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant), maxLines: 2),
+                ),
+                const SizedBox(width: 8),
+                Text('$doneCount/$totalCount',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ]),
             ],
             if (_project.totalAmount > 0) ...[
               const Divider(height: 16),
@@ -414,9 +651,99 @@ style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVar
                 const Text('案件合計', style: TextStyle(fontSize: 12)),
                 const Spacer(),
                 Text('¥${fmt.format(_project.totalAmount)}',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary)),
               ]),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStageSelector() {
+    final stages = stagesFor(_project.type);
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ステージ',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: stages.map((stage) {
+                  final isSelected = stage == _project.pipelineStage;
+                  final idx = stages.indexOf(stage);
+                  final currentIdx = stages.indexOf(_project.pipelineStage);
+                  final isPast = idx < currentIdx;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: GestureDetector(
+                      onTap: () => _changeStage(stage),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : isPast
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                      .withOpacity(0.5)
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                          border: isSelected
+                              ? null
+                              : Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isPast)
+                              Icon(Icons.check_circle,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.primary),
+                            if (isPast) const SizedBox(width: 4),
+                            Text(
+                              stage,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : isPast
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
           ],
         ),
       ),
@@ -448,7 +775,9 @@ style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVar
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text('${docs.length}件',
-                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary)),
               ),
             const SizedBox(width: 4),
             const Icon(Icons.chevron_right),
@@ -461,24 +790,32 @@ style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVar
             final date = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
             final lbl = doc[labelKey] as String? ?? id.substring(0, 8);
             final amount = doc[amountKey] as int? ?? 0;
-            final statusInfo = _docStatusInfo(table, doc, Theme.of(context).colorScheme);
+            final statusInfo =
+                _docStatusInfo(table, doc, Theme.of(context).colorScheme);
             return ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(lbl, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    child: Text(lbl,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 14)),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: statusInfo.color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: statusInfo.color.withOpacity(0.5)),
                     ),
                     child: Text(statusInfo.label,
-                        style: TextStyle(fontSize: 11, color: statusInfo.color, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: statusInfo.color,
+                            fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -487,9 +824,12 @@ style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVar
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('¥${fmt.format(amount)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13)),
                   IconButton(
-                    icon: Icon(Icons.link_off, size: 18, color: Theme.of(context).colorScheme.error),
+                    icon: Icon(Icons.link_off,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.error),
                     tooltip: '紐づけ解除',
                     onPressed: () async {
                       await _repo.unlinkDocument(table: table, documentId: id);
@@ -501,7 +841,8 @@ style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVar
             );
           }),
           ListTile(
-            leading: Icon(Icons.add_link, color: Theme.of(context).colorScheme.primary),
+            leading: Icon(Icons.add_link,
+                color: Theme.of(context).colorScheme.primary),
             title: Text('$labelを紐づける'),
             onTap: () => _showLinkDialog(table, label),
           ),
@@ -510,12 +851,311 @@ style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVar
     );
   }
 
-  ({String label, Color color}) _docStatusInfo(String table, Map<String, dynamic> doc, ColorScheme cs) {
+  // ===== タスクタブ =====
+
+  Widget _buildTaskTab() {
+    final freeTasks = _tasks.where((t) => t.milestoneId == null).toList();
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // マイルストーン別タスク
+        ..._milestones.map((m) => _buildMilestoneSection(m)),
+        // マイルストーンなしのタスク
+        if (freeTasks.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _buildFreeTaskSection(freeTasks),
+        ],
+        const SizedBox(height: 16),
+        // 操作ボタン
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.flag_outlined),
+                label: const Text('マイルストーン追加'),
+                onPressed: _showAddMilestoneDialog,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.add_task),
+                label: const Text('タスク追加'),
+                onPressed: () => _showAddTaskDialog(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMilestoneSection(Milestone m) {
+    final mTasks = _tasks.where((t) => t.milestoneId == m.id).toList();
+    final doneCount = mTasks.where((t) => t.isDone).length;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          // マイルストーンヘッダー
+          ListTile(
+            leading: GestureDetector(
+              onTap: () async {
+                final updated = await _milestoneRepo.toggleComplete(m);
+                setState(() {
+                  final idx = _milestones.indexWhere((x) => x.id == m.id);
+                  if (idx >= 0) _milestones[idx] = updated;
+                });
+              },
+              child: Icon(
+                m.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: m.isCompleted
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            title: Text(m.title,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    decoration:
+                        m.isCompleted ? TextDecoration.lineThrough : null)),
+            subtitle: mTasks.isNotEmpty
+                ? Text('$doneCount/${mTasks.length} 完了',
+                    style: const TextStyle(fontSize: 12))
+                : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.add, size: 20),
+                  tooltip: 'タスクを追加',
+                  onPressed: () => _showAddTaskDialog(milestoneId: m.id),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.error),
+                  tooltip: '削除',
+                  onPressed: () async {
+                    await _milestoneRepo.delete(m.id);
+                    _loadTasks();
+                  },
+                ),
+              ],
+            ),
+          ),
+          // タスクリスト
+          ...mTasks.map((t) => _buildTaskTile(t)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFreeTaskSection(List<Task> tasks) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text('その他のタスク',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          ...tasks.map((t) => _buildTaskTile(t)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskTile(Task t) {
+    final statusColor = _taskStatusColor(t.status);
+    return ListTile(
+      leading: GestureDetector(
+        onTap: () async {
+          final next = t.status == TaskStatus.done ? TaskStatus.todo : TaskStatus.done;
+          final updated = await _taskRepo.changeStatus(t, next);
+          setState(() {
+            final idx = _tasks.indexWhere((x) => x.id == t.id);
+            if (idx >= 0) _tasks[idx] = updated;
+          });
+        },
+        child: Icon(
+          t.isDone ? Icons.check_box : Icons.check_box_outline_blank,
+          color: t.isDone
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outline,
+        ),
+      ),
+      title: Text(t.title,
+          style: TextStyle(
+              decoration: t.isDone ? TextDecoration.lineThrough : null,
+              color: t.isDone
+                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                  : null)),
+      subtitle: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(t.status.displayName,
+                style:
+                    TextStyle(fontSize: 10, color: statusColor)),
+          ),
+          if (t.estimatedHours > 0) ...[
+            const SizedBox(width: 6),
+            Text('${t.estimatedHours.toStringAsFixed(1)}h見積',
+                style: const TextStyle(fontSize: 11)),
+          ],
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.timer_outlined, size: 18),
+            tooltip: '工数入力',
+            onPressed: () => _showAddTimeLogDialog(t),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline,
+                size: 18, color: Theme.of(context).colorScheme.error),
+            onPressed: () async {
+              await _taskRepo.delete(t.id);
+              _loadTasks();
+              _loadTimeLogs();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===== 工数タブ =====
+
+  Widget _buildTimeLogTab() {
+    if (_timeLogs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.timer_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: 12),
+            Text('工数ログがまだありません',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            Text('タスクタブの ⏱ ボタンから記録できます',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    }
+
+    final dateFmt = DateFormat('MM/dd');
+    double totalHours = _timeLogs.fold(0, (sum, l) => sum + l.hours);
+
+    // タスク名マップ
+    final taskMap = {for (final t in _tasks) t.id: t.title};
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // 合計カード
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.access_time,
+                    color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 12),
+                const Text('合計工数',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text('${totalHours.toStringAsFixed(1)} 時間',
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // ログ一覧
+        ..._timeLogs.map((log) {
+          final taskName = taskMap[log.taskId] ?? '不明なタスク';
+          return Card(
+            margin: const EdgeInsets.only(bottom: 6),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: ListTile(
+              leading: CircleAvatar(
+                radius: 22,
+                backgroundColor:
+                    Theme.of(context).colorScheme.primaryContainer,
+                child: Text(
+                  '${log.hours.toStringAsFixed(1)}h',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer),
+                ),
+              ),
+              title: Text(taskName,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                [
+                  dateFmt.format(log.date),
+                  if (log.memo != null) log.memo!,
+                ].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.delete_outline,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.error),
+                onPressed: () async {
+                  await _timeLogRepo.delete(log.id);
+                  _loadTimeLogs();
+                },
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // ===== ヘルパー =====
+
+  Color _taskStatusColor(TaskStatus s) {
+    final cs = Theme.of(context).colorScheme;
+    switch (s) {
+      case TaskStatus.todo:  return cs.outline;
+      case TaskStatus.doing: return cs.secondary;
+      case TaskStatus.done:  return cs.primary;
+    }
+  }
+
+  ({String label, Color color}) _docStatusInfo(
+      String table, Map<String, dynamic> doc, ColorScheme cs) {
     if (table == 'invoices' || table == 'quotations') {
       final isDraft = doc['is_draft'] == 1 || doc['is_draft'] == true;
-      if (isDraft) {
-        return (label: '下書き', color: cs.onSurfaceVariant);
-      }
+      if (isDraft) return (label: '下書き', color: cs.onSurfaceVariant);
       return (label: '正式発行済', color: cs.primary);
     }
     return (label: '完了', color: cs.tertiary);
@@ -546,7 +1186,8 @@ class _StatusBadge extends StatelessWidget {
         border: Border.all(color: color.withOpacity(0.5)),
       ),
       child: Text(status.displayName,
-          style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold)),
+          style: TextStyle(
+              fontSize: 12, color: color, fontWeight: FontWeight.bold)),
     );
   }
 }
