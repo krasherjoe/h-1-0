@@ -126,14 +126,6 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
 
   bool get _isA2Style => _listStyle == InvoiceListStyle.a2;
 
-  Color _documentTypeColor(ColorScheme cs, bool isDark) {
-    final base = cs.primaryContainer;
-    if (isDark) {
-      return HSLColor.fromColor(base).withLightness(0.18).toColor();
-    }
-    return base;
-  }
-
   Future<void> _showInvoiceActions(Invoice invoice) async {
     await showModalBottomSheet(
       context: context,
@@ -346,11 +338,12 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
     final isA2Style = _isA2Style;
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ivAppBarColor = isDark ? HSLColor.fromColor(cs.primaryContainer).withLightness(0.18).toColor() : cs.primaryContainer;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: _documentTypeColor(cs, isDark),
-        foregroundColor: appBarForeground(_documentTypeColor(cs, isDark)),
+        backgroundColor: ivAppBarColor,
+        foregroundColor: appBarForeground(ivAppBarColor),
         title: const Text('IV:請求書発行'),
       ),
       floatingActionButton: FloatingActionButton.extended(

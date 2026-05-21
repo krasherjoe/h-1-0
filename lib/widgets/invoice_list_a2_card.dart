@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/invoice_models.dart';
+import '../utils/theme_utils.dart';
 
 class InvoiceListA2Card extends StatelessWidget {
   final Invoice invoice;
@@ -36,7 +37,7 @@ class InvoiceListA2Card extends StatelessWidget {
         ? cs.errorContainer
         : (isCancelled ? cs.errorContainer.withValues(alpha: 0.55) : (isDraft ? cs.secondaryContainer : cs.surface));
     final borderColor = isRed || isCancelled ? cs.error : null;
-    final iconColor = isRed ? cs.error : _docTypeColor(invoice.documentType, cs);
+    final iconColor = isRed ? cs.error : documentTypeBadgeColor(invoice.documentType);
     final iconBg = iconColor.withValues(alpha: 0.18);
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
@@ -223,18 +224,4 @@ class InvoiceListA2Card extends StatelessWidget {
     }
   }
 
-  Color _docTypeColor(DocumentType type, ColorScheme cs) {
-    switch (type) {
-      case DocumentType.estimation:
-        return cs.primary;
-      case DocumentType.order:
-        return cs.secondary;
-      case DocumentType.delivery:
-        return cs.tertiary;
-      case DocumentType.invoice:
-        return cs.primary;
-      case DocumentType.receipt:
-        return cs.tertiary;
-    }
-  }
 }

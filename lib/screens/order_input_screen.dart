@@ -95,14 +95,6 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
     _loadOrders();
   }
 
-  Color _documentTypeColor(ColorScheme cs, bool isDark) {
-    final base = cs.secondary;
-    if (isDark) {
-      return HSLColor.fromColor(base).withLightness(0.18).toColor();
-    }
-    return base;
-  }
-
   @override
   void dispose() {
     _ordersSubscription?.cancel();
@@ -116,8 +108,8 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: _documentTypeColor(cs, isDark),
-        foregroundColor: appBarForeground(_documentTypeColor(cs, isDark)),
+        backgroundColor: documentTypeColor(DocumentType.order, cs, isDark),
+        foregroundColor: appBarForeground(documentTypeColor(DocumentType.order, cs, isDark)),
         title: const Text('OR:受注入力'),
       ),
       body: _isLoading

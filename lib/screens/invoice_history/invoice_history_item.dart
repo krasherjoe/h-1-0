@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/invoice_models.dart';
+import '../../utils/theme_utils.dart';
 
 class InvoiceHistoryItem extends StatelessWidget {
   final Invoice invoice;
@@ -35,11 +36,11 @@ class InvoiceHistoryItem extends StatelessWidget {
     );
     final cardColor = invoice.isDraft ? draftTint : surfaceColor;
     final iconBg = isUnlocked
-        ? _docTypeBgColor(invoice.documentType)
+        ? documentTypeBadgeColor(invoice.documentType).withValues(alpha: 0.12)
         : cs.surfaceContainerHighest;
-    final iconColor = isUnlocked ? _docTypeColor(invoice.documentType) : cs.onSurfaceVariant;
+    final iconColor = isUnlocked ? documentTypeBadgeColor(invoice.documentType) : cs.onSurfaceVariant;
     final docLabel = _docTypeLabel(invoice.documentType);
-    final docLabelColor = _docTypeColor(invoice.documentType);
+    final docLabelColor = documentTypeBadgeColor(invoice.documentType);
 
     final hasSubject = invoice.subject?.isNotEmpty ?? false;
     final firstItemDesc = invoice.items.isNotEmpty ? invoice.items.first.description : '';
@@ -206,23 +207,4 @@ class InvoiceHistoryItem extends StatelessWidget {
     }
   }
 
-  Color _docTypeColor(DocumentType type) {
-    switch (type) {
-      case DocumentType.estimation: return const Color(0xFF1976D2);
-      case DocumentType.order: return const Color(0xFF7B1FA2);
-      case DocumentType.delivery: return const Color(0xFFF57C00);
-      case DocumentType.invoice: return const Color(0xFFD32F2F);
-      case DocumentType.receipt: return const Color(0xFF388E3C);
-    }
-  }
-
-  Color _docTypeBgColor(DocumentType type) {
-    switch (type) {
-      case DocumentType.estimation: return const Color(0xFF1976D2).withValues(alpha: 0.12);
-      case DocumentType.order: return const Color(0xFF7B1FA2).withValues(alpha: 0.12);
-      case DocumentType.delivery: return const Color(0xFFF57C00).withValues(alpha: 0.12);
-      case DocumentType.invoice: return const Color(0xFFD32F2F).withValues(alpha: 0.12);
-      case DocumentType.receipt: return const Color(0xFF388E3C).withValues(alpha: 0.12);
-    }
-  }
 }

@@ -88,19 +88,6 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     }
   }
 
-  Color _documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
-    final base = switch (type) {
-      DocumentType.estimation => cs.primary,
-      DocumentType.order => cs.secondary,
-      DocumentType.delivery => cs.tertiary,
-      DocumentType.invoice => cs.error,
-      DocumentType.receipt => const Color(0xFF388E3C),
-    };
-    if (isDark) {
-      return HSLColor.fromColor(base).withLightness(0.18).toColor();
-    }
-    return base;
-  }
 
   @override
   void initState() {
@@ -266,7 +253,7 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final locked = _currentInvoice.isLocked;
-    final appBarBg = _documentTypeColor(_currentInvoice.documentType, cs, isDark);
+    final appBarBg = documentTypeColor(_currentInvoice.documentType, cs, isDark);
     final appBarFg = appBarForeground(appBarBg);
 
     return Scaffold(

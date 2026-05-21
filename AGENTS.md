@@ -294,6 +294,44 @@ const String kLastBackupTime = 'last_backup_time';
 
 ---
 
+## AI 開発効率化ルール
+
+### ファイル構造ルール
+- **画面ファイルは最大 1,200 行**。超えたら必ず子ウィジェットに分割
+- サービスファイルは最大 800 行。超えたらエンティティ別または機能別に分割
+- 分割時は `lib/screens/` または `lib/widgets/` に `_part.dart` サフィックス付きで配置
+- 例：`invoice_input_screen.dart` (1,200行超) → `invoice_header_widget.dart`, `invoice_lines_widget.dart`, `invoice_calculator_widget.dart`
+
+### コード複製禁止
+- **3回以上出現するコードブロックは、必ず共通化してリファクタリング**
+- AppBar構築ロジック、DocumentType色判定、ダークテーマ対応等は `lib/widgets/` に統一抽出
+- 重複検出パターン:
+  ```dart
+  // ❌ 各画面にコピーしている場合（複製）
+  Color _documentTypeColor(DocumentType type, bool isDark) { ... }
+  
+  // ✅ lib/widgets/document_colors.dart に一元化
+  class DocumentColors {
+    static Color colorFor(DocumentType type, bool isDark) { ... }
+    static AppBarStyle appBarStyleFor(DocumentType type) { ... }
+  }
+  ```
+
+### 状態更新パターン
+- **setState の使用は最小限に**。複雑な状態管理は Riverpod Provider を優先
+- 単純な UI 更新のみ setState を使用。データフェッチ・状態共有は Provider/StateNotifier
+- 既存コードの setState は段階的に置換（新規実装から Riverpod 適用）
+- パターン統一により、AI がデータフローを追跡するコストを削減
+
+### 変更時のチェックリスト
+- 変更前に `flutter analyze --no-fatal-infos` で静的解析を実行
+- 関連ファイル一覧を AI が自動生成して影響範囲を確認
+- 画面変更時は対応するモデル・リポジトリへの波及を確認
+- テーマ変更時は全画面の AppBar・Container カラーを一括確認
+- コミット前に `git diff --stat` で変更行数を確認し、意図と一致するか検証
+
+---
+
 ## 画面実装ワークフロー
 
 1. **画面 ID 決定**: 2、3 文字プレフィックスと一意な名付け（例：`S1`, `PJ1`）

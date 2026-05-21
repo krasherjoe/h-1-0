@@ -129,19 +129,6 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     }
   }
 
-   Color _documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
-    final base = switch (type) {
-      DocumentType.estimation => cs.primary,
-      DocumentType.order => cs.secondary,
-      DocumentType.delivery => cs.tertiary,
-      DocumentType.invoice => cs.error,
-      DocumentType.receipt => const Color(0xFF388E3C),
-    };
-    if (isDark) {
-      return HSLColor.fromColor(base).withLightness(0.18).toColor();
-    }
-    return base;
-  }
 
   String _customerNameWithHonorific(Customer customer) {
     final base = customer.formalName;
@@ -723,7 +710,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).colorScheme.onSurface;
 
-    final docColor = _documentTypeColor(_documentType, Theme.of(context).colorScheme, isDark);
+    final docColor = documentTypeColor(_documentType, Theme.of(context).colorScheme, isDark);
     final docFgColor = appBarForeground(docColor);
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
@@ -2454,10 +2441,7 @@ color: Theme.of(context).cardColor,
       await _repository.saveInvoice(receipt);
 
       if (!mounted) return;
-      Navigator.pop(context);
-      
-      if (!mounted) return;
-      Navigator.push(
+      await Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => InvoiceInputForm(
