@@ -13,7 +13,7 @@ Color appBarForeground(Color background) {
 /// AppBar、タイトルバー等に使用する。
 Color documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
   final base = switch (type) {
-    DocumentType.estimation => cs.primary,
+    DocumentType.estimation => const Color(0xFF29B6F6),
     DocumentType.order => cs.secondary,
     DocumentType.delivery => cs.tertiary,
     DocumentType.invoice => cs.error,
@@ -29,7 +29,7 @@ Color documentTypeColor(DocumentType type, ColorScheme cs, bool isDark) {
 /// カードやチップのアイコン色に使用する。
 Color documentTypeBadgeColor(DocumentType type) {
   return switch (type) {
-    DocumentType.estimation => const Color(0xFF1976D2),
+    DocumentType.estimation => const Color(0xFF29B6F6),
     DocumentType.order => const Color(0xFF7B1FA2),
     DocumentType.delivery => const Color(0xFFF57C00),
     DocumentType.invoice => const Color(0xFFD32F2F),
