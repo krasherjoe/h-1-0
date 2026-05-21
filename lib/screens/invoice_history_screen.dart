@@ -326,8 +326,6 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       backgroundColor: _isUnlocked ? Theme.of(context).colorScheme.surfaceContainerHighest : Theme.of(context).colorScheme.surfaceVariant,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        titleTextStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
         leading: _useDashboardHome
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -358,7 +356,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         actions: [
            if (_isUnlocked)
              IconButton(
-               icon: Icon(Icons.lock_open, color: Theme.of(context).colorScheme.secondary),
+               icon: const Icon(Icons.lock_open),
               onPressed: _toggleUnlock,
               tooltip: "再度プロテクトする",
             ),
