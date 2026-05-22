@@ -12,6 +12,7 @@ import '../models/project_model.dart';
 import '../widgets/menu_category_header.dart';
 import '../widgets/slide_to_unlock.dart';
 import '../constants/menu_catalog.dart';
+import '../utils/theme_utils.dart';
 import 'invoice_history_screen.dart';
 import 'invoice_input_screen.dart';
 import 'invoice_detail_page.dart';
@@ -437,7 +438,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Widget _buildQuickActions() {
-    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -450,7 +450,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.add_circle,
                 label: '新規請求',
-                accentColor: cs.primary,
+                accentColor: documentTypeBadgeColor(DocumentType.invoice),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -474,7 +474,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.description,
                 label: '新規見積',
-                accentColor: cs.secondary,
+                accentColor: documentTypeBadgeColor(DocumentType.estimation),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -492,14 +492,14 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.assignment,
                 label: '案件管理',
-                accentColor: cs.tertiary,
+                accentColor: documentTypeBadgeColor(DocumentType.order),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
               ),
               const SizedBox(width: 8),
               _QuickActionButton(
                 icon: Icons.history,
                 label: '請求履歴',
-                accentColor: cs.primary.withValues(alpha: 0.7),
+                accentColor: documentTypeBadgeColor(DocumentType.receipt),
                 onTap: () {
                   if (!_historyUnlocked) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
