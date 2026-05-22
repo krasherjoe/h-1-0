@@ -7,6 +7,7 @@ import '../models/supplier_model.dart';
 import '../services/purchase_order_service.dart';
 import '../services/supplier_repository.dart';
 import '../widgets/line_item_editor.dart';
+import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
 import 'product_picker_modal.dart';
 import 'supplier_picker_modal.dart';
@@ -211,12 +212,6 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
     );
   }
 }
-
-class _ParsedItem {
-  _ParsedItem(this.name, this.price);
-  final String name;
-  final int price;
-}
 class PurchaseOrderEditorPage extends StatefulWidget {
   const PurchaseOrderEditorPage({super.key, this.order});
 
@@ -346,69 +341,11 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   }
 
   Future<void> _showPasteBuffer() async {
-    final textController = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('テキストを貼付'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Amazon/楽天などからコピーしたテキストを貼り付けてください', style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: textController,
-                maxLines: 8,
-                decoration: const InputDecoration(
-                  hintText: '商品名\n￥1,280\n\n商品名2\n￥2,500',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, textController.text), child: const Text('明細に変換')),
-        ],
-      ),
-    );
-    textController.dispose();
-    if (result == null || result.trim().isEmpty) return;
-
-    final lines = result.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
-    final parsed = <_ParsedItem>[];
-    String? currentName;
-    for (final line in lines) {
-      final price = _parsePrice(line);
-      if (price != null && currentName != null) {
-        parsed.add(_ParsedItem(currentName, price));
-        currentName = null;
-      } else if (price != null) {
-        parsed.add(_ParsedItem('商品', price));
-      } else {
-        if (currentName != null) {
-          parsed.add(_ParsedItem(currentName, 0));
-        }
-        currentName = line.replaceAll(RegExp(r'^[・\-•]+\s*'), '');
-      }
-    }
-    if (currentName != null) {
-      parsed.add(_ParsedItem(currentName, 0));
-    }
-
+    final parsed = await showPasteBufferDialog(context);
     if (parsed.isEmpty) return;
     setState(() {
       for (final item in parsed) {
-        final data = LineItemFormData(
-          productName: item.name,
-          quantity: 1,
-          unitPrice: item.price,
-          taxRate: 0.1,
-        );
+        final data = LineItemFormData(productName: item.name, quantity: 1, unitPrice: item.price, taxRate: 0.1);
         _registerLine(data);
       }
     });
@@ -416,19 +353,6 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${parsed.length}件の明細を追加しました')),
     );
-  }
-
-  int? _parsePrice(String text) {
-    final cleaned = text
-        .replaceAll(RegExp(r'[￥¥,,\s]'), '')
-        .replaceAll('円', '')
-        .trim();
-    final match = RegExp(r'^(\d+)$').firstMatch(cleaned);
-    if (match != null) {
-      final v = int.parse(match.group(1)!);
-      if (v > 0 && v < 100000000) return v;
-    }
-    return null;
   }
 
   Future<void> _pickProduct(int index) async {
