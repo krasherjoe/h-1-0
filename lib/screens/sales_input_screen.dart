@@ -370,7 +370,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
             onPressed: _saving ? null : _save,
             child: _saving
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text('保存', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
+                : const Text('保存'),
           ),
         ],
       ),
