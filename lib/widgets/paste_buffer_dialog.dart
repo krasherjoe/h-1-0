@@ -11,24 +11,26 @@ Future<List<ParsedLineItem>> showPasteBufferDialog(BuildContext context) async {
   final result = await showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('テキストを貼付'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Amazon/楽天などからコピーしたテキストを貼り付けてください', style: TextStyle(fontSize: 12)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: textController,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                hintText: '商品名\n￥1,280\n\n商品名2\n¥2,500',
-                border: OutlineInputBorder(),
+      title: const Text('PB:テキストを貼付'),
+      content: SingleChildScrollView(
+        child: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Amazon/楽天などからコピーしたテキストを貼り付けてください', style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: textController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText: '商品名\n￥1,280\n\n商品名2\n¥2,500',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
