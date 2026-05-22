@@ -1144,16 +1144,29 @@ class InvoiceRepository {
     });
 
     // 売上明細を生成（invoice_itemsからsales_itemsへ変換）
+    // invoice_items テーブルに subtotal カラムはないため計算する
     for (final item in items) {
+      final qty = (item['quantity'] as num?)?.toInt() ?? 0;
+      final unitPrice = (item['unit_price'] as num?)?.toInt() ?? 0;
+      final discountAmount = (item['discount_amount'] as num?)?.toInt() ?? 0;
+      final discountRate = (item['discount_rate'] as num?)?.toDouble() ?? 0.0;
+
+      int subtotal = qty * unitPrice;
+      if (discountAmount > 0) {
+        subtotal -= discountAmount;
+      } else if (discountRate > 0) {
+        subtotal = (subtotal * (1 - discountRate)).round();
+      }
+
       final newItemId = const Uuid().v4();
       await db.insert('sales_items', {
         'id': newItemId,
         'sales_id': salesId,
         'product_id': item['product_id'],
         'product_name': item['product_name'] ?? item['description'],
-        'quantity': item['quantity'],
-        'unit_price': item['unit_price'],
-        'subtotal': item['subtotal'],
+        'quantity': qty,
+        'unit_price': unitPrice,
+        'subtotal': subtotal,
         'tax_rate': item['tax_rate'] ?? 0.10,
       });
     }
