@@ -57,7 +57,8 @@
   3. 各修正に対して単体テストまたは Widget テストが追加されている
   4. `flutter test` が全テスト通過する
   5. `flutter analyze --no-fatal-infos` が通過する
-**Plans**: TBD
+**Plan list:**
+- [x] convertInvoiceToSales の subtotal 計算修正（割引反映＋null 回避）
 **UI hint**: yes
 
 ### Phase 4: コアフロー安定化
@@ -81,5 +82,5 @@
 |-------|----------------|--------|-----------|
 | 1. SE1売上伝票バグ修正 | 2/2 | ✅ Complete | 2026-05-22 |
 | 2. 請求書インポートバグ修正 | 2/2 | ✅ Complete | 2026-05-22 |
-| 3. 残バグ監査・修正 | 0/0 | Not started | - |
+| 3. 残バグ監査・修正 | 1/1 | ✅ Complete | 2026-05-22 |
 | 4. コアフロー安定化 | 0/0 | Not started | - |
