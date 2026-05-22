@@ -232,7 +232,7 @@ Future<pw.Document> buildInvoiceDocument(
               children: [
                 pw.Text(
                   () {
-                    final bool showTaxSuffix = companyInfo.taxDisplayMode != 'hidden' && invoice.tax > 0;
+                    final bool showTaxSuffix = companyInfo.taxDisplayMode != 'hidden' && !companyInfo.isExemptTaxpayer && invoice.tax > 0;
                     String baseLabel;
                     switch (invoice.documentType) {
                       case DocumentType.receipt:
@@ -360,6 +360,18 @@ Future<pw.Document> buildInvoiceDocument(
               ),
             ],
           ),
+          // 免税事業者の場合は適格請求書非該当の旨を表示
+          if (companyInfo.isExemptTaxpayer) ...[
+            pw.SizedBox(height: 10),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
+              child: const pw.Text("※当方は適格請求書発行事業者ではありません。",
+                  textAlign: pw.TextAlign.left,
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            ),
+          ],
           if (invoice.notes != null && invoice.notes!.isNotEmpty) ...[
             pw.SizedBox(height: 10),
             pw.Text("備考:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
