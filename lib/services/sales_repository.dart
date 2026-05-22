@@ -23,7 +23,8 @@ class SalesRepository {
       orderBy: 'date DESC',
     );
 
-    return maps.map((map) {
+    final List<Sales> result = [];
+    for (final map in maps) {
       final customerId = map['customer_id'] as String?;
       final customer = customerId != null
           ? customers.firstWhere(
@@ -35,9 +36,11 @@ class SalesRepository {
               ),
             )
           : null;
-
-      return Sales.fromMap(map, customer);
-    }).toList();
+      final sales = Sales.fromMap(map, customer);
+      sales.items = await _loadSalesItems(sales.id);
+      result.add(sales);
+    }
+    return result;
   }
 
   /// IDで売上を取得
@@ -66,7 +69,9 @@ class SalesRepository {
           )
         : null;
 
-    return Sales.fromMap(map, customer);
+    final sales = Sales.fromMap(map, customer);
+    sales.items = await _loadSalesItems(sales.id);
+    return sales;
   }
 
   /// 売上を保存
@@ -108,7 +113,8 @@ class SalesRepository {
       orderBy: 'date DESC',
     );
 
-    return maps.map((map) {
+    final List<Sales> result = [];
+    for (final map in maps) {
       final customerId = map['customer_id'] as String?;
       final customer = customerId != null
           ? customers.firstWhere(
@@ -120,8 +126,11 @@ class SalesRepository {
               ),
             )
           : null;
-      return Sales.fromMap(map, customer);
-    }).toList();
+      final sales = Sales.fromMap(map, customer);
+      sales.items = await _loadSalesItems(sales.id);
+      result.add(sales);
+    }
+    return result;
   }
 
   /// 売上を削除
