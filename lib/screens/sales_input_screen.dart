@@ -89,6 +89,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
         isFromInvoice: false,
         discountAmount: null,
         discountRate: null,
+        savedSubtotal: item.subtotal,
       ));
     }
 
@@ -593,6 +594,7 @@ class _LineItem {
   final int? originalSubtotal; // 請求書からインポートした場合の元の小計
   final int? discountAmount; // 値引き額
   final double? discountRate; // 値引き率
+  final int? savedSubtotal; // DB から読み込んだ小計（保存時の丸め誤差防止）
 
   _LineItem({
     required this.id,
@@ -605,5 +607,6 @@ class _LineItem {
     this.originalSubtotal,
     this.discountAmount,
     this.discountRate,
+    this.savedSubtotal,
   });
 }
