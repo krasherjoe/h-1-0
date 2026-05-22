@@ -566,7 +566,12 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => InvoiceDetailPage(invoice: inv)),
+                        builder: (_) => InvoiceInputForm(
+                          existingInvoice: inv,
+                          onInvoiceGenerated: (i, p) {},
+                          initialDocumentType: inv.documentType,
+                        ),
+                      ),
                     );
                   },
                   child: Container(
