@@ -167,6 +167,7 @@ class Invoice {
   final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
   final String? bankAccount; // 銀行口座情報（請求書用）
   final String? projectId; // 案件ID（任意紐づけ）
+  final bool isTestDocument; // テスト用伝票フラグ（案件名にテスト/TEST/testが含まれる場合true）
 
   Invoice({
     String? id,
@@ -213,12 +214,22 @@ class Invoice {
     this.priceAdjustmentUnit,
     this.bankAccount,
     this.projectId,
+    this.isTestDocument = false,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        terminalId = terminalId ?? "T1", // デフォルト端末ID
-       updatedAt = updatedAt ?? DateTime.now();
+       updatedAt = updatedAt ?? DateTime.now() {
+    // 案件名にテスト文字列が含まれる場合、テスト用伝票としてマーク
+    final testKeywords = ['テスト', 'TEST', 'test'];
+    isTestDocument = testKeywords.any((keyword) => (subject ?? '').contains(keyword));
+  }
 
   /// 伝票内容から決定論的なハッシュを生成する (SHA256の一部)
+  /// テスト用伝票の場合は特殊なハッシュを返し、ハッシュチェーンから除外
   String get contentHash {
+    if (isTestDocument) {
+      // テスト用伝票はハッシュチェーンに含めない（固定値）
+      return "TEST_DOCUMENT_EXCLUDED_FROM_HASH_CHAIN";
+    }
     final input =
         "$id|$terminalId|${date.toIso8601String()}|${customer.id}|$totalAmount|${subject ?? ""}|${items.map((e) => "${e.description}${e.quantity}${e.unitPrice}").join()}";
     final bytes = utf8.encode(input);
@@ -534,6 +545,7 @@ class Invoice {
       'project_id': projectId,
       'include_tax': includeTax ? 1 : 0,
       'is_tax_inclusive_mode': isTaxInclusiveMode ? 1 : 0,
+      'is_test_document': isTestDocument ? 1 : 0,
     };
   }
 
@@ -582,6 +594,7 @@ class Invoice {
     int? priceAdjustmentUnit,
     String? bankAccount,
     String? projectId,
+    bool? isTestDocument,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -630,6 +643,7 @@ class Invoice {
       priceAdjustmentUnit: priceAdjustmentUnit ?? this.priceAdjustmentUnit,
       bankAccount: bankAccount ?? this.bankAccount,
       projectId: projectId ?? this.projectId,
+      isTestDocument: isTestDocument ?? this.isTestDocument,
     );
   }
 }

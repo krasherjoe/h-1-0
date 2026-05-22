@@ -476,6 +476,7 @@ class InvoiceRepository {
         projectId: iMap['project_id'] as String?,
         includeTax: (iMap['include_tax'] ?? 1) == 1,
         isTaxInclusiveMode: (iMap['is_tax_inclusive_mode'] ?? 0) == 1,
+        isTestDocument: (iMap['is_test_document'] ?? 0) == 1,
       ));
     }
     return invoices;
@@ -1074,6 +1075,7 @@ class InvoiceRepository {
          documentType: DocumentType.invoice,
          paymentStatus: paymentStatus,
          receivedAmount: receivedAmount,
+         isTestDocument: (iMap['is_test_document'] ?? 0) == 1,
        ));
     }
 
