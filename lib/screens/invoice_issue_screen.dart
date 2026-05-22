@@ -454,89 +454,70 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                                      side: BorderSide(color: cs.error.withValues(alpha: 0.3), width: 1.5),
                                    )
                                  : styleTheme.cardShape,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
+                           child: Padding(
+                              padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          invoice.customerNameForDisplay,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                        ),
-                                      ),
-if (isRed)
-                                         Container(
-                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                           margin: const EdgeInsets.only(right: 6),
-                                           decoration: BoxDecoration(
-                                             color: cs.error.withValues(alpha: 0.12),
-                                             borderRadius: BorderRadius.circular(10),
-                                           ),
-                                           child: Text(
-                                             '赤伝',
-                                             style: TextStyle(
-                                               fontSize: 11,
-                                               fontWeight: FontWeight.w700,
-                                               color: cs.error,
-                                             ),
-                                           ),
-                                         )
-                                       else if (isCancelled)
-                                         Container(
-                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                           margin: const EdgeInsets.only(right: 6),
-                                           decoration: BoxDecoration(
-                                             color: cs.error.withValues(alpha: 0.12),
-                                             borderRadius: BorderRadius.circular(10),
-                                           ),
-                                           child: Text(
-                                             '赤伝済',
-                                             style: TextStyle(
-                                               fontSize: 11,
-                                               fontWeight: FontWeight.w700,
-                                               color: cs.error,
-                                             ),
-                                           ),
-                                         )
-                                      else if (statusChip != null) ...[
-                                        const SizedBox(width: 8),
-                                        statusChip,
-                                      ],
+                                      Text(invoice.customerNameForDisplay,
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: cs.onSurface)),
+                                      const Spacer(),
+                                      Text(_dateFormatter.format(invoice.date),
+                                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text('請求日: ${_dateFormatter.format(invoice.date)}'),
-                                  Text('金額: ￥${_currencyFormatter.format(invoice.totalAmount)}'),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                                   Row(
                                     children: [
+                                      Expanded(
+                                        child: Text(
+                                          invoice.subject?.trim().isNotEmpty == true
+                                              ? invoice.subject!
+                                              : (invoice.items.isNotEmpty ? invoice.items.first.description : ''),
+                                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(fontSize: 13, color: cs.onSurface)),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text('￥${_currencyFormatter.format(invoice.totalAmount)}',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.onSurface)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      if (isRed)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
+                                          child: Text('赤伝', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: cs.error)),
+                                        )
+                                      else if (isCancelled)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
+                                          child: Text('赤伝済', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: cs.error)),
+                                        ),
                                       OutlinedButton.icon(
                                         onPressed: () => _openPreview(invoice),
-                                        icon: const Icon(Icons.picture_as_pdf),
-                                        label: const Text('プレビュー'),
+                                        icon: const Icon(Icons.picture_as_pdf, size: 16),
+                                        label: const Text('PDF', style: TextStyle(fontSize: 11)),
+                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                                       ),
-                                      const SizedBox(width: 12),
-                                      if (invoice.isDraft && !invoice.isLocked)
-                                        FilledButton.icon(
-                                          onPressed: issuing
-                                              ? null
-                                              : () {
-                                                  final messenger = ScaffoldMessenger.of(context);
-                                                  messenger.hideCurrentSnackBar();
-                                                  messenger.showSnackBar(
-                                                    const SnackBar(content: Text('長押しで正式発行を確定します')),
-                                                  );
-                                                },
-                                          onLongPress: issuing ? null : () => _handleFormalIssueLongPress(invoice),
+                                      if (invoice.isDraft && !invoice.isLocked) ...[
+                                        const SizedBox(width: 8),
+                                        FilledButton.tonalIcon(
+                                          onPressed: issuing ? null : () => _handleFormalIssueLongPress(invoice),
                                           icon: issuing
                                               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                                               : const Icon(Icons.check_circle),
                                           label: Text(issuing ? '発行中...' : '正式発行'),
-                                        )
-                                      else
+                                        ),
+                                      ],
+                                      if (!invoice.isDraft || invoice.isLocked)
                                         TextButton.icon(
                                           onPressed: () => _openPreview(invoice),
                                           icon: const Icon(Icons.share),
