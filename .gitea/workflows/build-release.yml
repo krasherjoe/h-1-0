@@ -2,8 +2,8 @@ name: Build and Release APK
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 jobs:
   build:
@@ -11,6 +11,50 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITEA_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "Gitea Actions"
+          git config --global user.email "actions@gitea"
+
+      - name: Increment version
+        id: increment
+        run: |
+          # Extract current version from pubspec.yaml
+          CURRENT_VERSION=$(grep "^version:" pubspec.yaml | awk '{print $2}')
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Split version and build number
+          VERSION_PART=${CURRENT_VERSION%+*}
+          BUILD_PART=${CURRENT_VERSION#*+}
+          
+          # Increment build number
+          NEW_BUILD=$((BUILD_PART + 1))
+          NEW_VERSION="${VERSION_PART}+${NEW_BUILD}"
+          
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=v${VERSION_PART}" >> $GITHUB_OUTPUT
+
+      - name: Update pubspec.yaml
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.increment.outputs.NEW_VERSION }}/" pubspec.yaml
+
+      - name: Commit version bump
+        run: |
+          git add pubspec.yaml
+          git commit -m "chore: バージョン ${{ steps.increment.outputs.NEW_VERSION }} に自動更新"
+
+      - name: Push version bump
+        run: |
+          git push origin main
+
+      - name: Create and push tag
+        run: |
+          git tag ${{ steps.increment.outputs.TAG_NAME }}
+          git push origin ${{ steps.increment.outputs.TAG_NAME }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -25,15 +69,12 @@ jobs:
       - name: Build APK (release)
         run: flutter build apk --release
 
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
       - name: Create Release and Upload APK
         env:
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
         run: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
+          VERSION=${{ steps.increment.outputs.NEW_VERSION }}
+          TAG_NAME=${{ steps.increment.outputs.TAG_NAME }}
           API_URL="${{ github.api_url }}/repos/${{ github.repository }}/releases"
           
           # Create release
@@ -41,14 +82,14 @@ jobs:
             -H "Authorization: token $GITEA_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{
-              \"tag_name\": \"$GITHUB_REF_NAME\",
+              \"tag_name\": \"$TAG_NAME\",
               \"name\": \"Release $VERSION\",
               \"draft\": false,
               \"prerelease\": false
             }"
           
-          # Get upload URL
-          RELEASE_URL="${{ github.server_url }}/${{ github.repository }}/releases/tags/$GITHUB_REF_NAME"
+          # Get release URL
+          RELEASE_URL="${{ github.server_url }}/${{ github.repository }}/releases/tags/$TAG_NAME"
           
           # Upload APK
           curl -X POST "$RELEASE_URL/assets" \
