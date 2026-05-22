@@ -77,43 +77,37 @@ class _SupplierPickerModalState extends State<SupplierPickerModal> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 12 + (topPad > 0 ? topPad : 0), 16, 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('仕入先を選択'),
+          leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+          actions: [IconButton(onPressed: () => _openEditor(), icon: const Icon(Icons.add_circle_outline))],
+        ),
+        body: Column(
           children: [
-            Row(
-              children: [
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
-                const SizedBox(width: 8),
-                const Text('仕入先を選択', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                IconButton(onPressed: () => _openEditor(), icon: const Icon(Icons.add_circle_outline)),
-              ],
-            ),
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: '仕入先名で検索',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _loadSuppliers('');
-                        },
-                      ),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                isDense: true,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: '仕入先名で検索',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _loadSuppliers('');
+                          },
+                        ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  isDense: true,
+                ),
+                onChanged: _loadSuppliers,
               ),
-              onChanged: _loadSuppliers,
             ),
             const SizedBox(height: 12),
             Expanded(
