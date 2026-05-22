@@ -480,18 +480,12 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                       ),
                                       if (order.isDraft && !order.isLocked) ...[
                                         const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onLongPress: confirming ? null : () => _handleConfirmLongPress(order),
-                                          child: FilledButton.tonalIcon(
-                                            onPressed: confirming ? null : () {
-                                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('長押しで確定します')));
-                                            },
-                                            icon: confirming
-                                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                                                : const Icon(Icons.check_circle, size: 16),
-                                            label: Text(confirming ? '確定中...' : '確定', style: const TextStyle(fontSize: 11)),
-                                          ),
+                                        FilledButton.tonalIcon(
+                                          onPressed: confirming ? null : () => _handleConfirmLongPress(order),
+                                          icon: confirming
+                                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                              : const Icon(Icons.check_circle, size: 16),
+                                          label: Text(confirming ? '確定中...' : '確定', style: const TextStyle(fontSize: 11)),
                                         ),
                                       ],
                                       const Spacer(),
