@@ -219,7 +219,9 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
   void _performImport(List<Invoice> invoices) {
     final newItems = <_LineItem>[];
     for (final invoice in invoices) {
+      print('請求書インポート: ${invoice.subject}, 明細数: ${invoice.items.length}');
       for (final item in invoice.items) {
+        print('明細: ${item.description}, 値引き額: ${item.discountAmount}, 値引き率: ${item.discountRate}, 小計: ${item.subtotal}');
         // 値引き後の小計を数量で割って、値引き後の単価を計算
         final discountedUnitPrice = item.quantity > 0
             ? (item.subtotal / item.quantity).round()
