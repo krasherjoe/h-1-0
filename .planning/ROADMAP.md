@@ -40,8 +40,12 @@
   3. 複数明細の請求書をインポートしても金額が一致する
   4. 修正箇所の Widget テストが追加され、`flutter test` が通過する
   5. `flutter analyze --no-fatal-infos` が通過する
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+**Plan list:**
+- [ ] 02-01-PLAN.md — 請求書インポート金額不一致バグ修正（Wave 1）
+- [ ] 02-02-PLAN.md — Widget テスト + _calculate() 単体テスト追加（Wave 2）
 
 ### Phase 3: 残バグ監査・修正
 **Goal**: 残りの既知バグ（3-5個）が洗い出され、修正され、テストも追加されている
@@ -76,6 +80,6 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. SE1売上伝票バグ修正 | 2/2 | ✅ Complete | 2026-05-22 |
-| 2. 請求書インポートバグ修正 | 0/0 | Not started | - |
+| 2. 請求書インポートバグ修正 | 0/2 | Planned | - |
 | 3. 残バグ監査・修正 | 0/0 | Not started | - |
 | 4. コアフロー安定化 | 0/0 | Not started | - |
