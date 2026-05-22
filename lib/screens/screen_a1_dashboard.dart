@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
 import '../services/database_helper.dart';
@@ -711,32 +712,38 @@ class _SummaryCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cs.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 140,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: cs.primary, size: 28),
-            const SizedBox(height: 12),
-            Text(label, style: TextStyle(color: cs.primary.withValues(alpha: 0.9), fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(color: cs.primary, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(sub, style: TextStyle(color: cs.primary.withValues(alpha: 0.7), fontSize: 11)),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: cs.primary, size: 28),
+                const SizedBox(height: 12),
+                Text(label, style: TextStyle(color: cs.primary.withValues(alpha: 0.9), fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(value, style: TextStyle(color: cs.primary, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(sub, style: TextStyle(color: cs.primary.withValues(alpha: 0.7), fontSize: 11)),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -761,26 +768,32 @@ class _QuickActionButton extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: cs.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: cs.primary, size: 28),
-              const SizedBox(height: 6),
-              Text(label, style: TextStyle(color: cs.primary, fontSize: 12, fontWeight: FontWeight.w600)),
-            ],
+              child: Column(
+                children: [
+                  Icon(icon, color: cs.primary, size: 28),
+                  const SizedBox(height: 6),
+                  Text(label, style: TextStyle(color: cs.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
           ),
         ),
       ),
