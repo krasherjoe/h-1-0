@@ -12,7 +12,7 @@ import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
 import '../models/product_model.dart';
 import 'product_master_screen.dart';
-import 'supplier_picker_modal.dart';
+import 'supplier_master_screen.dart';
 
 class PurchaseEntriesScreen extends StatefulWidget {
   const PurchaseEntriesScreen({super.key});
@@ -243,21 +243,14 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
   }
 
   Future<void> _pickSupplier() async {
-    await showModalBottomSheet<Supplier>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => SupplierPickerModal(
-        onSupplierSelected: (supplier) {
-          Navigator.pop(ctx, supplier);
-        },
-      ),
-    ).then((selected) {
-      if (selected == null) return;
-      setState(() {
-        _supplier = selected;
-        _supplierSnapshot = selected.name;
-      });
+    final selected = await Navigator.push<Supplier>(
+      context,
+      MaterialPageRoute(builder: (_) => const SupplierMasterScreen(selectionMode: true)),
+    );
+    if (selected == null) return;
+    setState(() {
+      _supplier = selected;
+      _supplierSnapshot = selected.name;
     });
   }
 
