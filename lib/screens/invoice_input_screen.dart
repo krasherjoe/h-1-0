@@ -15,6 +15,7 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'product_picker_modal.dart';
 import '../models/product_model.dart';
+import '../services/product_repository.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../services/app_settings_repository.dart';
 import '../services/company_repository.dart';
@@ -100,6 +101,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   bool _summaryIsBlue = false; // デフォルトは白
   final AppSettingsRepository _settingsRepo = AppSettingsRepository();
   final CompanyRepository _companyRepo = CompanyRepository();
+  final ProductRepository _productRepo = ProductRepository();
+  final Map<String, int> _wholesalePrices = {};
+  int _grossProfit = 0;
   bool _showNewBadge = false;
   bool _showCopyBadge = false;
   bool _titleBarFlash = false; // タイトルバータップエフェクト用
@@ -308,6 +312,14 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
     final customerRepo = CustomerRepository();
     await customerRepo.getAllCustomers();
 
+    // 商品の仕入単価をプリロード
+    try {
+      final allProducts = await _productRepo.getAllProducts();
+      for (final p in allProducts) {
+        if (p.wholesalePrice > 0) _wholesalePrices[p.id] = p.wholesalePrice;
+      }
+    } catch (_) {}
+
     final savedSummary = await _settingsRepo.getSummaryTheme();
     _summaryIsBlue = savedSummary == 'blue';
 
@@ -324,6 +336,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
         final inv = widget.existingInvoice!;
         _selectedCustomer = inv.customer;
         _items.addAll(inv.items);
+        _grossProfit = _calculateGrossProfit();
         if (inv.isLocked) {
           _taxRate = inv.taxRate;
           _includeTax = inv.taxRate > 0 || inv.includeTax;
@@ -632,6 +645,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
 
   void _pushHistory({bool clearRedo = false}) {
     setState(() {
+      _grossProfit = _calculateGrossProfit();
       if (_undoStack.length >= 30) _undoStack.removeAt(0);
       _undoStack.add(
         InvoiceSnapshot(
@@ -1913,6 +1927,14 @@ color: Theme.of(context).cardColor,
               totalColor,
               isTotal: true,
             ),
+            if (_grossProfit != 0) ...[
+              const SizedBox(height: 4),
+              _buildSummaryRow(
+                "参考粗利",
+                "￥${formatAmount(_grossProfit)}",
+                _grossProfit >= 0 ? Colors.green : Colors.red,
+              ),
+            ],
           ],
         ),
       ),
@@ -1920,6 +1942,17 @@ color: Theme.of(context).cardColor,
   }
 
   /// 明細単位の値引き合計を計算
+  int _calculateGrossProfit() {
+    int gp = 0;
+    for (final item in _items) {
+      final wp = item.productId != null ? _wholesalePrices[item.productId] : null;
+      if (wp != null && wp > 0) {
+        gp += (item.unitPrice - wp) * item.quantity;
+      }
+    }
+    return gp;
+  }
+
   int _calculateItemDiscount() {
     return _items.fold(0, (sum, item) {
       if (item.discountAmount != null && item.discountAmount! > 0) {
