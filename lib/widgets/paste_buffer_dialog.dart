@@ -18,7 +18,7 @@ enum _LineTag { name, modelNumber, price, skip }
 
 class _LineEntry {
   _LineEntry(this.text, this.tag);
-  final String text;
+  String text;
   _LineTag tag;
 }
 
@@ -74,6 +74,27 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
     });
   }
 
+  void _removeLine(int index) {
+    setState(() => _lines.removeAt(index));
+  }
+
+  void _splitLine(int index) {
+    final entry = _lines[index];
+    final parts = entry.text
+        .split(RegExp(r'[\s\t,、]'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    if (parts.length <= 1) return;
+    setState(() {
+      _lines.removeAt(index);
+      for (final part in parts.reversed) {
+        final tag = _parsePrice(part) != null ? _LineTag.price : _LineTag.name;
+        _lines.insert(index, _LineEntry(part, tag));
+      }
+    });
+  }
+
   List<ParsedLineItem> _buildItems() {
     final result = <ParsedLineItem>[];
     String? currentName;
@@ -87,11 +108,7 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
         if (currentName != null) result.add(ParsedLineItem(currentName, 0));
         currentName = entry.text;
       } else if (entry.tag == _LineTag.modelNumber) {
-        if (currentName != null) {
-          currentName = '$currentName (${entry.text})';
-        } else {
-          currentName = entry.text;
-        }
+        currentName = currentName != null ? '$currentName (${entry.text})' : entry.text;
       }
     }
     if (currentName != null) result.add(ParsedLineItem(currentName, 0));
@@ -159,7 +176,7 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const Text('各行をタップして種別を選んでください', style: TextStyle(fontSize: 12)),
+              const Text('タップ:種別切替  長押し:詳細', style: TextStyle(fontSize: 11)),
               const Spacer(),
               TextButton.icon(onPressed: () => setState(() => _lines = []), icon: const Icon(Icons.refresh, size: 18), label: const Text('戻る')),
             ],
@@ -174,22 +191,40 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
             itemBuilder: (context, index) {
               final entry = _lines[index];
               final color = _tagColors[entry.tag]!;
+              final canSplit = entry.tag != _LineTag.skip && entry.text.split(RegExp(r'[\s\t,、]')).length > 1;
               return Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _cycleTag(index),
+                child: GestureDetector(
+                  onLongPressStart: (_) => _showLineMenu(index, canSplit),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                          child: Text(_tagLabels[entry.tag]!, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                        GestureDetector(
+                          onTap: () => _cycleTag(index),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
+                            child: Text(_tagLabels[entry.tag]!, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(child: Text(entry.text, style: const TextStyle(fontSize: 13))),
-                        Icon(Icons.touch_app, size: 16, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                        if (canSplit)
+                          IconButton(
+                            icon: Icon(Icons.call_split, size: 16, color: cs.primary),
+                            onPressed: () => _splitLine(index),
+                            tooltip: '分割',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(Icons.close, size: 16, color: cs.error),
+                          onPressed: () => _removeLine(index),
+                          tooltip: '削除',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
                       ],
                     ),
                   ),
@@ -212,11 +247,37 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text('${item.name}: ¥${item.price}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                     )),
+                if (items.length > 5) Text('...他 ${items.length - 5}件', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
               ],
             ),
           ),
         ],
       ],
+    );
+  }
+
+  void _showLineMenu(int index, bool canSplit) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: Text(_lines[index].text), subtitle: const Text('この行を処理')),
+            if (canSplit)
+              ListTile(
+                leading: const Icon(Icons.call_split),
+                title: const Text('スペースやカンマで分割'),
+                onTap: () { Navigator.pop(ctx); _splitLine(index); },
+              ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+              title: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              onTap: () { Navigator.pop(ctx); _removeLine(index); },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
