@@ -221,6 +221,60 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
     );
   }
 
+  Future<void> _createFromEstimate() async {
+    final customers = await _customerRepo.getAllCustomers();
+    final invoices = await _invoiceRepo.getAllInvoices(customers);
+    if (!mounted) return;
+    final estimates = invoices.where((inv) => inv.documentType == DocumentType.estimation && inv.isDraft).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    if (estimates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('下書き見積がありません')));
+      return;
+    }
+    final selected = await showDialog<Invoice>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('見積を選択'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: estimates.length,
+            itemBuilder: (_, i) {
+              final e = estimates[i];
+              return ListTile(
+                title: Text(e.customerNameForDisplay, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${_dateFormatter.format(e.date)} ￥${_currencyFormatter.format(e.totalAmount)}'),
+                dense: true,
+                onTap: () => Navigator.pop(ctx, e),
+              );
+            },
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル'))],
+      ),
+    );
+    if (selected == null) return;
+    final newOrder = selected.copyWith(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      documentType: DocumentType.order,
+      isDraft: true, isLocked: false, date: DateTime.now(),
+      filePath: null, metaJson: null, metaHash: null,
+    );
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoiceInputForm(
+          onInvoiceGenerated: (_, __) {},
+          existingInvoice: newOrder, startViewMode: false, showCopyBadge: true,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('見積から受注を作成しました。内容を確認して保存してください')));
+    await _load();
+  }
+
   Future<void> _convertToInvoice(Invoice order) async {
     final newInv = order.copyWith(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -255,8 +309,23 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
         foregroundColor: appBarForeground(docColor),
         title: const Text('QR:受注入力'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createOrder, icon: const Icon(Icons.add), label: const Text('新規受注'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'create_from_estimate',
+            onPressed: _createFromEstimate,
+            icon: const Icon(Icons.copy, size: 20),
+            label: const Text('見積から', style: TextStyle(fontSize: 12)),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'create_order',
+            onPressed: _createOrder,
+            icon: const Icon(Icons.add),
+            label: const Text('新規受注'),
+          ),
+        ],
       ),
       body: SafeArea(
         child: _loading
