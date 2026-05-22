@@ -54,8 +54,6 @@ class _SupplierPickerModalState extends State<SupplierPickerModal> {
     await _loadSuppliers(_searchController.text);
     if (!mounted) return;
     widget.onSupplierSelected(saving);
-    if (!mounted) return;
-    Navigator.pop(context);
   }
 
   Future<void> _deleteSupplier(Supplier supplier) async {
@@ -139,7 +137,6 @@ class _SupplierPickerModalState extends State<SupplierPickerModal> {
                                 ),
                                 onTap: () {
                                   widget.onSupplierSelected(supplier);
-                                  Navigator.pop(context);
                                 },
                                 trailing: PopupMenuButton<String>(
                                   onSelected: (value) {
