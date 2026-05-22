@@ -13,7 +13,6 @@ class InvoiceListA2Card extends StatelessWidget {
   final String draftLabel;
   final bool showLockedBadge;
   final bool hasRedInvoice; // 元伝票に対する赤伝が発行済みか
-  final bool q1Layout; // Q1: 日付左上・顧客名右上・コード非表示
 
   const InvoiceListA2Card({
     super.key,
@@ -25,7 +24,6 @@ class InvoiceListA2Card extends StatelessWidget {
     this.draftLabel = '下書き',
     this.showLockedBadge = true,
     this.hasRedInvoice = false,
-    this.q1Layout = false,
   });
 
   @override
@@ -93,49 +91,12 @@ class InvoiceListA2Card extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: q1Layout
-                    ? _buildQ1Content(cs, isDraft, subjectDisplay, customerName, subjectColor, amountColor)
-                    : _buildDefaultContent(cs, isDraft, isRed, isCancelled, subjectDisplay, customerName, subjectColor, amountColor),
+                child: _buildDefaultContent(cs, isDraft, isRed, isCancelled, subjectDisplay, customerName, subjectColor, amountColor),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildQ1Content(ColorScheme cs, bool isDraft, String subjectDisplay, String customerName, Color subjectColor, Color amountColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(dateFormatter.format(invoice.date), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-            const Spacer(),
-            Text(customerName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: cs.onSurface)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(subjectDisplay.isNotEmpty ? subjectDisplay : '(明細なし)',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: subjectColor)),
-            ),
-            const SizedBox(width: 8),
-            Text('￥${amountFormatter.format(invoice.totalAmount)}',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: amountColor)),
-          ],
-        ),
-        if (isDraft) ...[
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: cs.secondaryContainer, borderRadius: BorderRadius.circular(4)),
-            child: Text('下書き', style: TextStyle(fontSize: 9, color: cs.onSecondaryContainer)),
-          ),
-        ],
-      ],
     );
   }
 
