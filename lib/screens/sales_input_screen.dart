@@ -224,12 +224,36 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     final newItems = <_LineItem>[];
     for (final invoice in invoices) {
       print('請求書インポート: ${invoice.subject}, 明細数: ${invoice.items.length}');
+
+      // 伝票全体の値引き額（totalDiscountAmount/totalDiscountRate/priceAdjustment）は
+      // InvoiceItem.subtotal に反映されていないため、比例配分で各明細に適用する
+      final invSubtotal = invoice.subtotal;
+      final invDiscount = invoice.discountAmount;
+      final itemDiscount = invoice.items.fold<int>(0, (sum, item) {
+        if (item.discountAmount != null && item.discountAmount! > 0) {
+          return sum + item.discountAmount!;
+        }
+        if (item.discountRate != null && item.discountRate! > 0) {
+          return sum + (item.quantity * item.unitPrice * item.discountRate!).round();
+        }
+        return sum;
+      });
+      final additionalDiscount = invDiscount - itemDiscount;
+      final discountRatio = (additionalDiscount > 0 && invSubtotal > 0)
+          ? (invSubtotal - additionalDiscount) / invSubtotal
+          : 1.0;
+
       for (final item in invoice.items) {
-        print('明細: ${item.description}, 値引き額: ${item.discountAmount}, 値引き率: ${item.discountRate}, 小計: ${item.subtotal}');
-        // 値引き後の小計を数量で割って、値引き後の単価を計算
+        print('明細: ${item.description}, 値引き額: ${item.discountAmount}, '
+            '値引き率: ${item.discountRate}, 小計: ${item.subtotal}');
+
         final discountedUnitPrice = item.quantity > 0
             ? (item.subtotal / item.quantity).round()
             : item.unitPrice;
+
+        final originalSubtotal = discountRatio < 1.0
+            ? (item.subtotal * discountRatio).round()
+            : item.subtotal;
 
         newItems.add(_LineItem(
           id: const Uuid().v4(),
@@ -237,19 +261,17 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           productName: item.description,
           quantity: item.quantity,
           unitPrice: discountedUnitPrice,
-          taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
+          taxRate: 0.0,
           isFromInvoice: true,
-          originalSubtotal: item.subtotal,
+          originalSubtotal: originalSubtotal,
           discountAmount: item.discountAmount,
           discountRate: item.discountRate,
         ));
       }
 
-      // 顧客が未設定なら請求書の顧客を設定
       if (_selectedCustomer == null) {
         _selectedCustomer = invoice.customer;
       }
-      // 件名が未設定なら請求書の件名を設定
       if (_subjectController.text.isEmpty && invoice.subject != null) {
         _subjectController.text = invoice.subject!;
       }
