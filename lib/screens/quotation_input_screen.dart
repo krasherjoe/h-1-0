@@ -434,6 +434,9 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                           final confirming = _confirming[quotation.id] ?? false;
                           final bool isDraft = quotation.isDraft;
                           final statusChip = _buildStatusChip(isDraft, styleTheme, Theme.of(context).colorScheme);
+                          final subject = quotation.subject?.trim().isNotEmpty == true
+                              ? quotation.subject!
+                              : (quotation.items.isNotEmpty ? quotation.items.first.description : '');
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             color: styleTheme.cardColor(isDraft),
@@ -445,66 +448,72 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          quotation.customerNameForDisplay,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      if (isDraft)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2, right: 8),
+                                          child: Icon(Icons.edit_note, size: 20, color: Theme.of(context).colorScheme.secondary),
                                         ),
-                                      ),
-                                      if (statusChip != null) ...[
-                                        const SizedBox(width: 8),
-                                        statusChip,
-                                      ],
-                                      TextButton.icon(
-                                        onPressed: () => _convertToOrder(quotation),
-                                        icon: const Icon(Icons.assignment_turned_in),
-                                        label: const Text('受注変換'),
-                                      ),
+                                      Text(_dateFormatter.format(quotation.date), style: const TextStyle(fontSize: 12)),
+                                      const Spacer(),
+                                      Text(quotation.customerNameForDisplay, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text('見積日: ${_dateFormatter.format(quotation.date)}'),
-                                  Text('金額: ￥${_currencyFormatter.format(quotation.totalAmount)}'),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(subject, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text('￥${_currencyFormatter.format(quotation.totalAmount)}',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    ],
+                                  ),
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
+                                      if (isDraft)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.secondaryContainer,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text('下書き', style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                                        ),
+                                      const Spacer(),
                                       OutlinedButton.icon(
                                         onPressed: () => _openPreview(quotation),
-                                        icon: const Icon(Icons.picture_as_pdf),
-                                        label: const Text('PDFプレビュー'),
+                                        icon: const Icon(Icons.picture_as_pdf, size: 16),
+                                        label: const Text('PDFプレビュー', style: TextStyle(fontSize: 11)),
+                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                                       ),
-                                      const SizedBox(width: 12),
+                                      const SizedBox(width: 8),
                                       if (quotation.isDraft && !quotation.isLocked)
                                         GestureDetector(
                                           onLongPress: confirming ? null : () => _handleConfirmLongPress(quotation),
                                           behavior: HitTestBehavior.opaque,
-                                          child: FilledButton.icon(
-                                            onPressed: confirming
-                                                ? null
-                                                : () {
-                                                    final messenger = ScaffoldMessenger.of(context);
-                                                    messenger.hideCurrentSnackBar();
-                                                    messenger.showSnackBar(const SnackBar(content: Text('長押しで確定します')));
-                                                  },
+                                          child: FilledButton.tonalIcon(
+                                            onPressed: confirming ? null : () {
+                                              final messenger = ScaffoldMessenger.of(context);
+                                              messenger.hideCurrentSnackBar();
+                                              messenger.showSnackBar(const SnackBar(content: Text('長押しで確定します')));
+                                            },
                                             icon: confirming
-                                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                                : const Icon(Icons.check_circle),
-                                            label: Text(confirming ? '確定中...' : '確定'),
+                                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                                : const Icon(Icons.check_circle, size: 16),
+                                            label: Text(confirming ? '' : '確定', style: const TextStyle(fontSize: 11)),
                                           ),
-                                        )
-                                      else
-                                        TextButton.icon(
-                                          onPressed: () => _openPreview(quotation),
-                                          icon: const Icon(Icons.share),
-                                          label: const Text('PDF共有'),
                                         ),
-                                      const Spacer(),
                                       if (!quotation.isLocked)
-                                        TextButton.icon(
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, size: 18),
                                           onPressed: () => _editQuotation(quotation),
-                                          icon: const Icon(Icons.edit),
-                                          label: const Text('編集'),
+                                          tooltip: '編集',
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
                                         ),
                                     ],
                                   ),
