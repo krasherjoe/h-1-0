@@ -1,173 +1,303 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-05-16
+**Analysis Date:** 2026-05-22
 
 ## Directory Layout
 
 ```
-h_1.flutter.0/
-├── lib/                          # Application source code (14 entries)
-│   ├── main.dart                 # Entry point, theme, DB init, routing (~800+ lines)
-│   ├── screens/                  # UI screens (~40 files, ~44k lines total)
-│   ├── services/                 # Business logic + data access (~60 files)
-│   ├── models/                   # Data models (39 files)
-│   ├── widgets/                  # Reusable components (25 files)
-│   ├── modules/                  # Feature modules (2 files)
-│   ├── mothership/               # Device-side shelf server (config, data_store, chat_store, server.dart)
-│   ├── constants/                # App-wide constants (6 files)
-│   ├── theme/                    # Theme configuration (1 file)
-│   ├── config/                   # Feature flags (1 file)
-│   └── utils/                    # Utilities (1 file)
-├── test/                         # Test suite
-│   ├── unit/                     # Unit tests organized by layer
-│   │   ├── models/               # Model tests
-│   │   ├── services/             # Service/repository tests
-│   │   └── widgets/              # Widget tests
-│   └── widget_test.dart          # Placeholder widget test
-├── pubspec.yaml                  # Package manifest (version 1.5.28+173)
-├── analysis_options.yaml         # Dart linting configuration
-├── AGENTS.md                     # Code generation AI guidelines
-├── README.md                     # Project overview and development rules
-└── TODO.md                       # Task management
+lib/                          # Flutter application root (279 .dart files total)
+├── main.dart                 # App entry point, theme, DB init, backup, heartbeat
+├── config/
+│   └── app_config.dart       # Feature flags, version, module toggles
+├── constants/                # Static constants and lookup tables
+│   ├── company_profile_keys.dart
+│   ├── dashboard_icons.dart
+│   ├── mail_send_method.dart
+│   ├── mail_templates.dart
+│   ├── menu_catalog.dart
+│   └── warehouse_constants.dart
+├── models/                   # Data model classes (43 files)
+│   ├── base_document.dart    # Abstract base for document types
+│   ├── customer_model.dart
+│   ├── product_model.dart
+│   ├── invoice_models.dart
+│   ├── project_model.dart
+│   ├── quotation_model.dart
+│   ├── sales_flow_models.dart
+│   ├── purchase_entry_models.dart
+│   ├── purchase_order_models.dart
+│   ├── stock_transfer_models.dart
+│   ├── auth_models.dart
+│   ├── chat_message.dart
+│   ├── dashboard_menu_item.dart
+│   ├── sync_preferences.dart
+│   └── ... (29 more model files)
+├── modules/                  # Feature module system
+│   ├── feature_module.dart
+│   └── purchase_management_module.dart
+├── mothership/               # Server-side mothership code
+│   ├── server.dart           # HTTP server (shelf) for sync/heartbeat/chat
+│   ├── config.dart
+│   ├── data_store.dart
+│   └── chat_store.dart
+├── screens/                  # UI screens (110 files in 6 subdirs)
+│   ├── screen_a1_dashboard.dart
+│   ├── screen_pj1_project_list.dart
+│   ├── screen_pj2_project_detail.dart
+│   ├── screen_s1_theme_selection.dart
+│   ├── screen_s8_email_settings.dart
+│   ├── screen_sb_backup_settings.dart
+│   ├── screen_th2_theme_customizer.dart
+│   ├── screen_pc_product_category_master.dart
+│   ├── screen_debug_fork_break.dart
+│   ├── settings_screen.dart
+│   ├── dashboard_screen.dart
+│   ├── customer_master_screen.dart
+│   ├── product_master_screen.dart
+│   ├── supplier_master_screen.dart
+│   ├── invoice_input_screen.dart
+│   ├── invoice_history_screen.dart
+│   ├── invoice_detail_page.dart
+│   ├── invoice_issue_screen.dart
+│   ├── estimate_input_screen.dart
+│   ├── order_input_screen.dart
+│   ├── sales_entry_screen.dart
+│   ├── quotation_input_screen.dart
+│   ├── purchase_input_screen.dart
+│   ├── ... (80+ more screen files)
+│   ├── company_info/         # Subdirectory: seal contrast/offset widgets
+│   │   ├── seal_contrast_dialog.dart
+│   │   └── seal_offset_adjust_page.dart
+│   ├── invoice_detail/      # Subdirectory: detail snapshot, table cells
+│   │   ├── detail_snapshot.dart
+│   │   └── invoice_table_cells.dart
+│   ├── invoice_history/     # Subdirectory: history item, history list
+│   │   ├── invoice_history_item.dart
+│   │   └── invoice_history_list.dart
+│   ├── invoice_input/       # Subdirectory: calculator keypad, draft badge, snapshot
+│   │   ├── calculator_keypad.dart
+│   │   ├── draft_badge.dart
+│   │   └── invoice_snapshot.dart
+│   └── project_detail/      # Subdirectory: status badge
+│       └── status_badge.dart
+├── services/                 # Business logic, repositories, sync (79 files)
+│   ├── database_helper.dart # SQLite singleton, schema, migrations
+│   ├── product_repository.dart
+│   ├── customer_repository.dart
+│   ├── invoice_repository.dart
+│   ├── supplier_repository.dart
+│   ├── warehouse_repository.dart
+│   ├── staff_repository.dart
+│   ├── project_repository.dart
+│   ├── quotation_repository.dart
+│   ├── sales_repository.dart
+│   ├── purchase_repository.dart
+│   ├── purchase_entry_repository.dart
+│   ├── purchase_order_repository.dart
+│   ├── purchase_payment_repository.dart
+│   ├── purchase_receipt_repository.dart
+│   ├── purchase_return_repository.dart
+│   ├── payment_repository.dart
+│   ├── payment_schedule_repository.dart
+│   ├── delivery_repository.dart
+│   ├── inventory_repository.dart
+│   ├── inventory_location_repository.dart
+│   ├── sales_flow_repository.dart
+│   ├── activity_log_repository.dart
+│   ├── chat_repository.dart
+│   ├── auth_repository.dart
+│   ├── custom_field_repository.dart
+│   ├── milestone_repository.dart
+│   ├── task_repository.dart
+│   ├── time_log_repository.dart
+│   ├── electronic_ledger_repository.dart
+│   ├── business_profile_repository.dart
+│   ├── app_settings_repository.dart  # SharedPreferences wrapper
+│   ├── analytics_repository.dart
+│   ├── company_repository.dart
+│   ├── product_category_repository.dart
+│   ├── warehouse_stock_repository.dart
+│   ├── edit_log_repository.dart
+│   ├── gmail_sync_client.dart     # Gmail API sync engine
+│   ├── chat_sync_scheduler.dart    # 10s periodic sync
+│   ├── mothership_client.dart      # Direct HTTP sync client
+│   ├── mothership_chat_client.dart
+│   ├── mothership_discovery_service.dart
+│   ├── google_account_service.dart
+│   ├── google_api_service_base.dart
+│   ├── drive_backup_service.dart
+│   ├── auto_backup_service.dart
+│   ├── backup_progress_notifier.dart
+│   ├── pdf_generator.dart
+│   ├── print_service.dart
+│   ├── invoice_email_sender.dart
+│   ├── location_service.dart
+│   ├── gps_service.dart
+│   ├── gps_visit_service.dart
+│   ├── sensor_service.dart
+│   ├── enhanced_audio_service.dart
+│   ├── enhanced_location_service.dart
+│   ├── camera_delivery_photo_service.dart
+│   ├── fast_search_service.dart
+│   ├── full_text_search_service.dart
+│   ├── advanced_search_service.dart
+│   ├── theme_controller.dart
+│   ├── navigation_service.dart
+│   ├── company_profile_service.dart
+│   ├── storage_monitor.dart
+│   ├── storage_permission_service.dart
+│   ├── device_account_service.dart
+│   ├── email_notification_service.dart
+│   ├── hash_utils.dart
+│   ├── isolate_service.dart
+│   ├── performance_service.dart
+│   └── ui_performance_service.dart
+├── theme/
+│   └── invoice_list_style_theme.dart
+├── utils/
+│   ├── build_expiry_info.dart   # Build timestamp/lifespan utilities
+│   └── theme_utils.dart
+└── widgets/                  # Reusable components (30 files)
+    ├── generic_list_screen.dart    # Generic list with filter/refresh
+    ├── document_card.dart          # Document card widget
+    ├── empty_state_widget.dart     # Empty state placeholder
+    ├── screen_id_title.dart        # Screen ID title component
+    ├── menu_category_header.dart   # Dashboard category header
+    ├── contact_picker_sheet.dart   # Contact picker bottom sheet
+    ├── keyboard_aware_scaffold.dart
+    ├── keyboard_inset_wrapper.dart
+    ├── custom_field_display_widget.dart
+    ├── custom_field_input_widget.dart
+    ├── delivery_status_badge.dart
+    ├── draft_badge.dart
+    ├── invoice_draft_badge.dart
+    ├── invoice_calculator_keypad.dart
+    ├── invoice_list_a2_card.dart
+    ├── invoice_pdf_preview_page.dart
+    ├── invoice_red_invoice_button.dart
+    ├── invoice_tax_rate_picker.dart
+    ├── line_item_editor.dart
+    ├── master_field_config.dart
+    ├── metric_card.dart
+    ├── report_widgets.dart
+    ├── rich_master_edit_sheet.dart
+    ├── generic_master_edit_dialog.dart
+    ├── seal_camera_screen.dart
+    ├── slide_to_unlock.dart
+    ├── swipe_to_unlock.dart
+    ├── storage_warning_dialog.dart
+    ├── zoomable_app_bar.dart
+    └── analytics_chart.dart
 ```
 
 ## Directory Purposes
 
-### lib/screens/
-- **Purpose:** All user-facing screens (~40 files)
-- **Contains:** StatefulWidget classes implementing business screens (invoices, orders, estimates, master data entry, reports, settings)
-- **Key files:** `lib/screens/invoice_input_screen.dart` (3078 lines — largest screen), `lib/screens/screen_pj1_project_list.dart`, `lib/screens/screen_pj2_project_detail.dart`
-- **Naming:** `screen_<id>_<name>.dart` where `<id>` is 2–3 character prefix (e.g., `S1`, `PJ1`, `WH`)
+**`lib/screens/` (110 files):**
+- Purpose: All UI screen widgets for the application
+- Subdirectories: `company_info/`, `invoice_detail/`, `invoice_history/`, `invoice_input/`, `project_detail/`
+- Key pattern: `StatefulWidget` + `initState() → _load() → setState()` cycle
+- Screen ID convention: Title bar shows `"S1:設定"`, `"PJ1:案件管理"`, etc.
 
-### lib/services/
-- **Purpose:** Business logic and data access abstraction (~60 files)
-- **Contains:** Repository classes per entity, DatabaseHelper singleton, NavigationService, MothershipClient, HashUtils, InvoiceRepository
-- **Key files:** 
-  - `lib/services/database_helper.dart` — SQLite wrapper with 79 CREATE TABLE statements, LocalBackupService
-  - `lib/services/navigation_service.dart` — Singleton navigator key + AppRoutes definitions
-  - `lib/services/invoice_repository.dart` — Hash chain verification for documents
-  - `lib/services/hash_utils.dart` — SHA256 integrity verification for Customer/Product models
-- **Pattern:** Repository classes follow CRUD interface: getAll(), getById(), insert(), update(), delete()
+**`lib/services/` (79 files):**
+- Purpose: Repository classes (CRUD), sync clients, utilities, PDF generation, backup
+- Key files: `database_helper.dart` (SQLite singleton, 2850+ lines), sync services, `app_settings_repository.dart`
+- Pattern: Each entity has `<entity>_repository.dart` with `getAll`, `save`, `delete`, `search`
 
-### lib/models/
-- **Purpose:** Data structures and domain entities (39 files)
-- **Contains:** BaseDocument hierarchy, master data models (Customer, Product, Supplier, Staff, Warehouse), inventory models, business profile
-- **Key files:** `lib/models/base_document.dart` (abstract base for documents), `lib/models/invoice_models.dart` (Invoice/InvoiceItem with hash chain support)
-- **Hierarchy:** BaseDocument → Quotation, Order, Invoice, Delivery, CreditNote
+**`lib/models/` (43 files):**
+- Purpose: Data model classes with `toMap()`/`fromMap()` serialization
+- Key base: `BaseDocument` abstract class in `base_document.dart`
+- Pattern: All models have `toMap()`, `fromMap()`, and some have `copyWith()`
 
-### lib/widgets/
-- **Purpose:** Reusable UI components shared across screens (25 files)
-- **Contains:** GenericListScreen template, DocumentCard, MetricCard, EmptyStateWidget, LineItemEditor, custom field widgets, keyboard wrappers, status badges
-- **Key files:** `lib/widgets/generic_list_screen.dart<T>>`, `lib/widgets/document_card.dart`, `lib/widgets/line_item_editor.dart`
+**`lib/widgets/` (30 files):**
+- Purpose: Reusable UI components shared across screens
+- Key widgets: `GenericListScreen<T>`, `DocumentCard`, `EmptyStateWidget`, `ScreenIdTitle`
 
-### lib/modules/
-- **Purpose:** Gated feature modules with dashboard card registration (2 files)
-- **Contains:** Abstract FeatureModule base class, PurchaseManagementModule implementation
-- **Key files:** `lib/modules/feature_module.dart` (ModuleDashboardCard + abstract FeatureModule), `lib/modules/purchase_management_module.dart`
+**`lib/config/` (1 file):**
+- Purpose: `AppConfig` — feature flags, version, module enable/disable via `--dart-define`
 
-### lib/mothership/
-- **Purpose:** Device-side shelf HTTP server for remote sync (4 files)
-- **Contains:** Server routing, data store, chat store, configuration
-- **Key files:** `lib/mothership/server.dart`, `lib/mothership/config.dart`, `lib/mothership/data_store.dart`, `lib/mothership/chat_store.dart`
+**`lib/constants/` (6 files):**
+- Purpose: Static lookup tables for dashboard icons, menu catalog, mail templates, etc.
 
-### lib/constants/
-- **Purpose:** App-wide constants and catalogs (6 files)
-- **Contains:** Menu definitions, dashboard icons, mail templates, company profile keys, warehouse constants
-- **Key files:** `lib/constants/menu_catalog.dart` (MenuDefinition class, 6 categories)
+**`lib/modules/` (2 files):**
+- Purpose: Pluggable feature modules with dashboard card definitions
 
-### test/
-- **Purpose:** Test suite organized by layer
-- **Structure:** `test/unit/<layer>/<entity>_test.dart` pattern
-- **Current coverage:** 12 test files covering hash chain, models (Customer, Product, Quotation, Sales), services (QuotationRepository, InventoryLocationRepository, BusinessProfileRepository), widgets (DocumentCard, EmptyStateWidget)
+**`lib/mothership/` (4 files):**
+- Purpose: Server-side code for the mothership "お局様" HTTP server (shelf-based)
+
+**`lib/theme/` (1 file):**
+- Purpose: Theme extensions for invoice list styles
+
+**`lib/utils/` (2 files):**
+- Purpose: `BuildExpiryInfo` (build timestamp/lifespan), `ThemeUtils`
 
 ## Key File Locations
 
-### Entry Points:
-- `lib/main.dart`: App entry point, theme management (gray/dark/light), DatabaseHelper initialization, backup progress state UI, home routing
-- `lib/mothership/server.dart`: Shelf HTTP server startup with 6 endpoints
+**Entry Points:**
+- `lib/main.dart`: App entry point, MyApp widget, theme (5 variants), DB init, backup, heartbeat
 
-### Configuration:
-- `pubspec.yaml`: Package manifest — version 1.5.28+173, SDK ^3.10.7
-- `lib/config/app_config.dart`: Feature flags from --dart-define (ENABLE_DEBUG_FEATURES, ENABLE_MASTER_MODULE, enablePurchaseModule, etc.)
-- `lib/mothership/config.dart`: MothershipConfig from env vars (MOTHERSHIP_HOST, MOTHERSHIP_PORT, MOTHERSHIP_API_KEY, MOTHERSHIP_DATA_DIR)
-- `analysis_options.yaml`: Dart linting configuration
+**Configuration:**
+- `lib/config/app_config.dart`: Feature flags, version, module enablement via `--dart-define`
+- `pubspec.yaml`: Dependencies, version 1.5.31+176, Flutter SDK ^3.10.7
 
-### Core Logic:
-- `lib/services/database_helper.dart`: SQLite singleton wrapper, 79 CREATE TABLE statements, version 60 migration logic, LocalBackupService with SHA256 integrity and 7-year retention
-- `lib/services/navigation_service.dart`: Singleton NavigatorKey + AppRoutes named route definitions
-- `lib/services/hash_utils.dart`: SHA256 hash chain for Customer/Product integrity verification
+**Database:**
+- `lib/services/database_helper.dart`: SQLite singleton, schema version 66, full migration history
+- DB file: `/storage/emulated/0/Documents/販売アシスト 1 号/販売アシスト 1 号.db`
 
-### Testing:
-- `test/unit/`: Unit tests organized by layer (models/, services/, widgets/)
-- `flutter test`: Run all tests
-- `flutter analyze --no-fatal-infos`: Code validation
+**Core Logic:**
+- `lib/services/product_repository.dart`: Product CRUD with hash chain versioning
+- `lib/services/customer_repository.dart`: Customer CRUD with duplicate detection + hash chain
+- `lib/services/invoice_repository.dart`: Invoice CRUD with sync snapshots
+
+**Navigation:**
+- `lib/services/navigation_service.dart`: Named route definitions (limited usage)
+- Most navigation: Direct `Navigator.push(MaterialPageRoute(...))` in screen code
+
+**Testing:**
+- `test/` directory (not in `lib/`): test files
 
 ## Naming Conventions
 
-### Files:
-- **Screens:** `screen_<id>_<name>.dart` — e.g., `screen_s1_setting.dart`, `screen_pj1_project_list.dart`
-- **Services:** `<entity>_repository.dart` or descriptive name (e.g., `database_helper.dart`, `navigation_service.dart`)
-- **Models:** `<entity>_model.dart` or `<entity>_models.dart` — e.g., `customer_model.dart`, `invoice_models.dart`
-- **Widgets:** Descriptive kebab-case or camelCase — e.g., `document_card.dart`, `generic_list_screen.dart`
-- **Constants:** `<category>_constants.dart` or `<purpose>.dart` — e.g., `menu_catalog.dart`, `mail_templates.dart`
+**Files:**
+- `screen_<id>_<name>.dart`: Newer convention (e.g., `screen_pj1_project_list.dart`, `screen_a1_dashboard.dart`)
+- `<entity>_repository.dart`: Repository files (e.g., `product_repository.dart`)
+- `<entity>_model.dart`: Model files (e.g., `customer_model.dart`)
+- `<widget_name>.dart`: Widget files (e.g., `document_card.dart`, `empty_state_widget.dart`)
+- **Inconsistency**: Many older screens use plain names like `customer_master_screen.dart`, `invoice_input_screen.dart` instead of the `screen_<id>_<name>.dart` convention
 
-### Directories:
-- All lowercase with underscores: `lib/screens/`, `lib/services/`, `lib/models/`, `lib/widgets/`
-- Nested test directories follow layer pattern: `test/unit/models/`, `test/unit/services/`
+**Directories:**
+- Lowercase with underscores: `screens/`, `services/`, `models/`, `widgets/`, `utils/`, `constants/`
+
+**Dart classes:**
+- PascalCase: `ProductRepository`, `GenericListScreen`, `BaseDocument`
+- State classes: `_<WidgetName>State` (private, e.g., `_ProjectListScreenState`)
 
 ## Where to Add New Code
 
-### New Feature Screen:
-- **Primary code:** `lib/screens/screen_<2-3char-id>_<name>.dart`
-- **Model (if new entity):** `lib/models/<entity>_model.dart`
-- **Repository (if new entity):** `lib/services/<entity>_repository.dart`
-- **Register in menu:** `lib/constants/menu_catalog.dart` (add to appropriate category)
-- **Tests:** `test/unit/widgets/screen_<id>_<name>_test.dart` or `test/unit/services/<entity>_repository_test.dart`
+**New Feature/Screen:**
+- Primary code: `lib/screens/screen_<id>_<name>.dart` (follow `screen_<id>_<name>` convention)
+- Model: `lib/models/<entity>_model.dart` (extend BaseDocument if applicable)
+- Repository: `lib/services/<entity>_repository.dart`
+- Tests: `test/` directory
 
-### New Component/Widget:
-- **Implementation:** `lib/widgets/<widget_name>.dart`
-- **Usage:** Import from `../widgets/<widget_name>` in screen files
+**New Widget:**
+- Implementation: `lib/widgets/<widget_name>.dart`
 
-### Utilities:
-- **Shared helpers:** `lib/utils/<utility_name>.dart` (currently only `build_expiry_info.dart`)
-- **Constants:** `lib/constants/<category>.dart` (currently 6 files)
+**New Utility/Service:**
+- Shared helpers: `lib/services/<name>_service.dart` or `lib/utils/<name>.dart`
 
-### Feature Module:
-- **Implementation:** `lib/modules/<module_name>_module.dart`
-- **Register dashboard cards in:** Dashboard screen (via FeatureModule.dashboardCards)
-- **Gate behind flag in:** `lib/config/app_config.dart`
+**New Feature Module:**
+- Module class: `lib/modules/<name>_module.dart` (extend `FeatureModule`)
+
+**Database Schema Change:**
+- Migration: `lib/services/database_helper.dart` in `_onUpgrade()`, increment `_databaseVersion`
 
 ## Special Directories
 
-### lib/screens/
-- **Purpose:** All 40+ UI screens
-- **Generated:** No — manually created per AGENTS.md conventions
-- **Committed:** Yes
-- **Note:** ~44k total lines; invoice_input_screen.dart is the largest at 3078 lines
-
-### lib/services/
-- **Purpose:** Business logic and data access (~60 files)
-- **Generated:** No — manually created
-- **Committed:** Yes
-- **Note:** DatabaseHelper singleton is the central data access point; all repositories route through it
-
-### test/
-- **Purpose:** Test suite (12 files)
-- **Generated:** No — manually created
-- **Committed:** Yes
-- **Note:** Coverage is partial (~12 files for ~53k lines); hash chain and model tests are the most comprehensive
-
-### lib/mothership/
-- **Purpose:** Device-side shelf HTTP server for remote sync
-- **Generated:** No — manually created
-- **Committed:** Yes
-- **Note:** Runs Dart shelf server on device; endpoints: /sync/heartbeat, /sync/hash, /chat/send, /chat/pending, /chat/ack, /status, /
-
-### .planning/codebase/
-- **Purpose:** GSD codebase analysis documents (ARCHITECTURE.md, STRUCTURE.md, etc.)
-- **Generated:** Yes — by gsd-map-codebase and similar commands
-- **Committed:** Yes
+**`lib/mothership/`:**
+- Purpose: Server-side Dart code for the mothership ("お局様") HTTP server
+- Generated: No
+- Committed: Yes (part of the monorepo)
 
 ---
 
-*Structure analysis: 2026-05-16*
+*Structure analysis: 2026-05-22*

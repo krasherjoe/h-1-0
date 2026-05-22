@@ -1,164 +1,195 @@
 # External Integrations
 
-**Analysis Date:** 2026-05-16
+**Analysis Date:** 2026-05-22
 
 ## APIs & External Services
 
-### Mothership Remote Server (Custom)
-- **Purpose:** Node heartbeat registration and periodic hash synchronization for distributed backup coordination
-- **Implementation:** `lib/services/mothership_client.dart`
-- **Protocol:** HTTP POST to configurable remote URL
-- **Heartbeat:** Periodic registration of node ID with server
-- **Hash Push:** Periodic SHA-256 hash upload for integrity verification across nodes
-- **Auth:** Node UUID (`ensureClientId()`) used as identity
-- **Config:** Remote URL stored in app settings or build-time constant
+### Google Services (Primary External Integration)
 
-### Google Ecosystem (OAuth 2.0)
-- **Purpose:** Account authentication, cloud backup, and email-based data sync
-- **SDK/Client:** `googleapis` package + `google_sign_in` package
-- **Auth:** OAuth 2.0 flow via `GoogleSignIn`, tokens cached in SharedPreferences
+**Authentication:**
+- Package: `google_sign_in: ^6.1.0` (actual 6.3.0)
+- Implementation: `lib/services/google_account_service.dart` — Singleton pattern via `GoogleAccountService.instance`
+- Scopes requested: `email`, `drive.file`, `gmail.send`, `gmail.modify`
+- Token storage: SharedPreferences (`google_access_token`, `google_refresh_token`, `google_token_expiry`)
+- Token refresh: `GoogleApiServiceBase._refreshAccessToken()` hitting `https://oauth2.googleapis.com/token`
+- OAuth setup documented in `README.md` (Google Cloud Console, SHA-1 fingerprint)
+- `google-services.json` present in project root for Android Firebase/Google Play Services
 
-**Sub-services:**
+**Google Drive Backup:**
+- Package: `googleapis: ^12.0.0` (Drive v3 API)
+- Implementation: `lib/services/drive_backup_service.dart`
+- Backup path: `SalesAssist Backups/<clientId>/<filename>_<timestamp>.db`
+- File types: SQLite database snapshots, error/log reports
+- Operations: upload, list, download, restore with integrity checks
+- Triggered by: `lib/services/auto_backup_service.dart` (every 24h background) and manual via settings
 
-| Service | SDK | Purpose | Scopes |
-|---------|-----|---------|--------|
-| Google Sign-In | `google_sign_in: ^6.x` | User authentication, token acquisition | `email`, profile |
-| Google Drive | `googleapis: ^11.x` (drive/v3) | Database backup upload/download/restore | `drive.file` |
-| Gmail | `googleapis: ^11.x` (gmail/v1) | Chat message sync via email envelopes | `gmail.send`, `gmail.modify` |
+**Gmail Sync (Sync Transport):**
+- Package: `googleapis: ^12.0.0` (Gmail v1 API)
+- Implementation: `lib/services/gmail_sync_client.dart`
+- Sync mechanism: Gmail envelopes via `GmailSyncEnvelope` (`lib/models/gmail_sync_envelope.dart`)
+- Envelope format: JSON → (optionally gzip) → Base64URL, subject prefix `[Sync:v1] <messageId>#<sequence>`
+- Payload types: `chat_message`, `invoice_snapshot` (invoice push currently disabled)
+- Encoding modes: `gzipBase64` (default), `base64Only`, `plainJson` — configurable in settings
+- Polling: 10-second interval via `ChatSyncScheduler` in `lib/services/chat_sync_scheduler.dart`
+- Label management: Auto-creates/uses `SalesAssist Sync` Gmail label, moves processed messages out of INBOX
+- BCC required: `gmail_sync_bcc_address` must be set in `AppSettingsRepository`
 
-**Token management:**
-- Access token stored in `shared_preferences` key `google_access_token`
-- Refresh token stored in `google_refresh_token`
-- Token expiry in `google_token_expiry` (with 5-minute buffer)
-- Auto-refresh via `_refreshAccessToken()` calling `oauth2.googleapis.com/token`
-- Client credentials: `google_client_id`, `google_client_secret`
+### Mothership Server (お局様 LAN Server)
 
-**Implementation files:**
-| File | Purpose |
-|------|---------|
-| `lib/services/google_account_service.dart` | Google Sign-In singleton, login/logout, user info |
-| `lib/services/google_api_service_base.dart` | Token refresh, Bearer auth header injection, HTTP client wrapper |
-| `lib/services/gmail_sync_client.dart` | Gmail raw MIME envelope sync (chat messages, invoice snapshots) |
-| `lib/services/drive_backup_service.dart` | Drive folder hierarchy, DB upload/download/restore |
+**Direct Connection Sync:**
+- Implementation: `lib/services/mothership_client.dart`
+- Endpoints: `/sync/heartbeat`, `/sync/hash`, `/chat/send`, `/chat/pending`, `/chat/ack`
+- Auth: API key passed as `x-api-key` header
+- Client ID: UUID v4 generated on first use, stored in SharedPreferences
 
-### SMTP Email (Mailer)
-- **Purpose:** Send email notifications (invoice confirmations, alerts)
-- **SDK/Client:** `mailer` package (Dart SMTP client)
-- **Implementation:** `lib/services/email_notification_service.dart`
-- **Auth:** User-configured SMTP credentials stored in app settings
-- **Config keys:** `mail_send_method_smtp`, SMTP host/port/credentials
-- **Transport modes:** Direct SMTP or Gmail API (via Google APIs)
+**Chat Transport:**
+- Implementation: `lib/services/mothership_chat_client.dart`
+- Discovery: `lib/services/mothership_discovery_service.dart` — GPS-based auto-detection of mothership (100m-2000m range)
+- Config: host URL + password stored in SharedPreferences (`external_host`, `external_pass`)
+
+**Transport Selection:** `SyncTransportMode` enum (`lib/models/sync_preferences.dart`) — `gmailOnly`, `directOnly`, `auto` (GPS-preferred with fallback to Gmail)
 
 ## Data Storage
 
-### Primary Database
-- **Type:** SQLite local database
-- **Connection:** Via `sqflite` package
-- **File:** `gemi_invoice.db` (version 33)
-- **Location:** App's internal storage (resolved via `path_provider`)
-- **Client/ORM:** Raw SQL queries through `DatabaseHelper` (`lib/services/database_helper.dart`) — no ORM layer
-- **Schema migrations:** Handled in `onUpgrade` callback with version checks
+**Primary Database:**
+- SQLite via `sqflite: ^2.3.0`
+- DB file: `販売アシスト 1 号.db` on Android shared storage (`/storage/emulated/0/Documents/販売アシスト 1 号/`)
+- iOS: app Documents folder via `path_provider`
+- Current version: 66 (in `DatabaseHelper._databaseVersion`)
+- Backup to `/storage/emulated/0/Download/` with SHA-256 integrity verification
+- 7-year retention policy (`LocalBackupService`) per Japanese electronic bookkeeping law
 
-### Local Backup Storage
-- **Type:** SHA-256 integrity-verified local file backups
-- **Location:** App's internal storage directory + system Download folder for exports
-- **Implementation:** `lib/services/database_helper.dart` (backup methods) + `lib/services/auto_backup_service.dart`
-- **Integrity:** SHA-256 hash comparison via `crypto` package
+**Settings Storage:**
+- `shared_preferences: ^2.2.2` — All app settings, credentials, tokens
+- Managed via `lib/services/app_settings_repository.dart`
 
-### Cloud Backup (Google Drive)
-- **Type:** Google Drive file storage
-- **Folder structure:** `SalesAssist Backups/` → `<node_id>/` → timestamped DB files
-- **Implementation:** `lib/services/drive_backup_service.dart`
-- **Operations:** Upload, list, download, restore (full DB recovery)
+**File Storage:**
+- Default for user-facing file operations: system Download folder (`/storage/emulated/0/Download/`) on Android
+- iOS: `getApplicationDocumentsDirectory()`
+- Database storage: separate Documents folder specific to app (`/storage/emulated/0/Documents/販売アシスト 1 号/`)
+- Permission management: `lib/services/storage_permission_service.dart` (handles Android 13+ MANAGE_EXTERNAL_STORAGE)
 
-### App Settings & Cache
-- **Type:** SharedPreferences key-value store
-- **Contents:** Theme preferences, SMTP config, Google OAuth tokens, sync settings, feature flags
-- **Implementation:** `shared_preferences` package throughout services
+**Caching:** Not used (SQLite is the primary data store, no Redis/memcache layer)
 
 ## Authentication & Identity
 
-**Auth Provider:** Hybrid — local SQLite auth + optional Google OAuth
-
-**Local Auth:**
-- **Implementation:** `lib/services/auth_repository.dart`
-- **Mechanism:** UUID-based tokens stored in SQLite + SharedPreferences
-- **User model:** Local user records with email/password (SQLite)
-- **Session:** In-memory token validation, persisted across app restarts via prefs
-
-**Google OAuth:**
-- **Implementation:** `lib/services/google_account_service.dart` (singleton)
-- **Flow:** Google Sign-In → access/id token → stored in SharedPreferences
-- **Token lifecycle:** Auto-refresh with 5-minute expiry buffer
-- **Scopes:** `email`, `drive.file`, `gmail.send`, `gmail.modify`
+**Auth Provider:**
+- Google Sign-In (`google_sign_in`) — Primary auth for cloud services
+- Mothership API key — Direct connection auth (shared secret)
+- No custom user auth system — Google identity used as the primary user context
+- Auth state stored in `GoogleAccountService` (singleton, `lib/services/google_account_service.dart`)
+- OAuth token auto-refresh via `GoogleApiServiceBase` (`lib/services/google_api_service_base.dart`)
+- Multi-account support: force account picker, silent sign-in restoration
 
 ## Monitoring & Observability
 
-**Error Tracking:**
-- No dedicated error tracking SDK detected (e.g., Sentry, Firebase Crashlytics)
-- Errors logged via `debugPrint()` in service classes
-- Error reports can be uploaded to Google Drive as files (`drive_backup_service.uploadErrorReport()`)
+**Logging:**
+- `debugPrint()` throughout — No structured logging framework
+- Activity logging to SQLite via `lib/services/activity_log_repository.dart` (audit trail)
+- `BuildExpiryInfo` — Build timestamp validation with lifespan enforcement
 
-**Logs:**
-- **Approach:** `debugPrint()` throughout services with prefixed tags (e.g., `[GmailSync]`, `[DriveBackup]`, `[GoogleAPI]`)
-- **Export:** Log files can be backed up to Google Drive via `uploadErrorReport()`
-- No structured logging framework detected
+**Error Tracking:** Not detected (no Sentry, Crashlytics, or similar)
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Not applicable — this is a standalone mobile app (APK), not a web service
-- Distribution: Direct APK install or private distribution channel
+- Android APK builds via Flutter CLI
+- `scripts/build_with_expiry.sh` — Wraps `flutter analyze --no-fatal-infos && flutter build apk` with `--dart-define` for expiry
+- Build modes: `debug`, `profile`, `release`
+- Lifespan: default 90 days (configurable via script argument)
 
-**Build Pipeline:**
-- Script: `scripts/build_with_expiry.sh` (accepts `debug|profile|release`)
-- Verification: `flutter analyze --no-fatal-infos` before commits
-- Manual build: `flutter build apk`
+**CI Pipeline:** Not detected (no CI config files found)
 
-## Environment Configuration
+## Email Integration
 
-### Required env vars / settings
+**Native Mail App:**
+- Package: `flutter_email_sender: ^6.0.3`
+- Implementation: `lib/services/invoice_email_sender.dart`
+- Flow: Generate PDF → Save to temp → Open native mail composer with PDF attachment
+- BCC: Configured in `S1:設定 > メール設定`, stored in `AppSettingsRepository`
 
-| Setting | Storage | Purpose |
-|---------|---------|---------|
-| Mothership URL | App settings or code constant | Remote heartbeat target |
-| Google Client ID/Secret | SharedPreferences (`google_client_id`, `google_client_secret`) | OAuth 2.0 credentials |
-| SMTP Host/Port/User/Pass | App settings (`mail_send_method_smtp` and related keys) | Email notification server |
-| Database path | Resolved at runtime via `path_provider` | SQLite file location |
+**SMTP (Direct):**
+- Package: `mailer: ^6.0.1`
+- Implementation: `lib/services/email_notification_service.dart`
+- Use case: Automated notifications (quote, order, invoice, delivery, stock shortage)
+- SMTP server config hardcoded as dev defaults (smtp.example.com — placeholder)
 
-### Secrets location
-- **Google OAuth:** Stored in `SharedPreferences` after user login (access token, refresh token, client credentials)
-- **SMTP credentials:** Stored in app settings SharedPreferences
-- **No `.env` files** — all secrets are app-prefs-based
-- ⚠️ **Security note:** Tokens and credentials stored in plain-text SharedPreferences with no encryption layer detected
+## File Export/Import
+
+**PDF Document Generation:**
+- Package: `pdf: ^3.11.3`
+- Implementation: `lib/services/pdf_generator.dart`
+- Document types: Estimates, Orders, Invoices, Delivery notes, Receipts
+- Features: Company info + seal image overlay, QR code (content hash), bank account info, tax display modes
+- Font: IPAexGothic embedded for Japanese text
+
+**Printing:**
+- Package: `printing: ^5.14.2`
+- Service: `lib/services/print_service.dart` (file exists, empty)
+- PDF preview: `lib/widgets/invoice_pdf_preview_page.dart`
+
+**File Picker:**
+- Package: `file_picker: ^8.1.2`
+- For import of CSV/Excel data and DB restore file selection
+
+**File Sharing:**
+- Package: `share_plus: ^12.0.1` — Native share sheet
+- Package: `open_filex: ^4.7.0` — Open generated PDFs in external viewers
+
+## Image Handling
+
+**Camera:**
+- Package: `camera: ^0.11.0+1` — Seal/stamp photo capture via `lib/widgets/seal_camera_screen.dart`
+- Delivery photo capture: `lib/services/camera_delivery_photo_service.dart`
+
+**Image Picker:**
+- Package: `image_picker: ^1.2.1` — Gallery selection for profile images, product photos
+
+**Barcode Scanner:**
+- Package: `mobile_scanner: ^7.2.0` — Barcode/QR scanning in `lib/screens/barcode_scanner_screen.dart`
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None detected — this is a mobile-first client app, not a webhook consumer
+- None detected (app is offline-first, not a receiver)
 
 **Outgoing:**
-| Service | Endpoint | Trigger |
-|---------|----------|---------|
-| Mothership server | Configurable remote URL (HTTP POST) | Periodic heartbeat + hash push |
-| Google OAuth2 token endpoint | `https://oauth2.googleapis.com/token` | Token refresh |
-| Gmail API | `gmail.googleapis.com/gmail/v1/users/{userId}/messages` | Chat/invoice sync |
-| Google Drive API | `www.googleapis.com/upload/drive/v3/files` | DB backup upload/restore |
-| SMTP server | Configurable host:port (via mailer) | Email notifications |
+- Mothership heartbeat: `POST /sync/heartbeat` on app launch
+- Mothership hash chain: `POST /sync/hash` on data mutation
+- Gmail envelopes: Each outbound sync message is a new Gmail draft/send
 
-## Sync Architecture (Gmail-based)
+## Network & Offline Strategy
 
-The app implements a unique Gmail-envelope-based sync protocol for cross-device data synchronization:
+**Architecture:** Offline-first — all data in local SQLite, sync is optional
+**Network Detection:** Not via dedicated package; connection errors silently handled (try-catch with `debugPrint`)
+**Offline Behavior:** All CRUD operations work without network; sync runs best-effort in background
+**Sync Triggers:**
+- App launch (heartbeat, 24h backup, chat sync start)
+- Timer-based (chat sync every 10s via `ChatSyncScheduler`)
+- Manual via settings screen
 
-1. **Envelope format:** JSON payload wrapped in MIME email with custom headers (`X-Client-Id`, `X-Sequence`, `X-Envelope-Encoding`)
-2. **Encoding:** Base64-encoded raw MIME sent as BCC to self (`_defaultSubjectPrefix = "[Sync:v1]"`)
-3. **Payload types:** `chat_message` and `invoice_snapshot`
-4. **Transport modes:** Direct SMTP or Gmail API (configurable per `SyncTransportMode`)
-5. **Conflict resolution:** Client ID comparison prevents self-messages; sequence numbers track ordering
-6. **Status:** Invoice push is currently disabled (`"receiver not available"`), chat sync active
+## Environment Configuration
 
-**Implementation:** `lib/services/gmail_sync_client.dart` — reads/writes `ChatMessage` and `InvoiceSyncPayload` models
+**Required env vars (build-time):**
+- `APP_BUILD_TIMESTAMP` — UTC ISO 8601 datetime (embedded by build script)
+- `APP_BUILD_LIFESPAN_DAYS` — Integer, days until expiry (default: 90)
+
+**Optional build-time vars:**
+- `APP_VERSION`, `ENABLE_DEBUG_FEATURES`, `API_ENDPOINT`
+- `ENABLE_MASTER_MODULE`, `ENABLE_SALES_MODULE`, `ENABLE_PURCHASE_MODULE`, etc.
+
+**Runtime credentials (stored in SharedPreferences):**
+- `external_host` — Mothership server URL
+- `external_pass` — Mothership API key
+- `google_client_id` / `google_client_secret` — OAuth credentials
+- `google_access_token` / `google_refresh_token` — OAuth tokens
+- `gmail_sync_bcc_address` — Sync BCC recipient
+
+**Secrets location:**
+- OAuth client credentials: SharedPreferences (set via settings UI)
+- `google-services.json` — Committed to repo (Android Firebase config)
+- `.env` files: Explicitly blacklisted (see README: "`.env` はデフォルトでブラックリスト化")
 
 ---
 
-*Integration audit: 2026-05-16*
+*Integration audit: 2026-05-22*

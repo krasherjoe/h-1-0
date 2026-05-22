@@ -1,232 +1,289 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-05-16
+**Analysis Date:** 2026-05-22
 
 ## Naming Patterns
 
 **Files:**
-- snake_case for all Dart source files: `database_helper.dart`, `invoice_repository.dart`, `screen_a1_dashboard.dart`
-- Screen files follow `screen_<id>_<name>.dart` pattern: `screen_s8_email_settings.dart`, `screen_pj2_project_detail.dart`
-- Test files mirror source names with `_test.dart` suffix: `customer_model_test.dart`, `inventory_location_repository_test.dart`
+- Screen files: `screen_<2-3char_id>_<name>.dart` (e.g. `screen_pj1_project_list.dart`, `screen_s1_theme_selection.dart`)
+- Service/repository files: `<entity>_repository.dart` (e.g. `customer_repository.dart`, `product_repository.dart`)
+- Model files: `<entity>_model.dart` (e.g. `customer_model.dart`, `invoice_models.dart`)
+- Widget files: `<descriptive_name>.dart` (e.g. `document_card.dart`, `empty_state_widget.dart`)
+- Part files: `_part.dart` suffix when splitting large files (e.g. `invoice_header_widget.dart`)
+
+**Classes:**
+- Screens: `{Purpose}Screen` (e.g. `ProjectListScreen`, `ThemeSelectionScreen`)
+- Services: `{Entity}Repository` (e.g. `CustomerRepository`, `ProductRepository`)
+- Models: `{Entity}` (e.g. `Customer`, `Product`, `BaseDocument`)
+- Widgets: `{Purpose}{Widget}` (e.g. `DocumentCard`, `EmptyStateWidget`, `ScreenAppBarTitle`)
+- Private State classes: `_{Class}State` (e.g. `_ProjectListScreenState`)
 
 **Functions/Methods:**
-- camelCase for public methods: `fetchAllProducts()`, `toMap()`, `fromMap()`
-- private methods prefixed with underscore: `_load()`, `_editInvoice()`, `_confirmFormalIssue()`
-- Factory constructors named descriptively: `defaultProfile()`, `fromEnv()`
+- `camelCase` for all methods and functions
+- Private: `_leadingUnderscore` plus `camelCase`
+- Getters: `camelCase` (e.g. `getDisplayTitle()`, `get invoiceName`)
 
-**Variables:**
-- camelCase for local/instance variables: `_loading`, `_invoices`, `searchController`
-- Private state prefixed with underscore: `_filter`, `_startDate`, `_issuing`
-- const constants in UPPER_SNAKE_CASE when in dedicated constants files: `MAIL_SEND_METHOD_SMTP`, `KEY_INVOICE_STYLE`
+**Variables & Constants:**
+- Local variables: `camelCase` (e.g. `_allItems`, `_loading`, `_searchCtrl`)
+- Constants: `lowercase_with_underscores` for SharedPreferences keys (e.g. `kLastBackupTime = 'last_backup_time'`)
+- Class-level const: `kPrefix` convention (e.g. `kMailSendMethodSmtp`)
+- Private instance vars: `_leadingUnderscore`
 
 **Types:**
-- PascalCase for classes: `InvoiceRepository`, `BaseDocument`, `GenericListScreen<T>`
-- Enums use PascalCase with PascalCase members: `_InvoiceIssueFilter { pending, issued }`, `BusinessType { retail, service, manufacturing }`
-- Abstract base classes prefixed conceptually: `BaseDocument` (no strict naming convention enforced)
+- Enums: `PascalCase` (e.g. `DocumentStatus`, `BusinessType`, `WorkflowType`)
+- Abstract classes: `PascalCase` (e.g. `BaseDocument`)
+- Mixins: `PascalCase` with `Mixin` suffix when applicable
 
-**State Variables:**
-- Private state variables in StatefulWidget start with underscore: `_loading`, `_invoices`, `_filter`
-- Use descriptive names reflecting UI state: `_issuing`, `_redInvoiceSourceIds`, `_searchController`
+## Screen ID Prefix System
 
-## Code Style
+Every screen MUST use a 2-3 character alphanumeric prefix (e.g. `S1:`, `P1:`, `PJ1:`) in the AppBar title:
+- `S1:設定`, `P1:商品マスター`, `PJ1:案件一覧`
+- File name pattern: `screen_<id>_<name>.dart`
+- The `ScreenAppBarTitle` widget in `lib/widgets/screen_id_title.dart` enforces the ID+title display pattern
 
-**Formatting:**
-- Standard Dart formatting (dart format)
-- 2-space indentation
-- Line length: no explicit enforcement via linter rules beyond `flutter_lints/flutter.yaml`
-- `analysis_options.yaml` uses only `flutter_lints/flutter.yaml` — no custom rules for line length, imports ordering, or naming conventions
+**Existing IDs (do not duplicate):** S1, SM, P1, C1, SI, WH, ST, ES, OR, IV, IQ, IM, IC, CS, PA, CH, M1, D2, PJ1, PJ2, TK, PC, TH, SB
 
-**Linting:**
-- Tool: `flutter_lints` package
-- Config: `analysis_options.yaml` (minimal — relies on parent package's lints)
-- Run command: `flutter analyze --no-fatal-infos`
-- No custom lint rules defined — project-level linting is minimal
+## Code Style & Formatting
 
-**Trailing Commas:** Used in method parameters and constructor calls (consistent with modern Dart style)
+**Linter:** `package:flutter_lints` (v6.0.0) via `analysis_options.yaml`, with `flutter analyze --no-fatal-infos`
+
+**Key Dart settings:**
+- `analysis_options.yaml` includes `package:flutter_lints/flutter.yaml` with no custom overrides
+- The default Flutter lint set is active
+
+**Run command:**
+```bash
+flutter analyze --no-fatal-infos
+```
+
+## File Size Limits
+
+- **Screen files: 1,200 lines maximum** — exceed by splitting into child widgets in `lib/screens/` or `lib/widgets/` with `_part.dart` suffix
+- **Service files: 800 lines maximum** — split by entity or functional area
+- Example split: `invoice_input_screen.dart` → `invoice_header_widget.dart`, `invoice_lines_widget.dart`, `invoice_calculator_widget.dart`
 
 ## Import Organization
 
-**Order:**
-1. `dart:` core imports first (`dart:async`, `dart:io`)
-2. `package:` Flutter/Dart package imports alphabetically
-3. Relative local imports grouped by layer (`../models/`, `../services/`, `widgets/`)
+Imports follow this order within each file:
+1. **Dart SDK** (`dart:io`, `dart:async`, `dart:convert`)
+2. **Flutter SDK** (`package:flutter/material.dart`, `package:flutter/foundation.dart`)
+3. **Third-party packages** (`package:sqflite/`, `package:shared_preferences/`, `package:path_provider/`, etc.)
+4. **Local project imports** relative paths (e.g. `'../models/customer_model.dart'`)
 
-**Example from `lib/screens/invoice_issue_screen.dart`:**
+Screen files use relative imports (e.g. `'../services/project_repository.dart'`), not package-prefixed.
+
+## Widget Patterns
+
+**StatefulWidget pattern:**
 ```dart
-import 'dart:async';
+class ProjectListScreen extends StatefulWidget {
+  const ProjectListScreen({super.key});
 
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
-import '../models/invoice_list_style.dart';
-import '../models/invoice_models.dart';
-import '../services/customer_repository.dart';
-import '../services/app_settings_repository.dart';
-import '../services/invoice_repository.dart';
-import '../services/pdf_generator.dart';
-import '../services/storage_monitor.dart';
-import '../theme/invoice_list_style_theme.dart';
-import '../widgets/invoice_list_a2_card.dart';
-import '../widgets/invoice_pdf_preview_page.dart';
-import '../widgets/storage_warning_dialog.dart';
-import 'invoice_input_screen.dart';
-```
-
-**Path Aliases:** None detected — all local imports use relative paths (`../services/`, `widgets/`)
-
-## Error Handling
-
-**Strategy:** Throw typed exceptions with descriptive Japanese messages.
-
-**Patterns observed:**
-```dart
-// Generic Exception for runtime/business errors
-throw Exception('ストレージ容量不足のため保存できません');
-throw Exception('order_not_found');
-throw Exception('見積が見つかりません');
-throw Exception('データ改ざんが検出されました: $documentId');
-
-// ArgumentError for invalid parameters
-throw ArgumentError('Database file not found: ${databaseFile.path}');
-throw ArgumentError('amount must be greater than 0');
-throw ArgumentError('移動元と移動先の倉庫が同一です');
-
-// StateError for invariant violations
-throw StateError('倉庫[$warehouseId]の商品[$productId]の在庫が不足しています (残量: $current, 変動: $delta)');
-```
-
-**Custom Exception Classes:**
-- `DuplicateCustomerException` — thrown when duplicate customer detected in `lib/models/customer_model.dart`
-- `CustomerInUseException` — thrown when customer referenced by other records
-
-**Screen-level error handling:** Try-catch blocks with debugPrint for logging, no user-facing error dialogs consistently implemented. Example from `lib/screens/invoice_issue_screen.dart`:
-```dart
-Future<bool> _confirmFormalIssue(Invoice invoice) async {
-  final result = await showDialog<bool>(...);
-  if (result == true) {
-    try {
-      await _invoiceRepo.formalIssue(invoice.id!);
-    } catch (e) {
-      // Error handling pattern varies by screen
-    }
-  }
-}
-```
-
-## Logging
-
-**Framework:** `debugPrint()` — used extensively throughout the codebase (~290 calls across services and screens).
-
-**Patterns observed:**
-```dart
-// Verbose debug logging in services
-debugPrint('InvoiceRepository: fetchAllWithHistory called');
-debugPrint('HashChainVerifyResult: hash=$hash, isValid=$isValid');
-debugPrint('BackupService: backup completed successfully');
-
-// DEBUG markers for temporary debugging (mixed with real code)
-// 51 TODO/FIXME/HACK comments found — many are debug prints or incomplete features
-```
-
-**Note:** No structured logging framework (e.g., `logging`, `logger`) is used. All logging goes through Flutter's `debugPrint`.
-
-## Comments
-
-**When to Comment:**
-- Japanese comments used throughout for business logic explanation
-- API documentation comments (`///`) used sparingly — only on public-facing widgets like `EmptyStateWidget`
-- Inline comments explain "why" not "what" when present
-
-**JSDoc/TSDoc (Dart doc comments):**
-```dart
-/// 基本伝票モデル
-/// すべての伝票（見積・受注・売上・請求）に共通する基底クラス
-abstract class BaseDocument { ... }
-
-/// 汎用空状態ウィジェット
-/// データがない時の表示に使用
-class EmptyStateWidget extends StatelessWidget { ... }
-```
-
-## Function Design
-
-**Size:** Functions tend to be medium-sized (20-80 lines). Complex screens like `invoice_issue_screen.dart` (~559 lines) have many private helper methods.
-
-**Parameters:**
-- Named parameters with defaults for widgets (Flutter convention)
-- Required named parameters for constructors: `required this.id`, `required this.documentNumber`
-- Optional nullable parameters where appropriate: `this.notes`, `this.subtitle`
-
-**Return Values:**
-- `Future<T>` for async operations
-- `Map<String, dynamic>` for serialization (`toMap()`)
-- Custom result objects for complex operations: `HashChainVerifyResult` from invoice_repository
-- `void` for side-effect-only methods
-
-## Module Design
-
-**Exports:**
-- Each file exports its primary class(es) — no barrel files detected
-- Models import each other directly when needed (e.g., `base_document.dart` imports `customer_model.dart`)
-
-**Repository Pattern:**
-- One repository per entity: `lib/services/<entity>_repository.dart`
-- Repositories construct their own `DatabaseHelper` instances internally
-- Methods: `getAll()`, `getById()`, `insert()`, `update()`, `delete()`, plus domain-specific methods
-
-**Generic Widgets:**
-- `GenericListScreen<T extends BaseDocument>` — typed generic list with filters, async loading
-- `DocumentCard` — reusable card for document display
-- `EmptyStateWidget` — empty state placeholder UI
-
-## StatefulWidget Patterns
-
-**Lifecycle:**
-```dart
-class InvoiceIssueScreen extends StatefulWidget {
-  const InvoiceIssueScreen({super.key});
-  
   @override
-  State<InvoiceIssueScreen> createState() => _InvoiceIssueScreenState();
+  State<ProjectListScreen> createState() => _ProjectListScreenState();
 }
 
-class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
-  final InvoiceRepository _invoiceRepo = InvoiceRepository();
+class _ProjectListScreenState extends State<ProjectListScreen>
+    with SingleTickerProviderStateMixin {
+  // Private fields initialized directly (not in constructor)
+  final _repo = ProjectRepository();
   bool _loading = true;
-  
+
   @override
   void initState() {
     super.initState();
     _load();
   }
-  
-  Future<void> _load() async { ... }
+
+  Future<void> _load() async {
+    final list = await _repo.getAllProjects();
+    if (!mounted) return;  // ← REQUIRED after any await
+    setState(() {
+      _all = list;
+      _loading = false;
+    });
+  }
 }
 ```
 
-**mounted checks after async:**
-- `if (!mounted) return;` used before `setState()` and `Navigator.push()` after await
-- Consistently applied in screens that perform async operations (verified across multiple screen files)
-
-## Constants & Configuration
-
-**Constants file:** `lib/constants/` — static constants, mail templates, enums
+**StatelessWidget pattern** (used for reusable widgets):
 ```dart
-// lib/constants/mail_templates.dart
-const String kMailTemplateSubjectDefault = '請求書のご案内';
-const String kMailTemplateBodyDefault = 'お世話になっております。';
+class EmptyStateWidget extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onAction;
+
+  const EmptyStateWidget({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    // ... build method
+  }
+}
 ```
 
-**AppConfig:** Centralized version and feature flags via `lib/config/app_config.dart`
-- Overridable via `--dart-define` at build time
-- Controls module visibility: master, sales, purchase, inventory, analytics, system
+## Async Operation — `mounted` Check
 
-## Theme System
+**MANDATORY:** Insert `if (!mounted) return;` after every `await` call that precedes `setState()` or `Navigator` operations:
 
-**Singleton pattern:** `AppThemeController` in `lib/services/theme_controller.dart` uses `ValueNotifier<String>` for reactive theme state.
+```dart
+// lib/screens/screen_pj1_project_list.dart — lines 46-50
+Future<void> _load() async {
+  final list = await _repo.getAllProjects();
+  final salesMap = <String, int>{};
+  for (final project in list) {
+    final sales = await _invoiceRepo.getTotalAmountByProjectId(project.id);
+    salesMap[project.id] = sales;
+  }
+  if (!mounted) return;  // ← REQUIRED
+  setState(() {
+    _all = list;
+    _projectSales = salesMap;
+    _loading = false;
+  });
+}
+```
 
-**Theme resolution:** `InvoiceListStyleTheme` resolves between A2-style and legacy invoice card styles based on settings.
+This applies to:
+- `setState()` calls
+- `Navigator.push()`, `Navigator.pop()` calls
+- `ScaffoldMessenger.of(context).showSnackBar()` calls
+
+## Generic List Pattern
+
+Reusable `GenericListScreen<T>` in `lib/widgets/generic_list_screen.dart`:
+```dart
+class GenericListScreen<T> extends StatefulWidget {
+  final String screenId;
+  final String title;
+  final Future<List<T>> Function() fetchData;
+  final Widget Function(BuildContext, T, VoidCallback) buildCard;
+  final List<FilterOption<T>>? filters;
+  final Future<void> Function()? onCreateNew;
+  // ...
+}
+```
+
+## Repository Pattern (CRUD)
+
+Every entity has a repository class in `lib/services/`:
+```dart
+// lib/services/product_repository.dart
+class ProductRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+  final ActivityLogRepository _logRepo = ActivityLogRepository();
+
+  Future<List<Product>> getAllProducts({bool includeHidden = false}) async { ... }
+  Future<Product?> getProduct(String id) async { ... }
+  Future<void> saveProduct(Product product) async { ... }
+  Future<void> deleteProduct(String id) async { ... }
+}
+```
+
+Key conventions:
+- `DatabaseHelper` singleton accessed via `_dbHelper.database`
+- Raw SQL queries via `db.rawQuery()` (not `db.query()` often)
+- Transactions for multi-table writes via `db.transaction()`
+- Hash chain integration via `HashUtils` for electronic recordkeeping compliance
+
+## Model Patterns
+
+**`BaseDocument`** in `lib/models/base_document.dart` — abstract base for all document types:
+- Contains `id`, `documentNumber`, `date`, `customer`, `items`, `subtotal`, `taxAmount`, `total`, `status`
+- Abstract methods: `toMap()`, `getStatusColor()`, `getThemeColor()`, `getDocumentTypeName()`
+- Concrete `DocumentItem` class with `toMap()`, `fromMap()`, `copyWith()`
+
+**Standard model** (e.g. `Customer` in `lib/models/customer_model.dart`):
+- Immutable fields with `final`
+- `fromMap(Map<String, dynamic>)` factory constructor
+- `toMap()` instance method for SQLite serialization
+- `copyWith()` for immutable updates
+- Custom exception classes co-located in the model file (e.g. `DuplicateCustomerException`)
+
+## Error Handling
+
+**Database operations** — `try-catch` with logging and safe UI update:
+```dart
+try {
+  final db = await _dbHelper.database;
+  // ...
+} catch (e) {
+  debugPrint('DB Error: $e');
+  if (!mounted) return;
+  showOfflineWarning();
+}
+```
+
+**API/network operations** — graceful offline degradation:
+```dart
+try {
+  await syncService.uploadData(data);
+} catch (e) {
+  if (!mounted) return;
+  showOfflineWarning();  // Stay in offline mode
+}
+```
+
+Custom exceptions used for domain errors:
+- `DuplicateCustomerException` in `lib/models/customer_model.dart`
+- `CustomerInUseException` in `lib/models/customer_model.dart`
+
+## Logging
+
+- Production logging: `debugPrint()` (prints only in debug mode)
+- Temporary debug output: `print()` — avoid in committed code
+- Error context: Include operation name and entity ID in the message
+
+## SharedPreferences Key Naming
+
+Use snake_case strings assigned to `const` variables with `k` prefix:
+```dart
+const String kLastBackupTime = 'last_backup_time';
+const String kMailSendMethodSmtp = 'mail_send_method_smtp';
+const String kDailyBackupKey = 'backup_date_today';
+```
+
+See `lib/services/auto_backup_service.dart` for examples.
+
+## Duplicate Code Prevention
+
+**Rule:** Any code block appearing 3+ times MUST be extracted to `lib/widgets/` as a shared utility.
+
+Good shared abstractions found:
+- `lib/widgets/document_card.dart` — universal document card widget
+- `lib/widgets/empty_state_widget.dart` — universal empty state
+- `lib/widgets/generic_list_screen.dart` — reusable list screen template
+- `lib/widgets/screen_id_title.dart` — unified AppBar title with screen ID
+
+Split large screens into child widgets under `lib/screens/<screen_name>/` subdirectories (e.g. `lib/screens/invoice_input/`).
+
+## Database Migration Patterns
+
+In `lib/services/database_helper.dart`:
+```dart
+onUpgrade: (db, oldVersion, newVersion) async {
+  if (oldVersion < 34) {
+    await db.execute('ALTER TABLE ...');
+  }
+  // Never DROP TABLE — use ALTER TABLE to preserve data
+}
+```
+- Always increment `version` in `openDatabase()` when schema changes
+- Use `_safeAddColumn()` helper pattern from `lib/services/customer_repository.dart` to add columns safely
+
+## Git Commits
+
+- Messages MUST be in Japanese only
+- Example: `git commit -m "S1:新機能画面を実装し、データベース連携を追加"`
 
 ---
 
-*Convention analysis: 2026-05-16*
+*Convention analysis: 2026-05-22*
