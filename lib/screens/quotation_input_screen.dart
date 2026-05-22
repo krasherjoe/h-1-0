@@ -432,9 +432,9 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      Text(_dateFormatter.format(quotation.date), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-                                      const Spacer(),
                                       Text(quotation.customerNameForDisplay, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: cs.onSurface)),
+                                      const Spacer(),
+                                      Text(_dateFormatter.format(quotation.date), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
