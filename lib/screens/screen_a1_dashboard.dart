@@ -606,17 +606,17 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                             children: [
                               Row(
                                 children: [
-                                  Text(customerName,
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          color: cs.onSurfaceVariant)),
-                                  const SizedBox(width: 8),
                                   Text(
                                       '${inv.date.year}/${inv.date.month.toString().padLeft(2, '0')}/${inv.date.day.toString().padLeft(2, '0')}',
                                       style: TextStyle(
                                           fontSize: 9,
                                           color: cs.onSurfaceVariant
                                               .withValues(alpha: 0.6))),
+                                  const SizedBox(width: 8),
+                                  Text(customerName,
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: cs.onSurfaceVariant)),
                                 ],
                               ),
                               const SizedBox(height: 2),
