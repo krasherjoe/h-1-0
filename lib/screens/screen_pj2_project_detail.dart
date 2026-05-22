@@ -11,6 +11,7 @@ import '../models/task_model.dart';
 import '../models/time_log_model.dart';
 import '../services/customer_repository.dart';
 import '../services/database_helper.dart';
+import '../services/invoice_repository.dart';
 import '../services/milestone_repository.dart';
 import '../services/project_repository.dart';
 import '../services/task_repository.dart';
@@ -70,10 +71,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
   }
 
   Future<void> _loadDocs() async {
-    final db = await _db.database;
-    final inv = await db.query('invoices',
-        where: 'project_id = ?', whereArgs: [_project.id], orderBy: 'date DESC');
+    final customerRepo = CustomerRepository();
+    final invoiceRepo = InvoiceRepository();
+    final customers = await customerRepo.getAllCustomers();
+    final invoices = await invoiceRepo.getInvoicesByProjectId(_project.id, customers);
 
+    final db = await _db.database;
     List<Map<String, dynamic>> sal = [];
     final salesExists = await db.rawQuery(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='sales'");
@@ -93,7 +96,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
     final fresh = await _repo.getProjectById(_project.id);
     if (!mounted) return;
     setState(() {
-      _invoices = inv;
+      _invoices = invoices.map((inv) => inv.toMap()).toList();
       _sales = sal;
       _quotations = quo;
       _salesTableExists = salesExists.isNotEmpty;

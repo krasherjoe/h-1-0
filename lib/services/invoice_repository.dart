@@ -538,6 +538,31 @@ class InvoiceRepository {
     return updatedCount;
   }
 
+  /// 指定したprojectIdに紐づく伝票を取得する（案件管理用）
+  Future<List<Invoice>> getInvoicesByProjectId(String projectId, List<Customer> customers) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'project_id = ?',
+      whereArgs: [projectId],
+      orderBy: 'date DESC',
+    );
+    if (rows.isEmpty) return [];
+    final allInvoices = await getAllInvoices(customers);
+    return allInvoices.where((i) => rows.any((r) => r['id'] == i.id)).toList();
+  }
+
+  /// 指定したprojectIdに紐づく伝票の合計金額を集計（案件管理用）
+  Future<int> getTotalAmountByProjectId(String projectId) async {
+    final db = await _dbHelper.database;
+    final result = await db.rawQuery(
+      'SELECT SUM(total_amount) as total FROM invoices WHERE project_id = ?',
+      [projectId],
+    );
+    if (result.isEmpty || result.first['total'] == null) return 0;
+    return (result.first['total'] as num).toInt();
+  }
+
   Future<void> deleteInvoice(String id) async {
     final db = await _dbHelper.database;
 

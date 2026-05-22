@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/pipeline_stages.dart';
 import '../models/project_model.dart';
 import '../services/project_repository.dart';
+import '../services/invoice_repository.dart';
 import 'customer_picker_modal.dart';
 import 'screen_pj2_project_detail.dart';
 
@@ -17,8 +18,10 @@ class ProjectListScreen extends StatefulWidget {
 class _ProjectListScreenState extends State<ProjectListScreen>
     with SingleTickerProviderStateMixin {
   final _repo = ProjectRepository();
+  final _invoiceRepo = InvoiceRepository();
   final _searchCtrl = TextEditingController();
   List<Project> _all = [];
+  Map<String, int> _projectSales = {};
   bool _loading = true;
   bool _searchOpen = false;
   bool _hideTerminal = true;
@@ -45,9 +48,15 @@ class _ProjectListScreenState extends State<ProjectListScreen>
 
   Future<void> _load() async {
     final list = await _repo.getAllProjects();
+    final salesMap = <String, int>{};
+    for (final project in list) {
+      final sales = await _invoiceRepo.getTotalAmountByProjectId(project.id);
+      salesMap[project.id] = sales;
+    }
     if (!mounted) return;
     setState(() {
       _all = list;
+      _projectSales = salesMap;
       _loading = false;
     });
   }
@@ -232,7 +241,7 @@ class _ProjectListScreenState extends State<ProjectListScreen>
     final projects = _projectsForStage(stage);
     final isTerminal = isTerminalStage(stage);
     final cs = Theme.of(context).colorScheme;
-    final totalAmount = projects.fold<int>(0, (s, p) => s + p.totalAmount);
+    final totalAmount = projects.fold<int>(0, (s, p) => s + (_projectSales[p.id] ?? 0));
     final fmt = NumberFormat('#,###');
 
     return SizedBox(
