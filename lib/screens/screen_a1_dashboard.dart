@@ -3,11 +3,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
 import '../services/database_helper.dart';
+import '../services/invoice_repository.dart';
 import '../services/project_repository.dart';
 import '../config/app_config.dart';
 import '../constants/dashboard_icons.dart';
 import '../models/dashboard_menu_item.dart';
 import '../models/invoice_models.dart';
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../models/project_model.dart';
 import '../widgets/menu_category_header.dart';
 import '../widgets/slide_to_unlock.dart';
@@ -63,11 +65,15 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   final _repo = AppSettingsRepository();
   final _dbHelper = DatabaseHelper();
   final _projectRepo = ProjectRepository();
+  final _invoiceRepo = InvoiceRepository();
+  final _customerRepo = CustomerRepository();
 
   bool _loading = true;
   List<DashboardMenuItem> _menu = [];
   bool _historyUnlocked = false;
   bool _showCategoryDescriptions = true;
+  bool _recentCollapsed = false;
+  bool _projectsCollapsed = false;
   final Set<String> _collapsedCategories = <String>{};
 
   // サマリー
@@ -77,7 +83,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   int _activeProjectCount = 0;
 
   // 最近の伝票・案件
-  List<Map<String, dynamic>> _recentInvoices = [];
+  List<Invoice> _recentInvoices = [];
   List<Project> _activeProjects = [];
 
   @override
@@ -142,17 +148,10 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
 
   Future<void> _loadRecent() async {
     try {
-      final db = await _dbHelper.database;
-
-      // 最近の伝票5件
-      final invRows = await db.rawQuery('''
-        SELECT id, date, subject, total_amount, document_type, payment_status, customer_id
-        FROM invoices
-        WHERE is_draft = 0
-        ORDER BY date DESC, updated_at DESC
-        LIMIT 5
-      ''');
-      _recentInvoices = invRows;
+      final customers = await _customerRepo.getAllCustomers();
+      final allInvoices = await _invoiceRepo.getAllInvoices(customers);
+      allInvoices.sort((a, b) => b.date.compareTo(a.date));
+      _recentInvoices = allInvoices.where((i) => !i.isDraft).take(5).toList();
 
       // 進行中案件5件（更新日時順）
       _activeProjects = await _projectRepo.getAllProjects();
@@ -289,7 +288,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         decoration: BoxDecoration(
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: theme.dividerColor.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: theme.dividerColor.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -403,7 +402,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           _SummaryCard(
             icon: Icons.receipt,
             label: '本日請求',
-            value: '${_todayInvoiceCount}件',
+            value: '$_todayInvoiceCount件',
             sub: '\u00a5${_formatAmount(_todayInvoiceAmount)}',
             accentColor: cs.primary,
           ),
@@ -419,7 +418,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           _SummaryCard(
             icon: Icons.folder_open,
             label: '進行中案件',
-            value: '${_activeProjectCount}件',
+            value: '$_activeProjectCount件',
             sub: 'PJ1連携',
             accentColor: cs.tertiary,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
@@ -517,60 +516,135 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
 
   Widget _buildRecentInvoices() {
     if (_recentInvoices.isEmpty) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text('最近の伝票', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (!_historyUnlocked) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
-                    return;
-                  }
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceHistoryScreen(initialUnlocked: true)));
-                },
-                child: const Text('すべて'),
-              ),
-            ],
+          MenuCategoryHeader(
+            title: '最近の伝票',
+            description: null,
+            showDescription: false,
+            collapsible: true,
+            collapsed: _recentCollapsed,
+            onToggle: () => setState(() => _recentCollapsed = !_recentCollapsed),
           ),
-          const SizedBox(height: 4),
-          ..._recentInvoices.map((row) {
-            final docType = row['document_type'] as String? ?? 'invoice';
-            final typeLabel = docType == 'estimation' ? '見積' : docType == 'sales' ? '売上' : '請求';
-            final cs = Theme.of(context).colorScheme;
-            final typeColor = docType == 'estimation' ? cs.secondary : docType == 'sales' ? cs.primary : cs.tertiary;
-            final dateStr = (row['date'] as String? ?? '').substring(0, 10);
-            final subject = row['subject'] as String? ?? '(件名なし)';
-            final amount = row['total_amount'] as num? ?? 0;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: typeColor.withValues(alpha: 0.1),
-                  foregroundColor: typeColor,
-                  child: Text(typeLabel, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                ),
-                title: Text(subject, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text('$dateStr \u00a5${amount.toString()}'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () async {
-                  // 詳細表示は InvoiceDetailPage にInvoiceオブジェクトが必要なので、
-                  // 簡易的に履歴画面へ遷移
-                  if (!_historyUnlocked) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
-                    return;
-                  }
-                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceHistoryScreen(initialUnlocked: true)));
-                },
-              ),
-            );
-          }).toList(),
+          AnimatedCrossFade(
+            firstChild: Column(
+              children: _recentInvoices.map((inv) {
+                final typeLabel = inv.documentType == DocumentType.estimation
+                    ? '見積'
+                    : inv.documentType == DocumentType.order
+                        ? '受注'
+                        : inv.documentType == DocumentType.delivery
+                            ? '納品'
+                            : inv.documentType == DocumentType.receipt
+                                ? '領収'
+                                : '請求';
+                final typeColor = documentTypeBadgeColor(inv.documentType);
+                final subject = inv.subject ?? '(件名なし)';
+                final customerName = inv.customer.displayName;
+                final statusIcon = inv.paymentStatus == PaymentStatus.paid
+                    ? Icons.check_circle
+                    : inv.documentType == DocumentType.invoice &&
+                            inv.paymentStatus == PaymentStatus.partial
+                        ? Icons.money_off
+                        : Icons.circle_outlined;
+                final statusColor = inv.paymentStatus == PaymentStatus.paid
+                    ? Colors.green
+                    : inv.documentType == DocumentType.invoice
+                        ? cs.error
+                        : Colors.grey;
+                return GestureDetector(
+                  onTap: () {
+                    if (!_historyUnlocked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('ロックを解除してください')));
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => InvoiceDetailPage(invoice: inv)),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: typeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(typeLabel,
+                                style: TextStyle(
+                                    color: typeColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(subject,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500)),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Text(customerName,
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: cs.onSurfaceVariant)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                      '${inv.date.year}/${inv.date.month.toString().padLeft(2, '0')}/${inv.date.day.toString().padLeft(2, '0')}',
+                                      style: TextStyle(
+                                          fontSize: 9,
+                                          color: cs.onSurfaceVariant
+                                              .withValues(alpha: 0.6))),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('\u00a5${_formatAmount(inv.totalAmount)}',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface)),
+                        const SizedBox(width: 4),
+                        Icon(statusIcon,
+                            size: 14, color: statusColor.withValues(alpha: 0.7)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: _recentCollapsed
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
         ],
       ),
     );
@@ -578,42 +652,84 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
 
   Widget _buildActiveProjects() {
     if (_activeProjects.isEmpty) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text('進行中の案件', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
-                child: const Text('PJ1で開く'),
-              ),
-            ],
+          MenuCategoryHeader(
+            title: '進行中の案件',
+            description: null,
+            showDescription: false,
+            collapsible: true,
+            collapsed: _projectsCollapsed,
+            onToggle: () => setState(() => _projectsCollapsed = !_projectsCollapsed),
           ),
-          const SizedBox(height: 4),
-          ..._activeProjects.map((project) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  child: const Icon(Icons.assignment, size: 18),
-                ),
-                title: Text(project.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(project.customerName ?? '得意先未設定'),
-                trailing: Text('\u00a5${project.totalAmount}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: project)),
-                ),
-              ),
-            );
-          }).toList(),
+          AnimatedCrossFade(
+            firstChild: Column(
+              children: _activeProjects.map((project) {
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: project)),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.assignment, size: 18, color: cs.primary),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(project.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500)),
+                              const SizedBox(height: 2),
+                              Text(project.customerName ?? '得意先未設定',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: cs.onSurfaceVariant)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('\u00a5${project.totalAmount}',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: _projectsCollapsed
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
         ],
       ),
     );

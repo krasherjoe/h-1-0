@@ -1,0 +1,161 @@
+<div style="display:flex;align-items:center;justify-content:center;min-height:60vh">
+  <p class="subtitle">Loading design mockups...</p>
+</div>
+
+<script>
+// Small delay to ensure page is ready
+setTimeout(() => {
+  document.body.innerHTML = `
+    <h2>A1 ダッシュボード デザイン案</h2>
+    <p class="subtitle">サマリーカード + クイックアクションのスタイルを選んでください</p>
+
+    <div class="section">
+      <h3>サマリーカードのスタイル</h3>
+      <p class="subtitle">3つの案を比較（タップで選択）</p>
+    </div>
+
+    <div class="options">
+      <div class="option" data-choice="card-a" onclick="toggleSelect(this)">
+        <div class="letter">A</div>
+        <div class="content">
+          <h3>現状維持（微調整）</h3>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <div style="width:120px;height:100px;background:white;border-radius:12px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              <div style="width:24px;height:24px;background:#6750a4;border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:8px;width:50px;background:#6750a4;opacity:0.7;border-radius:4px;margin-bottom:4px"></div>
+              <div style="height:16px;width:80px;background:#6750a4;border-radius:4px;margin-bottom:2px"></div>
+              <div style="height:8px;width:40px;background:#6750a4;opacity:0.5;border-radius:4px"></div>
+            </div>
+            <div style="width:120px;height:100px;background:white;border-radius:12px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              <div style="width:24px;height:24px;background:#6750a4;border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:8px;width:50px;background:#6750a4;opacity:0.7;border-radius:4px;margin-bottom:4px"></div>
+              <div style="height:16px;width:80px;background:#6750a4;border-radius:4px;margin-bottom:2px"></div>
+              <div style="height:8px;width:40px;background:#6750a4;opacity:0.5;border-radius:4px"></div>
+            </div>
+          </div>
+          <p style="margin-top:12px;font-size:12px">現状の白ベース＋プライマリカラー。シャドウ微調整、色のバリエーション追加</p>
+        </div>
+      </div>
+
+      <div class="option" data-choice="card-b" onclick="toggleSelect(this)">
+        <div class="letter">B</div>
+        <div class="content">
+          <h3>カラーグラデーション</h3>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <div style="width:120px;height:100px;border-radius:12px;padding:10px;background:linear-gradient(135deg,#667eea,#764ba2);box-shadow:0 4px 12px rgba(102,126,234,0.4)">
+              <div style="width:24px;height:24px;background:rgba(255,255,255,0.3);border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:8px;width:50px;background:rgba(255,255,255,0.7);border-radius:4px;margin-bottom:4px"></div>
+              <div style="height:16px;width:80px;background:white;border-radius:4px;margin-bottom:2px"></div>
+              <div style="height:8px;width:40px;background:rgba(255,255,255,0.5);border-radius:4px"></div>
+            </div>
+            <div style="width:120px;height:100px;border-radius:12px;padding:10px;background:linear-gradient(135deg,#f093fb,#f5576c);box-shadow:0 4px 12px rgba(245,87,108,0.4)">
+              <div style="width:24px;height:24px;background:rgba(255,255,255,0.3);border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:8px;width:50px;background:rgba(255,255,255,0.7);border-radius:4px;margin-bottom:4px"></div>
+              <div style="height:16px;width:80px;background:white;border-radius:4px;margin-bottom:2px"></div>
+              <div style="height:8px;width:40px;background:rgba(255,255,255,0.5);border-radius:4px"></div>
+            </div>
+          </div>
+          <p style="margin-top:12px;font-size:12px">カードごとに異なるグラデーション背景。白文字で数字が映える。モダンで視認性高い</p>
+        </div>
+      </div>
+
+      <div class="option" data-choice="card-c" onclick="toggleSelect(this)">
+        <div class="letter">C</div>
+        <div class="content">
+          <h3>アウトライン＋アクセント</h3>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <div style="width:120px;height:100px;background:white;border-radius:12px;padding:10px;border:1.5px solid #667eea;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+              <div style="width:24px;height:24px;background:#667eea;border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:8px;width:50px;background:#667eea;opacity:0.7;border-radius:4px;margin-bottom:4px"></div>
+              <div style="height:16px;width:80px;background:#667eea;border-radius:4px;margin-bottom:2px"></div>
+              <div style="height:8px;width:40px;background:#667eea;opacity:0.5;border-radius:4px"></div>
+            </div>
+            <div style="width:120px;height:100px;background:white;border-radius:12px;padding:10px;border:1.5px solid #f5576c;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+              <div style="width:24px;height:24px;background:#f5576c;border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:8px;width:50px;background:#f5576c;opacity:0.7;border-radius:4px;margin-bottom:4px"></div>
+              <div style="height:16px;width:80px;background:#f5576c;border-radius:4px;margin-bottom:2px"></div>
+              <div style="height:8px;width:40px;background:#f5576c;opacity:0.5;border-radius:4px"></div>
+            </div>
+          </div>
+          <p style="margin-top:12px;font-size:12px">白背景＋カラー枠線＋アクセントカラー。Material Design 3 の tonal card 風。軽やかな印象</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>クイックアクションのスタイル</h3>
+      <p class="subtitle">ボタンの見た目を選択</p>
+    </div>
+
+    <div class="options">
+      <div class="option" data-choice="action-a" onclick="toggleSelect(this)">
+        <div class="letter">A</div>
+        <div class="content">
+          <h3>現状維持</h3>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <div style="flex:1;background:white;border-radius:12px;padding:8px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              <div style="width:24px;height:24px;background:#6750a4;border-radius:6px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:#6750a4;border-radius:4px;margin:0 auto"></div>
+            </div>
+            <div style="flex:1;background:white;border-radius:12px;padding:8px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              <div style="width:24px;height:24px;background:#6750a4;border-radius:6px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:#6750a4;border-radius:4px;margin:0 auto"></div>
+            </div>
+            <div style="flex:1;background:white;border-radius:12px;padding:8px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+              <div style="width:24px;height:24px;background:#6750a4;border-radius:6px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:#6750a4;border-radius:4px;margin:0 auto"></div>
+            </div>
+          </div>
+          <p style="margin-top:8px;font-size:12px">白コンテナ＋アイコン。シンプル。カードデザインに合わせて微調整可</p>
+        </div>
+      </div>
+
+      <div class="option" data-choice="action-b" onclick="toggleSelect(this)">
+        <div class="letter">B</div>
+        <div class="content">
+          <h3>カラーアイコンボタン</h3>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <div style="flex:1;background:#e8def8;border-radius:16px;padding:10px;text-align:center">
+              <div style="width:28px;height:28px;background:#6750a4;border-radius:8px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:#6750a4;border-radius:4px;margin:0 auto"></div>
+            </div>
+            <div style="flex:1;background:#fff0f0;border-radius:16px;padding:10px;text-align:center">
+              <div style="width:28px;height:28px;background:#d63384;border-radius:8px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:#d63384;border-radius:4px;margin:0 auto"></div>
+            </div>
+            <div style="flex:1;background:#e0f2fe;border-radius:16px;padding:10px;text-align:center">
+              <div style="width:28px;height:28px;background:#0284c7;border-radius:8px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:#0284c7;border-radius:4px;margin:0 auto"></div>
+            </div>
+          </div>
+          <p style="margin-top:8px;font-size:12px">アクションごとに異なる背景色＋大きめアイコン。区別しやすい</p>
+        </div>
+      </div>
+
+      <div class="option" data-choice="action-c" onclick="toggleSelect(this)">
+        <div class="letter">C</div>
+        <div class="content">
+          <h3>Elevated Button 風</h3>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <div style="flex:1;background:#6750a4;border-radius:24px;padding:10px 8px;text-align:center;box-shadow:0 4px 12px rgba(103,80,164,0.4)">
+              <div style="width:24px;height:24px;background:rgba(255,255,255,0.3);border-radius:6px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:white;border-radius:4px;margin:0 auto"></div>
+            </div>
+            <div style="flex:1;background:#0284c7;border-radius:24px;padding:10px 8px;text-align:center;box-shadow:0 4px 12px rgba(2,132,199,0.4)">
+              <div style="width:24px;height:24px;background:rgba(255,255,255,0.3);border-radius:6px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:white;border-radius:4px;margin:0 auto"></div>
+            </div>
+            <div style="flex:1;background:#d63384;border-radius:24px;padding:10px 8px;text-align:center;box-shadow:0 4px 12px rgba(214,51,132,0.4)">
+              <div style="width:24px;height:24px;background:rgba(255,255,255,0.3);border-radius:6px;margin:4px auto 6px"></div>
+              <div style="height:8px;width:50px;background:white;border-radius:4px;margin:0 auto"></div>
+            </div>
+          </div>
+          <p style="margin-top:8px;font-size:12px">塗り＋角丸＋シャドウの押しボタン感。白文字。アクションの重要度が伝わる</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:20px;font-size:11px;color:#666">ブラウザで各案をタップして選択 → ターミナルで感想を教えてください</p>
+  `;
+}, 100);
+</script>
