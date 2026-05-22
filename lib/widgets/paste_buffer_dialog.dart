@@ -40,8 +40,12 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
     setState(() {
       _lines = raw;
       _selected.clear();
+      var count = 0;
       for (final l in raw) {
-        if (_parsePrice(l) != null) _selected[l] = true;
+        if (_parsePrice(l) != null && count < 2) {
+          _selected[l] = true;
+          count++;
+        }
       }
     });
   }
@@ -218,7 +222,9 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   }
 
   Widget _buildPreviewBar(ColorScheme cs, List<ParsedLineItem> items) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
     return Container(
+      padding: EdgeInsets.only(bottom: bottomPad > 0 ? bottomPad : 8),
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
       decoration: BoxDecoration(
         color: cs.surface,
