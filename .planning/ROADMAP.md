@@ -28,7 +28,7 @@
 
 **Plan list:**
 - [x] 01-01-PLAN.md — SalesRepository + QuotationRepository: 明細ロード追加（Wave 1）
-- [ ] 01-02-PLAN.md — Repository単体テスト追加（Wave 2）
+- [x] 01-02-PLAN.md — Repository単体テスト追加（Wave 2）
 
 ### Phase 2: 請求書インポートバグ修正
 **Goal**: 請求書から売上伝票へのインポート時の合計金額が正しく計算される
