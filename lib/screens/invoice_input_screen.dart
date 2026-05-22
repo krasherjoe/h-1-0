@@ -1844,49 +1844,49 @@ color: Theme.of(context).cardColor,
               "￥${formatAmount(taxableAmount)}",
               labelColor,
             ),
-            if (tax > 0) ...[
-              Divider(color: dividerColor),
-              GestureDetector(
-                onTap: _isViewMode || _isLocked
-                    ? null
-                    : () => _showTaxRatePicker(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _isTaxInclusiveMode
-                              ? "消費税 (${(_taxRate * 100).toInt()}% 逆算)"
-                              : "消費税 (${(_taxRate * 100).toInt()}%)",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: labelColor,
-                          ),
+            Divider(color: dividerColor),
+            GestureDetector(
+              onTap: _isViewMode || _isLocked
+                  ? null
+                  : () => _showTaxRatePicker(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        tax > 0
+                            ? (_isTaxInclusiveMode
+                                ? "消費税 (${(_taxRate * 100).toInt()}% 逆算)"
+                                : "消費税 (${(_taxRate * 100).toInt()}%)")
+                            : "消費税 (非課税)",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: labelColor,
                         ),
-                        if (!(_isViewMode || _isLocked)) ...[
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.edit,
-                            size: 14,
-                            color: labelColor.withOpacity(0.7),
-                          ),
-                        ],
-                      ],
-                    ),
-                    Text(
-                      "￥${formatAmount(tax)}",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: labelColor,
                       ),
+                      if (!(_isViewMode || _isLocked)) ...[
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.edit,
+                          size: 14,
+                          color: labelColor.withOpacity(0.7),
+                        ),
+                      ],
+                    ],
+                  ),
+                  Text(
+                    tax > 0 ? "￥${formatAmount(tax)}" : "￥0",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: labelColor,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
             Divider(color: dividerColor),
             _buildSummaryRow(
               tax > 0 ? "合計金額 (税込)" : "合計金額",
