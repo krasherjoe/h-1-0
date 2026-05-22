@@ -416,13 +416,10 @@ class _RichMasterEditDialogState<T>
           width: maxWidth,
           child: Column(
             children: [
-              ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: Container(
-                    color: Colors.white.withOpacity(0.05),
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-                    child: Row(
+              Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
@@ -448,9 +445,7 @@ class _RichMasterEditDialogState<T>
                                 .toList(),
                           ),
                       ],
-                    ),
                   ),
-                ),
               ),
               const Divider(height: 1),
               Expanded(
