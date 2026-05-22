@@ -341,7 +341,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   }
 
   Future<void> _showPasteBuffer() async {
-    final parsed = await showPasteBufferDialog(context);
+    final parsed = await showPasteBufferScreen(context);
     if (parsed.isEmpty) return;
     setState(() {
       for (final item in parsed) {

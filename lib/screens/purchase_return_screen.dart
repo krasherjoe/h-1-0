@@ -292,7 +292,7 @@ class _PurchaseReturnEditorPageState extends State<PurchaseReturnEditorPage> {
   }
 
   Future<void> _pasteItemsFromBuffer() async {
-    final parsed = await showPasteBufferDialog(context);
+    final parsed = await showPasteBufferScreen(context);
     if (parsed.isEmpty) return;
     setState(() {
       for (final item in parsed) {

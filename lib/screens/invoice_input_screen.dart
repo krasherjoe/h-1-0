@@ -446,7 +446,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
   }
 
   Future<void> _pasteItemsFromBuffer() async {
-    final parsed = await showPasteBufferDialog(context);
+    final parsed = await showPasteBufferScreen(context);
     if (parsed.isEmpty) return;
     setState(() {
       for (final item in parsed) {
