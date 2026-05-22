@@ -204,47 +204,26 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
 
   void _importFromInvoices(List<Invoice> invoices) {
     if (invoices.isEmpty) return;
-
-    // 既存アイテムをクリア確認
-    if (_items.isNotEmpty) {
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('既存アイテムをクリア'),
-          content: const Text('請求書内容をインポートすると、現在のアイテムはクリアされます。よろしいですか？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _performImport(invoices);
-              },
-              child: const Text('インポート'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      _performImport(invoices);
-    }
+    _performImport(invoices);
   }
 
   void _performImport(List<Invoice> invoices) {
     final newItems = <_LineItem>[];
     for (final invoice in invoices) {
-      for (final item in invoice.items) {
-        newItems.add(_LineItem(
-          id: const Uuid().v4(),
-          product: null,
-          productName: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          taxRate: _taxRate,
-        ));
-      }
+      // 請求書の合計金額を1つの明細としてインポート
+      // 値引き・税込み計算を考慮済みの合計金額を使用
+      final invoiceTotal = invoice.totalAmount;
+      final invoiceLabel = '${invoice.documentTypeName} ${invoice.invoiceNumber}';
+
+      newItems.add(_LineItem(
+        id: const Uuid().v4(),
+        product: null,
+        productName: invoiceLabel,
+        quantity: 1,
+        unitPrice: invoiceTotal,
+        taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
+      ));
+
       // 顧客が未設定なら請求書の顧客を設定
       if (_selectedCustomer == null) {
         _selectedCustomer = invoice.customer;
@@ -261,14 +240,19 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
 
   (int subtotal, int tax, int total) _calculate() {
     int subTotal = 0;
+    int taxAmount = 0;
     for (final item in _items) {
       final lineSubtotal = item.quantity * item.unitPrice;
       subTotal += lineSubtotal;
+      // taxRateが0.0の明細（請求書からインポート）は税計算をスキップ
+      if (item.taxRate > 0) {
+        final lineTax = _includeTax
+            ? (lineSubtotal / (1 + item.taxRate) * item.taxRate).round()
+            : (lineSubtotal * item.taxRate).round();
+        taxAmount += lineTax;
+      }
     }
-    final tax = _includeTax
-        ? (subTotal / (1 + _taxRate) * _taxRate).round()
-        : (subTotal * _taxRate).round();
-    return (subTotal, tax, subTotal + tax);
+    return (subTotal, taxAmount, subTotal + taxAmount);
   }
 
   Future<void> _save() async {
