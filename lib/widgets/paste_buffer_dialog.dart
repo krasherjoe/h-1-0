@@ -23,11 +23,13 @@ class _PasteBufferScreen extends StatefulWidget {
 class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   final _textController = TextEditingController();
   final _selected = <String, bool>{};
+  final _previewScroll = ScrollController();
   List<String> _lines = [];
 
   @override
   void dispose() {
     _textController.dispose();
+    _previewScroll.dispose();
     super.dispose();
   }
 
@@ -46,10 +48,29 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
 
   void _toggle(String line) {
     setState(() {
-      if (_selected.containsKey(line)) {
-        _selected.remove(line);
-      } else {
-        _selected[line] = true;
+      if (_selected.containsKey(line)) _selected.remove(line);
+      else _selected[line] = true;
+    });
+  }
+
+  void _remove(String line) {
+    setState(() {
+      _selected.remove(line);
+      _lines.remove(line);
+    });
+  }
+
+  void _split(String line) {
+    final parts = line.split(RegExp(r'[\s\t,、]')).map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    if (parts.length <= 1) return;
+    final idx = _lines.indexOf(line);
+    if (idx < 0) return;
+    setState(() {
+      _selected.remove(line);
+      _lines.removeAt(idx);
+      for (final part in parts.reversed) {
+        _lines.insert(idx, part);
+        if (_parsePrice(part) != null) _selected[part] = true;
       }
     });
   }
@@ -76,6 +97,32 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
     Navigator.pop(context, _buildItems());
   }
 
+  void _showMenu(String line) {
+    final canSplit = line.split(RegExp(r'[\s\t,、]')).length > 1;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: Text(line, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            if (canSplit)
+              ListTile(
+                leading: const Icon(Icons.call_split),
+                title: const Text('スペースやカンマで分割'),
+                onTap: () { Navigator.pop(ctx); _split(line); },
+              ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+              title: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              onTap: () { Navigator.pop(ctx); _remove(line); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -84,16 +131,11 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PB:テキスト貼付'),
-        actions: [
-          if (_lines.isNotEmpty)
-            TextButton.icon(
-              onPressed: _confirm,
-              icon: const Icon(Icons.check),
-              label: Text('明細に追加 (${items?.length ?? 0})'),
-            ),
-        ],
       ),
       body: _lines.isEmpty ? _buildPasteArea(cs) : _buildSelectArea(cs, items),
+      bottomNavigationBar: items != null && items.isNotEmpty
+          ? _buildPreviewBar(cs, items)
+          : null,
     );
   }
 
@@ -127,41 +169,43 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   }
 
   Widget _buildSelectArea(ColorScheme cs, List<ParsedLineItem>? items) {
-    final selectedCount = _selected.length;
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              Text('行をタップして選択 (${_selected.length}行)', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              Text('タップ:選択/解除  長押し:分割・削除', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
               const Spacer(),
-              TextButton.icon(onPressed: () => setState(() => _lines = []), icon: const Icon(Icons.refresh, size: 18), label: const Text('戻る')),
+              TextButton.icon(onPressed: () => setState(() => _lines = []), icon: const Icon(Icons.refresh, size: 18), label: const Text('やり直し')),
             ],
           ),
         ),
         const Divider(height: 1),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
             itemCount: _lines.length,
             itemBuilder: (context, index) {
               final line = _lines[index];
               final isPrice = _parsePrice(line) != null;
               final checked = _selected.containsKey(line);
               return Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _toggle(line),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                    child: Row(
-                      children: [
-                        Checkbox(value: checked, onChanged: (_) => _toggle(line)),
-                        Icon(isPrice ? Icons.monetization_on : Icons.article_outlined, size: 16, color: isPrice ? cs.error : cs.primary),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(line, style: TextStyle(fontSize: 13, decoration: checked ? null : TextDecoration.lineThrough))),
-                      ],
+                child: GestureDetector(
+                  onLongPressStart: (_) => _showMenu(line),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _toggle(line),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      child: Row(
+                        children: [
+                          Checkbox(value: checked, onChanged: (_) => _toggle(line)),
+                          Icon(isPrice ? Icons.monetization_on : Icons.article_outlined, size: 16, color: isPrice ? cs.error : cs.primary),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(line, style: TextStyle(fontSize: 13, decoration: checked ? null : TextDecoration.lineThrough))),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -169,38 +213,64 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
             },
           ),
         ),
-        if (items != null && items.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cs.primaryContainer.withValues(alpha: 0.3),
-              border: Border(top: BorderSide(color: cs.outlineVariant)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      ],
+    );
+  }
+
+  Widget _buildPreviewBar(ColorScheme cs, List<ParsedLineItem> items) {
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -2))],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.shopping_cart_checkout, size: 16, color: cs.primary),
-                    const SizedBox(width: 6),
-                    Text('明細プレビュー ($selectedCount行 → ${items.length}件)', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onSurface)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...items.map((item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(item.name, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
-                          Text('¥${item.price}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface)),
-                        ],
-                      ),
-                    )),
+                Icon(Icons.shopping_cart_checkout, size: 16, color: cs.primary),
+                const SizedBox(width: 6),
+                Text('${_selected.length}行 → ${items.length}件', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onSurface, fontSize: 13)),
+                const Spacer(),
+                Text('¥${items.fold<int>(0, (s, i) => s + i.price)}', style: TextStyle(fontWeight: FontWeight.bold, color: cs.error, fontSize: 14)),
               ],
             ),
           ),
+          const SizedBox(height: 4),
+          Flexible(
+            child: ListView(
+              controller: _previewScroll,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: items.map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(item.name, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        const SizedBox(width: 8),
+                        Text('¥${item.price}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                      ],
+                    ),
+                  )).toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _confirm,
+                icon: const Icon(Icons.download),
+                label: Text('${items.length}件を取り込む'),
+              ),
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
 }
