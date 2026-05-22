@@ -41,17 +41,18 @@
 
 | 要求 | フェーズ | ステータス |
 |------|---------|-----------|
-| BUG-01 | — | Pending |
-| BUG-02 | — | Pending |
-| BUG-03 | — | Pending |
-| TST-01 | — | Pending |
-| TST-02 | — | Pending |
-| STB-01 | — | Pending |
+| BUG-01 | Phase 1 — SE1売上伝票バグ修正 | Pending |
+| TST-01 | Phase 1 — SE1売上伝票バグ修正 | Pending |
+| BUG-02 | Phase 2 — 請求書インポートバグ修正 | Pending |
+| TST-02 | Phase 2 — 請求書インポートバグ修正 | Pending |
+| BUG-03 | Phase 3 — 残バグ監査・修正 | Pending |
+| STB-01 | Phase 4 — コアフロー安定化 | Pending |
 
 **カバレッジ:**
 - v1 要求: 6 件
-- フェーズにマッピング済み: 0
-- 未マッピング: 6
+- フェーズにマッピング済み: 6
+- 未マッピング: 0
+- **カバレッジ率: 100% ✅**
 
 ---
 *Requirements defined: 2026-05-22*
