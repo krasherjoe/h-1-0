@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class ParsedLineItem {
   ParsedLineItem(this.name, this.price);
@@ -15,6 +14,14 @@ Future<List<ParsedLineItem>> showPasteBufferScreen(BuildContext context) async {
   return result ?? [];
 }
 
+enum _LineTag { name, modelNumber, price, skip }
+
+class _LineEntry {
+  _LineEntry(this.text, this.tag);
+  final String text;
+  _LineTag tag;
+}
+
 class _PasteBufferScreen extends StatefulWidget {
   const _PasteBufferScreen();
   @override
@@ -23,9 +30,23 @@ class _PasteBufferScreen extends StatefulWidget {
 
 class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   final _textController = TextEditingController();
-  final _currencyFormat = NumberFormat.currency(locale: 'ja_JP', symbol: '¥');
-  List<ParsedLineItem> _parsed = [];
-  bool _showPreview = false;
+  List<_LineEntry> _lines = [];
+
+  static const _tagLabels = {
+    _LineTag.name: '品名',
+    _LineTag.modelNumber: '型番',
+    _LineTag.price: '単価',
+    _LineTag.skip: '無視',
+  };
+
+  static const _tagColors = {
+    _LineTag.name: Color(0xFF42A5F5),
+    _LineTag.modelNumber: Color(0xFFAB47BC),
+    _LineTag.price: Color(0xFFEF5350),
+    _LineTag.skip: Color(0xFF9E9E9E),
+  };
+
+  static const _tagOrder = [_LineTag.name, _LineTag.modelNumber, _LineTag.price, _LineTag.skip];
 
   @override
   void dispose() {
@@ -36,128 +57,166 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   void _parse() {
     final text = _textController.text;
     if (text.trim().isEmpty) return;
-    final lines = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
-    final parsed = <ParsedLineItem>[];
-    String? currentName;
-    for (final line in lines) {
-      final price = _parsePrice(line);
-      if (price != null && currentName != null) {
-        parsed.add(ParsedLineItem(currentName, price));
-        currentName = null;
-      } else if (price != null) {
-        parsed.add(ParsedLineItem('商品', price));
-      } else {
-        if (currentName != null) parsed.add(ParsedLineItem(currentName, 0));
-        currentName = line.replaceAll(RegExp(r'^[・\-•]+\s*'), '');
-      }
-    }
-    if (currentName != null) parsed.add(ParsedLineItem(currentName, 0));
+    final raw = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
     setState(() {
-      _parsed = parsed;
-      _showPreview = true;
+      _lines = raw.map((l) {
+        final tag = _parsePrice(l) != null ? _LineTag.price : _LineTag.name;
+        return _LineEntry(l, tag);
+      }).toList();
     });
   }
 
+  void _cycleTag(int index) {
+    setState(() {
+      final current = _lines[index].tag;
+      final next = _tagOrder[(_tagOrder.indexOf(current) + 1) % _tagOrder.length];
+      _lines[index].tag = next;
+    });
+  }
+
+  List<ParsedLineItem> _buildItems() {
+    final result = <ParsedLineItem>[];
+    String? currentName;
+    for (final entry in _lines) {
+      if (entry.tag == _LineTag.skip) continue;
+      if (entry.tag == _LineTag.price) {
+        final price = int.tryParse(entry.text.replaceAll(RegExp(r'[￥¥,,\s円]'), '')) ?? 0;
+        result.add(ParsedLineItem(currentName ?? '商品', price));
+        currentName = null;
+      } else if (entry.tag == _LineTag.name) {
+        if (currentName != null) result.add(ParsedLineItem(currentName, 0));
+        currentName = entry.text;
+      } else if (entry.tag == _LineTag.modelNumber) {
+        if (currentName != null) {
+          currentName = '$currentName (${entry.text})';
+        } else {
+          currentName = entry.text;
+        }
+      }
+    }
+    if (currentName != null) result.add(ParsedLineItem(currentName, 0));
+    return result.where((p) => p.price > 0 || p.name.isNotEmpty).toList();
+  }
+
   void _confirm() {
-    Navigator.pop(context, _parsed.where((p) => p.price > 0 || p.name.isNotEmpty).toList());
+    Navigator.pop(context, _buildItems());
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final items = _lines.isEmpty ? null : _buildItems();
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PB:テキスト貼付'),
         actions: [
-          if (_showPreview)
+          if (_lines.isNotEmpty)
             TextButton.icon(
               onPressed: _confirm,
               icon: const Icon(Icons.check),
-              label: const Text('明細に追加'),
+              label: Text('明細に追加 (${items?.length ?? 0})'),
             ),
         ],
       ),
-      body: Column(
+      body: _lines.isEmpty ? _buildPasteArea(cs) : _buildTaggingArea(cs, items),
+    );
+  }
+
+  Widget _buildPasteArea(ColorScheme cs) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: _showPreview ? 1 : 3,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Amazon/楽天などからコピーしたテキストを貼り付けてください', style: TextStyle(fontSize: 12)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _textController,
-                    maxLines: 6,
-                    decoration: InputDecoration(
-                      hintText: '商品名\n￥1,280\n\n商品名2\n¥2,500',
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: _parse,
-                    icon: const Icon(Icons.transform),
-                    label: const Text('解析してプレビュー'),
-                  ),
-                ],
-              ),
+          const Text('Amazon/楽天などからコピーしたテキストを貼り付けてください', style: TextStyle(fontSize: 12)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _textController,
+            maxLines: 8,
+            decoration: InputDecoration(
+              hintText: '商品名\n￥1,280\n\n商品名2\n¥2,500',
+              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
             ),
           ),
-          if (_showPreview) ...[
-            Divider(height: 1, color: cs.outlineVariant),
-            Expanded(
-              flex: 2,
-              child: _parsed.isEmpty
-                  ? Center(
-                      child: Text('商品名または金額を認識できませんでした', style: TextStyle(color: cs.onSurfaceVariant)),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _parsed.length,
-                      separatorBuilder: (i, j) => const Divider(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = _parsed[index];
-                        return Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: TextField(
-                                    controller: TextEditingController(text: item.name),
-                                    decoration: const InputDecoration(labelText: '品名', isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 8)),
-                                    onChanged: (v) => item.name = v,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  flex: 2,
-                                  child: TextField(
-                                    controller: TextEditingController(text: item.price.toString()),
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: '単価', isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 8)),
-                                    onChanged: (v) => item.price = int.tryParse(v.replaceAll(RegExp(r'[￥¥,]'), '')) ?? 0,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(_currencyFormat.format(item.price), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _parse,
+            icon: const Icon(Icons.transform),
+            label: const Text('解析'),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTaggingArea(ColorScheme cs, List<ParsedLineItem>? items) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Text('各行をタップして種別を選んでください', style: TextStyle(fontSize: 12)),
+              const Spacer(),
+              TextButton.icon(onPressed: () => setState(() => _lines = []), icon: const Icon(Icons.refresh, size: 18), label: const Text('戻る')),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: _lines.length,
+            separatorBuilder: (i, j) => const Divider(height: 4),
+            itemBuilder: (context, index) {
+              final entry = _lines[index];
+              final color = _tagColors[entry.tag]!;
+              return Card(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _cycleTag(index),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
+                          child: Text(_tagLabels[entry.tag]!, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(entry.text, style: const TextStyle(fontSize: 13))),
+                        Icon(Icons.touch_app, size: 16, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (items != null && items.isNotEmpty) ...[
+          const Divider(height: 1),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('プレビュー (${items.length}件)', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onSurface)),
+                const SizedBox(height: 8),
+                ...items.take(5).map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text('${item.name}: ¥${item.price}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                    )),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
