@@ -63,8 +63,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   final _projectRepo = ProjectRepository();
 
   bool _loading = true;
-  bool _statusEnabled = true;
-  String _statusText = '工事中';
   List<DashboardMenuItem> _menu = [];
   bool _historyUnlocked = false;
   bool _showCategoryDescriptions = true;
@@ -87,8 +85,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Future<void> _load() async {
-    final statusEnabled = await _repo.getDashboardStatusEnabled();
-    final statusText = await _repo.getDashboardStatusText();
     final rawMenu = await _repo.getDashboardMenu();
     final isDebug = AppConfig.enableDebugFeatures;
     final normalizedMenu = isDebug ? rawMenu.map((e) => e.copyWith(enabled: true)).toList() : rawMenu;
@@ -103,8 +99,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
 
     if (!mounted) return;
     setState(() {
-      _statusEnabled = statusEnabled;
-      _statusText = statusText;
       _menu = visibleMenu;
       _loading = false;
       _historyUnlocked = unlocked;
@@ -618,6 +612,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade300,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('A1:ダッシュボード'),
@@ -668,25 +663,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                             },
                           ),
                   ),
-                  // ステータス
-                  if (_statusEnabled)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Theme.of(context).colorScheme.secondaryContainer),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline, color: Theme.of(context).colorScheme.secondary),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(_statusText, style: const TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                      ),
-                    ),
                   // サマリー
                   _buildSummaryCards(),
                   const Divider(),
@@ -739,7 +715,7 @@ class _SummaryCard extends StatelessWidget {
         width: 140,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: cs.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
         ),
@@ -781,7 +757,7 @@ class _QuickActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: cs.primary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
           ),
