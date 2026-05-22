@@ -351,8 +351,20 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   }
 
   Map<String, int> _calculateTotals() {
-    final subtotal = _lines.fold<int>(0, (sum, line) => sum + (line.quantityValue * line.unitPriceValue));
-    final tax = _lines.fold<double>(0, (sum, line) => sum + (line.quantityValue * line.unitPriceValue) * (line.taxRate ?? 0.1)).round();
+    int subtotal = 0;
+    int tax = 0;
+    for (final line in _lines) {
+      final lineTotal = line.quantityValue * line.unitPriceValue;
+      final rate = line.taxRate ?? 0.1;
+      if (line.isTaxInclusive) {
+        final taxExcluded = (lineTotal / (1 + rate)).round();
+        subtotal += taxExcluded;
+        tax += lineTotal - taxExcluded;
+      } else {
+        subtotal += lineTotal;
+        tax += (lineTotal * rate).round();
+      }
+    }
     return {'subtotal': subtotal, 'tax': tax, 'total': subtotal + tax};
   }
 
@@ -486,6 +498,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
                     data: entry.value,
                     onPickProduct: () => _pickProduct(entry.key),
                     onRemove: () => _removeLine(entry.key),
+                    onToggleTaxInclusive: () => setState(() => entry.value.isTaxInclusive = !entry.value.isTaxInclusive),
                   ),
                 ),
             Align(
@@ -499,7 +512,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('小計: ${_currencyFormat.format(totals['subtotal'] ?? 0)}'),
+                    Text('小計(税抜): ${_currencyFormat.format(totals['subtotal'] ?? 0)}'),
                     Text('消費税: ${_currencyFormat.format(totals['tax'] ?? 0)}'),
                     const Divider(),
                     Text('合計: ${_currencyFormat.format(totals['total'] ?? 0)}', style: const TextStyle(fontWeight: FontWeight.bold)),

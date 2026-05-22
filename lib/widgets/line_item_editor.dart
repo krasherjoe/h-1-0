@@ -13,6 +13,7 @@ class LineItemFormData {
     this.taxRate,
     int? costAmount,
     bool? costIsProvisional,
+    this.isTaxInclusive = false,
   })  : descriptionController = TextEditingController(text: productName ?? ''),
         quantityController = TextEditingController(text: quantity?.toString() ?? ''),
         unitPriceController = TextEditingController(text: unitPrice?.toString() ?? ''),
@@ -27,6 +28,7 @@ class LineItemFormData {
   double? taxRate;
   int costAmount;
   bool costIsProvisional;
+  bool isTaxInclusive;
 
   bool get hasProduct => productId != null && productId!.isNotEmpty;
   String get description => descriptionController.text;
@@ -71,6 +73,7 @@ class LineItemCard extends StatelessWidget {
     required this.data,
     required this.onPickProduct,
     required this.onRemove,
+    this.onToggleTaxInclusive,
     this.meta,
     this.footer,
   });
@@ -78,6 +81,7 @@ class LineItemCard extends StatelessWidget {
   final LineItemFormData data;
   final VoidCallback onPickProduct;
   final VoidCallback onRemove;
+  final VoidCallback? onToggleTaxInclusive;
   final Widget? meta;
   final Widget? footer;
 
@@ -135,15 +139,22 @@ class LineItemCard extends StatelessWidget {
                   child: TextField(
                     controller: data.unitPriceController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: '単価(税抜)',
+                    decoration: InputDecoration(
+                      labelText: data.isTaxInclusive ? '単価(税込)' : '単価(税抜)',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                     ),
                     scrollPadding: const EdgeInsets.only(bottom: 160),
                   ),
                 ),
-                IconButton(onPressed: onRemove, icon: const Icon(Icons.close)),
+                if (onToggleTaxInclusive != null)
+                  IconButton(
+                    icon: Text(data.isTaxInclusive ? '税込' : '税抜',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: data.isTaxInclusive ? Colors.orange : Colors.grey)),
+                    onPressed: onToggleTaxInclusive,
+                    tooltip: data.isTaxInclusive ? '税抜きに切替' : '税込みに切替',
+                  ),
+                IconButton(onPressed: onRemove, icon: const Icon(Icons.delete_outline), tooltip: '削除'),
               ],
             ),
             ...[
