@@ -213,8 +213,9 @@ Future<pw.Document> buildInvoiceDocument(
                     if (companyInfo.fax != null && companyInfo.fax!.isNotEmpty) pw.Text("FAX: ${companyInfo.fax}"),
                     if (companyInfo.email != null && companyInfo.email!.isNotEmpty) pw.Text(companyInfo.email!),
                     if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text(companyInfo.url!),
-                    if (companyInfo.registrationNumber != null && 
+                    if (companyInfo.registrationNumber != null &&
                         companyInfo.registrationNumber!.isNotEmpty &&
+                        !companyInfo.isExemptTaxpayer &&
                         companyInfo.taxDisplayMode != 'hidden')
                       pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
                   ],
@@ -320,6 +321,10 @@ Future<pw.Document> buildInvoiceDocument(
                     ],
                     if (invoice.tax > 0) ...[
                       ...(() {
+                        // 免税事業者の場合は消費税を表示しない
+                        if (companyInfo.isExemptTaxpayer) {
+                          return [];
+                        }
                         final mode = companyInfo.taxDisplayMode.isNotEmpty ? companyInfo.taxDisplayMode : 'normal';
                         if (invoice.isTaxInclusiveMode) {
                           return [
