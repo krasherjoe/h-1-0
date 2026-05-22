@@ -332,7 +332,6 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
   Widget build(BuildContext context) {
     final quotations = _visibleQuotations;
     final styleTheme = _currentListTheme;
-    final isA2Style = _isA2Style;
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
@@ -420,7 +419,7 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                         itemCount: quotations.length,
                         itemBuilder: (context, index) {
                           final quotation = quotations[index];
-                          if (isA2Style) {
+                          if (false) {
                             return InvoiceListA2Card(
                               invoice: quotation,
                               amountFormatter: _currencyFormatter,
@@ -433,7 +432,6 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
 
                           final confirming = _confirming[quotation.id] ?? false;
                           final bool isDraft = quotation.isDraft;
-                          final statusChip = _buildStatusChip(isDraft, styleTheme, Theme.of(context).colorScheme);
                           final subject = quotation.subject?.trim().isNotEmpty == true
                               ? quotation.subject!
                               : (quotation.items.isNotEmpty ? quotation.items.first.description : '');
