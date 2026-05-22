@@ -286,7 +286,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       customer: _selectedCustomer,
       items: _items.map((i) => DocumentItem(
         id: i.id,
-        productId: i.product?.id ?? '',
+        productId: i.product?.id ?? 'unknown',
         productName: i.productName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
@@ -316,6 +316,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
+      print('SE1保存エラー: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('保存に失敗しました: $e')),
       );
@@ -433,7 +434,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
               child: Column(
                 children: [
                   _buildPriceRow('小計', subtotal),
-                  _buildPriceRow('消費税', tax),
+                  if (tax > 0) _buildPriceRow('消費税', tax),
                   const Divider(),
                   _buildPriceRow('合計', total, isTotal: true),
                 ],
