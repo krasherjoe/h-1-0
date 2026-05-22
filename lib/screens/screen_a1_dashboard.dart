@@ -609,7 +609,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                                   Text(
                                       '${inv.date.year}/${inv.date.month.toString().padLeft(2, '0')}/${inv.date.day.toString().padLeft(2, '0')}',
                                       style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 9,
                                           color: cs.onSurfaceVariant)),
                                   const SizedBox(width: 8),
                                   Text(customerName,
