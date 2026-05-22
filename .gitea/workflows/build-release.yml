@@ -4,10 +4,13 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # 手動実行も可能
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 自身のコミット（バージョン更新）を除外して無限ループ防止
+    if: "!contains(github.event.head_commit.message, 'chore: バージョン')"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
