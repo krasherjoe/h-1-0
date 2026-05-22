@@ -715,9 +715,16 @@ class _SummaryCard extends StatelessWidget {
         width: 140,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: cs.primary.withValues(alpha: 0.05),
+          color: cs.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,9 +764,16 @@ class _QuickActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: cs.primary.withValues(alpha: 0.05),
+            color: cs.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+            border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
