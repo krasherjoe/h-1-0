@@ -6,10 +6,12 @@ import '../models/purchase_order_models.dart';
 import '../models/supplier_model.dart';
 import '../services/purchase_order_service.dart';
 import '../services/supplier_repository.dart';
+import '../services/project_repository.dart';
 import '../widgets/line_item_editor.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
 import '../models/product_model.dart';
+import '../models/project_model.dart';
 import 'product_master_screen.dart';
 import 'supplier_master_screen.dart';
 
@@ -345,6 +347,17 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
     });
   }
 
+  Future<void> _pickProject(int lineIndex) async {
+    final project = await showDialog<Project>(
+      context: context,
+      builder: (ctx) => _ProjectPickerDialog(),
+    );
+    if (project == null) return;
+    setState(() {
+      _lines[lineIndex].subjectController.text = project.name;
+    });
+  }
+
   Future<void> _showPasteBuffer() async {
     final parsed = await showPasteBufferScreen(context);
     if (parsed.isEmpty) return;
@@ -555,13 +568,23 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
                     onPickProduct: () => _pickProduct(entry.key),
                     onRemove: () => _removeLine(entry.key),
                     onToggleTaxInclusive: () => setState(() => entry.value.isTaxInclusive = !entry.value.isTaxInclusive),
-                    footer: SizedBox(
-                      height: 32,
-                      child: TextField(
-                        controller: entry.value.subjectController,
-                        decoration: const InputDecoration(labelText: '案件名', isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 8), border: OutlineInputBorder()),
-                        style: const TextStyle(fontSize: 11),
-                      ),
+                    footer: Row(
+                      children: [
+                        TextButton.icon(
+                          icon: Icon(Icons.work, size: 14, color: Theme.of(context).colorScheme.primary),
+                          label: Text(entry.value.subjectController.text.trim().isEmpty ? '案件を設定' : entry.value.subjectController.text.trim(),
+                              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.primary)),
+                          onPressed: () => _pickProject(entry.key),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                        ),
+                        if (entry.value.subjectController.text.trim().isNotEmpty)
+                          IconButton(
+                            icon: Icon(Icons.close, size: 12, color: Theme.of(context).colorScheme.error),
+                            onPressed: () => setState(() => entry.value.subjectController.text = ''),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -602,6 +625,56 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ProjectPickerDialog extends StatefulWidget {
+  @override
+  State<_ProjectPickerDialog> createState() => _ProjectPickerDialogState();
+}
+
+class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
+  final ProjectRepository _repo = ProjectRepository();
+  List<Project> _projects = const [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final list = await _repo.getAllProjects();
+    if (!mounted) return;
+    setState(() { _projects = list; _loading = false; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('案件を選択'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _projects.isEmpty
+                ? const Center(child: Text('案件が登録されていません'))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _projects.length,
+                    itemBuilder: (_, i) {
+                      final p = _projects[i];
+                      return ListTile(
+                        title: Text(p.name),
+                        subtitle: p.customerName != null ? Text(p.customerName!) : null,
+                        onTap: () => Navigator.pop(context, p),
+                      );
+                    },
+                  ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('キャンセル'))],
     );
   }
 }
