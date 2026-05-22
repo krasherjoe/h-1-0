@@ -173,8 +173,20 @@ class PurchaseOrder {
       );
 
   PurchaseOrder recalcTotals() {
-    final newSubtotal = items.fold<int>(0, (sum, item) => sum + item.lineTotal);
-    final newTax = items.fold<double>(0, (sum, item) => sum + item.lineTotal * item.taxRate).round();
+    int newSubtotal = 0;
+    int newTax = 0;
+    for (final item in items) {
+      final lineTotal = item.lineTotal;
+      if (item.isTaxInclusive) {
+        final rate = item.taxRate;
+        final ex = (lineTotal / (1 + rate)).round();
+        newSubtotal += ex;
+        newTax += lineTotal - ex;
+      } else {
+        newSubtotal += lineTotal;
+        newTax += (lineTotal * item.taxRate).round();
+      }
+    }
     return copyWith(subtotal: newSubtotal, taxAmount: newTax, total: newSubtotal + newTax);
   }
 }
