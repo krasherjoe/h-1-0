@@ -14,9 +14,11 @@ class LineItemFormData {
     int? costAmount,
     bool? costIsProvisional,
     this.isTaxInclusive = false,
+    String? subject,
   })  : descriptionController = TextEditingController(text: productName ?? ''),
         quantityController = TextEditingController(text: quantity?.toString() ?? ''),
         unitPriceController = TextEditingController(text: unitPrice?.toString() ?? ''),
+        subjectController = TextEditingController(text: subject ?? ''),
         costAmount = costAmount ?? 0,
         costIsProvisional = costIsProvisional ?? true;
 
@@ -25,6 +27,7 @@ class LineItemFormData {
   final TextEditingController descriptionController;
   final TextEditingController quantityController;
   final TextEditingController unitPriceController;
+  final TextEditingController subjectController;
   double? taxRate;
   int costAmount;
   bool costIsProvisional;
@@ -50,18 +53,21 @@ class LineItemFormData {
     descriptionController.addListener(listener);
     quantityController.addListener(listener);
     unitPriceController.addListener(listener);
+    subjectController.addListener(listener);
   }
 
   void removeChangeListener(VoidCallback listener) {
     descriptionController.removeListener(listener);
     quantityController.removeListener(listener);
     unitPriceController.removeListener(listener);
+    subjectController.removeListener(listener);
   }
 
   void dispose() {
     descriptionController.dispose();
     quantityController.dispose();
     unitPriceController.dispose();
+    subjectController.dispose();
   }
 }
 

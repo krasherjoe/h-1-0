@@ -31,6 +31,8 @@ class PurchaseOrderItem {
     this.productId,
     this.taxRate = 0,
     this.isTaxInclusive = false,
+    this.subject,
+    this.projectId,
   });
 
   final String id;
@@ -42,6 +44,8 @@ class PurchaseOrderItem {
   final double taxRate;
   final int lineTotal;
   final bool isTaxInclusive;
+  final String? subject;
+  final String? projectId;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -53,6 +57,8 @@ class PurchaseOrderItem {
         'tax_rate': taxRate,
         'line_total': lineTotal,
         'is_tax_inclusive': isTaxInclusive ? 1 : 0,
+        'subject': subject,
+        'project_id': projectId,
       };
 
   factory PurchaseOrderItem.fromMap(Map<String, dynamic> map) => PurchaseOrderItem(
@@ -65,6 +71,8 @@ class PurchaseOrderItem {
         taxRate: (map['tax_rate'] as num?)?.toDouble() ?? 0,
         lineTotal: map['line_total'] as int? ?? 0,
         isTaxInclusive: (map['is_tax_inclusive'] ?? 0) == 1,
+        subject: map['subject'] as String?,
+        projectId: map['project_id'] as String?,
       );
 }
 

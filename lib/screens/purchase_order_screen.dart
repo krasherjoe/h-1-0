@@ -261,6 +261,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
           unitPrice: item.unitPrice,
           taxRate: item.taxRate,
           isTaxInclusive: item.isTaxInclusive,
+          subject: item.subject,
         );
         _registerLine(data);
       }
@@ -413,6 +414,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
               taxRate: line.taxRate ?? 0.1,
               lineTotal: line.quantityValue * line.unitPriceValue,
               isTaxInclusive: line.isTaxInclusive,
+              subject: line.subjectController.text.trim().isEmpty ? null : line.subjectController.text.trim(),
             ),
           )
           .toList();
@@ -553,6 +555,14 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
                     onPickProduct: () => _pickProduct(entry.key),
                     onRemove: () => _removeLine(entry.key),
                     onToggleTaxInclusive: () => setState(() => entry.value.isTaxInclusive = !entry.value.isTaxInclusive),
+                    footer: SizedBox(
+                      height: 32,
+                      child: TextField(
+                        controller: entry.value.subjectController,
+                        decoration: const InputDecoration(labelText: '案件名', isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 8), border: OutlineInputBorder()),
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
                   ),
                 ),
             Row(
