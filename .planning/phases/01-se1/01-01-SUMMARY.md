@@ -89,5 +89,26 @@ None - no external service configuration required.
 
 ---
 
+## Self-Check: PASSED
+
+- ✓ SUMMARY.md exists at `.planning/phases/01-se1/01-01-SUMMARY.md`
+- ✓ Task 1 committed (`ae91ccc`) — SalesRepository 明細ロード追加
+- ✓ Task 2 committed (`91b5ea6`) — QuotationRepository 明細ロード追加
+- ✓ Metadata committed (`316b4a0`)
+- ✓ `flutter analyze --no-fatal-infos` 通過済み
+- ✓ `_loadSalesItems` が 4 つのメソッドで呼ばれている
+- ✓ `_loadQuotationItems` メソッドが定義され、`getAllQuotations` で使用されている
+- ✓ `Sales.fromMap()` / `Quotation.fromMap()` は変更なし
+
+## Stub Tracking
+
+None - repository layer only, no UI stubs introduced.
+
+## Threat Flags
+
+None - no new security surface introduced. All changes within existing trust boundary (local SQLite ↔ Repository).
+
+---
+
 *Phase: 01-se1*
 *Completed: 2026-05-22*
