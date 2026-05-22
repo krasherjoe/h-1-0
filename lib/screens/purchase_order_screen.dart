@@ -187,6 +187,8 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (order.subject != null && order.subject!.isNotEmpty)
+                Text(order.subject!, style: TextStyle(fontWeight: FontWeight.w500, color: cs.primary, fontSize: 12)),
               Text('発注日: ${_dateFormat.format(order.orderDate)}'),
               if (order.expectedDate != null) Text('入荷予定: ${_dateFormat.format(order.expectedDate!)}'),
               const SizedBox(height: 2),
@@ -222,6 +224,7 @@ class PurchaseOrderEditorPage extends StatefulWidget {
 class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   final PurchaseOrderService _service = PurchaseOrderService();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _subjectController = TextEditingController();
   final DateFormat _dateFormat = DateFormat('yyyy/MM/dd');
   final NumberFormat _currencyFormat = NumberFormat.currency(locale: 'ja_JP', symbol: '¥');
   final Uuid _uuid = const Uuid();
@@ -231,6 +234,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   PurchaseOrderStatus _status = PurchaseOrderStatus.draft;
   String? _supplierId;
   String? _supplierName;
+  String? _projectId;
   bool _isSaving = false;
 
   final List<LineItemFormData> _lines = [];
@@ -245,6 +249,8 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
       _status = order.status;
       _supplierId = order.supplierId;
       _supplierName = order.supplierSnapshot;
+      _subjectController.text = order.subject ?? '';
+      _projectId = order.projectId;
       _notesController.text = order.notes ?? '';
       for (final item in order.items) {
         final data = LineItemFormData(
@@ -273,6 +279,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   @override
   void dispose() {
     _notesController.dispose();
+    _subjectController.dispose();
     for (final line in _lines) {
       line.removeChangeListener(_handleLineChanged);
       line.dispose();
@@ -419,6 +426,8 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
         orderDate: _orderDate,
         expectedDate: _expectedDate,
         status: _status,
+        subject: _subjectController.text.trim().isEmpty ? null : _subjectController.text.trim(),
+        projectId: _projectId,
         subtotal: totals['subtotal'] ?? 0,
         taxAmount: totals['tax'] ?? 0,
         total: totals['total'] ?? 0,
@@ -504,6 +513,34 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
                   items: PurchaseOrderStatus.values
                       .map((status) => DropdownMenuItem(value: status, child: Text(status.displayName)))
                       .toList(),
+                ),
+              ),
+            ),
+             const SizedBox(height: 12),
+            TextField(
+              controller: _subjectController,
+              decoration: const InputDecoration(labelText: '案件名', hintText: '例: △△建設 新築工事', border: OutlineInputBorder(), isDense: true),
+            ),
+            const SizedBox(height: 20),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ステータス', style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    DropdownButton<PurchaseOrderStatus>(
+                      value: _status,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() => _status = value);
+                      },
+                      items: PurchaseOrderStatus.values
+                          .map((status) => DropdownMenuItem(value: status, child: Text(status.displayName)))
+                          .toList(),
+                    ),
+                  ],
                 ),
               ),
             ),

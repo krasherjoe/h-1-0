@@ -84,6 +84,8 @@ class PurchaseOrder {
     this.supplierSnapshot,
     this.expectedDate,
     this.notes,
+    this.subject,
+    this.projectId,
     this.items = const [],
   });
 
@@ -98,6 +100,8 @@ class PurchaseOrder {
   final String? supplierId;
   final String? supplierSnapshot;
   final String? notes;
+  final String? subject;
+  final String? projectId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<PurchaseOrderItem> items;
@@ -114,6 +118,8 @@ class PurchaseOrder {
     String? supplierId,
     String? supplierSnapshot,
     String? notes,
+    String? subject,
+    String? projectId,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<PurchaseOrderItem>? items,
@@ -130,6 +136,8 @@ class PurchaseOrder {
       supplierId: supplierId ?? this.supplierId,
       supplierSnapshot: supplierSnapshot ?? this.supplierSnapshot,
       notes: notes ?? this.notes,
+      subject: subject ?? this.subject,
+      projectId: projectId ?? this.projectId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
@@ -148,6 +156,8 @@ class PurchaseOrder {
         'supplier_id': supplierId,
         'supplier_snapshot': supplierSnapshot,
         'notes': notes,
+        'subject': subject,
+        'project_id': projectId,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -167,6 +177,8 @@ class PurchaseOrder {
         supplierId: map['supplier_id'] as String?,
         supplierSnapshot: map['supplier_snapshot'] as String?,
         notes: map['notes'] as String?,
+        subject: map['subject'] as String?,
+        projectId: map['project_id'] as String?,
         createdAt: DateTime.parse(map['created_at'] as String),
         updatedAt: DateTime.parse(map['updated_at'] as String),
         items: items,

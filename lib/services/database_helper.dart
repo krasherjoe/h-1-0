@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 69;
+  static const _databaseVersion = 70;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2195,6 +2195,8 @@ class DatabaseHelper {
           tax_amount INTEGER NOT NULL,
           total INTEGER NOT NULL,
           notes TEXT,
+          subject TEXT,
+          project_id TEXT,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
           FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
@@ -2273,6 +2275,10 @@ class DatabaseHelper {
     }
     if (oldVersion < 69) {
       await _safeAddColumn(db, 'purchase_order_items', 'is_tax_inclusive INTEGER DEFAULT 0');
+    }
+    if (oldVersion < 70) {
+      await _safeAddColumn(db, 'purchase_orders', 'subject TEXT');
+      await _safeAddColumn(db, 'purchase_orders', 'project_id TEXT');
     }
   }
 
