@@ -167,7 +167,7 @@ class Invoice {
   final int? priceAdjustmentUnit; // 価格調整単位: 1, 10, 100, 1000
   final String? bankAccount; // 銀行口座情報（請求書用）
   final String? projectId; // 案件ID（任意紐づけ）
-  final bool isTestDocument; // テスト用伝票フラグ（案件名にテスト/TEST/testが含まれる場合true）
+  bool isTestDocument; // テスト用伝票フラグ（案件名にテスト/TEST/testが含まれる場合true）
 
   Invoice({
     String? id,
@@ -219,8 +219,25 @@ class Invoice {
        terminalId = terminalId ?? "T1", // デフォルト端末ID
        updatedAt = updatedAt ?? DateTime.now() {
     // 案件名にテスト文字列が含まれる場合、テスト用伝票としてマーク
-    final testKeywords = ['テスト', 'TEST', 'test'];
-    isTestDocument = testKeywords.any((keyword) => (subject ?? '').contains(keyword));
+    // 大文字小文字・全角半角を区別せず判定
+    final normalizedSubject = _normalizeForTestCheck(subject ?? '');
+    isTestDocument = normalizedSubject.contains('test');
+  }
+
+  /// テスト判定用の文字列正規化（全角半角・大文字小文字を統一）
+  static String _normalizeForTestCheck(String input) {
+    // 全角カタカナ「テスト」を「test」に変換
+    final katakanaToRomaji = input.replaceAll('テスト', 'test');
+    // 全角英字を半角に変換
+    final halfWidth = katakanaToRomaji
+        .replaceAll('Ｔ', 'T')
+        .replaceAll('Ｅ', 'E')
+        .replaceAll('Ｓ', 'T')
+        .replaceAll('ｔ', 't')
+        .replaceAll('ｅ', 'e')
+        .replaceAll('ｓ', 't');
+    // 小文字に統一
+    return halfWidth.toLowerCase();
   }
 
   /// 伝票内容から決定論的なハッシュを生成する (SHA256の一部)
