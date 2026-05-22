@@ -425,59 +425,37 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                               : (quotation.items.isNotEmpty ? quotation.items.first.description : '');
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            color: styleTheme.cardColor(isDraft),
-                            elevation: styleTheme.cardElevation(isDraft),
-                            shape: styleTheme.cardShape,
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      if (isDraft)
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 2, right: 8),
-                                          child: Icon(Icons.edit_note, size: 20, color: Theme.of(context).colorScheme.secondary),
-                                        ),
-                                      Text(_dateFormatter.format(quotation.date), style: const TextStyle(fontSize: 12)),
+                                      Text(_dateFormatter.format(quotation.date), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                                       const Spacer(),
-                                      Text(quotation.customerNameForDisplay, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                      Text(quotation.customerNameForDisplay, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: cs.onSurface)),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      Expanded(
-                                        child: Text(subject, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
-                                      ),
+                                      Expanded(child: Text(subject, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: cs.onSurface))),
                                       const SizedBox(width: 8),
-                                      Text('￥${_currencyFormatter.format(quotation.totalAmount)}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Text('￥${_currencyFormatter.format(quotation.totalAmount)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.onSurface)),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                                   Row(
                                     children: [
-                                      if (isDraft)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.secondaryContainer,
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text('下書き', style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.onSecondaryContainer)),
-                                        ),
-                                      const Spacer(),
                                       OutlinedButton.icon(
                                         onPressed: () => _openPreview(quotation),
                                         icon: const Icon(Icons.picture_as_pdf, size: 16),
-                                        label: const Text('PDFプレビュー', style: TextStyle(fontSize: 11)),
+                                        label: const Text('PDF', style: TextStyle(fontSize: 11)),
                                         style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                                       ),
-                                      const SizedBox(width: 8),
-                                      if (quotation.isDraft && !quotation.isLocked)
+                                      if (quotation.isDraft && !quotation.isLocked) ...[
+                                        const SizedBox(width: 8),
                                         GestureDetector(
                                           onLongPress: confirming ? null : () => _handleConfirmLongPress(quotation),
                                           behavior: HitTestBehavior.opaque,
@@ -490,16 +468,16 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                                             icon: confirming
                                                 ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                                                 : const Icon(Icons.check_circle, size: 16),
-                                            label: Text(confirming ? '' : '確定', style: const TextStyle(fontSize: 11)),
+                                            label: Text(confirming ? '確定中...' : '確定', style: const TextStyle(fontSize: 11)),
                                           ),
                                         ),
+                                      ],
+                                      const Spacer(),
                                       if (!quotation.isLocked)
-                                        IconButton(
-                                          icon: const Icon(Icons.edit, size: 18),
+                                        TextButton.icon(
                                           onPressed: () => _editQuotation(quotation),
-                                          tooltip: '編集',
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
+                                          icon: const Icon(Icons.edit, size: 16),
+                                          label: const Text('編集', style: TextStyle(fontSize: 11)),
                                         ),
                                     ],
                                   ),
