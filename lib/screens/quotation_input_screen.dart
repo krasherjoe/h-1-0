@@ -426,6 +426,7 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                               amountFormatter: _currencyFormatter,
                               dateFormatter: _dateFormatter,
                               draftLabel: '下書き',
+                              q1Layout: true,
                               onTap: () => _openPreview(quotation),
                               onLongPress: () => _showQuotationActions(quotation),
                             );
