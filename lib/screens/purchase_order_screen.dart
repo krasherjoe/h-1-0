@@ -415,6 +415,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
           )
           .toList();
       final now = DateTime.now();
+      final totals = _calculateTotals();
       final order = PurchaseOrder(
         id: orderId,
         documentNumber: documentNumber,
@@ -423,9 +424,9 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
         orderDate: _orderDate,
         expectedDate: _expectedDate,
         status: _status,
-        subtotal: 0,
-        taxAmount: 0,
-        total: 0,
+        subtotal: totals['subtotal'] ?? 0,
+        taxAmount: totals['tax'] ?? 0,
+        total: totals['total'] ?? 0,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         createdAt: widget.order?.createdAt ?? now,
         updatedAt: now,
