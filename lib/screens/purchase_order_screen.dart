@@ -56,7 +56,7 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('データ取得に失敗しました: $e')),
+        SnackBar(content: Text('データ取得に失敗: $e'), duration: const Duration(seconds: 5)),
       );
     }
   }

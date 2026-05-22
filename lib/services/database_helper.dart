@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 66;
+  static const _databaseVersion = 67;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2180,6 +2180,91 @@ class DatabaseHelper {
     // v66: 売上にinvoice_idsカラムを追加
     if (oldVersion < 66) {
       await _safeAddColumn(db, 'sales', 'invoice_ids TEXT');
+    }
+    if (oldVersion < 67) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+          id TEXT PRIMARY KEY,
+          document_number TEXT NOT NULL,
+          supplier_id TEXT,
+          supplier_snapshot TEXT,
+          order_date TEXT NOT NULL,
+          expected_date TEXT,
+          status TEXT NOT NULL,
+          subtotal INTEGER NOT NULL,
+          tax_amount INTEGER NOT NULL,
+          total INTEGER NOT NULL,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_order_items (
+          id TEXT PRIMARY KEY,
+          order_id TEXT NOT NULL,
+          product_id TEXT,
+          description TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_price INTEGER NOT NULL,
+          tax_rate REAL NOT NULL,
+          line_total INTEGER NOT NULL,
+          FOREIGN KEY(order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+          FOREIGN KEY(product_id) REFERENCES products(id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_returns (
+          id TEXT PRIMARY KEY,
+          document_number TEXT NOT NULL,
+          supplier_id TEXT,
+          supplier_snapshot TEXT,
+          return_date TEXT NOT NULL,
+          status TEXT NOT NULL,
+          subtotal INTEGER NOT NULL,
+          tax_amount INTEGER NOT NULL,
+          total INTEGER NOT NULL,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_return_items (
+          id TEXT PRIMARY KEY,
+          return_id TEXT NOT NULL,
+          product_id TEXT,
+          description TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_price INTEGER NOT NULL,
+          tax_rate REAL NOT NULL,
+          line_total INTEGER NOT NULL,
+          FOREIGN KEY(return_id) REFERENCES purchase_returns(id) ON DELETE CASCADE,
+          FOREIGN KEY(product_id) REFERENCES products(id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_payments (
+          id TEXT PRIMARY KEY,
+          purchase_order_id TEXT,
+          supplier_id TEXT,
+          payment_date TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          method TEXT,
+          status TEXT NOT NULL,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(purchase_order_id) REFERENCES purchase_orders(id)
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON purchase_orders(supplier_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_returns_supplier ON purchase_returns(supplier_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_returns_status ON purchase_returns(status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_payments_order ON purchase_payments(purchase_order_id)');
     }
   }
 
