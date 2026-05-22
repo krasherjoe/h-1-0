@@ -607,6 +607,7 @@ ElevatedButton(
             : const BackButton(),
         title: Text(_selectMode ? '${_selectedIds.length}件選択' : "P1:商品マスター"),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        actionsPadding: const EdgeInsets.only(right: 8),
         actions: _selectMode
             ? <Widget>[
                 if (_selectedIds.isNotEmpty)
