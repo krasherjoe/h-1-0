@@ -186,6 +186,11 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
               border: OutlineInputBorder(),
               filled: true,
               fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.content_paste),
+                tooltip: 'クリップボードから読込',
+                onPressed: _loadClipboard,
+              ),
             ),
           ),
           const SizedBox(height: 12),
