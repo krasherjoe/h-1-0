@@ -12,7 +12,8 @@ import 'supplier_phonebook_selection_screen.dart';
 
 /// 仕入先一覧画面
 class SupplierMasterScreen extends StatefulWidget {
-  const SupplierMasterScreen({super.key});
+  const SupplierMasterScreen({super.key, this.selectionMode = false});
+  final bool selectionMode;
 
   @override
   State<SupplierMasterScreen> createState() => _SupplierMasterScreenState();
@@ -374,7 +375,11 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
           status: DocumentStatus.confirmed,
           themeColor: Theme.of(context).colorScheme.secondary,
           onTap: () {
-            _showEditDialog(supplier: supplier);
+            if (widget.selectionMode) {
+              Navigator.pop(context, supplier);
+            } else {
+              _showEditDialog(supplier: supplier);
+            }
           },
           actions: [
             CardAction(
