@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flutter Card Design Gallery</title>
+<style>
+  body { font-family: sans-serif; background: #f0f0f0; padding: 20px; }
+  h1 { color: #333; }
+  .card-list { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
+
+  /* NeuCard */
+  .neu-card {
+    width: 280px; padding: 30px 12px; margin: 12px;
+    background: #f0f0f0; border-radius: 20px; text-align: center;
+    box-shadow: -10px -10px 10px rgba(255,255,255,0.24), 10px 10px 10px rgba(128,128,128,0.5);
+  }
+  .neu-card .icon { font-size: 48px; color: rgba(0,0,0,0.45); margin-bottom: 8px; }
+  .neu-card .title { font-size: 22px; font-weight: 500; margin-bottom: 8px; }
+  .neu-card .desc { font-size: 15px; color: #555; }
+
+  /* ColoredCard */
+  .colored-card {
+    width: 300px; height: 200px; margin: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; font-size: 18px; color: white;
+  }
+  .colored-card.green { background: #4CAF50; box-shadow: 0 8px 12px rgba(0,0,0,0.3); }
+  .colored-card.blue { background: #2196F3; box-shadow: 0 8px 12px rgba(255,0,0,0.3); border-radius: 10px; }
+
+  /* ImageCard */
+  .image-card {
+    width: 300px; height: 200px; margin: 30px; overflow: hidden;
+    border-radius: 20px; background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    display: flex; align-items: center;
+  }
+  .image-card img { width: 120px; height: 100%; object-fit: cover; }
+  .image-card .text { flex: 1; text-align: center; font-size: 16px; padding: 0 8px; }
+
+  .info {
+    max-width: 800px; margin: 40px auto; padding: 20px;
+    background: #fff; border-radius: 12px; line-height: 1.7;
+  }
+  .info a { color: #1976D2; }
+  .info h2 { margin-top: 0; }
+  hr { margin: 40px 0; border: none; border-top: 1px solid #ddd; }
+  .file-path { font-family: monospace; background: #e8e8e8; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>🎨 Flutter Card Design Gallery</h1>
+<p style="color:#666;">実装済みデザインパターン一覧 — コードは <span class="file-path">lib/widgets/design_patterns/</span> にあります</p>
+<hr>
+
+<div class="card-list">
+
+  <!-- NeuCard -->
+  <div class="neu-card">
+    <div class="icon">🚀</div>
+    <div class="title">タイトル</div>
+    <div class="desc">ニューモーフィズム<br>ここに説明文が入ります</div>
+  </div>
+
+  <!-- ColoredCard Green -->
+  <div class="colored-card green">Card1 (緑)</div>
+
+  <!-- ColoredCard Blue -->
+  <div class="colored-card blue">Card2 (青)</div>
+
+  <!-- ImageCard -->
+  <div class="image-card">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTo7FLZVev8PvE4IK3-1evSjzC65pUQzCartw&usqp=CAU" alt="cat">
+    <div class="text">ねこかわいい</div>
+  </div>
+
+</div>
+
+<div class="info">
+  <h2>📁 ファイル一覧</h2>
+  <table>
+    <tr><td><span class="file-path">neu_card.dart</span></td><td>ニューモーフィズムカード</td><td><a href="https://zenn.dev/channel/articles/ed49e1ee8c3456" target="_blank">参照元</a></td></tr>
+    <tr><td><span class="file-path">custom_card_samples.dart</span></td><td>色付きカード・画像カード</td><td><a href="https://gakogako.com/flutter_card/" target="_blank">参照元</a></td></tr>
+  </table>
+</div>
+
+</body>
+</html>
