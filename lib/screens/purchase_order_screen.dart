@@ -9,7 +9,8 @@ import '../services/supplier_repository.dart';
 import '../widgets/line_item_editor.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
-import 'product_picker_modal.dart';
+import '../models/product_model.dart';
+import 'product_master_screen.dart';
 import 'supplier_picker_modal.dart';
 
 class PurchaseOrderListScreen extends StatefulWidget {
@@ -356,17 +357,16 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   }
 
   Future<void> _pickProduct(int index) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ProductPickerModal(onProductSelected: (product) {
-        setState(() {
-          _lines[index].applyProduct(product);
-          _lines[index].unitPriceController.text = product.wholesalePrice.toString();
-          _lines[index].isTaxInclusive = product.wholesalePriceIsTaxInclusive;
-        });
-      }),
+    final product = await Navigator.push<Product>(
+      context,
+      MaterialPageRoute(builder: (_) => const ProductMasterScreen(selectionMode: true)),
     );
+    if (product == null) return;
+    setState(() {
+      _lines[index].applyProduct(product);
+      _lines[index].unitPriceController.text = product.wholesalePrice.toString();
+      _lines[index].isTaxInclusive = product.wholesalePriceIsTaxInclusive;
+    });
   }
 
   Map<String, int> _calculateTotals() {

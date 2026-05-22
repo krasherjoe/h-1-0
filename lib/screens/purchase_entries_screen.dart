@@ -10,7 +10,8 @@ import '../services/purchase_entry_service.dart';
 import '../widgets/line_item_editor.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
-import 'product_picker_modal.dart';
+import '../models/product_model.dart';
+import 'product_master_screen.dart';
 import 'supplier_picker_modal.dart';
 
 class PurchaseEntriesScreen extends StatefulWidget {
@@ -300,15 +301,12 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
   }
 
   Future<void> _pickProduct(int index) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ProductPickerModal(
-        onProductSelected: (product) {
-          setState(() => _lines[index].applyProduct(product));
-        },
-      ),
+    final product = await Navigator.push<Product>(
+      context,
+      MaterialPageRoute(builder: (_) => const ProductMasterScreen(selectionMode: true)),
     );
+    if (product == null) return;
+    setState(() => _lines[index].applyProduct(product));
   }
 
   Future<void> _save() async {
