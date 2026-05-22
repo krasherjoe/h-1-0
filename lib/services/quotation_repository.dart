@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../models/base_document.dart';
 import '../models/customer_model.dart';
 import '../models/quotation_model.dart';
 import '../widgets/document_card.dart';
@@ -22,7 +23,8 @@ class QuotationRepository {
       orderBy: 'date DESC',
     );
 
-    return maps.map((map) {
+    final List<Quotation> result = [];
+    for (final map in maps) {
       final customerId = map['customer_id'] as String?;
       final customer = customerId != null
           ? customers.firstWhere(
@@ -34,9 +36,11 @@ class QuotationRepository {
               ),
             )
           : null;
-
-      return Quotation.fromMap(map, customer);
-    }).toList();
+      final quotation = Quotation.fromMap(map, customer);
+      quotation.items = await _loadQuotationItems(quotation.id);
+      result.add(quotation);
+    }
+    return result;
   }
 
   /// 見積を保存
@@ -100,6 +104,17 @@ class QuotationRepository {
   Future<void> convertToOrder(Quotation quotation) async {
     // TODO: 受注モデルを実装後に実装
     throw UnimplementedError('受注変換機能は今後実装予定です');
+  }
+
+  /// 見積の明細をロード
+  Future<List<DocumentItem>> _loadQuotationItems(String quotationId) async {
+    final database = await _db.database;
+    final maps = await database.query(
+      'quotation_items',
+      where: 'quotation_id = ?',
+      whereArgs: [quotationId],
+    );
+    return maps.map((map) => DocumentItem.fromMap(map)).toList();
   }
 
   /// 伝票番号を生成
