@@ -23,7 +23,6 @@ import 'product_master_screen.dart';
 import 'supplier_master_screen.dart';
 import 'order_input_screen.dart';
 import 'quotation_input_screen.dart';
-import 'screen_qr_order_entry.dart';
 import 'sales_entry_screen.dart';
 import 'sales_return_input_screen.dart';
 import 'purchase_input_screen.dart';
@@ -224,7 +223,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       case 'quotation_input':
         return const QuotationInputScreen();
       case 'order_entry':
-        return const OrderEntryScreen();
+        return const OrderInputScreen();
       case 'sales_entry':
         return const SalesEntryScreen();
       case 'sales_return_input':
@@ -496,7 +495,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                 accentColor: documentTypeBadgeColor(DocumentType.order),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const OrderEntryScreen()),
+                  MaterialPageRoute(builder: (_) => const OrderInputScreen()),
                 ),
               ),
               const SizedBox(width: 8),
