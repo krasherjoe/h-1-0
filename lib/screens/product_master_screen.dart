@@ -5,6 +5,7 @@ import '../models/product_category_model.dart';
 import '../services/product_repository.dart';
 import '../services/product_category_repository.dart';
 import '../widgets/master_field_config.dart';
+import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/rich_master_edit_sheet.dart';
 import 'barcode_scanner_screen.dart';
 
@@ -148,6 +149,28 @@ class _ProductInfoChip extends StatelessWidget {
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductRepository _productRepo = ProductRepository();
+
+  Future<void> _importFromPasteBuffer() async {
+    final items = await showPasteBufferScreen(context);
+    if (items.isEmpty) return;
+    var imported = 0;
+    for (final item in items) {
+      try {
+        await _productRepo.saveProduct(Product(
+          id: _uuid.v4(),
+          name: item.name,
+          wholesalePrice: item.price,
+          defaultUnitPrice: item.price,
+        ));
+        imported++;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    _loadProducts();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$imported件の商品をマスターに登録しました')),
+    );
+  }
   final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
   final Uuid _uuid = const Uuid();
   final Map<String, bool> _taxFlags = {};
@@ -565,6 +588,11 @@ ElevatedButton(
         title: const Text("P1:商品マスター"),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.content_paste),
+            tooltip: 'テキストから取込',
+            onPressed: _importFromPasteBuffer,
+          ),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _sortKey,
