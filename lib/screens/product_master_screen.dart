@@ -149,28 +149,6 @@ class _ProductInfoChip extends StatelessWidget {
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductRepository _productRepo = ProductRepository();
-
-  Future<void> _importFromPasteBuffer() async {
-    final items = await showPasteBufferScreen(context);
-    if (items.isEmpty) return;
-    var imported = 0;
-    for (final item in items) {
-      try {
-        await _productRepo.saveProduct(Product(
-          id: _uuid.v4(),
-          name: item.name,
-          wholesalePrice: item.price,
-          defaultUnitPrice: item.price,
-        ));
-        imported++;
-      } catch (_) {}
-    }
-    if (!mounted) return;
-    _loadProducts();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$imported件の商品をマスターに登録しました')),
-    );
-  }
   final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
   final Uuid _uuid = const Uuid();
   final Map<String, bool> _taxFlags = {};
@@ -183,6 +161,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   String _searchQuery = "";
   String _sortKey = 'name_asc';
   bool _showHidden = false;
+  bool _selectMode = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -355,6 +335,44 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         );
       },
     );
+  }
+
+  Future<void> _confirmBatchDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('一括削除'),
+        content: Text('${_selectedIds.length}件の商品を削除しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('削除')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ids = _selectedIds.toList();
+    for (final id in ids) {
+      try { await _productRepo.deleteProduct(id); } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() { _selectMode = false; _selectedIds.clear(); });
+    _loadProducts();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${ids.length}件削除しました')));
+  }
+
+  Future<void> _importFromPasteBuffer() async {
+    final items = await showPasteBufferScreen(context);
+    if (items.isEmpty) return;
+    var imported = 0;
+    for (final item in items) {
+      try {
+        await _productRepo.saveProduct(Product(id: _uuid.v4(), name: item.name, wholesalePrice: item.price, defaultUnitPrice: item.price));
+        imported++;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    _loadProducts();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$imported件の商品をマスターに登録しました')));
   }
 
   Future<void> _showEditDialog({Product? product}) async {
@@ -584,10 +602,21 @@ ElevatedButton(
       resizeToAvoidBottomInset: false,
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text("P1:商品マスター"),
+        leading: _selectMode
+            ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() { _selectMode = false; _selectedIds.clear(); }))
+            : const BackButton(),
+        title: Text(_selectMode ? '${_selectedIds.length}件選択' : "P1:商品マスター"),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        actions: [
+        actions: _selectMode
+            ? <Widget>[
+                if (_selectedIds.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    tooltip: '選択を削除',
+                    onPressed: _confirmBatchDelete,
+                  ),
+              ]
+            : <Widget>[
           IconButton(
             icon: const Icon(Icons.content_paste),
             tooltip: 'テキストから取込',
@@ -711,29 +740,34 @@ PopupMenuItem(
                           : BorderSide.none,
                     ),
                     child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Stack(
-                        children: [
-                          Align(
-                            alignment: Alignment.center,
-                            child: Icon(
-                              Icons.inventory_2,
-                              color: theme.colorScheme.primary,
+                    leading: _selectMode
+                        ? Checkbox(
+                            value: _selectedIds.contains(p.id),
+                            onChanged: (_) => setState(() { if (_selectedIds.contains(p.id)) _selectedIds.remove(p.id); else _selectedIds.add(p.id); }),
+                          )
+                        : CircleAvatar(
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Stack(
+                              children: [
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.inventory_2,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                                if (p.isLocked)
+                                  Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Icon(
+                                      Icons.link,
+                                      size: 14,
+                                      color: Theme.of(context).colorScheme.error,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                          if (p.isLocked)
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: Icon(
-                                Icons.link,
-                                size: 14,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
                     title: Builder(
                       builder: (context) {
                         return Text(
@@ -758,85 +792,19 @@ PopupMenuItem(
                       }
                     ),
                     onTap: () {
-                      if (widget.selectionMode) {
-                        if (p.isHidden)
-                          return; // safety: do not return hidden in selection
+                      if (_selectMode) {
+                        setState(() { if (_selectedIds.contains(p.id)) _selectedIds.remove(p.id); else _selectedIds.add(p.id); });
+                      } else if (widget.selectionMode) {
+                        if (p.isHidden) return;
                         Navigator.pop(context, p);
                       } else {
                         _showDetailPane(p);
                       }
                     },
-                    onLongPress: () async {
-                      await showModalBottomSheet(
-                        context: context,
-                        builder: (ctx) => SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.edit),
-                                title: const Text("編集"),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  _showEditDialog(product: p);
-                                },
-                              ),
-                              if (!p.isHidden)
-                                ListTile(
-                                  leading: const Icon(Icons.visibility_off),
-                                  title: const Text("非表示にする"),
-                                  onTap: () async {
-                                    Navigator.pop(ctx);
-                                    await _productRepo.setHidden(p.id, true);
-                                    if (mounted) _loadProducts();
-                                  },
-                                ),
-                              if (!p.isLocked)
-                                ListTile(
-                                  leading: Icon(
-                                    Icons.delete_outline,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                  title: Text(
-                                    "削除",
-                                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                                  ),
-                                  onTap: () async {
-                                    Navigator.pop(ctx);
-                                    final confirmed = await showDialog<bool>(
-                                      context: context,
-                                      builder: (_) => AlertDialog(
-                                        title: const Text("削除の確認"),
-                                        content: Text("${p.name} を削除しますか？"),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text("キャンセル"),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: Text(
-                                              "削除",
-                                              style: TextStyle(
-                                                color: Theme.of(context).colorScheme.error,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirmed == true) {
-                                      await _productRepo.deleteProduct(p.id);
-                                      if (mounted) _loadProducts();
-                                    }
-                                  },
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
+                    onLongPress: () {
+                      if (!_selectMode && !widget.selectionMode) {
+                        setState(() { _selectMode = true; _selectedIds.add(p.id); });
+                      }
                     },
                     trailing: widget.selectionMode
                         ? null
