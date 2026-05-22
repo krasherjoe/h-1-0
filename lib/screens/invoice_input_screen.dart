@@ -348,8 +348,11 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           _selectedBankIndex = defaultBankIdx < bankAccounts.length ? defaultBankIdx : -1;
         }
       } else {
-        _taxRate = defaultTaxRate > 0 ? defaultTaxRate : 0.10;
-        _includeTax = true;
+        // 免税事業者でT番号なしの場合は非課税がデフォルト
+        final bool isExemptNoTNumber = company.isExemptTaxpayer &&
+            (company.registrationNumber == null || company.registrationNumber!.isEmpty);
+        _taxRate = isExemptNoTNumber ? 0.0 : (defaultTaxRate > 0 ? defaultTaxRate : 0.10);
+        _includeTax = !isExemptNoTNumber;
         _isDraft = true;
         _documentType = widget.initialDocumentType;
         _currentId = null;
@@ -2745,24 +2748,24 @@ decoration: InputDecoration(
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            _includeTax
-                                                ? '消費税 (${(_taxRate * 100).toInt()}%):'
-                                                : '消費税 (非課税):',
-                                          ),
-                                          Text(
-                                            '￥${fmt.format(result['tax'])}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
+                                      if (_includeTax) ...[
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              '消費税 (${(_taxRate * 100).toInt()}%):',
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                            Text(
+                                              '￥${fmt.format(result['tax'])}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                       const SizedBox(height: 8),
                                       Row(
                                         mainAxisAlignment:
