@@ -39,7 +39,7 @@ Future<List<ParsedLineItem>> showPasteBufferDialog(BuildContext context) async {
       ],
     ),
   );
-  textController.dispose();
+  WidgetsBinding.instance.addPostFrameCallback((_) => textController.dispose());
   if (result == null || result.trim().isEmpty) return [];
 
   final lines = result.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
