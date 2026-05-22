@@ -345,7 +345,10 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
       context: context,
       isScrollControlled: true,
       builder: (_) => ProductPickerModal(onProductSelected: (product) {
-        setState(() => _lines[index].applyProduct(product));
+        setState(() {
+          _lines[index].applyProduct(product);
+          _lines[index].unitPriceController.text = product.wholesalePrice.toString();
+        });
       }),
     );
   }
