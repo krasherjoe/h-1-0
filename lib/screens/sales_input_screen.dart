@@ -264,7 +264,10 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     int taxAmount = 0;
     for (final item in _items) {
       int lineSubtotal;
-      if (item.isFromInvoice) {
+      if (item.savedSubtotal != null) {
+        // 保存時の小計を優先使用（import 明細の丸め誤差防止、D-03）
+        lineSubtotal = item.savedSubtotal!;
+      } else if (item.isFromInvoice) {
         // 請求書からインポートした明細はoriginalSubtotalを使用（値引き後の金額）
         lineSubtotal = item.originalSubtotal ?? item.quantity * item.unitPrice;
       } else {
@@ -322,7 +325,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
         productName: i.productName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
-        subtotal: i.isFromInvoice ? (i.originalSubtotal ?? i.quantity * i.unitPrice) : (i.quantity * i.unitPrice),
+        subtotal: i.savedSubtotal ?? (i.isFromInvoice ? (i.originalSubtotal ?? i.quantity * i.unitPrice) : (i.quantity * i.unitPrice)),
         taxRate: i.taxRate,
       )).toList(),
       subtotal: subtotal,
