@@ -609,13 +609,12 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                                   Text(
                                       '${inv.date.year}/${inv.date.month.toString().padLeft(2, '0')}/${inv.date.day.toString().padLeft(2, '0')}',
                                       style: TextStyle(
-                                          fontSize: 9,
-                                          color: cs.onSurfaceVariant
-                                              .withValues(alpha: 0.6))),
+                                          fontSize: 12,
+                                          color: cs.onSurfaceVariant)),
                                   const SizedBox(width: 8),
                                   Text(customerName,
                                       style: TextStyle(
-                                          fontSize: 10,
+                                          fontSize: 12,
                                           color: cs.onSurfaceVariant)),
                                 ],
                               ),
@@ -623,9 +622,10 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                               Text(subject,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500)),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.6))),
                             ],
                           ),
                         ),
