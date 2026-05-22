@@ -12,7 +12,6 @@ import '../services/pdf_generator.dart';
 import '../services/storage_monitor.dart';
 import '../utils/theme_utils.dart';
 import '../theme/invoice_list_style_theme.dart';
-import '../widgets/invoice_list_a2_card.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import '../widgets/storage_warning_dialog.dart';
 import 'invoice_input_screen.dart';
@@ -419,17 +418,6 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
                         itemCount: quotations.length,
                         itemBuilder: (context, index) {
                           final quotation = quotations[index];
-                          if (false) {
-                            return InvoiceListA2Card(
-                              invoice: quotation,
-                              amountFormatter: _currencyFormatter,
-                              dateFormatter: _dateFormatter,
-                              draftLabel: '下書き',
-                              onTap: () => _openPreview(quotation),
-                              onLongPress: () => _showQuotationActions(quotation),
-                            );
-                          }
-
                           final confirming = _confirming[quotation.id] ?? false;
                           final bool isDraft = quotation.isDraft;
                           final subject = quotation.subject?.trim().isNotEmpty == true
