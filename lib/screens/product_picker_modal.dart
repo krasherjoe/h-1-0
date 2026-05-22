@@ -55,7 +55,7 @@ class _ProductPickerModalState extends State<ProductPickerModal> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 4),
-                const Text("PS:商品・サービス選択", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text("商品・サービス選択", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
