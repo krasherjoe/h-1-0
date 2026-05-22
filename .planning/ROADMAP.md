@@ -23,8 +23,12 @@
   3. 保存済みの売上伝票を編集し、再度保存しても内容が維持される
   4. 修正箇所の単体テストが追加され、`flutter test` が通過する
   5. `flutter analyze --no-fatal-infos` が通過する
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
+
+**Plan list:**
+- [ ] 01-01-PLAN.md — SalesRepository + QuotationRepository: 明細ロード追加（Wave 1）
+- [ ] 01-02-PLAN.md — Repository単体テスト追加（Wave 2）
 
 ### Phase 2: 請求書インポートバグ修正
 **Goal**: 請求書から売上伝票へのインポート時の合計金額が正しく計算される
@@ -71,7 +75,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. SE1売上伝票バグ修正 | 0/0 | Not started | - |
+| 1. SE1売上伝票バグ修正 | 0/2 | Planning | - |
 | 2. 請求書インポートバグ修正 | 0/0 | Not started | - |
 | 3. 残バグ監査・修正 | 0/0 | Not started | - |
 | 4. コアフロー安定化 | 0/0 | Not started | - |
