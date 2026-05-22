@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ParsedLineItem {
   ParsedLineItem(this.name, this.price);
@@ -25,6 +26,25 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   final _selected = <String, bool>{};
   final _previewScroll = ScrollController();
   List<String> _lines = [];
+  bool _clipboardLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_clipboardLoaded) {
+      _clipboardLoaded = true;
+      _loadClipboard();
+    }
+  }
+
+  Future<void> _loadClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && data!.text!.trim().isNotEmpty) {
+      if (!mounted) return;
+      _textController.text = data.text!;
+      _parse();
+    }
+  }
 
   @override
   void dispose() {
@@ -149,7 +169,14 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Amazon/楽天などからコピーしたテキストを貼り付けてください', style: TextStyle(fontSize: 12)),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 14, color: cs.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(_clipboardLoaded ? 'クリップボードから自動取込しました' : 'テキストを入力するか、コピーしてから開いてください',
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            ],
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _textController,
