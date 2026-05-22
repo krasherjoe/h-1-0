@@ -14,7 +14,7 @@
 ### テスティング
 
 - [x] **TST-01**: バグ修正箇所に対する単体テストを追加する
-- [ ] **TST-02**: バグ修正箇所に対する Widget テストを追加する
+- [x] **TST-02**: バグ修正箇所に対する Widget テストを追加する
 
 ### 安定化
 
@@ -44,7 +44,7 @@
 | BUG-01 | Phase 1 — SE1売上伝票バグ修正 | Complete (2026-05-22) |
 | TST-01 | Phase 1 — SE1売上伝票バグ修正 | Complete |
 | BUG-02 | Phase 2 — 請求書インポートバグ修正 | Complete |
-| TST-02 | Phase 2 — 請求書インポートバグ修正 | Pending |
+| TST-02 | Phase 2 — 請求書インポートバグ修正 | Complete (2026-05-22) |
 | BUG-03 | Phase 3 — 残バグ監査・修正 | Pending |
 | STB-01 | Phase 4 — コアフロー安定化 | Pending |
 

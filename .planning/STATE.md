@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-05-22T06:26:33.620Z"
+last_updated: "2026-05-22T06:57:31.120Z"
 last_activity: 2026-05-22
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-22)
 
 **Core value:** 販売業務の基本フロー（見積→受注→請求→在庫管理）が正しく動作し、データが失われないこと。
-**Current focus:** Phase 1 — SE1売上伝票バグ修正
+**Current focus:** Phase 2 — 請求書インポートバグ修正
 
 ## Current Position
 
-Phase: 1 of 4 (SE1売上伝票バグ修正)
+Phase: 2 of 4 (請求書インポートバグ修正)
 Plan: 2 of 2 in current phase
 Status: Phase complete — ready for verification
 Last activity: 2026-05-22
 
-Progress: [████████░░] 75%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 75%
 | Phase 01-se1 P01 | 2min | 2 tasks | 2 files |
 | Phase 01-se1 P02 | 3min | 2 tasks | 2 files |
 | Phase 02-invoice-import-bug P01 | 3min | 2 tasks | 1 files |
+| Phase 02-invoice-import-bug P02 | 26min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Decisions logged in PROJECT.md Key Decisions table.
 - [Plan 02]: 既存テスト保護 — 新しい items loading グループは独立した setUp/tearDown で DB を管理
 - [Plan 02]: Public API 検証 — private メソッドではなく public API を通じて間接的に明細ロードを検証
 - [Phase ?]: savedSubtotal は final int?（null 許容）— _loadExisting() のみ値が入る — 既存の isFromInvoice 分岐は維持し DB スキーマ変更不要
+- [Plan 02]: sqflite_common_ffi は testWidgets/pumpWidget 内で DB I/O がハングするため、UI テスト（DB なし）とデータ整合性テスト（test + sqflite_ffi）を分離
 
 ### Pending Todos
 
@@ -88,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T06:26:15.945Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-05-22T06:57:31.112Z
+Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
 Resume file: None
