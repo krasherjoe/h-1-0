@@ -27,7 +27,7 @@
 **UI hint**: yes
 
 **Plan list:**
-- [ ] 01-01-PLAN.md — SalesRepository + QuotationRepository: 明細ロード追加（Wave 1）
+- [x] 01-01-PLAN.md — SalesRepository + QuotationRepository: 明細ロード追加（Wave 1）
 - [ ] 01-02-PLAN.md — Repository単体テスト追加（Wave 2）
 
 ### Phase 2: 請求書インポートバグ修正
@@ -75,7 +75,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. SE1売上伝票バグ修正 | 0/2 | Planning | - |
+| 1. SE1売上伝票バグ修正 | 1/2 | In Progress | 2026-05-22 |
 | 2. 請求書インポートバグ修正 | 0/0 | Not started | - |
 | 3. 残バグ監査・修正 | 0/0 | Not started | - |
 | 4. コアフロー安定化 | 0/0 | Not started | - |
