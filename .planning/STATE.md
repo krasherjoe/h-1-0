@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-02-PLAN.md (テスト追加)
-last_updated: "2026-05-22T05:16:17.631Z"
+status: verifying
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-05-22T06:26:33.620Z"
 last_activity: 2026-05-22
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_plans: 4
+  completed_plans: 3
+  percent: 75
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-05-22)
 
 Phase: 1 of 4 (SE1売上伝票バグ修正)
 Plan: 2 of 2 in current phase
-Status: Complete - 両プラン実行済み（明細ロード修正 + 単体テスト追加）
+Status: Phase complete — ready for verification
 Last activity: 2026-05-22
 
-Progress: [██████████] 100%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100%
 *Updated after each plan completion*
 | Phase 01-se1 P01 | 2min | 2 tasks | 2 files |
 | Phase 01-se1 P02 | 3min | 2 tasks | 2 files |
+| Phase 02-invoice-import-bug P01 | 3min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Decisions logged in PROJECT.md Key Decisions table.
 - [Plan 02]: 必須テーブル追加 — CustomerRepository の JOIN クエリ対応のため customer_contacts / master_hidden テーブルをテスト setup に含めた
 - [Plan 02]: 既存テスト保護 — 新しい items loading グループは独立した setUp/tearDown で DB を管理
 - [Plan 02]: Public API 検証 — private メソッドではなく public API を通じて間接的に明細ロードを検証
+- [Phase ?]: savedSubtotal は final int?（null 許容）— _loadExisting() のみ値が入る — 既存の isFromInvoice 分岐は維持し DB スキーマ変更不要
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-22T05:16:17.622Z
-Stopped at: Completed 01-02-PLAN.md (テスト追加)
+Last session: 2026-05-22T06:26:15.945Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

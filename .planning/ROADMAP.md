@@ -44,7 +44,7 @@
 **UI hint**: yes
 
 **Plan list:**
-- [ ] 02-01-PLAN.md — 請求書インポート金額不一致バグ修正（Wave 1）
+- [x] 02-01-PLAN.md — 請求書インポート金額不一致バグ修正（Wave 1）
 - [ ] 02-02-PLAN.md — Widget テスト + _calculate() 単体テスト追加（Wave 2）
 
 ### Phase 3: 残バグ監査・修正
