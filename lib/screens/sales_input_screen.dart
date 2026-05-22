@@ -83,6 +83,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
         quantity: 1,
         unitPrice: item.subtotal,
         taxRate: item.taxRate,
+        isFromInvoice: false,
       ));
     }
 
@@ -163,6 +164,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           quantity: qty,
           unitPrice: product.defaultUnitPrice,
           taxRate: _taxRate,
+          isFromInvoice: false,
         ));
       });
     }
@@ -226,6 +228,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           quantity: item.quantity,
           unitPrice: discountedUnitPrice,
           taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
+          isFromInvoice: true,
         ));
       }
 
@@ -249,8 +252,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     for (final item in _items) {
       final lineSubtotal = item.quantity * item.unitPrice;
       subTotal += lineSubtotal;
-      // taxRateが0.0の明細（請求書からインポート）は税計算をスキップ
-      if (item.taxRate > 0) {
+      // 請求書からインポートした明細は税計算をスキップ
+      if (!item.isFromInvoice && item.taxRate > 0) {
         final lineTax = _includeTax
             ? (lineSubtotal / (1 + item.taxRate) * item.taxRate).round()
             : (lineSubtotal * item.taxRate).round();
@@ -510,6 +513,7 @@ class _LineItem {
   int quantity;
   int unitPrice;
   double taxRate;
+  final bool isFromInvoice; // 請求書からインポートした明細かどうか
 
   _LineItem({
     required this.id,
@@ -518,5 +522,6 @@ class _LineItem {
     required this.quantity,
     required this.unitPrice,
     required this.taxRate,
+    this.isFromInvoice = false,
   });
 }
