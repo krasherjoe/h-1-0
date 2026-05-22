@@ -257,7 +257,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                          children: [
                            Text("販売アシスト1号", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 20)),
                            const SizedBox(height: 8),
-                           Text("クイックメニュー", style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                           Text("クイックメニュー", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7))),
                          ],
                        ),
                      ),
