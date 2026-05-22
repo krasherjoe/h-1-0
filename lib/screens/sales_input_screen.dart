@@ -34,11 +34,15 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
 
   Customer? _selectedCustomer;
   DateTime _selectedDate = DateTime.now();
+  DateTime? _paymentDueDate;
+  String _paymentMethod = '現金';
   bool _includeTax = true;
   double _taxRate = 0.10;
   bool _isDraft = true;
   bool _saving = false;
   bool _isLoading = true;
+
+  static const _paymentMethods = ['現金', '振込', 'クレジットカード', '掛売', 'その他'];
 
   List<_LineItem> _items = [];
   List<String> _invoiceIds = [];
@@ -68,6 +72,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     _subjectController.text = sales.subject ?? '';
     _notesController.text = sales.notes ?? '';
     _selectedDate = sales.date;
+    _paymentDueDate = sales.paymentDueDate;
+    _paymentMethod = sales.paymentMethod ?? '現金';
     _taxRate = sales.taxRate;
     _isDraft = sales.status == DocumentStatus.draft;
     _invoiceIds = sales.invoiceIds ?? [];
@@ -347,6 +353,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       subject: _subjectController.text.isNotEmpty ? _subjectController.text : null,
       status: _isDraft ? DocumentStatus.draft : DocumentStatus.confirmed,
       invoiceIds: _invoiceIds.isNotEmpty ? _invoiceIds : null,
+      paymentDueDate: _paymentDueDate,
+      paymentMethod: _paymentMethod,
       createdAt: widget.existingSalesId != null
           ? (await _repo.getSales(widget.existingSalesId!))?.createdAt ?? now
           : now,
@@ -430,6 +438,58 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
               title: Text(DateFormat('yyyy年MM月dd日').format(_selectedDate)),
               trailing: const Icon(Icons.chevron_right),
               onTap: _pickDate,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 入金予定日
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.payments, color: Theme.of(context).colorScheme.primary),
+              title: Text(_paymentDueDate != null ? DateFormat('yyyy年MM月dd日').format(_paymentDueDate!) : '入金予定日を設定'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_paymentDueDate != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setState(() => _paymentDueDate = null),
+                      padding: EdgeInsets.zero, constraints: const BoxConstraints(),
+                    ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _paymentDueDate ?? DateTime.now().add(const Duration(days: 30)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) setState(() => _paymentDueDate = picked);
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 支払方法
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.account_balance, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 16),
+                  const Text('支払方法'),
+                  const Spacer(),
+                  DropdownButton<String>(
+                    value: _paymentMethod,
+                    underline: const SizedBox(),
+                    onChanged: (v) => setState(() => _paymentMethod = v!),
+                    items: _paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),

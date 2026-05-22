@@ -19,11 +19,15 @@ class Sales extends BaseDocument {
     super.subject,
     required super.status,
     this.invoiceIds,
+    this.paymentDueDate,
+    this.paymentMethod,
     required super.createdAt,
     required super.updatedAt,
   });
 
   final List<String>? invoiceIds; // 紐づく請求書IDリスト（複数対応）
+  final DateTime? paymentDueDate; // 入金予定日
+  final String? paymentMethod; // 支払方法
   int? grossProfit; // 粗利額（計算済み）
 
   @override
@@ -63,6 +67,8 @@ class Sales extends BaseDocument {
       'subject': subject,
       'status': status.name,
       'invoice_ids': invoiceIds != null ? invoiceIds!.join(',') : null,
+      'payment_due_date': paymentDueDate?.toIso8601String(),
+      'payment_method': paymentMethod,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -92,6 +98,8 @@ class Sales extends BaseDocument {
         orElse: () => DocumentStatus.draft,
       ),
       invoiceIds: invoiceIds,
+      paymentDueDate: map['payment_due_date'] != null ? DateTime.parse(map['payment_due_date'] as String) : null,
+      paymentMethod: map['payment_method'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -111,6 +119,8 @@ class Sales extends BaseDocument {
     String? subject,
     DocumentStatus? status,
     List<String>? invoiceIds,
+    DateTime? paymentDueDate,
+    String? paymentMethod,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -128,6 +138,8 @@ class Sales extends BaseDocument {
       subject: subject ?? this.subject,
       status: status ?? this.status,
       invoiceIds: invoiceIds ?? this.invoiceIds,
+      paymentDueDate: paymentDueDate ?? this.paymentDueDate,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
