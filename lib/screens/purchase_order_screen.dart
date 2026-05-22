@@ -189,25 +189,22 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
             children: [
               Text('発注日: ${_dateFormat.format(order.orderDate)}'),
               if (order.expectedDate != null) Text('入荷予定: ${_dateFormat.format(order.expectedDate!)}'),
-              const SizedBox(height: 4),
-              Text(supplier),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
+              if (supplier.isNotEmpty) Text(supplier),
+              const SizedBox(height: 2),
               Text('金額: ${_currencyFormat.format(order.total)}'),
+              if (order.items.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                ...order.items.take(3).map((item) => Text('・${item.description}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant))),
+                if (order.items.length > 3) Text('...他${order.items.length - 3}件', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+              ],
             ],
           ),
         ),
-        trailing: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-              child: Text(order.status.displayName, style: TextStyle(color: statusColor)),
-            ),
-            const SizedBox(height: 8),
-            Text(_supplierNames[order.supplierId ?? ''] ?? ''),
-          ],
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+          child: Text(order.status.displayName, style: TextStyle(color: statusColor)),
         ),
       ),
     );
