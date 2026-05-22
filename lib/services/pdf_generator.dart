@@ -215,7 +215,6 @@ Future<pw.Document> buildInvoiceDocument(
                     if (companyInfo.url != null && companyInfo.url!.isNotEmpty) pw.Text(companyInfo.url!),
                     if (companyInfo.registrationNumber != null &&
                         companyInfo.registrationNumber!.isNotEmpty &&
-                        !companyInfo.isExemptTaxpayer &&
                         companyInfo.taxDisplayMode != 'hidden')
                       pw.Text("登録番号: ${companyInfo.registrationNumber!}", style: const pw.TextStyle(fontSize: 10)),
                   ],
@@ -232,7 +231,8 @@ Future<pw.Document> buildInvoiceDocument(
               children: [
                 pw.Text(
                   () {
-                    final bool showTaxSuffix = companyInfo.taxDisplayMode != 'hidden' && !companyInfo.isExemptTaxpayer && invoice.tax > 0;
+                    final bool hasRegNumber = companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty;
+                    final bool showTaxSuffix = companyInfo.taxDisplayMode != 'hidden' && (hasRegNumber || !companyInfo.isExemptTaxpayer) && invoice.tax > 0;
                     String baseLabel;
                     switch (invoice.documentType) {
                       case DocumentType.receipt:
@@ -321,8 +321,9 @@ Future<pw.Document> buildInvoiceDocument(
                     ],
                     if (invoice.tax > 0) ...[
                       ...(() {
-                        // 免税事業者の場合は消費税を表示しない
-                        if (companyInfo.isExemptTaxpayer) {
+                        // 免税事業者かつT番号がない場合は消費税を表示しない
+                        final bool hasRegNumber = companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty;
+                        if (companyInfo.isExemptTaxpayer && !hasRegNumber) {
                           return [];
                         }
                         final mode = companyInfo.taxDisplayMode.isNotEmpty ? companyInfo.taxDisplayMode : 'normal';
@@ -360,14 +361,15 @@ Future<pw.Document> buildInvoiceDocument(
               ),
             ],
           ),
-          // 免税事業者の場合は適格請求書非該当の旨を表示
-          if (companyInfo.isExemptTaxpayer) ...[
+          // 免税事業者でT番号がない場合は適格請求書非該当の旨を表示
+          if (companyInfo.isExemptTaxpayer &&
+              (companyInfo.registrationNumber == null || companyInfo.registrationNumber!.isEmpty)) ...[
             pw.SizedBox(height: 10),
             pw.Container(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(8),
               decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey400)),
-              child: const pw.Text("※当方は適格請求書発行事業者ではありません。",
+              child: pw.Text("※当方は適格請求書発行事業者ではありません。",
                   textAlign: pw.TextAlign.left,
                   style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
             ),

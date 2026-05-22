@@ -465,14 +465,6 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     onChanged: (v) {
                       setState(() {
                         _isExemptTaxpayer = v;
-                        if (v) {
-                          // 免税事業者はT番号なし・非課税表示に自動設定
-                          _hasRegistrationNumber = false;
-                          _regNumberController.clear();
-                          _taxDisplayMode = 'hidden';
-                        } else {
-                          _taxDisplayMode = 'normal';
-                        }
                       });
                     },
                     contentPadding: EdgeInsets.zero,
@@ -582,7 +574,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _isExemptTaxpayer
-                        ? '免税事業者：税額を別記せず税込価格として表示します'
+                        ? '免税事業者：T番号登録がない場合、消費税額の別記は不要'
                         : 'T番号取得済み：消費税額を明記した適格請求書を発行できます',
                     style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
