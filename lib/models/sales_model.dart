@@ -18,12 +18,12 @@ class Sales extends BaseDocument {
     super.notes,
     super.subject,
     required super.status,
-    this.invoiceId,
+    this.invoiceIds,
     required super.createdAt,
     required super.updatedAt,
   });
 
-  final String? invoiceId; // 紐づく請求書ID
+  final List<String>? invoiceIds; // 紐づく請求書IDリスト（複数対応）
   int? grossProfit; // 粗利額（計算済み）
 
   @override
@@ -62,13 +62,19 @@ class Sales extends BaseDocument {
       'notes': notes,
       'subject': subject,
       'status': status.name,
-      'invoice_id': invoiceId,
+      'invoice_ids': invoiceIds != null ? invoiceIds!.join(',') : null,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
   factory Sales.fromMap(Map<String, dynamic> map, Customer? customer) {
+    final invoiceIdsStr = map['invoice_ids'] as String?;
+    List<String>? invoiceIds;
+    if (invoiceIdsStr?.isNotEmpty ?? false) {
+      invoiceIds = invoiceIdsStr!.split(',');
+    }
+
     return Sales(
       id: map['id'] as String,
       documentNumber: map['document_number'] as String,
@@ -85,7 +91,7 @@ class Sales extends BaseDocument {
         (e) => e.name == map['status'],
         orElse: () => DocumentStatus.draft,
       ),
-      invoiceId: map['invoice_id'] as String?,
+      invoiceIds: invoiceIds,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -104,7 +110,7 @@ class Sales extends BaseDocument {
     String? notes,
     String? subject,
     DocumentStatus? status,
-    String? invoiceId,
+    List<String>? invoiceIds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -121,7 +127,7 @@ class Sales extends BaseDocument {
       notes: notes ?? this.notes,
       subject: subject ?? this.subject,
       status: status ?? this.status,
-      invoiceId: invoiceId ?? this.invoiceId,
+      invoiceIds: invoiceIds ?? this.invoiceIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -7,12 +7,14 @@ import '../models/sales_model.dart';
 import '../models/customer_model.dart';
 import '../models/product_model.dart';
 import '../models/base_document.dart';
+import '../models/invoice_models.dart';
 import '../services/sales_repository.dart';
 import '../services/product_repository.dart';
 import '../services/database_helper.dart';
 import '../widgets/document_card.dart';
 import 'customer_picker_modal.dart';
 import 'product_picker_modal.dart';
+import 'invoice_picker_modal.dart';
 
 /// SE1: 売上入力フォーム（ラインアイテム付き）
 class SalesInputScreen extends StatefulWidget {
@@ -39,6 +41,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
   bool _isLoading = true;
 
   List<_LineItem> _items = [];
+  List<String> _invoiceIds = [];
+  List<Invoice> _linkedInvoices = [];
 
   @override
   void initState() {
@@ -66,6 +70,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     _selectedDate = sales.date;
     _taxRate = sales.taxRate;
     _isDraft = sales.status == DocumentStatus.draft;
+    _invoiceIds = sales.invoiceIds ?? [];
 
     final loadedItems = <_LineItem>[];
     for (var i = 0; i < sales.items.length; i++) {
@@ -175,6 +180,84 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     });
   }
 
+  Future<void> _pickInvoices() async {
+    final selected = await showModalBottomSheet<List<Invoice>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => InvoicePickerModal(
+        selectedInvoiceIds: _invoiceIds,
+        onInvoicesSelected: (invoices) => Navigator.pop(context, invoices),
+      ),
+    );
+
+    if (selected != null && mounted) {
+      setState(() {
+        _invoiceIds = selected.map((i) => i.id).toList();
+        _linkedInvoices = selected;
+      });
+
+      // 請求書内容をインポート
+      _importFromInvoices(selected);
+    }
+  }
+
+  void _importFromInvoices(List<Invoice> invoices) {
+    if (invoices.isEmpty) return;
+
+    // 既存アイテムをクリア確認
+    if (_items.isNotEmpty) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('既存アイテムをクリア'),
+          content: const Text('請求書内容をインポートすると、現在のアイテムはクリアされます。よろしいですか？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _performImport(invoices);
+              },
+              child: const Text('インポート'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _performImport(invoices);
+    }
+  }
+
+  void _performImport(List<Invoice> invoices) {
+    final newItems = <_LineItem>[];
+    for (final invoice in invoices) {
+      for (final item in invoice.items) {
+        newItems.add(_LineItem(
+          id: const Uuid().v4(),
+          product: null,
+          productName: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: _taxRate,
+        ));
+      }
+      // 顧客が未設定なら請求書の顧客を設定
+      if (_selectedCustomer == null) {
+        _selectedCustomer = invoice.customer;
+      }
+      // 件名が未設定なら請求書の件名を設定
+      if (_subjectController.text.isEmpty && invoice.subject != null) {
+        _subjectController.text = invoice.subject!;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _items = newItems);
+  }
+
   (int subtotal, int tax, int total) _calculate() {
     int subTotal = 0;
     for (final item in _items) {
@@ -230,6 +313,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       subject: _subjectController.text.isNotEmpty ? _subjectController.text : null,
       status: _isDraft ? DocumentStatus.draft : DocumentStatus.confirmed,
+      invoiceIds: _invoiceIds.isNotEmpty ? _invoiceIds : null,
       createdAt: widget.existingSalesId != null
           ? (await _repo.getSales(widget.existingSalesId!))?.createdAt ?? now
           : now,
@@ -323,6 +407,18 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
               labelText: '件名',
               prefixIcon: Icon(Icons.subject),
               border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 請求書紐付け
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: Text(_invoiceIds.isEmpty ? '請求書を紐付ける' : '${_invoiceIds.length}件の請求書を紐付け'),
+              subtitle: _invoiceIds.isEmpty ? null : Text('合計: ￥${NumberFormat('#,###').format(_linkedInvoices.fold<int>(0, (s, i) => s + i.totalAmount))}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _pickInvoices,
             ),
           ),
           const SizedBox(height: 16),
