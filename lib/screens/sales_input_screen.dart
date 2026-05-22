@@ -398,104 +398,49 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           ),
           const SizedBox(height: 12),
 
-          // 請求書紐付け
-          Card(
+          // 商品追加ボタン
+          ElevatedButton.icon(
+            onPressed: _showProductPicker,
+            icon: const Icon(Icons.add),
+            label: const Text('商品を追加'),
+          ),
+          const SizedBox(height: 12),
+
+          // 請求書紐付けボタン
+          ElevatedButton.icon(
+            onPressed: _pickInvoices,
+            icon: const Icon(Icons.receipt_long),
+            label: const Text('請求書を紐付け'),
+          ),
+          const SizedBox(height: 12),
+
+          // 明細リスト
+          ..._items.map((item) => Card(
             child: ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: Text(_invoiceIds.isEmpty ? '請求書を紐付ける' : '${_invoiceIds.length}件の請求書を紐付け'),
-              subtitle: _invoiceIds.isEmpty ? null : Text('合計: ￥${NumberFormat('#,###').format(_linkedInvoices.fold<int>(0, (s, i) => s + i.totalAmount))}'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _pickInvoices,
+              title: Text(item.productName),
+              subtitle: Text('数量: ${item.quantity} 単価: ¥${item.unitPrice}'),
+              trailing: IconButton(
+                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                onPressed: () => _removeItem(item.id),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+          )),
 
-          // ラインアイテムヘッダー
-          Row(
-            children: [
-              const Text('明細', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: _showProductPicker,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('追加'),
-                style: FilledButton.styleFrom(minimumSize: const Size(60, 36)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // ラインアイテム一覧
-          if (_items.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.inventory_2_outlined, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    SizedBox(height: 8),
-                    Text('商品を追加してください'),
-                  ],
-                ),
-              ),
-            )
-          else
-            ..._items.map((item) => _buildItemCard(item, theme)),
-
-          const SizedBox(height: 16),
-
-          // 税設定
-          Row(
-            children: [
-              Expanded(
-                child: SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: true, label: Text('税込')),
-                    ButtonSegment(value: false, label: Text('税別')),
-                  ],
-                  selected: {_includeTax},
-                  onSelectionChanged: (v) {
-                    if (v.isNotEmpty) setState(() => _includeTax = v.first);
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              DropdownButton<double>(
-                value: _taxRate,
-                items: const [
-                  DropdownMenuItem(value: 0.0, child: Text('非課税')),
-                  DropdownMenuItem(value: 0.08, child: Text('8%')),
-                  DropdownMenuItem(value: 0.10, child: Text('10%')),
+          // 合計表示
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildPriceRow('小計', subtotal),
+                  _buildPriceRow('消費税', tax),
+                  const Divider(),
+                  _buildPriceRow('合計', total, isTotal: true),
                 ],
-                onChanged: (v) {
-                  if (v != null) setState(() => _taxRate = v);
-                },
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // 金額内訳
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                _buildPriceRow('小計', subtotal),
-                _buildPriceRow('消費税', tax),
-                const Divider(),
-                _buildPriceRow('合計', total, isTotal: true),
-              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // 備考
           TextField(
@@ -507,17 +452,13 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
             ),
             maxLines: 3,
           ),
-          const SizedBox(height: 16),
-
-          // ステータス
-          SwitchListTile.adaptive(
-            title: const Text('下書きとして保存'),
-            subtitle: const Text('OFFにすると確定状態で保存されます'),
-            value: _isDraft,
-            onChanged: (v) => setState(() => _isDraft = v),
-          ),
-          const SizedBox(height: 24),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _saving ? null : _save,
+        child: _saving
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.save),
       ),
     );
   }
@@ -530,75 +471,6 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           Navigator.pop(ctx);
           await _addItem(product);
         },
-      ),
-    );
-  }
-
-  Widget _buildItemCard(_LineItem item, ThemeData theme) {
-    final lineTotal = item.quantity * item.unitPrice;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.inventory_2_outlined),
-            title: Text(item.productName),
-            subtitle: Text('\u{00a5}${item.unitPrice.toString().replaceAllMapped(
-              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-              (Match m) => '${m[1]},',
-            )} x ${item.quantity}'),
-            trailing: Text(
-              '\u{00a5}${lineTotal.toString().replaceAllMapped(
-                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                (Match m) => '${m[1]},',
-              )}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: TextEditingController(text: item.quantity.toString()),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: '数量',
-                      isDense: true,
-                    ),
-                    onChanged: (v) {
-                      final qty = int.tryParse(v) ?? 0;
-                      _updateItem(item.id, quantity: qty);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: TextEditingController(text: item.unitPrice.toString()),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: '単価',
-                      isDense: true,
-                    ),
-                    onChanged: (v) {
-                      final price = int.tryParse(v) ?? 0;
-                      _updateItem(item.id, unitPrice: price);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-                  onPressed: () => _removeItem(item.id),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
