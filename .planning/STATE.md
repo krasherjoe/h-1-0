@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-22)
 
 Phase: 1 of 4 (SE1売上伝票バグ修正)
 Plan: 2 of 2 in current phase
-Status: Ready to execute
+Status: Complete - 両プラン実行済み（明細ロード修正 + 単体テスト追加）
 Last activity: 2026-05-22
 
 Progress: [██████████] 100%
@@ -66,6 +66,9 @@ Decisions logged in PROJECT.md Key Decisions table.
 - [Plan 01]: D-06 遵守 — Sales.fromMap() / Quotation.fromMap() の items: [] は変更せず、呼び出し元でセットする設計を維持
 - [Plan 01]: 既存パターン踏襲 — 既存の _loadSalesItems() を使い回し、同パターンで _loadQuotationItems() を新規追加
 - [Plan 01]: 同期→非同期変換 — maps.map(...).toList() を async for ループに変更し、各要素の await 呼び出しを可能に
+- [Plan 02]: 必須テーブル追加 — CustomerRepository の JOIN クエリ対応のため customer_contacts / master_hidden テーブルをテスト setup に含めた
+- [Plan 02]: 既存テスト保護 — 新しい items loading グループは独立した setUp/tearDown で DB を管理
+- [Plan 02]: Public API 検証 — private メソッドではなく public API を通じて間接的に明細ロードを検証
 
 ### Pending Todos
 
