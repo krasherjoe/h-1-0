@@ -15,13 +15,6 @@ Future<List<ParsedLineItem>> showPasteBufferScreen(BuildContext context) async {
   return result ?? [];
 }
 
-class _Record {
-  _Record({this.manufacturer, this.modelName = '', this.price = 0});
-  String? manufacturer;
-  String modelName;
-  int price;
-}
-
 class _PasteBufferScreen extends StatefulWidget {
   const _PasteBufferScreen();
   @override
@@ -30,16 +23,22 @@ class _PasteBufferScreen extends StatefulWidget {
 
 class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   final _textController = TextEditingController();
-  final _previewScroll = ScrollController();
-  List<String> _lines = [];
-  final Set<int> _selected = {};
-  final List<_Record> _records = [];
   bool _clipboardLoaded = false;
+
+  List<List<String>> _rows = [];
+  int _columnCount = 3;
+  final List<String> _columnLabels = ['品名', '型番', '金額'];
+
+  static const _presetLabels = [
+    ['品名', '型番', '金額'],
+    ['品名', '金額'],
+    ['メーカー', '品名', '型番', '金額'],
+    ['品名', '金額', '数量'],
+  ];
 
   @override
   void dispose() {
     _textController.dispose();
-    _previewScroll.dispose();
     super.dispose();
   }
 
@@ -62,68 +61,63 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   }
 
   void _parse() {
-    final text = _textController.text;
-    if (text.trim().isEmpty) return;
-    setState(() {
-      _lines = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
-      _selected.clear();
-      _records.clear();
-    });
-  }
-
-  void _toggle(int index) {
-    setState(() {
-      if (_selected.contains(index)) {
-        _selected.remove(index);
-      } else {
-        _selected.add(index);
-      }
-    });
-  }
-
-  void _buildRecords() {
-    final sorted = _selected.toList()..sort();
-    final records = <_Record>[];
-    _Record? current;
-    for (final idx in sorted) {
-      final line = _lines[idx];
-      final isPrice = _parsePrice(line) != null;
-      if (isPrice) {
-        if (current != null) {
-          current.price = _parsePrice(line)!;
-          records.add(current);
-        } else {
-          records.add(_Record(price: _parsePrice(line)!));
-        }
-        current = null;
-      } else {
-        if (current == null) {
-          current = _Record(modelName: line);
-        } else if (current.manufacturer == null || current.manufacturer!.isEmpty) {
-          current.manufacturer = current.modelName.isNotEmpty ? current.modelName : null;
-          current.modelName = line;
-        } else {
-          current.modelName = line;
-        }
-      }
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+    final raw = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    if (raw.isEmpty) return;
+    final firstLine = raw.first;
+    final separators = <String>[];
+    for (final s in ['\t', '  ', ' , ', ',', ' ']) {
+      if (firstLine.contains(s)) { separators.add(s); break; }
     }
-    if (current != null) records.add(current);
-    setState(() => _records.addAll(records));
-    _selected.clear();
+    final sep = separators.isNotEmpty ? RegExp(separators.first) : RegExp(r'\s+');
+    final guessedCols = firstLine.split(sep).length;
+    setState(() {
+      _columnCount = guessedCols.clamp(2, 6);
+      while (_columnLabels.length < _columnCount) _columnLabels.add('項目${_columnLabels.length + 1}');
+      while (_columnLabels.length > _columnCount) _columnLabels.removeLast();
+      _rows = raw.map((l) {
+        var cells = l.split(sep).map((c) => c.trim()).where((c) => c.isNotEmpty).toList();
+        while (cells.length < _columnCount) cells.add('');
+        cells = cells.sublist(0, _columnCount);
+        return cells;
+      }).toList();
+    });
   }
 
-  void _removeRecord(int index) {
-    setState(() => _records.removeAt(index));
+  void _updateCell(int row, int col, String value) {
+    setState(() => _rows[row][col] = value);
+  }
+
+  void _removeRow(int index) {
+    setState(() => _rows.removeAt(index));
+  }
+
+  void _applyPreset(List<String> labels) {
+    setState(() {
+      _columnCount = labels.length;
+      _columnLabels.clear();
+      _columnLabels.addAll(labels);
+      _rows = _rows.map((r) {
+        var cells = List<String>.from(r);
+        while (cells.length < _columnCount) cells.add('');
+        cells = cells.sublist(0, _columnCount);
+        return cells;
+      }).toList();
+    });
   }
 
   List<ParsedLineItem> _toLineItems() {
-    return _records.map((r) {
+    final priceCol = _columnLabels.indexWhere((l) => l.contains('金額') || l.contains('単価') || l.contains('価格'));
+    final nameCol = _columnLabels.indexWhere((l) => l.contains('品名'));
+    final modelCol = _columnLabels.indexWhere((l) => l.contains('型番'));
+    return _rows.map((r) {
+      final price = priceCol >= 0 ? int.tryParse(r[priceCol].replaceAll(RegExp(r'[￥¥,,\s円]'), '')) ?? 0 : 0;
       final parts = <String>[];
-      if (r.manufacturer != null && r.manufacturer!.isNotEmpty) parts.add(r.manufacturer!);
-      parts.add(r.modelName);
-      final name = parts.join(' ');
-      return ParsedLineItem(name.trim(), r.price);
-    }).where((p) => p.name.isNotEmpty || p.price > 0).toList();
+      if (nameCol >= 0 && r[nameCol].isNotEmpty) parts.add(r[nameCol]);
+      if (modelCol >= 0 && r[modelCol].isNotEmpty) parts.add('(${r[modelCol]})');
+      return ParsedLineItem(parts.join(' '), price);
+    }).toList();
   }
 
   void _confirm() {
@@ -133,25 +127,24 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final items = _toLineItems();
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
         title: const Text('PB:テキスト貼付'),
         actions: [
-          if (_lines.isNotEmpty)
+          if (_rows.isNotEmpty)
             TextButton.icon(
-              onPressed: _records.isNotEmpty ? _confirm : _buildRecords,
-              icon: Icon(_records.isNotEmpty ? Icons.check : Icons.arrow_forward),
-              label: Text(_records.isNotEmpty ? '取り込む (${items.length})' : '組立'),
+              onPressed: _confirm,
+              icon: const Icon(Icons.check),
+              label: Text('取り込む (${_rows.length}行)'),
             ),
         ],
       ),
-      body: _lines.isEmpty ? _buildPasteArea(cs) : _buildMainArea(cs, items),
+      body: _rows.isEmpty ? _buildInputArea(cs) : _buildTableArea(cs),
     );
   }
 
-  Widget _buildPasteArea(ColorScheme cs) {
+  Widget _buildInputArea(ColorScheme cs) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -170,7 +163,7 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
             controller: _textController,
             maxLines: 8,
             decoration: InputDecoration(
-              hintText: 'パソコン PC-9801 458000\nモニタ KD845 118000\nUSB-Cケーブル 1,280',
+              hintText: '品名\t型番\t金額\nパソコン\tPC-9801\t458000\nモニタ\tKD845\t118000',
               border: OutlineInputBorder(),
               filled: true,
               fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
@@ -192,102 +185,110 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
     );
   }
 
-  Widget _buildMainArea(ColorScheme cs, List<ParsedLineItem> items) {
+  Widget _buildTableArea(ColorScheme cs) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
             children: [
-              Text('行をタップして選択 →「組立」でレコード化', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              Text('${_rows.length}行 × $_columnCountカラム', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
               const Spacer(),
-              TextButton.icon(onPressed: () => setState(() { _lines = []; _records.clear(); }), icon: const Icon(Icons.refresh, size: 18), label: const Text('戻る')),
+              DropdownButton<String>(
+                value: 'プリセット',
+                underline: const SizedBox(),
+                items: [
+                  const DropdownMenuItem(value: 'プリセット', enabled: false, child: Text('カラム割当')),
+                  ..._presetLabels.map((p) => DropdownMenuItem(
+                    value: p.join(','),
+                    child: Text(p.join('・'), style: const TextStyle(fontSize: 12)),
+                    onTap: () => _applyPreset(p),
+                  )),
+                ],
+                onChanged: (v) {},
+              ),
+              const SizedBox(width: 4),
+              TextButton.icon(onPressed: () => setState(() { _rows = []; }), icon: const Icon(Icons.refresh, size: 18), label: const Text('戻る')),
             ],
           ),
         ),
         const Divider(height: 1),
         Expanded(
-          flex: 3,
-          child: ListView.builder(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(12),
-            itemCount: _lines.length,
-            itemBuilder: (context, index) {
-              final line = _lines[index];
-              final checked = _selected.contains(index);
-              final isPrice = _parsePrice(line) != null;
-              return Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _toggle(index),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                    child: Row(
-                      children: [
-                        Checkbox(value: checked, onChanged: (_) => _toggle(index)),
-                        Icon(isPrice ? Icons.monetization_on : Icons.article_outlined, size: 16, color: isPrice ? cs.error : cs.primary),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(line, style: TextStyle(fontSize: 13, decoration: checked ? null : TextDecoration.lineThrough))),
-                      ],
-                    ),
-                  ),
+            child: Table(
+              border: TableBorder.all(color: cs.outlineVariant, width: 0.5),
+              columnWidths: {for (var i = 0; i < _columnCount; i++) i: FlexColumnWidth()},
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.4)),
+                  children: List.generate(_columnCount, (c) => _buildHeaderCell(c, cs)),
                 ),
-              );
-            },
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          flex: 2,
-          child: _records.isEmpty
-              ? Center(
-                  child: Text('選択した行を「組立」するとここにレコードが並びます',
-                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: _records.length,
-                  itemBuilder: (context, index) {
-                    final r = _records[index];
-                    return Card(
-                      color: cs.primaryContainer.withValues(alpha: 0.3),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (r.manufacturer != null && r.manufacturer!.isNotEmpty)
-                                    Text('メーカー: ${r.manufacturer}', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
-                                  Text(r.modelName.isNotEmpty ? r.modelName : '(名称未設定)',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  Text('¥${r.price}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.error)),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.close, size: 16, color: cs.error),
-                              onPressed: () => _removeRecord(index),
-                            ),
-                          ],
+                ..._rows.asMap().entries.map((entry) {
+                  final ri = entry.key;
+                  final row = entry.value;
+                  return TableRow(
+                    children: [
+                      ...List.generate(_columnCount, (c) => _buildCell(ri, c, row[c], cs)),
+                      TableCell(
+                        child: IconButton(
+                          icon: Icon(Icons.remove_circle_outline, size: 16, color: cs.error),
+                          onPressed: () => _removeRow(ri),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
+
+  Widget _buildHeaderCell(int col, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(_columnLabels[col], style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.arrow_drop_down, size: 14, color: cs.primary),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onSelected: (v) => setState(() => _columnLabels[col] = v),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: '品名', child: Text('品名', style: TextStyle(fontSize: 12))),
+              const PopupMenuItem(value: '型番', child: Text('型番', style: TextStyle(fontSize: 12))),
+              const PopupMenuItem(value: 'メーカー', child: Text('メーカー', style: TextStyle(fontSize: 12))),
+              const PopupMenuItem(value: '金額', child: Text('金額', style: TextStyle(fontSize: 12))),
+              const PopupMenuItem(value: '単価', child: Text('単価', style: TextStyle(fontSize: 12))),
+              const PopupMenuItem(value: '数量', child: Text('数量', style: TextStyle(fontSize: 12))),
+              const PopupMenuItem(value: '備考', child: Text('備考', style: TextStyle(fontSize: 12))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCell(int row, int col, String value, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: SizedBox(
+        height: 32,
+        child: TextField(
+          controller: TextEditingController(text: value),
+          style: const TextStyle(fontSize: 11),
+          decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4), border: InputBorder.none),
+          onChanged: (v) => _updateCell(row, col, v),
+        ),
+      ),
+    );
+  }
 }
 
-int? _parsePrice(String text) {
-  final cleaned = text.replaceAll(RegExp(r'[￥¥,,\s]'), '').replaceAll('円', '').trim();
-  final match = RegExp(r'^(\d+)$').firstMatch(cleaned);
-  if (match != null) {
-    final v = int.parse(match.group(1)!);
-    if (v > 0 && v < 100000000) return v;
-  }
-  return null;
-}
+
