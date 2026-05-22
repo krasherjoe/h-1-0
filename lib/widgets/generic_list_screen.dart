@@ -158,7 +158,6 @@ class _GenericListScreenState<T> extends State<GenericListScreen<T>> {
               onPressed: _handleCreateNew,
               icon: const Icon(Icons.add),
               label: const Text('新規作成'),
-              backgroundColor: widget.themeColor,
             )
           : null,
     );

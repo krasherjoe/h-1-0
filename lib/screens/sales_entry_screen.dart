@@ -110,6 +110,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: GenericListScreen<Sales>(
         screenId: 'SE',
         title: '売上入力',
@@ -288,6 +289,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
             icon: const Icon(Icons.import_export),
             label: const Text('請求書から取込'),
             backgroundColor: Theme.of(context).colorScheme.tertiary,
+            foregroundColor: Theme.of(context).colorScheme.onTertiary,
           ),
           const SizedBox(height: 8),
           FloatingActionButton.extended(
@@ -301,6 +303,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
             icon: const Icon(Icons.add),
             label: const Text('新規売上'),
             backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
           ),
         ],
       ),
