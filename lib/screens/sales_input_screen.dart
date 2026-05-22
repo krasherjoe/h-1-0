@@ -186,6 +186,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       isScrollControlled: true,
       builder: (_) => InvoicePickerModal(
         selectedInvoiceIds: _invoiceIds,
+        customerId: _selectedCustomer?.id,
         onInvoicesSelected: (invoices) => Navigator.pop(context, invoices),
       ),
     );

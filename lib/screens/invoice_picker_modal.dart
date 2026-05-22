@@ -7,11 +7,13 @@ import '../services/customer_repository.dart';
 /// 請求書選択モーダル（売上伝票への紐付け用）
 class InvoicePickerModal extends StatefulWidget {
   final List<String>? selectedInvoiceIds;
+  final String? customerId; // 選択済みの顧客ID（その顧客の請求書を上位に表示）
   final Function(List<Invoice>) onInvoicesSelected;
 
   const InvoicePickerModal({
     super.key,
     this.selectedInvoiceIds,
+    this.customerId,
     required this.onInvoicesSelected,
   });
 
@@ -80,6 +82,13 @@ class _InvoicePickerModalState extends State<InvoicePickerModal> {
       final customer = (i.customerNameForDisplay).toLowerCase();
       return subject.contains(query) || customer.contains(query);
     }).toList();
+
+    // 顧客が選択済みの場合、その顧客の請求書を上位に表示
+    if (query.isEmpty && widget.customerId != null) {
+      final customerInvoices = _filteredInvoices.where((i) => i.customer?.id == widget.customerId).toList();
+      final otherInvoices = _filteredInvoices.where((i) => i.customer?.id != widget.customerId).toList();
+      _filteredInvoices = [...customerInvoices, ...otherInvoices];
+    }
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
