@@ -84,6 +84,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
         unitPrice: item.subtotal,
         taxRate: item.taxRate,
         isFromInvoice: false,
+        discountAmount: null,
+        discountRate: null,
       ));
     }
 
@@ -165,6 +167,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           unitPrice: product.defaultUnitPrice,
           taxRate: _taxRate,
           isFromInvoice: false,
+          discountAmount: null,
+          discountRate: null,
         ));
       });
     }
@@ -230,6 +234,8 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
           isFromInvoice: true,
           originalSubtotal: item.subtotal,
+          discountAmount: item.discountAmount,
+          discountRate: item.discountRate,
         ));
       }
 
@@ -251,10 +257,20 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     int subTotal = 0;
     int taxAmount = 0;
     for (final item in _items) {
-      // 請求書からインポートした明細はoriginalSubtotalを使用
-      final lineSubtotal = item.isFromInvoice
-          ? (item.originalSubtotal ?? item.quantity * item.unitPrice)
-          : (item.quantity * item.unitPrice);
+      int lineSubtotal;
+      if (item.isFromInvoice) {
+        // 請求書からインポートした明細はoriginalSubtotalを使用（値引き後の金額）
+        lineSubtotal = item.originalSubtotal ?? item.quantity * item.unitPrice;
+      } else {
+        // 通常の明細は単価×数量から値引きを引く
+        lineSubtotal = item.quantity * item.unitPrice;
+        if (item.discountAmount != null && item.discountAmount! > 0) {
+          lineSubtotal -= item.discountAmount!;
+        }
+        if (item.discountRate != null && item.discountRate! > 0) {
+          lineSubtotal = (lineSubtotal * (1 - item.discountRate!)).round();
+        }
+      }
       subTotal += lineSubtotal;
       // 請求書からインポートした明細は税計算をスキップ
       if (!item.isFromInvoice && item.taxRate > 0) {
@@ -441,7 +457,16 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           ..._items.map((item) => Card(
             child: ListTile(
               title: Text(item.productName),
-              subtitle: Text('数量: ${item.quantity} 単価: ¥${item.unitPrice}'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('数量: ${item.quantity} 単価: ¥${item.unitPrice}'),
+                  if (item.discountAmount != null && item.discountAmount! > 0)
+                    Text('値引き: -¥${item.discountAmount}', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  if (item.discountRate != null && item.discountRate! > 0)
+                    Text('値引き率: ${(item.discountRate! * 100).toStringAsFixed(0)}%', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                ],
+              ),
               trailing: IconButton(
                 icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                 onPressed: () => _removeItem(item.id),
@@ -561,6 +586,8 @@ class _LineItem {
   double taxRate;
   final bool isFromInvoice; // 請求書からインポートした明細かどうか
   final int? originalSubtotal; // 請求書からインポートした場合の元の小計
+  final int? discountAmount; // 値引き額
+  final double? discountRate; // 値引き率
 
   _LineItem({
     required this.id,
@@ -571,5 +598,7 @@ class _LineItem {
     required this.taxRate,
     this.isFromInvoice = false,
     this.originalSubtotal,
+    this.discountAmount,
+    this.discountRate,
   });
 }
