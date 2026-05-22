@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/app_settings_repository.dart';
 import '../services/database_helper.dart';
@@ -392,6 +393,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   // ===== A1 サマリー・クイックアクション =====
 
   Widget _buildSummaryCards() {
+    final cs = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -402,6 +404,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             label: '本日請求',
             value: '${_todayInvoiceCount}件',
             sub: '\u00a5${_formatAmount(_todayInvoiceAmount)}',
+            accentColor: cs.primary,
           ),
           const SizedBox(width: 12),
           _SummaryCard(
@@ -409,6 +412,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             label: '未回収金額',
             value: '\u00a5${_formatAmount(_unpaidTotal)}',
             sub: '入金待ち',
+            accentColor: cs.error,
           ),
           const SizedBox(width: 12),
           _SummaryCard(
@@ -416,6 +420,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             label: '進行中案件',
             value: '${_activeProjectCount}件',
             sub: 'PJ1連携',
+            accentColor: cs.tertiary,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
           ),
         ],
@@ -432,6 +437,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Widget _buildQuickActions() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -444,6 +450,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.add_circle,
                 label: '新規請求',
+                accentColor: cs.primary,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -467,6 +474,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.description,
                 label: '新規見積',
+                accentColor: cs.secondary,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -484,12 +492,14 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               _QuickActionButton(
                 icon: Icons.assignment,
                 label: '案件管理',
+                accentColor: cs.tertiary,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
               ),
               const SizedBox(width: 8),
               _QuickActionButton(
                 icon: Icons.history,
                 label: '請求履歴',
+                accentColor: cs.primary.withValues(alpha: 0.7),
                 onTap: () {
                   if (!_historyUnlocked) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
@@ -690,12 +700,13 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 }
 
-// ===== サマリーカード =====
+// ===== サマリーカード（ガラス調） =====
 class _SummaryCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
   final String sub;
+  final Color accentColor;
   final VoidCallback? onTap;
 
   const _SummaryCard({
@@ -703,108 +714,145 @@ class _SummaryCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.sub,
+    required this.accentColor,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 140,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.95),
-              Colors.white.withValues(alpha: 0.85),
-            ],
+          borderRadius: BorderRadius.circular(16),
+          color: isDark
+              ? accentColor.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.5),
+          border: Border.all(
+            color: isDark
+                ? accentColor.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.6),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: accentColor.withValues(alpha: isDark ? 0.08 : 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: accentColor.withValues(alpha: isDark ? 0.04 : 0.03),
               blurRadius: 8,
-              offset: const Offset(0, -2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: cs.primary, size: 28),
-            const SizedBox(height: 12),
-            Text(label, style: TextStyle(color: cs.primary.withValues(alpha: 0.9), fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(color: cs.primary, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(sub, style: TextStyle(color: cs.primary.withValues(alpha: 0.7), fontSize: 11)),
-          ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: isDark ? 0.2 : 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 18),
+                ),
+                const SizedBox(height: 12),
+                Text(label,
+                    style: TextStyle(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.6)
+                            : accentColor.withValues(alpha: 0.8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: TextStyle(
+                        color: isDark ? Colors.white : accentColor,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 1),
+                Text(sub,
+                    style: TextStyle(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.4)
+                            : accentColor.withValues(alpha: 0.6),
+                        fontSize: 10)),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-// ===== クイックアクションボタン =====
+// ===== クイックアクション（ガラス調） =====
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color accentColor;
   final VoidCallback onTap;
 
   const _QuickActionButton({
     required this.icon,
     required this.label,
+    required this.accentColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.95),
-                Colors.white.withValues(alpha: 0.85),
-              ],
+            borderRadius: BorderRadius.circular(16),
+            color: isDark
+                ? accentColor.withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.5),
+            border: Border.all(
+              color: isDark
+                  ? accentColor.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.6),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: Colors.white.withValues(alpha: 0.5),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
+                color: accentColor.withValues(alpha: isDark ? 0.06 : 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Column(
-            children: [
-              Icon(icon, color: cs.primary, size: 28),
-              const SizedBox(height: 6),
-              Text(label, style: TextStyle(color: cs.primary, fontSize: 12, fontWeight: FontWeight.w600)),
-            ],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Column(
+                children: [
+                  Icon(icon, color: accentColor, size: 26),
+                  const SizedBox(height: 4),
+                  Text(label,
+                      style: TextStyle(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.7)
+                              : accentColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
           ),
         ),
       ),
