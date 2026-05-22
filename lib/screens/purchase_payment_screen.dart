@@ -29,6 +29,8 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
   PurchasePaymentStatus? _filterStatus;
   final Map<String, String> _supplierNames = {};
   final Map<String, String> _orderNumbers = {};
+  bool _selectMode = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -71,6 +73,30 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('支払 ${_dateFormat.format(result.paymentDate)} を保存しました')));
     }
+  }
+
+  Future<void> _confirmBatchDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('一括削除'),
+        content: Text('${_selectedIds.length}件の支払データを削除しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('削除')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ids = _selectedIds.toList();
+    for (final id in ids) {
+      await _service.deletePayment(id);
+    }
+    if (!mounted) return;
+    setState(() { _selectMode = false; _selectedIds.clear(); });
+    await _loadPayments();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${ids.length}件削除しました')));
   }
 
   Future<void> _confirmDelete(PurchasePayment payment) async {
@@ -120,29 +146,43 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final actions = [
-      PopupMenuButton<PurchasePaymentStatus?>(
-        icon: const Icon(Icons.filter_list),
-        onSelected: (value) {
-          setState(() => _filterStatus = value);
-          _loadPayments();
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(value: null, child: Text('すべて表示')),
-          ...PurchasePaymentStatus.values.map(
-            (status) => PopupMenuItem(
-              value: status,
-              child: Row(
-                children: [
-                  Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), color: _statusColor(Theme.of(context).colorScheme, status)),
-                  Text(status.displayName),
-                ],
+    final actions = _selectMode
+        ? <Widget>[
+            if (_selectedIds.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: '選択を削除',
+                onPressed: _confirmBatchDelete,
               ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: '選択解除',
+              onPressed: () => setState(() { _selectMode = false; _selectedIds.clear(); }),
             ),
-          ),
-        ],
-      ),
-    ];
+          ]
+        : <Widget>[
+            PopupMenuButton<PurchasePaymentStatus?>(
+              icon: const Icon(Icons.filter_list),
+              onSelected: (value) {
+                setState(() => _filterStatus = value);
+                _loadPayments();
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: null, child: Text('すべて表示')),
+                ...PurchasePaymentStatus.values.map(
+                  (status) => PopupMenuItem(
+                    value: status,
+                    child: Row(
+                      children: [
+                        Container(width: 10, height: 10, margin: const EdgeInsets.only(right: 8), color: _statusColor(Theme.of(context).colorScheme, status)),
+                        Text(status.displayName),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ];
 
     final body = _isLoading
         ? const Center(child: CircularProgressIndicator())
@@ -156,27 +196,44 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(),
-        title: const ScreenAppBarTitle(screenId: 'PS', title: '支払予定管理'),
+        leading: _selectMode
+            ? IconButton(
+                icon: Text('$_selectedCount', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                onPressed: () {},
+              )
+            : const BackButton(),
+        title: Text(_selectMode ? '${_selectedIds.length}件選択' : 'PS:支払予定管理'),
         actions: actions,
       ),
       body: RefreshIndicator(onRefresh: _loadPayments, child: body),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openEditor(),
-        icon: const Icon(Icons.add),
-        label: const Text('支払を登録'),
-      ),
+      floatingActionButton: _selectMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _openEditor(),
+              icon: const Icon(Icons.add),
+              label: const Text('支払を登録'),
+            ),
     );
   }
+
+  int get _selectedCount => _selectedIds.length;
 
   Widget _buildPaymentCard(PurchasePayment payment) {
     final cs = Theme.of(context).colorScheme;
     final statusColor = _statusColor(cs, payment.status);
+    final checked = _selectedIds.contains(payment.id);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        onTap: () => _openEditor(payment: payment),
-        onLongPress: () => _confirmDelete(payment),
+        onTap: _selectMode
+            ? () => setState(() { if (checked) _selectedIds.remove(payment.id); else _selectedIds.add(payment.id); })
+            : () => _openEditor(payment: payment),
+        onLongPress: () {
+          if (!_selectMode) setState(() { _selectMode = true; _selectedIds.add(payment.id); });
+        },
+        leading: _selectMode ? Checkbox(value: checked, onChanged: (_) {
+          setState(() { if (checked) _selectedIds.remove(payment.id); else _selectedIds.add(payment.id); });
+        }) : null,
         title: Text('${_currencyFormat.format(payment.amount)} / ${payment.method ?? '支払方法未設定'}'),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
@@ -191,10 +248,26 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
             ],
           ),
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-          child: Text(payment.status.displayName, style: TextStyle(color: statusColor)),
+        trailing: _selectMode ? null : Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Text(payment.status.displayName, style: TextStyle(color: statusColor)),
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onSelected: (v) {
+                if (v == 'delete') _confirmDelete(payment);
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 16), SizedBox(width: 8), Text('削除')])),
+              ],
+            ),
+          ],
         ),
       ),
     );
