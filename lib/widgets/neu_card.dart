@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// ニューモーフィズム（Neumorphism / Soft UI）カード
+/// 参照: https://zenn.dev/channel/articles/ed49e1ee8c3456
 /// 使い方:
 /// ```dart
 /// NeuCard(
