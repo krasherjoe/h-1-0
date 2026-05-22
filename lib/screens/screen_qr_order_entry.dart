@@ -10,6 +10,7 @@ import '../services/pdf_generator.dart';
 import '../services/storage_monitor.dart';
 import '../utils/theme_utils.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
+import 'invoice_detail_page.dart';
 import '../widgets/storage_warning_dialog.dart';
 import 'invoice_input_screen.dart';
 
@@ -99,11 +100,17 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
   }
 
   Future<void> _createOrder() async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => InvoiceInputForm(
-          onInvoiceGenerated: (_, __) {},
+          onInvoiceGenerated: (inv, _) {
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: inv)),
+            );
+          },
           initialDocumentType: DocumentType.order,
           startViewMode: false,
           showNewBadge: true,
@@ -119,7 +126,13 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => InvoiceInputForm(
-          onInvoiceGenerated: (_, __) {},
+          onInvoiceGenerated: (inv, _) {
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: inv)),
+            );
+          },
           existingInvoice: order,
           initialDocumentType: DocumentType.order,
           startViewMode: false,
@@ -127,6 +140,25 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
       ),
     );
     if (!mounted) return;
+    await _load();
+  }
+
+  Future<void> _deleteOrder(Invoice order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('削除の確認'),
+        content: Text('${order.customerNameForDisplay} の受注を削除しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.error))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _invoiceRepo.deleteInvoice(order.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('削除しました')));
     await _load();
   }
 
@@ -210,6 +242,8 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
               ListTile(leading: const Icon(Icons.check_circle), title: const Text('確定'), onTap: () { Navigator.pop(context); _handleConfirmLongPress(order); }),
             if (!order.isLocked)
               ListTile(leading: const Icon(Icons.edit), title: const Text('編集'), onTap: () { Navigator.pop(context); _editOrder(order); }),
+            if (!order.isLocked)
+              ListTile(leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error), title: Text('削除', style: TextStyle(color: Theme.of(context).colorScheme.error)), onTap: () { Navigator.pop(context); _deleteOrder(order); }),
             ListTile(
               leading: const Icon(Icons.assignment_turned_in),
               title: const Text('請求書に変換'),
@@ -405,7 +439,11 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                               : (order.items.isNotEmpty ? order.items.first.description : '');
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () => _openPreview(order),
+                              onLongPress: () => _showOrderActions(order),
+                              child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,14 +502,15 @@ class _OrderEntryScreenState extends State<OrderEntryScreen> {
                                           label: const Text('編集', style: TextStyle(fontSize: 11)),
                                         ),
                                     ],
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
+                          ),
+                        ),
+                      );
+                          },
+                        ),
                       ),
-                    ),
                 ],
               ),
       ),
