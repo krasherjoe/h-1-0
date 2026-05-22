@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 65;
+  static const _databaseVersion = 66;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2175,6 +2175,11 @@ class DatabaseHelper {
     // v65: 請求書にテスト用伝票フラグを追加
     if (oldVersion < 65) {
       await _safeAddColumn(db, 'invoices', 'is_test_document INTEGER DEFAULT 0');
+    }
+
+    // v66: 売上にinvoice_idsカラムを追加
+    if (oldVersion < 66) {
+      await _safeAddColumn(db, 'sales', 'invoice_ids TEXT');
     }
   }
 
