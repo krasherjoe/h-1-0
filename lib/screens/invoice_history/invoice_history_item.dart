@@ -131,6 +131,19 @@ class InvoiceHistoryItem extends StatelessWidget {
                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.secondary),
                              ),
                           ),
+                        if (invoice.documentType == DocumentType.invoice && invoice.isReceiptIssued)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            margin: const EdgeInsets.only(left: 6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '領収書発行済',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.tertiary),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 2),

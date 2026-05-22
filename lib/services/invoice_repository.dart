@@ -467,6 +467,26 @@ class InvoiceRepository {
     return invoices;
   }
 
+  /// 指定したsourceDocumentIdに紐づく領収書を取得する（請求書→領収書の紐付け確認用）
+  Future<Invoice?> getReceiptBySourceDocumentId(String sourceDocumentId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'invoices',
+      where: 'source_document_id = ? AND document_type = ?',
+      whereArgs: [sourceDocumentId, DocumentType.receipt.name],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final customerRepo = CustomerRepository();
+    final customers = await customerRepo.getAllCustomers();
+    final allInvoices = await getAllInvoices(customers);
+    try {
+      return allInvoices.firstWhere((i) => i.id == rows.first['id']);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> deleteInvoice(String id) async {
     final db = await _dbHelper.database;
 

@@ -514,6 +514,10 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
                 ),
               const SizedBox(height: 24),
               _buildSummarySection(fmt, textColor, isDraft),
+              if (_currentInvoice.documentType == DocumentType.invoice && !_isEditing) ...[
+                const SizedBox(height: 16),
+                _buildReceiptAction(),
+              ],
               const SizedBox(height: 24),
               _buildFooterActions(),
             ],
@@ -1065,6 +1069,77 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildReceiptAction() {
+    return FutureBuilder<Invoice?>(
+      future: _invoiceRepo.getReceiptBySourceDocumentId(_currentInvoice.id),
+      builder: (context, snapshot) {
+        final hasReceipt = snapshot.data != null;
+        return ElevatedButton.icon(
+          onPressed: () async {
+            if (hasReceipt && snapshot.data != null) {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => InvoiceDetailPage(
+                    invoice: snapshot.data!,
+                    isUnlocked: widget.isUnlocked,
+                  ),
+                ),
+              );
+            } else {
+              await _createReceiptFromInvoice();
+            }
+          },
+          icon: Icon(hasReceipt ? Icons.receipt : Icons.receipt_long),
+          label: Text(hasReceipt ? "領収書を確認" : "領収書を作成"),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: hasReceipt
+                ? Theme.of(context).colorScheme.tertiary
+                : Theme.of(context).colorScheme.primary,
+            foregroundColor: hasReceipt
+                ? Theme.of(context).colorScheme.onTertiary
+                : Theme.of(context).colorScheme.onPrimary,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _createReceiptFromInvoice() async {
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final receipt = _currentInvoice.copyWith(
+      id: newId,
+      documentType: DocumentType.receipt,
+      sourceDocumentId: _currentInvoice.id,
+      date: DateTime.now(),
+      isDraft: true,
+      isLocked: false,
+      subject: _currentInvoice.subject,
+    );
+
+    final result = await Navigator.push<Invoice>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InvoiceInputForm(
+          onInvoiceGenerated: (inv, path) {},
+          existingInvoice: receipt,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (result != null) {
+      // 元請求書の領収書発行済みフラグを更新
+      final updatedInvoice = _currentInvoice.copyWith(
+        isReceiptIssued: true,
+        receiptIssuedAt: DateTime.now(),
+      );
+      await _invoiceRepo.saveInvoice(updatedInvoice);
+      setState(() => _currentInvoice = updatedInvoice);
+    }
   }
 
   Widget _buildFooterActions() {
