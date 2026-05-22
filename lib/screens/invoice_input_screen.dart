@@ -15,6 +15,7 @@ import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'product_picker_modal.dart';
 import '../models/product_model.dart';
+import '../widgets/paste_buffer_dialog.dart';
 import '../services/app_settings_repository.dart';
 import '../services/company_repository.dart';
 import '../services/company_profile_service.dart';
@@ -442,6 +443,21 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       final msg = "商品「${product.name}」を追加しました";
       _editLogRepo.addLog(id, msg).then((_) => _loadEditLogs());
     });
+  }
+
+  Future<void> _pasteItemsFromBuffer() async {
+    final parsed = await showPasteBufferDialog(context);
+    if (parsed.isEmpty) return;
+    setState(() {
+      for (final item in parsed) {
+        _items.add(InvoiceItem(description: item.name, quantity: 1, unitPrice: item.price));
+      }
+    });
+    _pushHistory();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${parsed.length}件の明細を追加しました')),
+    );
   }
 
   int get _subTotal =>
@@ -1408,10 +1424,13 @@ color: Theme.of(context).cardColor,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             if (!_isViewMode && !_isLocked)
-              TextButton.icon(
-                onPressed: _addItem,
-                icon: const Icon(Icons.add),
-                label: const Text("追加"),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton.icon(onPressed: _addItem, icon: const Icon(Icons.add), label: const Text("追加")),
+                  const SizedBox(width: 4),
+                  TextButton.icon(onPressed: _pasteItemsFromBuffer, icon: const Icon(Icons.content_paste), label: const Text("貼付")),
+                ],
               ),
           ],
         ),

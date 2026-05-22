@@ -8,6 +8,7 @@ import '../models/purchase_entry_models.dart';
 import '../models/supplier_model.dart';
 import '../services/purchase_entry_service.dart';
 import '../widgets/line_item_editor.dart';
+import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
 import 'product_picker_modal.dart';
 import 'supplier_picker_modal.dart';
@@ -270,6 +271,20 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
     setState(() => _issueDate = picked);
   }
 
+  Future<void> _pasteItemsFromBuffer() async {
+    final parsed = await showPasteBufferDialog(context);
+    if (parsed.isEmpty) return;
+    setState(() {
+      for (final item in parsed) {
+        _lines.add(LineItemFormData(productName: item.name, quantity: 1, unitPrice: item.price, taxRate: 0.1));
+      }
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${parsed.length}件の明細を追加しました')),
+    );
+  }
+
   void _addLine() {
     setState(() => _lines.add(LineItemFormData(quantity: 1, unitPrice: 0)));
   }
@@ -406,9 +421,12 @@ class _PurchaseEntryEditorPageState extends State<PurchaseEntryEditorPage> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(onPressed: _addLine, icon: const Icon(Icons.add), label: const Text('明細を追加')),
+            Row(
+              children: [
+                TextButton.icon(onPressed: _addLine, icon: const Icon(Icons.add), label: const Text('明細を追加')),
+                const Spacer(),
+                TextButton.icon(onPressed: _pasteItemsFromBuffer, icon: const Icon(Icons.content_paste), label: const Text('貼付')),
+              ],
             ),
             const SizedBox(height: 20),
             Card(
