@@ -37,20 +37,28 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
 
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
-    final orders = await _service.fetchOrders(status: _filterStatus);
-    final supplierIds = orders.map((o) => o.supplierId).whereType<String>().toSet();
-    for (final id in supplierIds) {
-      if (_supplierNames.containsKey(id)) continue;
-      final supplier = await _supplierRepository.findById(id);
-      if (supplier != null) {
-        _supplierNames[id] = supplier.name;
+    try {
+      final orders = await _service.fetchOrders(status: _filterStatus);
+      final supplierIds = orders.map((o) => o.supplierId).whereType<String>().toSet();
+      for (final id in supplierIds) {
+        if (_supplierNames.containsKey(id)) continue;
+        final supplier = await _supplierRepository.findById(id);
+        if (supplier != null) {
+          _supplierNames[id] = supplier.name;
+        }
       }
+      if (!mounted) return;
+      setState(() {
+        _orders = orders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('データ取得に失敗しました: $e')),
+      );
     }
-    if (!mounted) return;
-    setState(() {
-      _orders = orders;
-      _isLoading = false;
-    });
   }
 
   Future<void> _openEditor({PurchaseOrder? order}) async {
