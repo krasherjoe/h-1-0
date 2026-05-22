@@ -612,7 +612,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade300,
+      backgroundColor: Colors.grey.shade200,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('A1:ダッシュボード'),
