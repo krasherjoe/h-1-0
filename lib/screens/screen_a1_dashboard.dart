@@ -449,7 +449,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           Row(
             children: [
               _QuickActionButton(
-                icon: Icons.add_circle,
+                icon: Icons.receipt_long,
                 label: '新規請求',
                 accentColor: documentTypeBadgeColor(DocumentType.invoice),
                 onTap: () => Navigator.push(
