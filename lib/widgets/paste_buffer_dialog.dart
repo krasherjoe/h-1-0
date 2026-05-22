@@ -99,8 +99,8 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
       } else {
         if (current == null) {
           current = _Record(modelName: line);
-        } else if (current.manufacturer.isEmpty) {
-          current.manufacturer = current.modelName;
+        } else if (current.manufacturer == null || current.manufacturer!.isEmpty) {
+          current.manufacturer = current.modelName.isNotEmpty ? current.modelName : null;
           current.modelName = line;
         } else {
           current.modelName = line;
