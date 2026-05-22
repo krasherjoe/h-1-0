@@ -266,7 +266,7 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
       headerActions: [
         (ctx, controller) => OutlinedButton.icon(
               icon: const Icon(Icons.contact_phone_outlined),
-              label: const Text('電話帳から入力'),
+              label: const Text('電話帳参照'),
               onPressed: () => prefillFromContacts(ctx, controller),
             ),
         (ctx, controller) => OutlinedButton.icon(

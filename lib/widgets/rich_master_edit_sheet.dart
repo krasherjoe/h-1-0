@@ -416,10 +416,13 @@ class _RichMasterEditDialogState<T>
           width: maxWidth,
           child: Column(
             children: [
-              Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-                child: Row(
+              ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    color: Colors.white.withOpacity(0.05),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
@@ -427,10 +430,10 @@ class _RichMasterEditDialogState<T>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.existing == null
-                                    ? widget.titleNew
-                                    : widget.titleEdit,
-                                style: Theme.of(context).textTheme.titleLarge,
+                              widget.existing == null
+                                  ? widget.titleNew
+                                  : widget.titleEdit,
+                              style: Theme.of(context).textTheme.titleMedium,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
@@ -446,8 +449,10 @@ class _RichMasterEditDialogState<T>
                           ),
                       ],
                   ),
+                ),
               ),
-              const Divider(height: 1),
+            ),
+            const Divider(height: 1),
               Expanded(
                 child: Stack(
                   children: [
