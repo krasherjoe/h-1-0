@@ -256,14 +256,10 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
                            Text("販売アシスト1号", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 20)),
+                           const SizedBox(height: 4),
+                           Text("v$_appVersion", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.6), fontSize: 12)),
                            const SizedBox(height: 8),
-                           Row(
-                             children: [
-                               Text("クイックメニュー", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7))),
-                               const SizedBox(width: 8),
-                               Text("v$_appVersion", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5), fontSize: 12)),
-                             ],
-                           ),
+                           Text("クイックメニュー", style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7))),
                          ],
                        ),
                      ),
