@@ -121,8 +121,11 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     }
   }
 
-  Future<void> _addItem(Product product) async {
+  Future<void> _addItem(Product product, BuildContext? dialogContext) async {
     if (!mounted) return;
+    if (dialogContext != null) {
+      Navigator.pop(dialogContext);
+    }
     final controller = TextEditingController(text: '1');
     final qty = await showDialog<int>(
       context: context,
@@ -469,8 +472,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       context: context,
       builder: (ctx) => ProductPickerModal(
         onProductSelected: (product) async {
-          Navigator.pop(ctx);
-          await _addItem(product);
+          await _addItem(product, ctx);
         },
       ),
     );
