@@ -90,13 +90,14 @@ class _InvoicePickerModalState extends State<InvoicePickerModal> {
       _filteredInvoices = [...customerInvoices, ...otherInvoices];
     }
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
+    return SafeArea(
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
@@ -188,6 +189,7 @@ class _InvoicePickerModalState extends State<InvoicePickerModal> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
