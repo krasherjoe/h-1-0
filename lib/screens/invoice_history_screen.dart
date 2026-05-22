@@ -363,15 +363,28 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () {
+              final cs = Theme.of(context).colorScheme;
               showMenu<String>(
                 context: context,
                 position: const RelativeRect.fromLTRB(100, 80, 0, 0),
                 items: [
-                  const PopupMenuItem(value: "date", child: Text("日付順")),
-                  const PopupMenuItem(value: "amount", child: Text("金額順")),
-                  const PopupMenuItem(value: "customer", child: Text("顧客名順")),
+                  PopupMenuItem(
+                    value: "date",
+                    child: Text("日付順", style: TextStyle(color: cs.onSurface)),
+                  ),
+                  PopupMenuItem(
+                    value: "amount",
+                    child: Text("金額順", style: TextStyle(color: cs.onSurface)),
+                  ),
+                  PopupMenuItem(
+                    value: "customer",
+                    child: Text("顧客名順", style: TextStyle(color: cs.onSurface)),
+                  ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(value: "project_list", child: Text("PJ1:案件管理")),
+                  PopupMenuItem(
+                    value: "project_list",
+                    child: Text("PJ1:案件管理", style: TextStyle(color: cs.onSurface)),
+                  ),
                 ],
               ).then((val) {
                 if (val == null) return;
