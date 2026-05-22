@@ -257,6 +257,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           taxRate: item.taxRate,
+          isTaxInclusive: item.isTaxInclusive,
         );
         _registerLine(data);
       }
@@ -409,6 +410,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
               unitPrice: line.unitPriceValue,
               taxRate: line.taxRate ?? 0.1,
               lineTotal: line.quantityValue * line.unitPriceValue,
+              isTaxInclusive: line.isTaxInclusive,
             ),
           )
           .toList();
