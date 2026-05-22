@@ -76,12 +76,15 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     for (var i = 0; i < sales.items.length; i++) {
       final item = sales.items[i];
       final product = await _productRepo.getProduct(item.productId);
+      // 読み込み時に正しい数量と単価を復元
+      final quantity = item.quantity > 0 ? item.quantity : 1;
+      final unitPrice = item.subtotal > 0 && quantity > 0 ? (item.subtotal / quantity).round() : item.unitPrice;
       loadedItems.add(_LineItem(
         id: item.id,
         product: product,
         productName: item.productName,
-        quantity: 1,
-        unitPrice: item.subtotal,
+        quantity: quantity,
+        unitPrice: unitPrice,
         taxRate: item.taxRate,
         isFromInvoice: false,
         discountAmount: null,
