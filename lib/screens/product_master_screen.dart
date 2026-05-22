@@ -148,8 +148,10 @@ class _ProductInfoChip extends StatelessWidget {
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductRepository _productRepo = ProductRepository();
+  final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
   final Uuid _uuid = const Uuid();
   final Map<String, bool> _taxFlags = {};
+  final TextEditingController _searchController = TextEditingController();
 
   List<Product> _products = [];
   List<Product> _filteredProducts = [];
