@@ -63,6 +63,7 @@ class _SupplierMasterScreenState extends State<SupplierMasterScreen> {
         _PaymentTemplate('末締め翌末払い', '月末締め翌月末払い', '31', '30'),
         _PaymentTemplate('20日締め翌15日払い', '20日締め翌月15日払い', '20', '25'),
         _PaymentTemplate('即時払い', '納品後即時払い', '', '0'),
+        _PaymentTemplate('クレジットカード', 'クレジットカード払い（即時計上）', '', '0'),
       ];
 
       final selected = await showModalBottomSheet<_PaymentTemplate>(
