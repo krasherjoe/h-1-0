@@ -2832,27 +2832,26 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE deliveries (
         id TEXT PRIMARY KEY,
-        delivery_no TEXT UNIQUE NOT NULL,
-        sales_id TEXT NOT NULL,
-        status TEXT NOT NULL,
-        delivery_address TEXT,
-        delivery_date TEXT,
-        tracking_number TEXT,
+        document_number TEXT NOT NULL,
+        date TEXT NOT NULL,
+        customer_id TEXT,
+        delivery_address TEXT NOT NULL,
+        delivery_note TEXT,
+        subtotal INTEGER NOT NULL,
+        tax_amount INTEGER NOT NULL,
+        total INTEGER NOT NULL,
+        tax_rate REAL NOT NULL,
         notes TEXT,
+        subject TEXT,
+        status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        created_by TEXT,
-        delivered_at TEXT,
-        FOREIGN KEY(sales_id) REFERENCES sales(id),
-        FOREIGN KEY(created_by) REFERENCES users(id)
+        FOREIGN KEY(customer_id) REFERENCES customers(id)
       )
     ''');
-    await db.execute(
-      'CREATE INDEX idx_deliveries_sales ON deliveries(sales_id)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_deliveries_status ON deliveries(status)',
-    );
+    await db.execute('CREATE INDEX idx_deliveries_date ON deliveries(date)');
+    await db.execute('CREATE INDEX idx_deliveries_customer ON deliveries(customer_id)');
+    await db.execute('CREATE INDEX idx_deliveries_status ON deliveries(status)');
 
     // 顧客訪問記録テーブル
     await db.execute('''
