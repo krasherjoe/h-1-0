@@ -222,7 +222,10 @@ class _PasteBufferScreenState extends State<_PasteBufferScreen> {
               children: [
                 TableRow(
                   decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.4)),
-                  children: List.generate(_columnCount, (c) => _buildHeaderCell(c, cs)),
+                  children: [
+                    ...List.generate(_columnCount, (c) => _buildHeaderCell(c, cs)),
+                    const TableCell(child: SizedBox(width: 32)),
+                  ],
                 ),
                 ..._rows.asMap().entries.map((entry) {
                   final ri = entry.key;
