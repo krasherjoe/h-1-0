@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 72;
+  static const _databaseVersion = 73;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2289,6 +2289,18 @@ class DatabaseHelper {
     if (oldVersion < 72) {
       await _safeAddColumn(db, 'sales', 'payment_due_date TEXT');
       await _safeAddColumn(db, 'sales', 'payment_method TEXT');
+    }
+    if (oldVersion < 73) {
+      // _onCreate が間違った deliveries テーブルを生成していた問題を修正
+      await _safeAddColumn(db, 'deliveries', 'document_number TEXT');
+      await _safeAddColumn(db, 'deliveries', 'date TEXT');
+      await _safeAddColumn(db, 'deliveries', 'customer_id TEXT');
+      await _safeAddColumn(db, 'deliveries', 'delivery_note TEXT');
+      await _safeAddColumn(db, 'deliveries', 'subtotal INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'deliveries', 'tax_amount INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'deliveries', 'total INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'deliveries', 'tax_rate REAL DEFAULT 0');
+      await _safeAddColumn(db, 'deliveries', 'subject TEXT');
     }
   }
 

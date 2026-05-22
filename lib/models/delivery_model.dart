@@ -68,7 +68,7 @@ class Delivery extends BaseDocument {
   factory Delivery.fromMap(Map<String, dynamic> map, Customer? customer) {
     return Delivery(
       id: map['id'] as String,
-      documentNumber: map['document_number'] as String,
+      documentNumber: map['document_number'] as String? ?? map['id'] as String,
       date: DateTime.parse(map['date'] as String),
       customer: customer,
       items: [],
