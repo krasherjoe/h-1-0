@@ -35,6 +35,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
   double _taxRate = 0.10;
   String _taxDisplayMode = 'normal';
   bool _hasRegistrationNumber = false;
+  bool _isExemptTaxpayer = false;
   final _regNumberController = TextEditingController();
   int _defaultBankIndex = 0;
   int _fiscalYearStart = 4;
@@ -68,6 +69,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       _taxRate = _info.defaultTaxRate;
       _taxDisplayMode = _info.taxDisplayMode;
       _hasRegistrationNumber = _info.registrationNumber != null && _info.registrationNumber!.isNotEmpty;
+      _isExemptTaxpayer = _info.isExemptTaxpayer;
       _regNumberController.text = _info.registrationNumber?.replaceFirst('T', '') ?? '';
       _defaultBankIndex = _info.defaultBankAccountIndex;
       final accounts = _decodeBankAccounts(_info.bankAccounts);
@@ -183,6 +185,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
       bankAccounts: _encodeBankAccounts(),
       defaultBankAccountIndex: _defaultBankIndex,
       fiscalYearStart: _fiscalYearStart,
+      isExemptTaxpayer: _isExemptTaxpayer,
     );
     print('DEBUG: _save() - _hasRegistrationNumber: $_hasRegistrationNumber');
     print('DEBUG: _save() - registrationNumber: ${updated.registrationNumber}');
@@ -454,6 +457,52 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                 title: '税設定',
                 icon: Icons.percent,
                 children: [
+                  // 免税事業者スイッチ
+                  SwitchListTile(
+                    title: const Text('免税事業者（年間売上1,000万円未満）', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: const Text('T番号未取得・消費税申告不要の場合はオン'),
+                    value: _isExemptTaxpayer,
+                    onChanged: (v) {
+                      setState(() {
+                        _isExemptTaxpayer = v;
+                        if (v) {
+                          // 免税事業者はT番号なし・非課税表示に自動設定
+                          _hasRegistrationNumber = false;
+                          _regNumberController.clear();
+                          _taxDisplayMode = 'hidden';
+                        } else {
+                          _taxDisplayMode = 'normal';
+                        }
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (_isExemptTaxpayer)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 16, color: Theme.of(context).colorScheme.tertiary),
+                              const SizedBox(width: 6),
+                              Text('免税事業者の請求書について', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Theme.of(context).colorScheme.tertiary)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text('・ 請求書に消費税額の別記は不要', style: TextStyle(fontSize: 11)),
+                          const Text('・ 「税込価格」として金額を記載', style: TextStyle(fontSize: 11)),
+                          const Text('・ インボイス制度の適格請求書には該当しない', style: TextStyle(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 20),
                   Row(
                     children: [
                       const Text("デフォルト消費税率", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
@@ -519,7 +568,7 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                         onSelected: (_) => setState(() => _taxDisplayMode = 'normal'),
                       ),
                       ChoiceChip(
-                        label: const Text("表示しない"),
+                        label: const Text("税額非表示（税込）"),
                         selected: _taxDisplayMode == 'hidden',
                         onSelected: (_) => setState(() => _taxDisplayMode = 'hidden'),
                       ),
@@ -531,10 +580,12 @@ class _CompanyInfoScreenState extends State<CompanyInfoScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-         Text(
-             "※ T番号非取得時などの表示方法を選択",
-             style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-           ),
+                  Text(
+                    _isExemptTaxpayer
+                        ? '免税事業者：税額を別記せず税込価格として表示します'
+                        : 'T番号取得済み：消費税額を明記した適格請求書を発行できます',
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
                 ],
                ),
                const SizedBox(height: 20),

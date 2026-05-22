@@ -187,11 +187,11 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
       builder: (_) => InvoicePickerModal(
         selectedInvoiceIds: _invoiceIds,
         customerId: _selectedCustomer?.id,
-        onInvoicesSelected: (invoices) => Navigator.pop(context, invoices),
+        onInvoicesSelected: (_) {},
       ),
     );
 
-    if (selected != null && mounted) {
+    if (selected != null && selected.isNotEmpty && mounted) {
       setState(() {
         _invoiceIds = selected.map((i) => i.id).toList();
         _linkedInvoices = selected;
@@ -210,19 +210,21 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
   void _performImport(List<Invoice> invoices) {
     final newItems = <_LineItem>[];
     for (final invoice in invoices) {
-      // 請求書の合計金額を1つの明細としてインポート
-      // 値引き・税込み計算を考慮済みの合計金額を使用
-      final invoiceTotal = invoice.totalAmount;
-      final invoiceLabel = '${invoice.documentTypeName} ${invoice.invoiceNumber}';
+      for (final item in invoice.items) {
+        // 値引き後の小計を数量で割って、値引き後の単価を計算
+        final discountedUnitPrice = item.quantity > 0
+            ? (item.subtotal / item.quantity).round()
+            : item.unitPrice;
 
-      newItems.add(_LineItem(
-        id: const Uuid().v4(),
-        product: null,
-        productName: invoiceLabel,
-        quantity: 1,
-        unitPrice: invoiceTotal,
-        taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
-      ));
+        newItems.add(_LineItem(
+          id: const Uuid().v4(),
+          product: null,
+          productName: item.description,
+          quantity: item.quantity,
+          unitPrice: discountedUnitPrice,
+          taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
+        ));
+      }
 
       // 顧客が未設定なら請求書の顧客を設定
       if (_selectedCustomer == null) {

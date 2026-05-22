@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 63;
+  static const _databaseVersion = 64;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2165,6 +2165,11 @@ class DatabaseHelper {
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_time_logs_project ON time_logs(project_id)',
       );
+    }
+
+    // v64: 会社情報に免税事業者フラグを追加
+    if (oldVersion < 64) {
+      await _safeAddColumn(db, 'company_info', 'is_exempt_taxpayer INTEGER DEFAULT 0');
     }
   }
 

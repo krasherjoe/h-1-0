@@ -69,8 +69,7 @@ class _InvoicePickerModalState extends State<InvoicePickerModal> {
 
   void _onConfirm() {
     final selected = _allInvoices.where((i) => _selectedIds.contains(i.id)).toList();
-    widget.onInvoicesSelected(selected);
-    Navigator.pop(context);
+    Navigator.pop(context, selected);
   }
 
   @override

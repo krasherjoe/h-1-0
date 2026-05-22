@@ -67,6 +67,7 @@ class CompanyRepository {
         registrationNumber: map['registration_number'],
         bankAccounts: map['bank_accounts'],
         defaultBankAccountIndex: (map['default_bank_account_index'] as num?)?.toInt() ?? 0,
+        isExemptTaxpayer: (map['is_exempt_taxpayer'] as int? ?? 0) == 1,
       );
       print('DEBUG: Loaded company registrationNumber: ${company.registrationNumber}');
       return company;
@@ -110,6 +111,7 @@ class CompanyRepository {
       'registration_number': info.registrationNumber,
       'bank_accounts': info.bankAccounts,
       'default_bank_account_index': info.defaultBankAccountIndex,
+      'is_exempt_taxpayer': info.isExemptTaxpayer ? 1 : 0,
     };
     
     // INSERT OR REPLACEを使用
