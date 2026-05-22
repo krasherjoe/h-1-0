@@ -225,22 +225,11 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     for (final invoice in invoices) {
       print('請求書インポート: ${invoice.subject}, 明細数: ${invoice.items.length}');
 
-      // 伝票全体の値引き額（totalDiscountAmount/totalDiscountRate/priceAdjustment）は
-      // InvoiceItem.subtotal に反映されていないため、比例配分で各明細に適用する
+      // 明細単位の小計合計（invSubtotal）と請求書合計（totalAmount）の比率を
+      // 各明細に乗算することで、割引・値引・消費税を含む請求書の合計金額に一致させる
       final invSubtotal = invoice.subtotal;
-      final invDiscount = invoice.discountAmount;
-      final itemDiscount = invoice.items.fold<int>(0, (sum, item) {
-        if (item.discountAmount != null && item.discountAmount! > 0) {
-          return sum + item.discountAmount!;
-        }
-        if (item.discountRate != null && item.discountRate! > 0) {
-          return sum + (item.quantity * item.unitPrice * item.discountRate!).round();
-        }
-        return sum;
-      });
-      final additionalDiscount = invDiscount - itemDiscount;
-      final discountRatio = (additionalDiscount > 0 && invSubtotal > 0)
-          ? (invSubtotal - additionalDiscount) / invSubtotal
+      final discountRatio = (invoice.totalAmount > 0 && invSubtotal > 0)
+          ? invoice.totalAmount / invSubtotal
           : 1.0;
 
       for (final item in invoice.items) {
