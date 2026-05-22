@@ -29,6 +29,7 @@ class ProductPreviewCard extends StatelessWidget {
     required this.category,
     required this.barcode,
     required this.unitPrice,
+    this.wholesalePrice,
     required this.stockQuantity,
   });
 
@@ -36,6 +37,7 @@ class ProductPreviewCard extends StatelessWidget {
   final String category;
   final String barcode;
   final String unitPrice;
+  final String? wholesalePrice;
   final String stockQuantity;
 
   @override
@@ -88,6 +90,11 @@ class ProductPreviewCard extends StatelessWidget {
                   label: '単価',
                   value: unitPrice.isEmpty ? '未設定' : '￥$unitPrice',
                 ),
+                if (wholesalePrice != null && wholesalePrice!.isNotEmpty)
+                  _ProductInfoChip(
+                    label: '仕入',
+                    value: '￥$wholesalePrice',
+                  ),
                 if (!const ['サポート', 'サービス'].contains(category))
                   _ProductInfoChip(
                     label: '在庫',
@@ -141,8 +148,8 @@ class _ProductInfoChip extends StatelessWidget {
 
 class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductRepository _productRepo = ProductRepository();
-  final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
-  final TextEditingController _searchController = TextEditingController();
+  final Uuid _uuid = const Uuid();
+  final Map<String, bool> _taxFlags = {};
 
   List<Product> _products = [];
   List<Product> _filteredProducts = [];
@@ -327,6 +334,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
 
   Future<void> _showEditDialog({Product? product}) async {
     final theme = Theme.of(context);
+    _taxFlags['defaultUnitPriceIsTaxInclusive'] = product?.defaultUnitPriceIsTaxInclusive ?? false;
+    _taxFlags['wholesalePriceIsTaxInclusive'] = product?.wholesalePriceIsTaxInclusive ?? false;
     final result = await showRichMasterEditSheet<Product>(
       context: context,
       titleNew: '商品追加',
@@ -383,11 +392,39 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 );
               },
             ),
-            const MasterFieldConfig(
+            MasterFieldConfig(
               key: 'defaultUnitPrice',
-              label: '標準単価 (税抜)',
+              label: '標準単価',
               hint: '例: 1980',
               keyboardType: TextInputType.number,
+              suffixBuilder: (ctrl, setDialogState, updateValue) {
+                final isTaxInclusive = _taxFlags['defaultUnitPriceIsTaxInclusive'] ?? false;
+                return TextButton(
+                  onPressed: () {
+                    _taxFlags['defaultUnitPriceIsTaxInclusive'] = !isTaxInclusive;
+                    setDialogState(() {});
+                  },
+                  child: Text(isTaxInclusive ? '税込' : '税抜',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isTaxInclusive ? Colors.orange : Colors.grey)),
+                );
+              },
+            ),
+            MasterFieldConfig(
+              key: 'wholesalePrice',
+              label: '仕入単価',
+              hint: '例: 1200',
+              keyboardType: TextInputType.number,
+              suffixBuilder: (ctrl, setDialogState, updateValue) {
+                final isTaxInclusive = _taxFlags['wholesalePriceIsTaxInclusive'] ?? false;
+                return TextButton(
+                  onPressed: () {
+                    _taxFlags['wholesalePriceIsTaxInclusive'] = !isTaxInclusive;
+                    setDialogState(() {});
+                  },
+                  child: Text(isTaxInclusive ? '税込' : '税抜',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isTaxInclusive ? Colors.orange : Colors.grey)),
+                );
+              },
             ),
             const MasterFieldConfig(
               key: 'stockQuantity',
@@ -403,6 +440,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         'name': p?.name ?? '',
         'category': p?.category ?? '',
         'defaultUnitPrice': (p?.defaultUnitPrice ?? 0).toString(),
+        'wholesalePrice': (p?.wholesalePrice ?? 0).toString(),
         'stockQuantity': (p?.stockQuantity ?? 0).toString(),
         'barcode': p?.barcode ?? '',
       },
@@ -411,6 +449,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         category: controller.valueOf('category'),
         barcode: controller.valueOf('barcode'),
         unitPrice: controller.valueOf('defaultUnitPrice'),
+        wholesalePrice: controller.valueOf('wholesalePrice'),
         stockQuantity: controller.valueOf('stockQuantity'),
       ),
       buildModel: (values) {
@@ -420,6 +459,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             : (product?.id ?? const Uuid().v4());
         final defaultUnitPrice =
             int.tryParse(values['defaultUnitPrice'] ?? '') ?? 0;
+        final wholesalePrice =
+            int.tryParse(values['wholesalePrice'] ?? '') ?? 0;
         final stockQuantityStr = values['stockQuantity']?.trim();
         final barcode = values['barcode']?.trim();
         final category = values['category']?.trim();
@@ -434,6 +475,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           id: newId,
           name: values['name']?.trim() ?? '',
           defaultUnitPrice: defaultUnitPrice,
+          defaultUnitPriceIsTaxInclusive: _taxFlags['defaultUnitPriceIsTaxInclusive'] ?? false,
+          wholesalePrice: wholesalePrice,
+          wholesalePriceIsTaxInclusive: _taxFlags['wholesalePriceIsTaxInclusive'] ?? false,
           stockQuantity: stockQuantity,
           barcode: (barcode?.isEmpty ?? true) ? null : barcode,
           category: (category?.isEmpty ?? true) ? null : category,

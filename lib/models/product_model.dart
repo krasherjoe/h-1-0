@@ -14,7 +14,9 @@ class Product {
   final String id;
   final String name;
   final int defaultUnitPrice;
+  final bool defaultUnitPriceIsTaxInclusive;
   final int wholesalePrice;
+  final bool wholesalePriceIsTaxInclusive;
   final String? barcode;
   final String? category;
   final String? categoryId; // カテゴリー ID
@@ -35,7 +37,9 @@ class Product {
     required this.id,
     required this.name,
     this.defaultUnitPrice = 0,
+    this.defaultUnitPriceIsTaxInclusive = false,
     this.wholesalePrice = 0,
+    this.wholesalePriceIsTaxInclusive = false,
     this.barcode,
     this.category,
     this.categoryId,
@@ -56,7 +60,9 @@ class Product {
       'id': id,
       'name': name,
       'default_unit_price': defaultUnitPrice,
+      'default_unit_price_is_tax_inclusive': defaultUnitPriceIsTaxInclusive ? 1 : 0,
       'wholesale_price': wholesalePrice,
+      'wholesale_price_is_tax_inclusive': wholesalePriceIsTaxInclusive ? 1 : 0,
       'barcode': barcode,
       'category': category,
       'category_id': categoryId,
@@ -79,7 +85,9 @@ class Product {
       id: map['id'],
       name: map['name'],
       defaultUnitPrice: map['default_unit_price'] ?? 0,
+      defaultUnitPriceIsTaxInclusive: (map['default_unit_price_is_tax_inclusive'] ?? 0) == 1,
       wholesalePrice: map['wholesale_price'] ?? 0,
+      wholesalePriceIsTaxInclusive: (map['wholesale_price_is_tax_inclusive'] ?? 0) == 1,
       barcode: map['barcode'],
       category: map['category'],
       categoryId: map['category_id'],
@@ -110,7 +118,9 @@ class Product {
     String? id,
     String? name,
     int? defaultUnitPrice,
+    bool? defaultUnitPriceIsTaxInclusive,
     int? wholesalePrice,
+    bool? wholesalePriceIsTaxInclusive,
     String? barcode,
     String? category,
     String? categoryId,
@@ -129,7 +139,9 @@ class Product {
       id: id ?? this.id,
       name: name ?? this.name,
       defaultUnitPrice: defaultUnitPrice ?? this.defaultUnitPrice,
+      defaultUnitPriceIsTaxInclusive: defaultUnitPriceIsTaxInclusive ?? this.defaultUnitPriceIsTaxInclusive,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      wholesalePriceIsTaxInclusive: wholesalePriceIsTaxInclusive ?? this.wholesalePriceIsTaxInclusive,
       barcode: barcode ?? this.barcode,
       category: category ?? this.category,
       categoryId: categoryId ?? this.categoryId,

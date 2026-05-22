@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 67;
+  static const _databaseVersion = 68;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2266,6 +2266,10 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_returns_status ON purchase_returns(status)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_payments_order ON purchase_payments(purchase_order_id)');
     }
+    if (oldVersion < 68) {
+      await _safeAddColumn(db, 'products', 'default_unit_price_is_tax_inclusive INTEGER DEFAULT 0');
+      await _safeAddColumn(db, 'products', 'wholesale_price_is_tax_inclusive INTEGER DEFAULT 0');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2347,7 +2351,9 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         default_unit_price INTEGER,
+        default_unit_price_is_tax_inclusive INTEGER DEFAULT 0,
         wholesale_price INTEGER DEFAULT 0,
+        wholesale_price_is_tax_inclusive INTEGER DEFAULT 0,
         barcode TEXT,
         category TEXT,
         category_id TEXT,

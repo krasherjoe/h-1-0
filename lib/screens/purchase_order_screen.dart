@@ -348,6 +348,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
         setState(() {
           _lines[index].applyProduct(product);
           _lines[index].unitPriceController.text = product.wholesalePrice.toString();
+          _lines[index].isTaxInclusive = product.wholesalePriceIsTaxInclusive;
         });
       }),
     );
