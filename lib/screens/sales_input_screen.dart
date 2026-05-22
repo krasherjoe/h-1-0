@@ -229,6 +229,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
           unitPrice: discountedUnitPrice,
           taxRate: 0.0, // 請求書からインポートした明細は税計算をスキップ
           isFromInvoice: true,
+          originalSubtotal: item.subtotal,
         ));
       }
 
@@ -250,7 +251,10 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     int subTotal = 0;
     int taxAmount = 0;
     for (final item in _items) {
-      final lineSubtotal = item.quantity * item.unitPrice;
+      // 請求書からインポートした明細はoriginalSubtotalを使用
+      final lineSubtotal = item.isFromInvoice
+          ? (item.originalSubtotal ?? item.quantity * item.unitPrice)
+          : (item.quantity * item.unitPrice);
       subTotal += lineSubtotal;
       // 請求書からインポートした明細は税計算をスキップ
       if (!item.isFromInvoice && item.taxRate > 0) {
@@ -296,7 +300,7 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
         productName: i.productName,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
-        subtotal: i.quantity * i.unitPrice,
+        subtotal: i.isFromInvoice ? (i.originalSubtotal ?? i.quantity * i.unitPrice) : (i.quantity * i.unitPrice),
         taxRate: i.taxRate,
       )).toList(),
       subtotal: subtotal,
@@ -419,6 +423,18 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
             icon: const Icon(Icons.receipt_long),
             label: const Text('請求書を紐付け'),
           ),
+          const SizedBox(height: 8),
+
+          // 紐付けた請求書を閲覧するボタン
+          if (_linkedInvoices.isNotEmpty)
+            ElevatedButton.icon(
+              onPressed: _viewLinkedInvoices,
+              icon: const Icon(Icons.visibility),
+              label: Text('紐付けた請求書 (${_linkedInvoices.length}件)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+              ),
+            ),
           const SizedBox(height: 12),
 
           // 明細リスト
@@ -481,6 +497,36 @@ class _SalesInputScreenState extends State<SalesInputScreen> {
     );
   }
 
+  void _viewLinkedInvoices() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('紐付けた請求書 (${_linkedInvoices.length}件)'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _linkedInvoices.length,
+            itemBuilder: (context, index) {
+              final invoice = _linkedInvoices[index];
+              return ListTile(
+                title: Text(invoice.subject ?? '件名なし'),
+                subtitle: Text('¥${NumberFormat('#,###').format(invoice.totalAmount)}'),
+                trailing: Text(DateFormat('yyyy/MM/dd').format(invoice.date)),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPriceRow(String label, int amount, {bool isTotal = false}) {
     final formatted = '\u{00a5}${amount.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -514,6 +560,7 @@ class _LineItem {
   int unitPrice;
   double taxRate;
   final bool isFromInvoice; // 請求書からインポートした明細かどうか
+  final int? originalSubtotal; // 請求書からインポートした場合の元の小計
 
   _LineItem({
     required this.id,
@@ -523,5 +570,6 @@ class _LineItem {
     required this.unitPrice,
     required this.taxRate,
     this.isFromInvoice = false,
+    this.originalSubtotal,
   });
 }
