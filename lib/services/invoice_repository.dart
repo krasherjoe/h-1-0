@@ -196,6 +196,20 @@ class InvoiceRepository {
       if (!invoice.isDraft) {
         await txn.execute('UPDATE customers SET is_locked = 1 WHERE id = ?', [invoice.customer.id]);
       }
+
+      // 領収書保存時に元請求書のisReceiptIssuedフラグを自動更新
+      if (invoice.documentType == DocumentType.receipt && invoice.sourceDocumentId != null) {
+        await txn.update(
+          'invoices',
+          {
+            'is_receipt_issued': 1,
+            'receipt_issued_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [invoice.sourceDocumentId],
+        );
+      }
     });
 
     await _logRepo.logAction(
@@ -485,6 +499,43 @@ class InvoiceRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  /// 全請求書の領収書発行状態を一括同期（既存DBの整合性修復用）
+  Future<int> syncAllReceiptStatus() async {
+    final db = await _dbHelper.database;
+    int updatedCount = 0;
+
+    // 領収書として保存されているsource_document_id一覧を取得
+    final receiptRows = await db.query(
+      'invoices',
+      columns: ['source_document_id'],
+      where: 'document_type = ? AND source_document_id IS NOT NULL',
+      whereArgs: [DocumentType.receipt.name],
+    );
+
+    final Set<String> linkedInvoiceIds = receiptRows
+        .map((r) => r['source_document_id'] as String?)
+        .where((id) => id != null)
+        .cast<String>()
+        .toSet();
+
+    // 各請求書のis_receipt_issuedを更新
+    for (final invoiceId in linkedInvoiceIds) {
+      final result = await db.update(
+        'invoices',
+        {
+          'is_receipt_issued': 1,
+          'receipt_issued_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ? AND (is_receipt_issued = 0 OR is_receipt_issued IS NULL)',
+        whereArgs: [invoiceId],
+      );
+      updatedCount += result;
+    }
+
+    return updatedCount;
   }
 
   Future<void> deleteInvoice(String id) async {
