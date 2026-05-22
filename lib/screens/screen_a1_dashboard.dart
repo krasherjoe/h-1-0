@@ -739,7 +739,7 @@ class _SummaryCard extends StatelessWidget {
         width: 140,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: cs.primary.withValues(alpha: 0.08),
+          color: cs.primary.withValues(alpha: 0.16),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
         ),
@@ -781,7 +781,7 @@ class _QuickActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: cs.primary.withValues(alpha: 0.08),
+            color: cs.primary.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
           ),
