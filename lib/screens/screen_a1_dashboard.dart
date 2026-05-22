@@ -703,17 +703,17 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(project.customerName ?? '得意先未設定',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: cs.onSurfaceVariant)),
+                              const SizedBox(height: 2),
                               Text(project.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500)),
-                              const SizedBox(height: 2),
-                              Text(project.customerName ?? '得意先未設定',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: cs.onSurfaceVariant)),
                             ],
                           ),
                         ),
