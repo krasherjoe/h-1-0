@@ -39,6 +39,7 @@ import 'staff_management_screen.dart';
 import 'delivery_list_screen.dart';
 import 'accounts_receivable_screen.dart';
 import 'payment_slip_list_screen.dart';
+import 'receipt_processing_screen.dart';
 import 'purchase_order_screen.dart';
 import 'purchase_payment_screen.dart';
 import 'screen_pj1_project_list.dart';
@@ -162,7 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'sales_return_input':
         return const SalesReturnInputScreen();
       case 'payment_slip':
-        return const PaymentSlipListScreen();
+        return const ReceiptProcessingScreen();
       case 'accounts_receivable':
         return const AccountsReceivableScreen();
       case 'purchase_order_input':
