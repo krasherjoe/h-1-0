@@ -449,6 +449,26 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     );
   }
 
+  IconData _stageIcon(String stage) {
+    switch (stage) {
+      case '見積': return Icons.description;
+      case '受注': return Icons.assignment_turned_in;
+      case '発注': return Icons.shopping_cart;
+      case '発送': return Icons.local_shipping;
+      case '着荷確認': return Icons.check_circle_outline;
+      case '請求': return Icons.receipt_long;
+      case '入金済': return Icons.payments;
+      case '提案': return Icons.lightbulb_outline;
+      case '契約': return Icons.how_to_vote;
+      case '要件定義': return Icons.architecture;
+      case '設計': return Icons.design_services;
+      case '開発中': return Icons.construction;
+      case 'テスト': return Icons.bug_report;
+      case '検収': return Icons.verified;
+      default: return Icons.circle;
+    }
+  }
+
   String _formatAmount(int amount) {
     final s = amount.toString();
     final buf = StringBuffer();
@@ -842,15 +862,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                                   Flexible(child: Text(project.customerName ?? '得意先未設定',
                                       style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant))),
                                   const SizedBox(width: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: cs.tertiaryContainer.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                    child: Text(project.pipelineStage,
-                                        style: TextStyle(fontSize: 8, color: cs.onTertiaryContainer)),
-                                  ),
+                                  Icon(_stageIcon(project.pipelineStage),
+                                      size: 14, color: cs.tertiary),
                                 ],
                               ),
                               const SizedBox(height: 2),
