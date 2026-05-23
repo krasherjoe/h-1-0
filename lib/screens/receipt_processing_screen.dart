@@ -182,8 +182,9 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
   }
 
   Widget _buildPaymentForm(ColorScheme cs) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPad),
       decoration: BoxDecoration(
         color: cs.surface,
         border: Border(top: BorderSide(color: cs.outlineVariant)),
