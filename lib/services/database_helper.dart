@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 75;
+  static const _databaseVersion = 76;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2309,6 +2309,26 @@ class DatabaseHelper {
     if (oldVersion < 75) {
       await _safeAddColumn(db, 'products', 'model_number TEXT');
       await _safeAddColumn(db, 'products', 'manufacturer TEXT');
+    }
+    if (oldVersion < 76) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS subscriptions (
+          id TEXT PRIMARY KEY,
+          customer_id TEXT NOT NULL,
+          customer_name TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          cycle TEXT DEFAULT 'monthly',
+          cycle_days INTEGER DEFAULT 30,
+          total_cycles INTEGER DEFAULT 0,
+          completed_cycles INTEGER DEFAULT 0,
+          start_date TEXT NOT NULL,
+          next_billing_date TEXT,
+          description TEXT,
+          is_active INTEGER DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
     }
   }
 
