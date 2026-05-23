@@ -351,3 +351,12 @@ adb uninstall com.example.h_1
 2. バックアップ・復元機能の実動テスト
 3. 残存する flutter analyze 警告の整理（テストファイルのみ、本番コードは問題なし）
 
+## 📋 将来計画（未着手）
+- [ ] **サーバーモード（DNA設計）**: ProxmoxのUbuntu+FlutterSDKでアプリをサーバー稼働
+  - 基盤: `lib/server/api_handler.dart`（汎用CRUD API）✅ 作成済み
+  - 設定: `lib/screens/screen_rc_remote_config.dart`（RC:接続設定）✅ 作成済み
+  - クライアント側のRemoteRepository実装と自動切替
+  - サーバー起動: `flutter run -d linux -t lib/main_server.dart`
+- [ ] **定期請求 機能拡張**: 請求書自動生成の定期実行、カレンダー連携
+- [ ] **Google Calendar 連携**: 入金予定日のカレンダー自動登録（認証スコープ追加済み）
+
