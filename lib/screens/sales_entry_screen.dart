@@ -20,6 +20,7 @@ class SalesEntryScreen extends StatefulWidget {
 class _SalesEntryScreenState extends State<SalesEntryScreen> {
   final _salesRepo = SalesRepository();
   final _invoiceRepo = InvoiceRepository();
+  int _reloadKey = 0;
 
   Future<void> _showInvoiceImportDialog() async {
     if (!mounted) return;
@@ -98,7 +99,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('請求書が売上に转换されました')),
       );
-      setState(() {});
+      setState(() => _reloadKey++);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -112,6 +113,7 @@ class _SalesEntryScreenState extends State<SalesEntryScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: GenericListScreen<Sales>(
+        key: ValueKey(_reloadKey),
         screenId: 'SE',
         title: '売上入力',
         icon: Icons.point_of_sale,
