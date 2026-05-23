@@ -146,6 +146,21 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     await _load();
   }
 
+  Future<void> _generateInvoice(Subscription sub) async {
+    try {
+      final invoice = await _repo.generateInvoice(sub);
+      if (invoice != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('請求書を生成しました: ${invoice.invoiceNumber}')),
+        );
+        await _load();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('請求書生成失敗: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -198,6 +213,17 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                               Text('次回請求: ${_df.format(s.nextBillingDate!)}',
                                   style: TextStyle(fontSize: 11, color: cs.primary)),
                             ],
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.receipt, size: 16),
+                                  label: const Text('請求書生成', style: TextStyle(fontSize: 11)),
+                                  onPressed: () => _generateInvoice(s),
+                                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), minimumSize: Size.zero),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
