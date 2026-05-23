@@ -555,6 +555,57 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
     );
   }
 
+  Future<void> _showEditMilestoneDialog(Milestone m) async {
+    final titleCtrl = TextEditingController(text: m.title);
+    DateTime? dueDate = m.dueDate;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('マイルストーン編集'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: 'マイルストーン名'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: dueDate ?? DateTime.now().add(const Duration(days: 30)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                );
+                if (picked != null) dueDate = picked;
+              },
+              icon: const Icon(Icons.calendar_today, size: 16),
+              label: Text(dueDate != null ? DateFormat('yyyy/MM/dd').format(dueDate!) : '期限を設定'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleCtrl.text.trim().isEmpty) return;
+              await _milestoneRepo.update(m.copyWith(
+                title: titleCtrl.text.trim(),
+                dueDate: dueDate,
+              ));
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              _loadTasks();
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showAddTaskDialog({String? milestoneId}) async {
     final ctrl = TextEditingController();
     await showDialog<void>(
@@ -1152,6 +1203,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen>
                   icon: const Icon(Icons.add, size: 20),
                   tooltip: 'タスクを追加',
                   onPressed: () => _showAddTaskDialog(milestoneId: m.id),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  tooltip: '編集',
+                  onPressed: () => _showEditMilestoneDialog(m),
                 ),
                 IconButton(
                   icon: Icon(Icons.delete_outline,
