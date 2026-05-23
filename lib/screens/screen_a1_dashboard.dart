@@ -1046,16 +1046,14 @@ class _SummaryCard extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
-            Flexible(
-              child: Text(sub,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.4)
-                          : accentColor.withValues(alpha: 0.6),
-                      fontSize: 10)),
-            ),
+            Text(sub,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.4)
+                        : accentColor.withValues(alpha: 0.6),
+                    fontSize: 10)),
           ],
         ),
       ),
