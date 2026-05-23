@@ -430,7 +430,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen()));
                   return;
                 }
-                if (val.startsWith("filter_")) {
+                if (val == "all" || val.startsWith("filter_")) {
                   switch (val) {
                     case "filter_estimation": setState(() => _filterDocType = DocumentType.estimation);
                     case "filter_order": setState(() => _filterDocType = DocumentType.order);
