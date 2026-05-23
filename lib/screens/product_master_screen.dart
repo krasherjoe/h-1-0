@@ -801,15 +801,29 @@ PopupMenuItem(
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   margin: const EdgeInsets.only(right: 4),
-                                  decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
-                                  child: Text('税込', style: TextStyle(fontSize: 9, color: Colors.orange.shade700)),
+                                  decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                                  child: Text('販売(税込)', style: TextStyle(fontSize: 9, color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
                                 ),
-                              if (p.wholesalePriceIsTaxInclusive)
+                              if (!p.defaultUnitPriceIsTaxInclusive)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   margin: const EdgeInsets.only(right: 4),
-                                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
-                                  child: Text('仕入税込', style: TextStyle(fontSize: 9, color: Colors.blue.shade700)),
+                                  decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text('販売(税抜)', style: TextStyle(fontSize: 9, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                                ),
+                              if (p.wholesalePrice > 0 && p.wholesalePriceIsTaxInclusive)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                                  child: Text('仕入(税込)', style: TextStyle(fontSize: 9, color: Colors.blue.shade700, fontWeight: FontWeight.w600)),
+                                ),
+                              if (p.wholesalePrice > 0 && !p.wholesalePriceIsTaxInclusive)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text('仕入(税抜)', style: TextStyle(fontSize: 9, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
                                 ),
                               if (p.barcode != null && p.barcode!.isNotEmpty)
                                 Text(p.barcode!, style: TextStyle(fontSize: 8, color: theme.colorScheme.onSurfaceVariant)),
