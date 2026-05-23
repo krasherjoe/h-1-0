@@ -281,7 +281,11 @@ Future<pw.Document> buildInvoiceDocument(
             }(),
             data: invoice.items
                 .map((item) {
-                      // 値引きがある場合は説明に追加
+                      // 免税+T番号なしの場合は税込価格で表示
+                      final bool useTaxIncl = _isExemptNoT(companyInfo);
+                      final double rate = useTaxIncl ? 1.0 + invoice.taxRate : 1.0;
+                      final displayPrice = (item.unitPrice * rate).round();
+                      final displayLineTotal = (item.subtotal * rate).round();
                       String description = item.description;
                       if (item.discountAmount != null && item.discountAmount! > 0) {
                         description += ' (値引:-¥${amountFormatter.format(item.discountAmount)})';
@@ -291,8 +295,8 @@ Future<pw.Document> buildInvoiceDocument(
                       return [
                         description,
                         item.quantity.toString(),
-                        amountFormatter.format(item.unitPrice),
-                        amountFormatter.format(item.subtotal),
+                        amountFormatter.format(displayPrice),
+                        amountFormatter.format(displayLineTotal),
                       ];
                     })
                 .toList(),
@@ -316,12 +320,13 @@ Future<pw.Document> buildInvoiceDocument(
                 child: pw.Column(
                   children: [
                     pw.SizedBox(height: 10),
-                    _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
-                    if (invoice.discountAmount > 0 && _isExemptNoTNumber(companyInfo))
-                      _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount - invoice.tax)}"),
-                    if (invoice.discountAmount > 0 && !_isExemptNoTNumber(companyInfo))
+                    if (_isExemptNoT(companyInfo))
+                      _buildSummaryRow("税込小計", amountFormatter.format(invoice.subtotal + invoice.tax)),
+                    if (!_isExemptNoT(companyInfo))
+                      _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
+                    if (invoice.discountAmount > 0)
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
-                    if (invoice.tax > 0 && !_isExemptNoTNumber(companyInfo)) ...[
+                    if (invoice.tax > 0 && !_isExemptNoT(companyInfo)) ...[
                       if (invoice.isTaxInclusiveMode)
                         _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}% 逆算)", "(内 ￥${amountFormatter.format(invoice.tax)})"),
                       if (!invoice.isTaxInclusiveMode)
@@ -489,7 +494,7 @@ Future<pw.Document> buildInvoiceDocument(
 }
 
 /// A4サイズのプロフェッショナルな伝票PDFを生成し、保存する
-bool _isExemptNoTNumber(CompanyInfo c) =>
+bool _isExemptNoT(CompanyInfo c) =>
     c.isExemptTaxpayer && (c.registrationNumber == null || c.registrationNumber!.isEmpty);
 
 Future<String?> generateInvoicePdf(Invoice invoice) async {
