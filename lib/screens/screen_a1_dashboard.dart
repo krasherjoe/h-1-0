@@ -140,7 +140,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       final unpaidRows = await db.rawQuery('''
         SELECT COALESCE(SUM(total_amount - received_amount), 0) as amt
         FROM invoices
-        WHERE payment_status != 'paid' AND is_draft = 0
+        WHERE payment_status != 'paid'
+          AND (is_draft IS NULL OR is_draft = 0)
       ''');
       _unpaidTotal = (unpaidRows.first['amt'] as num?)?.toInt() ?? 0;
 
