@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/invoice_models.dart';
 import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../services/database_helper.dart';
+import '../services/google_calendar_service.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../utils/theme_utils.dart';
@@ -30,6 +31,7 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
   DateTime _paymentDate = DateTime.now();
   String _paymentMethod = '振込';
   bool _saving = false;
+  bool _addToCalendar = false;
 
   static const _methods = ['現金', '振込', 'クレジットカード', '手形', 'その他'];
 
@@ -123,11 +125,20 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
         whereArgs: [inv.id],
       );
 
+      // Googleカレンダーに追加
+      if (_addToCalendar) {
+        await GoogleCalendarService().addPaymentEvent(
+          title: '${_paymentMethod}入金: ${inv.customerNameForDisplay} (${inv.invoiceNumber})',
+          dueDate: _paymentDate,
+          description: '入金額: ¥${_nf.format(amount)}\n支払方法: $_paymentMethod',
+        );
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${inv.customerNameForDisplay} から ${_nf.format(amount)} の入金を登録しました')),
       );
-      setState(() { _selected = null; _amountCtrl.clear(); });
+      setState(() { _selected = null; _amountCtrl.clear(); _addToCalendar = false; });
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -237,6 +248,17 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
                 value: _paymentMethod, underline: const SizedBox(),
                 onChanged: (v) => setState(() => _paymentMethod = v!),
                 items: _methods.map((m) => DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 12)))).toList(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Googleカレンダーに追加', style: TextStyle(fontSize: 12)),
+              const Spacer(),
+              Switch(
+                value: _addToCalendar,
+                onChanged: (v) => setState(() => _addToCalendar = v),
               ),
             ],
           ),
