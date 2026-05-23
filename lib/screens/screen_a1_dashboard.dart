@@ -555,7 +555,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                 children: _enabledQuickActions.map((id) {
                   final meta = _allActionMeta[id];
                   if (meta == null) return const SizedBox.shrink();
-                  return SizedBox(width: btnW, child: _buildActionButton(meta, id));
+                  return _buildActionButton(meta, id, btnW: btnW);
                 }).toList(),
               );
             },
@@ -565,8 +565,9 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     );
   }
 
-  Widget _buildActionButton(_ActionMeta meta, String id) {
+  Widget _buildActionButton(_ActionMeta meta, String id, {double? btnW}) {
     return _QuickActionButton(
+      width: btnW,
       icon: meta.icon,
       label: meta.label,
       accentColor: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : Theme.of(context).colorScheme.primary,
@@ -1031,12 +1032,14 @@ class _ActionMeta {
 }
 
 class _QuickActionButton extends StatelessWidget {
+  final double? width;
   final IconData icon;
   final String label;
   final Color accentColor;
   final VoidCallback onTap;
 
   const _QuickActionButton({
+    this.width,
     required this.icon,
     required this.label,
     required this.accentColor,
@@ -1058,6 +1061,7 @@ class _QuickActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: width,
         padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
