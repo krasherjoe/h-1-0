@@ -537,7 +537,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       if (!mounted) return;
       try {
         await _productRepo.saveProduct(result);
-        _loadProducts();
+        await _loadProducts();
       } catch (e, st) {
         print('P1 商品保存エラー: $e');
         print('スタックトレース: $st');
