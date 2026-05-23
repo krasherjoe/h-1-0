@@ -280,7 +280,8 @@ Future<pw.Document> buildInvoiceDocument(
               }
             }(),
             data: () {
-              final bool useTaxIncl = _isExemptNoT(companyInfo);
+              // 免税+T番号なし: 税込モードならそのまま、税抜モードなら税込換算
+              final bool useTaxIncl = _isExemptNoT(companyInfo) && !invoice.isTaxInclusiveMode;
               final double rate = useTaxIncl ? 1.0 + invoice.taxRate : 1.0;
               final items = invoice.items.map((item) {
                 String description = item.description;
@@ -344,7 +345,7 @@ Future<pw.Document> buildInvoiceDocument(
                   children: [
                     pw.SizedBox(height: 10),
                     if (_isExemptNoT(companyInfo))
-                      _buildSummaryRow("税込小計", amountFormatter.format(invoice.subtotal + invoice.tax)),
+                      _buildSummaryRow("税込小計", amountFormatter.format(invoice.isTaxInclusiveMode ? invoice.subtotal : invoice.subtotal + invoice.tax)),
                     if (!_isExemptNoT(companyInfo))
                       _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
                     if (invoice.discountAmount > 0)
