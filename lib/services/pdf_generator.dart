@@ -315,9 +315,7 @@ Future<pw.Document> buildInvoiceDocument(
                 child: pw.Column(
                   children: [
                     pw.SizedBox(height: 10),
-                    _buildSummaryRow(
-                      _isExemptNoT(companyInfo) ? "小計" : (invoice.isTaxInclusiveMode ? "税込小計" : "小計"),
-                      amountFormatter.format(_isExemptNoT(companyInfo) ? invoice.totalAmount : invoice.subtotal)),
+                    _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
                     if (invoice.discountAmount > 0)
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
                     if (invoice.tax > 0 && !_isExemptNoT(companyInfo)) ...[
