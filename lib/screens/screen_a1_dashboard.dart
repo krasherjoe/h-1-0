@@ -995,7 +995,7 @@ class _SummaryCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 140,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: isDark
@@ -1019,46 +1019,44 @@ class _SummaryCard extends StatelessWidget {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: isDark ? 0.2 : 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: accentColor, size: 18),
-                ),
-                const SizedBox(height: 12),
-                Text(label,
-                    style: TextStyle(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.6)
-                            : accentColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500)),
-                const SizedBox(height: 2),
-                Text(value,
-                    style: TextStyle(
-                        color: isDark ? Colors.white : accentColor,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 1),
-                Text(sub,
-                    style: TextStyle(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.4)
-                            : accentColor.withValues(alpha: 0.6),
-                        fontSize: 10)),
-              ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: accentColor, size: 18),
             ),
-          ),
+            const SizedBox(height: 10),
+            Text(label,
+                style: TextStyle(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.6)
+                        : accentColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500)),
+            const SizedBox(height: 2),
+            Text(value,
+                style: TextStyle(
+                    color: isDark ? Colors.white : accentColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Flexible(
+              child: Text(sub,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.4)
+                          : accentColor.withValues(alpha: 0.6),
+                      fontSize: 10)),
+            ),
+          ],
         ),
       ),
       );
