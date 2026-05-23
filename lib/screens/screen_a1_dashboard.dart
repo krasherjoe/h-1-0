@@ -546,11 +546,12 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           const SizedBox(height: 8),
           LayoutBuilder(
             builder: (ctx, constraints) {
-              final perBtn = (constraints.maxWidth - 8 * (_enabledQuickActions.length - 1)) / _enabledQuickActions.length.clamp(1, 6);
-              final btnW = perBtn.clamp(70, 120).toDouble();
+              final gap = 4.0;
+              final perBtn = (constraints.maxWidth - gap * (_enabledQuickActions.length - 1)) / _enabledQuickActions.length.clamp(1, 6);
+              final btnW = perBtn.clamp(66, 120).toDouble();
               return Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: gap,
+                runSpacing: 6,
                 children: _enabledQuickActions.map((id) {
                   final meta = _allActionMeta[id];
                   if (meta == null) return const SizedBox.shrink();
