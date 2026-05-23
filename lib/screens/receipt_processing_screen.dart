@@ -101,16 +101,16 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
       });
       await _invoiceRepo.updatePaymentStatus(inv.id);
 
-      // 入金伝票（receipt）を生成
+      // 領収証（receipt）を元の請求書と同一内容で生成
       final slip = Invoice(
         id: const Uuid().v4(),
         customer: inv.customer,
         date: _paymentDate,
-        items: [InvoiceItem(description: '入金: ${inv.invoiceNumber}', quantity: 1, unitPrice: amount)],
-        taxRate: 0.0,
+        items: inv.items.map((i) => i.copyWith()).toList(),
+        taxRate: inv.taxRate,
         documentType: DocumentType.receipt,
         isDraft: false, isLocked: true,
-        subject: '入金: ${inv.customerNameForDisplay} (${_paymentMethod})',
+        subject: '領収: ${inv.invoiceNumber} (${_paymentMethod})',
         paymentStatus: PaymentStatus.paid,
         receivedAmount: amount,
       );
