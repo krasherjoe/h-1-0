@@ -194,6 +194,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '商品の出庫処理（売上・移動等）',
   ),
   MenuDefinition(
+    id: 'TI',
+    title: '工数管理',
+    route: 'time_tracking',
+    category: '05. 案件・工数管理',
+    iconName: 'timer',
+    description: '作業時間の記録と管理（タイマー付き）',
+  ),
+  MenuDefinition(
     id: 'IH',
     title: '伝票一覧',
     route: 'invoice_history',

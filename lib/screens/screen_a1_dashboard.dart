@@ -43,6 +43,7 @@ import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
 import 'stock_inbound_screen.dart';
 import 'stock_outbound_screen.dart';
+import 'screen_ti_time_tracking.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
 import 'invoice_issue_screen.dart';
@@ -496,6 +497,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     'customer': _ActionMeta(Icons.people, '得意先', null),
     'product': _ActionMeta(Icons.inventory_2, '商品マスター', null),
     'delivery': _ActionMeta(Icons.local_shipping, '配送記録', null),
+    'time_tracking': _ActionMeta(Icons.timer, '工数管理', null),
     'payment_slip': _ActionMeta(Icons.payments, '入金処理', null),
     'ar': _ActionMeta(Icons.account_balance, '売掛金管理', null),
   };
@@ -674,6 +676,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const StockInboundScreen()));
       case 'stock_outbound':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const StockOutboundScreen()));
+      case 'time_tracking':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const TimeTrackingScreen()));
     }
   }
 

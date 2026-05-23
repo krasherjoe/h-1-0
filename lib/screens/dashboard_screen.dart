@@ -32,6 +32,7 @@ import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
 import 'stock_inbound_screen.dart';
 import 'stock_outbound_screen.dart';
+import 'screen_ti_time_tracking.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
 import 'invoice_issue_screen.dart';
@@ -172,6 +173,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const StockInboundScreen();
       case 'stock_outbound':
         return const StockOutboundScreen();
+      case 'time_tracking':
+        return const TimeTrackingScreen();
       case 'purchase_order_input':
         return const PurchaseOrderListScreen();
       case 'purchase_return_input':

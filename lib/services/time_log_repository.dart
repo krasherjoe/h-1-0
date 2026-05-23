@@ -7,6 +7,12 @@ import 'database_helper.dart';
 class TimeLogRepository {
   final DatabaseHelper _db = DatabaseHelper();
 
+  Future<List<TimeLog>> getAll({int limit = 100}) async {
+    final db = await _db.database;
+    final rows = await db.query('time_logs', orderBy: 'date DESC, created_at DESC', limit: limit);
+    return rows.map(TimeLog.fromMap).toList();
+  }
+
   /// タスクの工数ログ一覧（日付降順）
   Future<List<TimeLog>> getByTask(String taskId) async {
     final db = await _db.database;
