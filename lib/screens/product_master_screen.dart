@@ -32,6 +32,8 @@ class ProductPreviewCard extends StatelessWidget {
     required this.name,
     required this.category,
     required this.barcode,
+    this.modelNumber,
+    this.manufacturer,
     required this.unitPrice,
     this.wholesalePrice,
     required this.stockQuantity,
@@ -40,6 +42,8 @@ class ProductPreviewCard extends StatelessWidget {
   final String name;
   final String category;
   final String barcode;
+  final String? modelNumber;
+  final String? manufacturer;
   final String unitPrice;
   final String? wholesalePrice;
   final String stockQuantity;
@@ -108,6 +112,16 @@ class ProductPreviewCard extends StatelessWidget {
                   label: 'バーコード',
                   value: barcode.isEmpty ? '未登録' : barcode,
                 ),
+                if (modelNumber != null && modelNumber!.isNotEmpty)
+                  _ProductInfoChip(
+                    label: '型番',
+                    value: modelNumber!,
+                  ),
+                if (manufacturer != null && manufacturer!.isNotEmpty)
+                  _ProductInfoChip(
+                    label: 'メーカー',
+                    value: manufacturer!,
+                  ),
               ],
             ),
           ],
@@ -545,6 +559,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         name: controller.valueOf('name'),
         category: controller.valueOf('category'),
         barcode: controller.valueOf('barcode'),
+        modelNumber: controller.valueOf('modelNumber'),
+        manufacturer: controller.valueOf('manufacturer'),
         unitPrice: controller.valueOf('defaultUnitPrice'),
         wholesalePrice: controller.valueOf('wholesalePrice'),
         stockQuantity: controller.valueOf('stockQuantity'),
