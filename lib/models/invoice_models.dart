@@ -301,7 +301,7 @@ class Invoice {
 
   // 表示用の宛名（スナップショットがあれば優先）。必ず敬称を付与。
   String get customerNameForDisplay {
-    final base = customerFormalNameSnapshot ?? customer.formalName;
+    final base = customerFormalNameSnapshot ?? customer.displayName;
     final hasHonorific = RegExp(r'(様|御中|殿)$').hasMatch(base);
     return hasHonorific ? base : '$base ${HonorificCode.toName(customer.title)}';
   }
