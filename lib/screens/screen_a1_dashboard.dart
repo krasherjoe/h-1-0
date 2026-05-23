@@ -136,12 +136,13 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       _todayInvoiceCount = (todayRows.first['cnt'] as num?)?.toInt() ?? 0;
       _todayInvoiceAmount = (todayRows.first['amt'] as num?)?.toInt() ?? 0;
 
-      // 未回収金額（payment_status != 'paid'）
+      // 未回収金額（payment_status != 'paid'、is_draft=0、document_type='invoice'）
       final unpaidRows = await db.rawQuery('''
         SELECT COALESCE(SUM(total_amount - received_amount), 0) as amt
         FROM invoices
         WHERE payment_status != 'paid'
           AND (is_draft IS NULL OR is_draft = 0)
+          AND (document_type IS NULL OR document_type = 'invoice')
       ''');
       _unpaidTotal = (unpaidRows.first['amt'] as num?)?.toInt() ?? 0;
 
