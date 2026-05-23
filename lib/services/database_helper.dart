@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 74;
+  static const _databaseVersion = 75;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2306,6 +2306,10 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'products', 'supplier_id TEXT');
       await _safeAddColumn(db, 'products', 'supplier_name TEXT');
     }
+    if (oldVersion < 75) {
+      await _safeAddColumn(db, 'products', 'model_number TEXT');
+      await _safeAddColumn(db, 'products', 'manufacturer TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2390,8 +2394,10 @@ class DatabaseHelper {
         default_unit_price_is_tax_inclusive INTEGER DEFAULT 0,
         wholesale_price INTEGER DEFAULT 0,
         wholesale_price_is_tax_inclusive INTEGER DEFAULT 0,
-        barcode TEXT,
-        category TEXT,
+          barcode TEXT,
+          model_number TEXT,
+          manufacturer TEXT,
+          category TEXT,
         category_id TEXT,
           stock_quantity INTEGER,
           supplier_id TEXT,

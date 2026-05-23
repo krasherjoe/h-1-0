@@ -18,6 +18,8 @@ class Product {
   final int wholesalePrice;
   final bool wholesalePriceIsTaxInclusive;
   final String? barcode;
+  final String? modelNumber; // 型番
+  final String? manufacturer; // メーカー
   final String? category;
   final String? categoryId; // カテゴリー ID
   final String? supplierId; // 仕入先ID
@@ -43,6 +45,8 @@ class Product {
     this.wholesalePrice = 0,
     this.wholesalePriceIsTaxInclusive = false,
     this.barcode,
+    this.modelNumber,
+    this.manufacturer,
     this.category,
     this.categoryId,
     this.supplierId,
@@ -68,6 +72,8 @@ class Product {
       'wholesale_price': wholesalePrice,
       'wholesale_price_is_tax_inclusive': wholesalePriceIsTaxInclusive ? 1 : 0,
       'barcode': barcode,
+      'model_number': modelNumber,
+      'manufacturer': manufacturer,
       'category': category,
       'category_id': categoryId,
       'supplier_id': supplierId,
@@ -95,6 +101,8 @@ class Product {
       wholesalePrice: map['wholesale_price'] ?? 0,
       wholesalePriceIsTaxInclusive: (map['wholesale_price_is_tax_inclusive'] ?? 0) == 1,
       barcode: map['barcode'],
+      modelNumber: map['model_number'] as String?,
+      manufacturer: map['manufacturer'] as String?,
       category: map['category'],
       categoryId: map['category_id'],
       supplierId: map['supplier_id'] as String?,
@@ -130,6 +138,8 @@ class Product {
     int? wholesalePrice,
     bool? wholesalePriceIsTaxInclusive,
     String? barcode,
+    String? modelNumber,
+    String? manufacturer,
     String? category,
     String? categoryId,
     String? supplierId,
@@ -153,6 +163,8 @@ class Product {
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       wholesalePriceIsTaxInclusive: wholesalePriceIsTaxInclusive ?? this.wholesalePriceIsTaxInclusive,
       barcode: barcode ?? this.barcode,
+      modelNumber: modelNumber ?? this.modelNumber,
+      manufacturer: manufacturer ?? this.manufacturer,
       category: category ?? this.category,
       categoryId: categoryId ?? this.categoryId,
       supplierId: supplierId ?? this.supplierId,

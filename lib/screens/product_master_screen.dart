@@ -422,6 +422,16 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
               },
             ),
             MasterFieldConfig(
+              key: 'modelNumber',
+              label: '型番',
+              hint: '例: PC-9801',
+            ),
+            MasterFieldConfig(
+              key: 'manufacturer',
+              label: 'メーカー',
+              hint: '例: 松下電器',
+            ),
+            MasterFieldConfig(
               key: 'barcode',
               label: 'バーコード',
               hint: 'JAN / SKU',
@@ -525,6 +535,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         'category': p?.category ?? '',
         'defaultUnitPrice': (p?.defaultUnitPrice ?? 0).toString(),
         'wholesalePrice': (p?.wholesalePrice ?? 0).toString(),
+        'modelNumber': p?.modelNumber ?? '',
+        'manufacturer': p?.manufacturer ?? '',
         'supplierId': p?.supplierName ?? '',
         'stockQuantity': (p?.stockQuantity ?? 0).toString(),
         'barcode': p?.barcode ?? '',
@@ -548,6 +560,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             int.tryParse(values['wholesalePrice'] ?? '') ?? 0;
         final stockQuantityStr = values['stockQuantity']?.trim();
         final barcode = values['barcode']?.trim();
+        final modelNumber = values['modelNumber']?.trim();
+        final manufacturer = values['manufacturer']?.trim();
         final category = values['category']?.trim();
 
         // 在庫数：空文字列の場合は null（在庫管理なし）、それ以外は数値
@@ -566,6 +580,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           supplierId: _supplierIdTmp,
           supplierName: values['supplierId']?.isNotEmpty == true ? values['supplierId'] : null,
           stockQuantity: stockQuantity,
+          modelNumber: (modelNumber?.isEmpty ?? true) ? null : modelNumber,
+          manufacturer: (manufacturer?.isEmpty ?? true) ? null : manufacturer,
           barcode: (barcode?.isEmpty ?? true) ? null : barcode,
           category: (category?.isEmpty ?? true) ? null : category,
           odooId: product?.odooId,
@@ -913,6 +929,19 @@ PopupMenuItem(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
                                   child: Text(p.supplierName ?? p.supplierId!, style: TextStyle(fontSize: 9, color: Colors.teal.shade700)),
+                                ),
+                              if (p.modelNumber != null && p.modelNumber!.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text(p.modelNumber!, style: TextStyle(fontSize: 9, color: Colors.indigo.shade700)),
+                                ),
+                              if (p.manufacturer != null && p.manufacturer!.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text(p.manufacturer!, style: TextStyle(fontSize: 9, color: Colors.amber.shade800)),
                                 ),
                             ],
                           ),
