@@ -321,11 +321,6 @@ Future<pw.Document> buildInvoiceDocument(
                     ],
                     if (invoice.tax > 0) ...[
                       ...(() {
-                        // 免税事業者かつT番号がない場合は消費税を表示しない
-                        final bool hasRegNumber = companyInfo.registrationNumber != null && companyInfo.registrationNumber!.isNotEmpty;
-                        if (companyInfo.isExemptTaxpayer && !hasRegNumber) {
-                          return [];
-                        }
                         final mode = companyInfo.taxDisplayMode.isNotEmpty ? companyInfo.taxDisplayMode : 'normal';
                         if (invoice.isTaxInclusiveMode) {
                           return [
