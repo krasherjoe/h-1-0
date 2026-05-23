@@ -8,6 +8,7 @@ import '../models/invoice_models.dart';
 import '../services/customer_repository.dart';
 import '../services/delivery_repository.dart';
 import '../services/pdf_generator.dart';
+import '../services/stock_transaction_repository.dart';
 import '../services/storage_monitor.dart';
 import '../utils/theme_utils.dart';
 import '../widgets/document_card.dart';
@@ -160,6 +161,20 @@ class _DeliveryListScreenState extends State<DeliveryListScreen> {
       deliveryAddress: delivery.deliveryAddress, deliveryNote: delivery.deliveryNote,
     );
     await _deliveryRepo.update(updated);
+    // 配送確定時に在庫を自動出庫
+    final stockRepo = StockTransactionRepository();
+    for (final item in delivery.items) {
+      if (item.productId.isNotEmpty && item.quantity > 0) {
+        await stockRepo.outbound(
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          type: 'delivery',
+          referenceId: delivery.id,
+          referenceNumber: delivery.documentNumber,
+        );
+      }
+    }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('確定しました')));
     await _load();
