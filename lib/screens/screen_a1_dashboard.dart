@@ -1092,9 +1092,9 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final lightColor = isDark ? accentColor.withValues(alpha: 0.2) : accentColor.withValues(alpha: 0.08);
-    final darkColor = isDark ? accentColor.withValues(alpha: 0.1) : accentColor.withValues(alpha: 0.03);
-    final textColor = isDark ? Colors.white.withValues(alpha: 0.85) : accentColor;
+    final lightColor = isDark ? const Color(0xFF2A2A3A) : const Color(0xFFF5F5F5);
+    final darkColor = isDark ? const Color(0xFF3A3A4E) : const Color(0xFFE0E0E0);
+    final textColor = isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey[800]!;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1108,7 +1108,8 @@ class _QuickActionButton extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6, offset: const Offset(0, 3)),
+              BoxShadow(blurRadius: 8, offset: const Offset(-6, -6), color: Colors.white.withValues(alpha: 0.6)),
+              BoxShadow(blurRadius: 8, offset: const Offset(6, 6), color: Colors.black.withValues(alpha: 0.15)),
             ],
           ),
           child: Column(
