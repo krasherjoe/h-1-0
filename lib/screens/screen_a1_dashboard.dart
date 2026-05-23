@@ -499,6 +499,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     const Spacer(),
                     TextButton(onPressed: () {
                       setSheetState(() => _enabledQuickActions = List.from(_defaultQuickActions));
+                      _saveQuickActions();
+                      setState(() {});
                     }, child: const Text('デフォルトに戻す')),
                   ],
                 ),
@@ -531,7 +533,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
               ),
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('完了'))),
+                child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('設定保存'))),
               ),
             ],
           ),
