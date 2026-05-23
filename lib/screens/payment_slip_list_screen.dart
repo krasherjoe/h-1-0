@@ -52,7 +52,7 @@ class _PaymentSlipListScreenState extends State<PaymentSlipListScreen> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('入金伝票一覧'),
+        title: const Text('RP:入金伝票一覧'),
         actions: [
           TextButton.icon(
             onPressed: () async {
