@@ -1,3 +1,34 @@
+import 'dart:convert';
+
+/// 定期請求明細テンプレート
+class SubscriptionLineItem {
+  final String description;
+  final int quantity;
+  final int unitPrice;
+  final double taxRate;
+
+  const SubscriptionLineItem({
+    required this.description,
+    this.quantity = 1,
+    required this.unitPrice,
+    this.taxRate = 0.10,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'description': description,
+    'quantity': quantity,
+    'unitPrice': unitPrice,
+    'taxRate': taxRate,
+  };
+
+  factory SubscriptionLineItem.fromJson(Map<String, dynamic> json) => SubscriptionLineItem(
+    description: json['description'] as String,
+    quantity: json['quantity'] as int? ?? 1,
+    unitPrice: json['unitPrice'] as int,
+    taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.10,
+  );
+}
+
 /// 定期請求（サブスクリプション）モデル
 class Subscription {
   final String id;
@@ -11,6 +42,7 @@ class Subscription {
   final DateTime startDate;
   final DateTime? nextBillingDate;
   final String? description;
+  final List<SubscriptionLineItem> lineItems;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -27,6 +59,7 @@ class Subscription {
     required this.startDate,
     this.nextBillingDate,
     this.description,
+    this.lineItems = const [],
     this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
@@ -44,6 +77,7 @@ class Subscription {
     'start_date': startDate.toIso8601String(),
     'next_billing_date': nextBillingDate?.toIso8601String(),
     'description': description,
+    'line_items': lineItems.isNotEmpty ? jsonEncode(lineItems.map((l) => l.toJson()).toList()) : null,
     'is_active': isActive ? 1 : 0,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
@@ -61,6 +95,7 @@ class Subscription {
     startDate: DateTime.parse(map['start_date'] as String),
     nextBillingDate: map['next_billing_date'] != null ? DateTime.parse(map['next_billing_date'] as String) : null,
     description: map['description'] as String?,
+    lineItems: map['line_items'] != null ? (jsonDecode(map['line_items'] as String) as List<dynamic>).map((e) => SubscriptionLineItem.fromJson(e as Map<String, dynamic>)).toList() : [],
     isActive: (map['is_active'] as int? ?? 1) == 1,
     createdAt: DateTime.parse(map['created_at'] as String),
     updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -77,6 +112,7 @@ class Subscription {
     DateTime? startDate,
     DateTime? nextBillingDate,
     String? description,
+    List<SubscriptionLineItem>? lineItems,
     bool? isActive,
   }) => Subscription(
     id: id,
@@ -90,6 +126,7 @@ class Subscription {
     startDate: startDate ?? this.startDate,
     nextBillingDate: nextBillingDate ?? this.nextBillingDate,
     description: description ?? this.description,
+    lineItems: lineItems ?? this.lineItems,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt,
     updatedAt: updatedAt,

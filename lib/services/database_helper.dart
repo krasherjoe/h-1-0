@@ -2324,13 +2324,13 @@ class DatabaseHelper {
           start_date TEXT NOT NULL,
           next_billing_date TEXT,
           description TEXT,
+          line_items TEXT,
           is_active INTEGER DEFAULT 1,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
       ''');
     }
-  }
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
