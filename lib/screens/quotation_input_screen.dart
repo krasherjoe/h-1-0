@@ -143,6 +143,42 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
     });
   }
 
+  Future<void> _batchConvertToOrders() async {
+    final confirmed = await _quotations.where((q) => !q.isDraft && q.documentType == DocumentType.estimation).toList();
+    if (confirmed.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('確定済みの見積がありません')));
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('一括受注変換'),
+        content: Text('${confirmed.length}件の確定済み見積を受注に変換しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('変換')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    var count = 0;
+    for (final q in confirmed) {
+      try {
+        final order = q.copyWith(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          documentType: DocumentType.order,
+          isDraft: true, isLocked: false, date: DateTime.now(),
+          filePath: null, metaJson: null, metaHash: null,
+        );
+        await _invoiceRepo.saveInvoice(order);
+        count++;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$count件の見積を受注に変換しました')));
+    await _load();
+  }
+
   Future<void> _createQuotation() async {
     await Navigator.push(
       context,
@@ -251,9 +287,9 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
   }
 
   Future<void> _convertToOrder(Invoice quotation) async {
-    final newInvoice = quotation.copyWith(
+    final newOrder = quotation.copyWith(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      documentType: DocumentType.invoice,
+      documentType: DocumentType.order,
       isDraft: true,
       isLocked: false,
       date: DateTime.now(),
@@ -267,7 +303,8 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
       MaterialPageRoute(
         builder: (_) => InvoiceInputForm(
           onInvoiceGenerated: (_, __) {},
-          existingInvoice: newInvoice,
+          existingInvoice: newOrder,
+          initialDocumentType: DocumentType.order,
           startViewMode: false,
           showCopyBadge: true,
         ),
@@ -275,7 +312,7 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
     );
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('受注（請求）伝票に変換しました。内容を確認して保存してください')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('見積を受注に変換しました。内容を確認して保存してください')));
     await _load();
   }
 
@@ -339,6 +376,21 @@ class _QuotationInputScreenState extends State<QuotationInputScreen> {
         backgroundColor: documentTypeColor(DocumentType.estimation, cs, isDark),
         foregroundColor: appBarForeground(documentTypeColor(DocumentType.estimation, cs, isDark)),
         title: const Text('Q1:見積入力'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (v) async {
+              if (v == 'batch_convert') await _batchConvertToOrders();
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'batch_convert', child: ListTile(
+                leading: Icon(Icons.assignment_turned_in),
+                title: Text('一括受注変換'),
+                subtitle: Text('確定済み見積を受注に変換'),
+                contentPadding: EdgeInsets.zero,
+              )),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createQuotation,
