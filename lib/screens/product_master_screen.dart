@@ -955,7 +955,7 @@ PopupMenuItem(
                                   decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
                                   child: Text(p.manufacturer!, style: TextStyle(fontSize: 9, color: Colors.amber.shade800)),
                                 ),
-                              if (p.wholesalePrice > 0)
+                              if (p.wholesalePrice > 0 && p.defaultUnitPrice > 0)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
@@ -965,7 +965,7 @@ PopupMenuItem(
                                     borderRadius: BorderRadius.circular(3),
                                   ),
                                   child: Text(
-                                    '粗利 ¥${NumberFormat('#,###').format(p.defaultUnitPrice - p.wholesalePrice)}',
+                                    '粗利 ¥${NumberFormat('#,###').format(p.defaultUnitPrice - p.wholesalePrice)} (${((p.defaultUnitPrice - p.wholesalePrice) / p.defaultUnitPrice * 100).toStringAsFixed(0)}%)',
                                     style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w600,
