@@ -419,8 +419,9 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             icon: Icons.warning_amber,
             label: '未回収金額',
             value: '\u00a5${_formatAmount(_unpaidTotal)}',
-            sub: '入金待ち',
+            sub: 'タップで入金伝票',
             accentColor: cs.error,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentSlipListScreen())),
           ),
           const SizedBox(width: 12),
           _SummaryCard(
@@ -444,7 +445,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     return amount.toString();
   }
 
-  static const _defaultQuickActions = ['invoice', 'estimate', 'order', 'project', 'history'];
+  static const _defaultQuickActions = ['invoice', 'estimate', 'order', 'project', 'history', 'payment_slip'];
 
   static const _allActionMeta = {
     'invoice': _ActionMeta(Icons.receipt_long, '新規請求', DocumentType.invoice),
