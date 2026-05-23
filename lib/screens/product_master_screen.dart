@@ -551,7 +551,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           wholesalePrice: wholesalePrice,
           wholesalePriceIsTaxInclusive: _taxFlags['wholesalePriceIsTaxInclusive'] ?? false,
           supplierId: values['supplierId']?.isNotEmpty == true ? values['supplierId'] : null,
-          supplierName: values['supplierId']?.isNotEmpty == true ? _supplierNameHint.startsWith('タップ') ? null : _supplierNameHint : null,
+          supplierName: values['supplierId']?.isNotEmpty == true ? (_supplierNameHint.startsWith('タップ') ? values['supplierId'] : _supplierNameHint) : null,
           stockQuantity: stockQuantity,
           barcode: (barcode?.isEmpty ?? true) ? null : barcode,
           category: (category?.isEmpty ?? true) ? null : category,
@@ -570,8 +570,9 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
       try {
         final all = await _productRepo.getAllProducts();
         final similar = all.where((p) =>
-          p.id != result.id &&
-          p.name.contains(result.name) || result.name.contains(p.name)
+          p.id != result.id && (
+            p.name.contains(result.name) || result.name.contains(p.name)
+          )
         ).take(5).toList();
         if (similar.isNotEmpty) {
           final proceed = await showDialog<bool>(
