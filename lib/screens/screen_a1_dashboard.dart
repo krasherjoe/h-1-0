@@ -544,24 +544,14 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             ],
           ),
           const SizedBox(height: 8),
-          LayoutBuilder(
-            builder: (ctx, constraints) {
-              final gap = 8.0;
-              final minBtn = 72.0;
-              final maxBtns = ((constraints.maxWidth + gap) / (minBtn + gap)).floor();
-              final showCount = _enabledQuickActions.length.clamp(1, maxBtns);
-              final btnWidth = (constraints.maxWidth - (showCount - 1) * gap) / showCount;
-              return SizedBox(
-                height: 72,
-                child: Row(
-                  children: _enabledQuickActions.take(showCount).map((id) {
-                    final meta = _allActionMeta[id];
-                    if (meta == null) return const SizedBox.shrink();
-                    return SizedBox(width: btnWidth, child: _buildActionButton(meta, id));
-                  }).toList(),
-                ),
-              );
-            },
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _enabledQuickActions.map((id) {
+              final meta = _allActionMeta[id];
+              if (meta == null) return const SizedBox.shrink();
+              return _buildActionButton(meta, id);
+            }).toList(),
           ),
         ],
       ),
@@ -1021,7 +1011,7 @@ class _SummaryCard extends StatelessWidget {
           ),
         ),
       ),
-    );
+      );
   }
 }
 
@@ -1058,11 +1048,11 @@ class _QuickActionButton extends StatelessWidget {
         ? Colors.black.withValues(alpha: 0.5)
         : Colors.black.withValues(alpha: 0.3);
     final textColor = isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey[800]!;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 82,
+        padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
@@ -1083,7 +1073,6 @@ class _QuickActionButton extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
