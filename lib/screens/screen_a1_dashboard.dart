@@ -1074,7 +1074,7 @@ class _QuickActionButton extends StatelessWidget {
             children: [
               Icon(icon, color: accentColor, size: 26),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w600)),
+              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
