@@ -60,6 +60,22 @@ class InvoiceCalculatorKeypad extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
+        for (final num in ['1', '2', '3', '0'])
+          ElevatedButton(
+            onPressed: () {
+              controller.text += num;
+              onUpdate();
+            },
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+            child: Text(
+              num,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
       ],
     );
   }
