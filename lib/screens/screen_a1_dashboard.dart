@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_settings_repository.dart';
 import '../services/database_helper.dart';
 import '../services/invoice_repository.dart';
@@ -76,6 +77,9 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   bool _projectsCollapsed = false;
   final Set<String> _collapsedCategories = <String>{};
 
+  List<String> _enabledQuickActions = [];
+  static const _kQuickActionsKey = 'quick_actions_enabled';
+
   // サマリー
   int _todayInvoiceCount = 0;
   int _todayInvoiceAmount = 0;
@@ -99,6 +103,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     final visibleMenu = isDebug ? normalizedMenu : normalizedMenu.where((item) => item.enabled).toList();
     final unlocked = await _repo.getDashboardHistoryUnlocked();
     final showCategoryDesc = await _repo.getDashboardShowCategoryDescriptions();
+    await _loadQuickActions();
 
     // サマリー取得
     await _loadSummary();
@@ -438,91 +443,177 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     return amount.toString();
   }
 
+  static const _defaultQuickActions = ['invoice', 'estimate', 'order', 'project', 'history'];
+
+  static const _allActionMeta = {
+    'invoice': _ActionMeta(Icons.receipt_long, '新規請求', DocumentType.invoice),
+    'estimate': _ActionMeta(Icons.description, '新規見積', DocumentType.estimation),
+    'order': _ActionMeta(Icons.assignment_turned_in, '新規受注', DocumentType.order),
+    'project': _ActionMeta(Icons.assignment, '案件管理', null),
+    'history': _ActionMeta(Icons.history, '請求履歴', null),
+    'sales': _ActionMeta(Icons.point_of_sale, '売上入力', null),
+    'customer': _ActionMeta(Icons.people, '得意先', null),
+    'product': _ActionMeta(Icons.inventory_2, '商品マスター', null),
+    'delivery': _ActionMeta(Icons.local_shipping, '配送記録', null),
+  };
+
+  Future<void> _loadQuickActions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kQuickActionsKey);
+    setState(() {
+      _enabledQuickActions = raw != null ? raw.split(',') : List.from(_defaultQuickActions);
+    });
+  }
+
+  Future<void> _saveQuickActions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kQuickActionsKey, _enabledQuickActions.join(','));
+  }
+
+  void _showQuickActionSettings() {
+    final ordered = _allActionMeta.keys.toList();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheetState) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Text('クイックアクション設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Spacer(),
+                    TextButton(onPressed: () {
+                      setSheetState(() => _enabledQuickActions = List.from(_defaultQuickActions));
+                    }, child: const Text('デフォルトに戻す')),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.5),
+                child: ListView(
+                  shrinkWrap: true,
+                  children: ordered.map((id) {
+                    final meta = _allActionMeta[id]!;
+                    final enabled = _enabledQuickActions.contains(id);
+                    return ListTile(
+                      leading: Icon(meta.icon, color: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : null),
+                      title: Text(meta.label),
+                      trailing: Switch(
+                        value: enabled,
+                        onChanged: (v) {
+                          setSheetState(() {
+                            if (v) _enabledQuickActions.add(id);
+                            else _enabledQuickActions.remove(id);
+                          });
+                          _saveQuickActions();
+                          setState(() {});
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('完了'))),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickActions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('クイックアクション', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
           Row(
             children: [
-              _QuickActionButton(
-                icon: Icons.receipt_long,
-                label: '新規請求',
-                accentColor: documentTypeBadgeColor(DocumentType.invoice),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => InvoiceInputForm(
-                      onInvoiceGenerated: (invoice, path) async {
-                        final locationService = LocationService();
-                        final pos = await locationService.getCurrentLocation();
-                        if (pos != null) {
-                          final customerRepo = CustomerRepository();
-                          await customerRepo.addGpsHistory(invoice.customer.id, pos.latitude, pos.longitude);
-                        }
-                        if (!mounted) return;
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: invoice)));
-                      },
-                      initialDocumentType: DocumentType.invoice,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _QuickActionButton(
-                icon: Icons.description,
-                label: '新規見積',
-                accentColor: documentTypeBadgeColor(DocumentType.estimation),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => InvoiceInputForm(
-                      onInvoiceGenerated: (invoice, path) {
-                        if (!mounted) return;
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: invoice)));
-                      },
-                      initialDocumentType: DocumentType.estimation,
-                    ),
-                  ),
-                ),
-              ),
-              _QuickActionButton(
-                icon: Icons.assignment_turned_in,
-                label: '新規受注',
-                accentColor: documentTypeBadgeColor(DocumentType.order),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OrderInputScreen()),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _QuickActionButton(
-                icon: Icons.assignment,
-                label: '案件管理',
-                accentColor: documentTypeBadgeColor(DocumentType.order),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen())),
-              ),
-              const SizedBox(width: 8),
-              _QuickActionButton(
-                icon: Icons.history,
-                label: '請求履歴',
-                accentColor: documentTypeBadgeColor(DocumentType.receipt),
-                onTap: () {
-                  if (!_historyUnlocked) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
-                    return;
-                  }
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceHistoryScreen(initialUnlocked: true)));
-                },
-              ),
+              const Text('クイックアクション', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Spacer(),
+              IconButton(icon: const Icon(Icons.settings, size: 20), onPressed: _showQuickActionSettings, tooltip: 'カスタマイズ'),
             ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: _enabledQuickActions.map((id) {
+              final meta = _allActionMeta[id];
+              if (meta == null) return const SizedBox.shrink();
+              return _buildActionButton(meta, id);
+            }).toList(),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildActionButton(_ActionMeta meta, String id) {
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.only(left: _enabledQuickActions.first == id ? 0 : 8),
+        child: _QuickActionButton(
+          icon: meta.icon,
+          label: meta.label,
+          accentColor: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : Theme.of(context).colorScheme.primary,
+          onTap: () => _handleQuickAction(id),
+        ),
+      ),
+    );
+  }
+
+  void _handleQuickAction(String id) {
+    switch (id) {
+      case 'invoice':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceInputForm(
+          onInvoiceGenerated: (invoice, path) async {
+            if (!mounted) return;
+            final locationService = LocationService();
+            final pos = await locationService.getCurrentLocation();
+            if (pos != null) {
+              final customerRepo = CustomerRepository();
+              await customerRepo.addGpsHistory(invoice.customer.id, pos.latitude, pos.longitude);
+            }
+            if (!mounted) return;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: invoice)));
+          },
+          initialDocumentType: DocumentType.invoice,
+        )));
+      case 'estimate':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceInputForm(
+          onInvoiceGenerated: (invoice, path) {
+            if (!mounted) return;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailPage(invoice: invoice)));
+          },
+          initialDocumentType: DocumentType.estimation,
+        )));
+      case 'order':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderInputScreen()));
+      case 'project':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen()));
+      case 'history':
+        if (!_historyUnlocked) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ロックを解除してください')));
+          return;
+        }
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceHistoryScreen(initialUnlocked: true)));
+      case 'customer':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMasterScreen()));
+      case 'product':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductMasterScreen()));
+      case 'sales':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesEntryScreen()));
+      case 'delivery':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const DeliveryListScreen()));
+    }
   }
 
   Widget _buildRecentInvoices() {
@@ -928,6 +1019,13 @@ class _SummaryCard extends StatelessWidget {
 }
 
 // ===== クイックアクション（ガラス調） =====
+class _ActionMeta {
+  const _ActionMeta(this.icon, this.label, this.docType);
+  final IconData icon;
+  final String label;
+  final DocumentType? docType;
+}
+
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
