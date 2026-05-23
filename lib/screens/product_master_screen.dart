@@ -966,6 +966,26 @@ PopupMenuItem(
                                 const SizedBox(width: 8),
                                 Text('仕入 ¥${NumberFormat('#,###').format(p.wholesalePrice)}',
                                     style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: (p.defaultUnitPrice - p.wholesalePrice) >= 0
+                                        ? Colors.green.withValues(alpha: 0.12)
+                                        : Colors.red.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Text(
+                                    '粗利 ¥${NumberFormat('#,###').format(p.defaultUnitPrice - p.wholesalePrice)}',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                      color: (p.defaultUnitPrice - p.wholesalePrice) >= 0
+                                          ? Colors.green.shade700
+                                          : Colors.red.shade700,
+                                    ),
+                                  ),
+                                ),
                               ],
                               const Spacer(),
                               if (!p.isNonStockCategory)
