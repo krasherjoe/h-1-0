@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_settings_repository.dart';
 import '../services/auto_backup_service.dart';
-import '../services/database_helper.dart';
+import '../services/database_backup_ui.dart';
 import '../services/drive_backup_service.dart';
 import '../services/google_account_service.dart';
 import 'drive_backup_screen.dart';
@@ -53,8 +53,7 @@ class _BackupSettingsScreenState extends State<BackupSettingsScreen> {
 
   Future<void> _loadBackupStatus() async {
     try {
-      final localService = LocalBackupService();
-      final lastLocal = await localService.getLastBackupTime();
+      final lastLocal = await getLastBackupTime();
 
       setState(() {
         _localBackupStatus = lastLocal != null

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import '../services/database_helper.dart' show DatabaseHelper, LocalBackupService;
+import '../services/database_backup_ui.dart';
+import '../services/database_helper.dart' show DatabaseHelper;
 
 /// M1:リストア画面
 /// バックアップからのリストアをステップバイステップで表示
@@ -576,9 +577,6 @@ class _RestoreScreenState extends State<RestoreScreen> {
     });
 
     try {
-      // データベースのリストアを実行
-      final localBackupService = LocalBackupService();
-      
       setState(() {
         _progress = 0.5;
         _statusMessage = 'データベースをコピーしています...';
@@ -588,7 +586,7 @@ class _RestoreScreenState extends State<RestoreScreen> {
       final dbHelper = DatabaseHelper();
       final dbPath = await dbHelper.getDatabasePath();
       
-      await localBackupService.restoreFromBackup(_selectedFilePath!, dbPath);
+      await restoreFromBackup(_selectedFilePath!, dbPath);
 
       setState(() {
         _progress = 1.0;

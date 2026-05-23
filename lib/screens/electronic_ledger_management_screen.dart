@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 import '../models/electronic_ledger_model.dart';
 import '../services/electronic_ledger_repository.dart';
-import '../services/database_helper.dart';
+import '../services/database_backup_ui.dart';
 import '../services/activity_log_repository.dart';
 
 /// 電子帳簿管理画面
@@ -20,7 +20,6 @@ class ElectronicLedgerManagementScreen extends StatefulWidget {
 
 class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManagementScreen> {
   final ElectronicLedgerRepository _ledgerRepo = ElectronicLedgerRepository();
-  final LocalBackupService _backupService = LocalBackupService();
   final ActivityLogRepository _activityLog = ActivityLogRepository();
 
   List<Map<String, dynamic>> _ledgers = [];
@@ -188,7 +187,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
   Future<void> _loadQuarantine() async {
     setState(() => _isLoadingQuarantine = true);
     try {
-      final list = await _backupService.getQuarantineList();
+      final list = await getQuarantineList();
       if (!mounted) return;
       setState(() {
         _quarantinedBackups = list;
@@ -231,7 +230,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
 
     setState(() => _isLoadingQuarantine = true);
     try {
-      await _backupService.deleteQuarantinedBackup(backup.path);
+      await deleteQuarantinedBackup(backup.path);
       // P5: 削除操作をaudit_logsに記録（誰が・いつ・何を削除したか追跡）
       await _activityLog.logAction(
         action: 'DELETE_QUARANTINE_BACKUP',
@@ -365,7 +364,7 @@ class _ElectronicLedgerManagementScreenState extends State<ElectronicLedgerManag
                     if (confirmed == true) {
                       final targets = List<BackupFile>.from(_quarantinedBackups);
                       for (final backup in targets) {
-                        await _backupService.deleteQuarantinedBackup(
+                        await deleteQuarantinedBackup(
                           backup.path,
                         );
                         // P5: 一括削除もaudit_logsに記録

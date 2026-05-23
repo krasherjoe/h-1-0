@@ -11,6 +11,7 @@ import '../models/invoice_list_style.dart';
 import '../models/sync_preferences.dart';
 import '../services/app_settings_repository.dart';
 import '../services/auto_backup_service.dart';
+import '../services/database_backup_ui.dart';
 import '../services/database_helper.dart';
 import '../services/drive_backup_service.dart';
 import '../services/google_account_service.dart';
@@ -93,8 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// バックアップ状況を読み込み（概要表示用）
   Future<void> _loadBackupStatus() async {
     try {
-      final localService = LocalBackupService();
-      final lastLocal = await localService.getLastBackupTime();
+      final lastLocal = await getLastBackupTime();
 
       setState(() {
         _localBackupStatus = lastLocal != null
@@ -1578,7 +1578,7 @@ style: OutlinedButton.styleFrom(
       builder: (context) => Dialog(
         child: StatefulBuilder(
           builder: (context, setDialogState) {
-            return DatabaseHelper.showLocalBackupManagement(
+            return showLocalBackupManagement(
               databasePath: dbPath,
               onRestore: (backupPath) async {
                 Navigator.of(context).pop(); // ダイアログを閉じる
