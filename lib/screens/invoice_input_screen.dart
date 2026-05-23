@@ -362,11 +362,9 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           _selectedBankIndex = defaultBankIdx < bankAccounts.length ? defaultBankIdx : -1;
         }
       } else {
-        // 免税事業者でT番号なしの場合は非課税がデフォルト
-        final bool isExemptNoTNumber = company.isExemptTaxpayer &&
-            (company.registrationNumber == null || company.registrationNumber!.isEmpty);
-        _taxRate = isExemptNoTNumber ? 0.0 : (defaultTaxRate > 0 ? defaultTaxRate : 0.10);
-        _includeTax = !isExemptNoTNumber;
+        // 免税事業者でも税計算は常に行う（内部管理用）
+        _taxRate = defaultTaxRate > 0 ? defaultTaxRate : 0.10;
+        _includeTax = true;
         _isDraft = true;
         _documentType = widget.initialDocumentType;
         _currentId = null;
