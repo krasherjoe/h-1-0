@@ -946,84 +946,36 @@ floatingActionButton: FloatingActionButton(
                     },
                   ),
                   const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    label: Text(
-                      "削除",
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    ),
-                    onPressed: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("削除の確認（電子帳簿保存法）"),
-                          content: Text(
-                            "${p.name}を削除してよろしいですか？\n※電子帳簿保存法により、実際の削除は行わずに非表示フラグのみを設定します。履歴は保持されます。",
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text("キャンセル"),
-                            ),
-TextButton(
-                               onPressed: () => Navigator.pop(context, true),
-                               child: Text(
-                                 "削除",
-                                 style: TextStyle(color: Theme.of(context).colorScheme.error),
-                               ),
-                             ),
-                           ],
-                         ),
-                       );
-                      if (!context.mounted) return;
-                      if (confirmed == true) {
-                        await _productRepo.setHiddenProduct(p.id, true);
-                        if (!context.mounted) return;
-                        Navigator.pop(context); // sheet
-                        _loadProducts();
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
                   if (!p.isLocked)
                     OutlinedButton.icon(
                       icon: Icon(
-                        Icons.delete_outline,
+                        Icons.visibility_off,
                         color: Theme.of(context).colorScheme.error,
                       ),
                       label: Text(
-                        "削除",
+                        "非表示",
                         style: TextStyle(color: Theme.of(context).colorScheme.error),
                       ),
                       onPressed: () async {
                         final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text("削除の確認"),
-                            content: Text("${p.name}を削除してよろしいですか？"),
+                            title: const Text("非表示の確認"),
+                            content: Text("${p.name}を非表示にしますか？\n（電子帳簿保存法対応：履歴は保持されます）"),
                             actions: [
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("キャンセル")),
                               TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text("キャンセル"),
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text("非表示", style: TextStyle(color: Theme.of(context).colorScheme.error)),
                               ),
-TextButton(
-                               onPressed: () => Navigator.pop(context, true),
-                               child: Text(
-                                 "削除",
-                                 style: TextStyle(color: Theme.of(context).colorScheme.error),
-                               ),
-                             ),
-                           ],
-                         ),
-                       );
-                      if (!context.mounted) return;
-                      if (confirmed == true) {
-                        await _productRepo.deleteProduct(p.id);
+                            ],
+                          ),
+                        );
+                        if (!context.mounted) return;
+                        if (confirmed == true) {
+                          await _productRepo.setHiddenProduct(p.id, true);
                           if (!context.mounted) return;
-                          Navigator.pop(context); // sheet
+                          Navigator.pop(context);
                           _loadProducts();
                         }
                       },
