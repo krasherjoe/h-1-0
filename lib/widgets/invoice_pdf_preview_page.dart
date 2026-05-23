@@ -302,17 +302,17 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                                 if (!confirmed) return;
                                 final ok = await widget.onFormalIssue!();
                                 if (ok && mounted) {
-                                  setState(() => _issued = true);
+                                  setState(() {
+                                    _issued = true;
+                                    _stablePdfBuilder = (format) => _buildPdfBytes(format);
+                                  });
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('正式発行が完了しました'),
-                                        duration: Duration(seconds: 2),
                                       ),
                                     );
                                   }
-                                  await Future.delayed(const Duration(milliseconds: 500));
-                                  if (mounted) Navigator.pop(context);
                                 }
                               }
                             : null,
