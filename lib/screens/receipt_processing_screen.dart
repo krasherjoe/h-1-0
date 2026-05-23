@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../models/invoice_models.dart';
 import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../services/invoice_repository.dart';
@@ -85,11 +86,29 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
       final inv = _selected!;
       final newReceived = inv.receivedAmount + amount;
       final newStatus = newReceived >= inv.totalAmount ? PaymentStatus.paid : PaymentStatus.partial;
+
+      // 元の請求書の入金ステータス更新
       final updated = inv.copyWith(
         paymentStatus: newStatus,
         receivedAmount: newReceived,
       );
       await _invoiceRepo.saveInvoice(updated);
+
+      // 入金伝票（receipt）を生成
+      final slip = Invoice(
+        id: const Uuid().v4(),
+        customer: inv.customer,
+        date: _paymentDate,
+        items: [InvoiceItem(description: '入金: ${inv.invoiceNumber}', quantity: 1, unitPrice: amount)],
+        taxRate: 0.0,
+        documentType: DocumentType.receipt,
+        isDraft: false, isLocked: true,
+        subject: '入金: ${inv.customerNameForDisplay} (${_paymentMethod})',
+        paymentStatus: PaymentStatus.paid,
+        receivedAmount: amount,
+      );
+      await _invoiceRepo.saveInvoice(slip);
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${inv.customerNameForDisplay} から ${_nf.format(amount)} の入金を登録しました')),
