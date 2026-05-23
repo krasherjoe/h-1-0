@@ -116,6 +116,12 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
         receivedAmount: amount,
       );
       await _invoiceRepo.saveInvoice(slip);
+      await db.update(
+        'invoices',
+        {'is_receipt_issued': 1, 'receipt_issued_at': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [inv.id],
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

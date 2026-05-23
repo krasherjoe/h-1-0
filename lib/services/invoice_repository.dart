@@ -485,12 +485,22 @@ class InvoiceRepository {
   /// 指定したsourceDocumentIdに紐づく領収書を取得する（請求書→領収書の紐付け確認用）
   Future<Invoice?> getReceiptBySourceDocumentId(String sourceDocumentId) async {
     final db = await _dbHelper.database;
-    final rows = await db.query(
+    // まず source_document_id で検索
+    var rows = await db.query(
       'invoices',
       where: 'source_document_id = ? AND document_type = ?',
       whereArgs: [sourceDocumentId, DocumentType.receipt.name],
       limit: 1,
     );
+    // なければ is_receipt_issued が立っている請求書から領収書を探す
+    if (rows.isEmpty) {
+      rows = await db.rawQuery('''
+        SELECT r.* FROM invoices r
+        JOIN invoices s ON s.id = r.source_document_id OR r.subject LIKE ?
+        WHERE r.document_type = 'receipt' AND s.id = ?
+        LIMIT 1
+      ''', ['%${sourceDocumentId}%', sourceDocumentId]);
+    }
     if (rows.isEmpty) return null;
     final customerRepo = CustomerRepository();
     final customers = await customerRepo.getAllCustomers();
