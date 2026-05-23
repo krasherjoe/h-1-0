@@ -450,11 +450,13 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   String _formatAmount(int amount) {
-    if (amount >= 10000) {
-      final man = amount / 10000;
-      return '${man.toStringAsFixed(1)}万';
+    final s = amount.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
     }
-    return amount.toString();
+    return buf.toString();
   }
 
   static const _defaultQuickActions = ['invoice', 'estimate', 'order', 'project', 'history', 'payment_slip'];
@@ -850,7 +852,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text('\u00a5${project.totalAmount}',
+                        Text('\u00a5${_formatAmount(project.totalAmount)}',
                             style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
