@@ -56,11 +56,34 @@
 
 <div class="card-list">
 
-  <!-- NeuCard -->
-  <div class="neu-card">
+  <!-- NeuCard (Standard) -->
+  <div class="neu-card" style="background:#e8e8e8;">
     <div class="icon">🚀</div>
-    <div class="title">タイトル</div>
-    <div class="desc">ニューモーフィズム<br>ここに説明文が入ります</div>
+    <div class="title">Neu Standard</div>
+    <div class="desc">基本のニューモーフィズム<br>グレー背景＋白/灰の影</div>
+  </div>
+
+  <!-- NeuCard (Metallic Silver) -->
+  <div class="neu-card" style="background:linear-gradient(145deg,#d8d8d8,#f0f0f0); box-shadow:-10px -10px 10px rgba(255,255,255,0.5), 10px 10px 10px rgba(0,0,0,0.3);">
+    <div class="icon" style="color:#666;">⚙️</div>
+    <div class="title">Metallic Silver</div>
+    <div class="desc">メタリックシルバー<br>グラデ＋強い影で金属感</div>
+  </div>
+
+  <!-- NeuCard (Gold) -->
+  <div class="neu-card" style="background:linear-gradient(145deg,#d4a849,#f2d780); box-shadow:-10px -10px 10px rgba(255,255,200,0.4), 10px 10px 10px rgba(100,70,0,0.3);">
+    <div class="icon" style="color:#8a6a1a;">👑</div>
+    <div class="title">Metallic Gold</div>
+    <div class="desc">ゴールド<br>暖色グラデ＋金色影</div>
+  </div>
+
+  <!-- NeuCard (Glass) -->
+  <div style="width:304px;height:264px;margin:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:24px;">
+    <div class="neu-card" style="background:rgba(255,255,255,0.15); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.25); box-shadow:0 8px 32px rgba(0,0,0,0.2); color:white;">
+      <div class="icon" style="color:rgba(255,255,255,0.8);">🧊</div>
+      <div class="title" style="color:white;">Glassmorphism</div>
+      <div class="desc" style="color:rgba(255,255,255,0.7);">ガラス風<br>ぼかし＋半透明＋グラデ背景</div>
+    </div>
   </div>
 
   <!-- ColoredCard Green -->
@@ -80,8 +103,9 @@
 <div class="info">
   <h2>📁 ファイル一覧</h2>
   <table>
-    <tr><td><span class="file-path">neu_card.dart</span></td><td>ニューモーフィズムカード</td><td><a href="https://zenn.dev/channel/articles/ed49e1ee8c3456" target="_blank">参照元</a></td></tr>
-    <tr><td><span class="file-path">custom_card_samples.dart</span></td><td>色付きカード・画像カード</td><td><a href="https://gakogako.com/flutter_card/" target="_blank">参照元</a></td></tr>
+    <tr><td><span class="file-path">design_patterns/neu_card.dart</span></td><td>ニューモーフィズムカード（標準）</td><td><a href="https://zenn.dev/channel/articles/ed49e1ee8c3456" target="_blank">参照元</a></td></tr>
+    <tr><td><span class="file-path">design_patterns/custom_card_samples.dart</span></td><td>色付きカード・画像カード</td><td><a href="https://gakogako.com/flutter_card/" target="_blank">参照元</a></td></tr>
+    <tr><td><span class="file-path">design_patterns/neu_variants.dart</span></td><td>メタリック・ガラス バリエーション</td><td>—</td></tr>
   </table>
 </div>
 
