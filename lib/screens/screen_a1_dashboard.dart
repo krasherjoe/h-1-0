@@ -127,11 +127,12 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       final db = await _dbHelper.database;
       final todayStr = DateTime.now().toIso8601String().substring(0, 10);
 
-      // 本日の請求書件数・金額
+      // 本日の請求書件数・金額（見積書を除外）
       final todayRows = await db.rawQuery('''
         SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as amt
         FROM invoices
         WHERE date LIKE ? AND is_draft = 0
+          AND (document_type IS NULL OR document_type = 'invoice')
       ''', ['$todayStr%']);
       _todayInvoiceCount = (todayRows.first['cnt'] as num?)?.toInt() ?? 0;
       _todayInvoiceAmount = (todayRows.first['amt'] as num?)?.toInt() ?? 0;
