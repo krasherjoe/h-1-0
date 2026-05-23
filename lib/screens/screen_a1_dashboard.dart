@@ -843,14 +843,20 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: cs.tertiaryContainer.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(_stageIcon(project.pipelineStage), size: 18, color: cs.tertiary),
+                        Column(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: cs.tertiaryContainer.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(_stageIcon(project.pipelineStage), size: 18, color: cs.tertiary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(project.pipelineStage, style: TextStyle(fontSize: 7, color: cs.onSurfaceVariant)),
+                          ],
                         ),
                         const SizedBox(width: 10),
                         Expanded(
