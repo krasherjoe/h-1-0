@@ -166,7 +166,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       _activeProjects = _activeProjects
           .where((p) => p.status == ProjectStatus.active)
           .toList();
-      for (final p in _activeProjects) {
+      _activeProjects.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      for (final p in _activeProjects.take(5)) {
         await _projectRepo.recalcTotalAmount(p.id);
       }
       _activeProjects = await _projectRepo.getAllProjects();
@@ -174,9 +175,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           .where((p) => p.status == ProjectStatus.active)
           .toList();
       _activeProjects.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      if (_activeProjects.length > 5) {
-        _activeProjects = _activeProjects.sublist(0, 5);
-      }
+      _activeProjects = _activeProjects.take(5).toList();
     } catch (e) {
       debugPrint('[A1] 最近のデータ取得エラー: $e');
     }
