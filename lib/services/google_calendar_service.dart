@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -47,12 +48,46 @@ class GoogleCalendarService {
 
       if (res.statusCode == 200) {
         debugPrint('[GoogleCalendar] イベント作成成功');
+        final eventJson = jsonDecode(res.body);
         return true;
       }
       debugPrint('[GoogleCalendar] エラー: ${res.statusCode} ${res.body}');
       return false;
     } catch (e) {
       debugPrint('[GoogleCalendar] エラー: $e');
+      return false;
+    }
+  }
+
+  /// 入金予定イベントを削除（タイトルで検索して削除）
+  Future<bool> deletePaymentEvent(String titleKeyword) async {
+    try {
+      final googleUser = await GoogleSignIn().signInSilently();
+      if (googleUser == null) return false;
+      final authHeaders = await googleUser.authHeaders;
+      final token = authHeaders['Authorization']?.replaceFirst('Bearer ', '');
+      if (token == null) return false;
+
+      // イベントを検索
+      final query = Uri.parse('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+          .replace(queryParameters: {'q': titleKeyword, 'maxResults': '10'});
+      final res = await _client(token).get(query);
+      if (res.statusCode != 200) return false;
+
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final items = data['items'] as List<dynamic>? ?? [];
+      for (final item in items) {
+        final eventId = (item as Map<String, dynamic>)['id'] as String?;
+        if (eventId != null) {
+          await _client(token).delete(
+            Uri.parse('https://www.googleapis.com/calendar/v3/calendars/primary/events/$eventId'),
+          );
+        }
+      }
+      debugPrint('[GoogleCalendar] ${items.length}件削除');
+      return items.isNotEmpty;
+    } catch (e) {
+      debugPrint('[GoogleCalendar] 削除エラー: $e');
       return false;
     }
   }

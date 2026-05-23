@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/invoice_models.dart';
 import '../models/payment_schedule_model.dart' show PaymentStatus;
+import '../services/google_calendar_service.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import 'receipt_processing_screen.dart';
@@ -47,6 +48,30 @@ class _PaymentSlipListScreenState extends State<PaymentSlipListScreen> {
     }
   }
 
+  Future<void> _showCalendarAction(Invoice inv) async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.event_busy),
+            title: const Text('カレンダーイベント削除'),
+            subtitle: Text('${inv.customerNameForDisplay} の入金カレンダーイベントを削除'),
+            onTap: () async {
+              Navigator.pop(ctx);
+              final ok = await GoogleCalendarService().deletePaymentEvent(inv.invoiceNumber);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(ok ? 'カレンダーイベントを削除しました' : 'イベントが見つかりませんでした')),
+              );
+            },
+          ),
+        ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -76,7 +101,10 @@ class _PaymentSlipListScreenState extends State<PaymentSlipListScreen> {
                     final inv = _paid[i];
                     final isPartial = inv.paymentStatus == PaymentStatus.partial;
                     return Card(
-                      child: Padding(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(4),
+                        onLongPress: () => _showCalendarAction(inv),
+                        child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,6 +143,7 @@ class _PaymentSlipListScreenState extends State<PaymentSlipListScreen> {
                           ],
                         ),
                       ),
+                    ),
                     );
                   },
                 ),
