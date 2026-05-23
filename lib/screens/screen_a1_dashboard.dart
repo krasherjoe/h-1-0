@@ -546,20 +546,20 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
           const SizedBox(height: 8),
           LayoutBuilder(
             builder: (ctx, constraints) {
-              final count = _enabledQuickActions.length;
               final gap = 8.0;
-              final btnWidth = (constraints.maxWidth - (count - 1) * gap) / count;
-              final minWidth = 72.0;
-              final effectiveWidth = btnWidth < minWidth ? constraints.maxWidth : btnWidth;
-              return Wrap(
-                spacing: gap,
-                runSpacing: 8,
-                children: _enabledQuickActions.map((id) {
-                  final meta = _allActionMeta[id];
-                  if (meta == null) return const SizedBox.shrink();
-                  return _buildActionButton(meta, id,
-                    width: btnWidth < minWidth ? (constraints.maxWidth - gap) / 2 : effectiveWidth);
-                }).toList(),
+              final minBtn = 72.0;
+              final maxBtns = ((constraints.maxWidth + gap) / (minBtn + gap)).floor();
+              final showCount = _enabledQuickActions.length.clamp(1, maxBtns);
+              final btnWidth = (constraints.maxWidth - (showCount - 1) * gap) / showCount;
+              return SizedBox(
+                height: 72,
+                child: Row(
+                  children: _enabledQuickActions.take(showCount).map((id) {
+                    final meta = _allActionMeta[id];
+                    if (meta == null) return const SizedBox.shrink();
+                    return SizedBox(width: btnWidth, child: _buildActionButton(meta, id));
+                  }).toList(),
+                ),
               );
             },
           ),
@@ -568,14 +568,13 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     );
   }
 
-  Widget _buildActionButton(_ActionMeta meta, String id, {double? width}) {
-    final btn = _QuickActionButton(
-        icon: meta.icon,
-        label: meta.label,
-        accentColor: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : Theme.of(context).colorScheme.primary,
-        onTap: () => _handleQuickAction(id),
+  Widget _buildActionButton(_ActionMeta meta, String id) {
+    return _QuickActionButton(
+      icon: meta.icon,
+      label: meta.label,
+      accentColor: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : Theme.of(context).colorScheme.primary,
+      onTap: () => _handleQuickAction(id),
     );
-    return width != null ? SizedBox(width: width, child: btn) : btn;
   }
 
   void _handleQuickAction(String id) {
