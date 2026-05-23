@@ -7,6 +7,7 @@ import '../models/supplier_model.dart';
 import '../services/purchase_order_service.dart';
 import '../services/supplier_repository.dart';
 import '../services/project_repository.dart';
+import '../services/stock_transaction_repository.dart';
 import '../widgets/line_item_editor.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
@@ -452,6 +453,22 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
         items: items,
       );
       final saved = await _service.saveOrder(order);
+      // 入荷済みになった場合、在庫を自動入庫
+      if (_status == PurchaseOrderStatus.received || _status == PurchaseOrderStatus.partiallyReceived) {
+        final stockRepo = StockTransactionRepository();
+        for (final line in validLines) {
+          if (line.productId != null && line.quantityValue > 0) {
+            await stockRepo.inbound(
+              productId: line.productId!,
+              productName: line.description,
+              quantity: line.quantityValue,
+              type: 'purchase_receipt',
+              referenceId: orderId,
+              referenceNumber: documentNumber,
+            );
+          }
+        }
+      }
       if (!mounted) return;
       Navigator.pop(context, saved);
     } catch (e) {
