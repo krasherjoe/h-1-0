@@ -169,6 +169,8 @@ class Invoice {
   final String? projectId; // 案件ID（任意紐づけ）
   bool isTestDocument; // テスト用伝票フラグ（案件名にテスト/TEST/testが含まれる場合true）
 
+  int get remainingAmount => (totalAmount - receivedAmount).clamp(0, totalAmount);
+
   Invoice({
     String? id,
     required this.customer,

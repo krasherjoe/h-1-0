@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'invoice_input_screen.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
 import '../models/invoice_models.dart';
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../services/pdf_generator.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
@@ -19,6 +20,7 @@ import '../services/app_settings_repository.dart';
 import '../widgets/draft_badge.dart';
 import 'invoice_detail/detail_snapshot.dart';
 import 'invoice_detail/invoice_table_cells.dart';
+import 'receipt_processing_screen.dart';
 
 List<InvoiceItem> _cloneItemsDetail(List<InvoiceItem> source) {
   return source
@@ -517,6 +519,8 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
               if (_currentInvoice.documentType == DocumentType.invoice && !_isEditing) ...[
                 const SizedBox(height: 16),
                 _buildReceiptAction(),
+                const SizedBox(height: 8),
+                _buildPaymentAction(),
               ],
               const SizedBox(height: 24),
               _buildFooterActions(),
@@ -1067,6 +1071,28 @@ class _InvoiceDetailPageState extends State<InvoiceDetailPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentAction() {
+    final inv = _currentInvoice;
+    if (inv.paymentStatus == PaymentStatus.paid) return const SizedBox.shrink();
+    final remaining = inv.totalAmount - inv.receivedAmount;
+    return ElevatedButton.icon(
+      onPressed: () async {
+        await Navigator.push(context, MaterialPageRoute(
+          builder: (_) => ReceiptProcessingScreen(initialInvoice: inv),
+        ));
+        if (!mounted) return;
+        setState(() {});
+      },
+      icon: const Icon(Icons.payments),
+      label: Text('入金登録（残高 ${NumberFormat('#,###').format(remaining)}）'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: inv.paymentStatus == PaymentStatus.partial ? Colors.orange : Theme.of(context).colorScheme.error,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 48),
       ),
     );
   }
