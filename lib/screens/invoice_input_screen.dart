@@ -14,6 +14,7 @@ import '../services/gps_service.dart';
 import 'customer_master_screen.dart';
 import 'product_master_screen.dart';
 import 'product_picker_modal.dart';
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../models/product_model.dart';
 import '../services/product_repository.dart';
 import '../widgets/paste_buffer_dialog.dart';
@@ -769,8 +770,21 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            "${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}",
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}"),
+              if (_currentInvoice != null && _currentInvoice!.paymentStatus == PaymentStatus.paid)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(Icons.check_circle, size: 14, color: Colors.green),
+                )
+              else if (_currentInvoice != null && _currentInvoice!.paymentStatus == PaymentStatus.partial)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(Icons.adjust, size: 14, color: Colors.orange),
+                ),
+            ],
           ),
         ),
       ),
@@ -1183,16 +1197,32 @@ color: Theme.of(context).cardColor,
       ),
       child: ListTile(
         leading: Icon(Icons.business, color: Theme.of(context).colorScheme.onSurfaceVariant),
-        title: Text(
-          _selectedCustomer != null
-              ? _customerNameWithHonorific(_selectedCustomer!)
-              : "取引先を選択してください",
-          style: TextStyle(
-            color: _selectedCustomer == null
-                ? Theme.of(context).colorScheme.onSurfaceVariant
-                : Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(
+                _selectedCustomer != null
+                    ? _customerNameWithHonorific(_selectedCustomer!)
+                    : "取引先を選択してください",
+                style: TextStyle(
+                  color: _selectedCustomer == null
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (_currentInvoice != null && _currentInvoice!.paymentStatus == PaymentStatus.paid)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Icon(Icons.check_circle, size: 16, color: Colors.green),
+              )
+            else if (_currentInvoice != null && _currentInvoice!.paymentStatus == PaymentStatus.partial)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Icon(Icons.adjust, size: 16, color: Colors.orange),
+              ),
+          ],
         ),
         subtitle: _isViewMode
             ? null
