@@ -279,27 +279,50 @@ Future<pw.Document> buildInvoiceDocument(
                   return const ["品名", "数量", "単価", "金額"];
               }
             }(),
-            data: invoice.items
-                .map((item) {
-                      // 免税+T番号なしの場合は税込価格で表示
-                      final bool useTaxIncl = _isExemptNoT(companyInfo);
-                      final double rate = useTaxIncl ? 1.0 + invoice.taxRate : 1.0;
-                      final displayPrice = (item.unitPrice * rate).round();
-                      final displayLineTotal = (item.subtotal * rate).round();
-                      String description = item.description;
-                      if (item.discountAmount != null && item.discountAmount! > 0) {
-                        description += ' (値引:-¥${amountFormatter.format(item.discountAmount)})';
-                      } else if (item.discountRate != null && item.discountRate! > 0) {
-                        description += ' (値引:${(item.discountRate! * 100).toStringAsFixed(0)}%OFF)';
-                      }
-                      return [
-                        description,
-                        item.quantity.toString(),
-                        amountFormatter.format(displayPrice),
-                        amountFormatter.format(displayLineTotal),
-                      ];
-                    })
-                .toList(),
+            data: () {
+              final bool useTaxIncl = _isExemptNoT(companyInfo);
+              final double rate = useTaxIncl ? 1.0 + invoice.taxRate : 1.0;
+              final items = invoice.items.map((item) {
+                String description = item.description;
+                if (item.discountAmount != null && item.discountAmount! > 0) {
+                  description += ' (値引:-¥${amountFormatter.format(item.discountAmount)})';
+                } else if (item.discountRate != null && item.discountRate! > 0) {
+                  description += ' (値引:${(item.discountRate! * 100).toStringAsFixed(0)}%OFF)';
+                }
+                final displayPrice = (item.unitPrice * rate).round();
+                final displayLineTotal = (item.subtotal * rate).round();
+                return {
+                  'desc': description,
+                  'qty': item.quantity.toString(),
+                  'price': displayPrice,
+                  'lineTotal': displayLineTotal,
+                };
+              }).toList();
+
+              // 丸め誤差を調整（合計が invoice.subtotal + invoice.tax に一致するように）
+              if (useTaxIncl) {
+                final rawSum = items.fold<int>(0, (s, i) => s + (i['lineTotal'] as int));
+                final expectedSum = invoice.subtotal + invoice.tax;
+                final diff = expectedSum - rawSum;
+                if (diff != 0 && items.isNotEmpty) {
+                  // 最大の明細に差額を加算
+                  final maxVal = items.map((e) => e['lineTotal'] as int).reduce((a, b) => a > b ? a : b);
+                  final maxIdx = items.indexWhere((i) => (i['lineTotal'] as int) == maxVal);
+                  if (maxIdx >= 0) {
+                    final item = items[maxIdx];
+                    item['price'] = (item['price'] as int) + diff;
+                    item['lineTotal'] = (item['lineTotal'] as int) + diff;
+                  }
+                }
+              }
+
+              return items.map((item) => [
+                item['desc'] as String,
+                item['qty'] as String,
+                amountFormatter.format(item['price'] as int),
+                amountFormatter.format(item['lineTotal'] as int),
+              ]).toList();
+            }(),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: ipaex),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
             cellAlignment: pw.Alignment.centerLeft,
