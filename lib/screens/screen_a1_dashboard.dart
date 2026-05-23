@@ -837,10 +837,22 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(project.customerName ?? '得意先未設定',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: cs.onSurfaceVariant)),
+                              Row(
+                                children: [
+                                  Flexible(child: Text(project.customerName ?? '得意先未設定',
+                                      style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant))),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: cs.tertiaryContainer.withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: Text(project.pipelineStage,
+                                        style: TextStyle(fontSize: 8, color: cs.onTertiaryContainer)),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 2),
                               Text(project.name,
                                   maxLines: 1,
