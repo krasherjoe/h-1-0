@@ -955,18 +955,7 @@ PopupMenuItem(
                                   decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
                                   child: Text(p.manufacturer!, style: TextStyle(fontSize: 9, color: Colors.amber.shade800)),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text('販売 ¥${NumberFormat('#,###').format(p.defaultUnitPrice)}',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
-                              if (p.wholesalePrice > 0) ...[
-                                const SizedBox(width: 8),
-                                Text('仕入 ¥${NumberFormat('#,###').format(p.wholesalePrice)}',
-                                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
-                                const SizedBox(width: 6),
+                              if (p.wholesalePrice > 0)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
@@ -986,6 +975,17 @@ PopupMenuItem(
                                     ),
                                   ),
                                 ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text('販売 ¥${NumberFormat('#,###').format(p.defaultUnitPrice)}',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+                              if (p.wholesalePrice > 0) ...[
+                                const SizedBox(width: 8),
+                                Text('仕入 ¥${NumberFormat('#,###').format(p.wholesalePrice)}',
+                                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
                               ],
                               const Spacer(),
                               if (!p.isNonStockCategory)
