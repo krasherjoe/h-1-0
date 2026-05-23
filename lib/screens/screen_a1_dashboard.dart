@@ -25,7 +25,10 @@ import 'supplier_master_screen.dart';
 import 'order_input_screen.dart';
 import 'quotation_input_screen.dart';
 import 'report_dashboard_screen.dart';
+import 'sales_analysis_screen.dart';
 import 'sales_entry_screen.dart';
+import 'sales_report_screen.dart';
+import 'stock_adjustment_screen.dart';
 import 'sales_return_input_screen.dart';
 import 'purchase_input_screen.dart';
 import 'purchase_return_input_screen.dart';
@@ -45,6 +48,11 @@ import 'menu_placeholder_screen.dart';
 import 'stock_inbound_screen.dart';
 import 'stock_outbound_screen.dart';
 import 'screen_ti_time_tracking.dart';
+import 'activity_log_screen.dart';
+import 'customer_sales_trend_screen.dart';
+import 'inventory_valuation_report_screen.dart';
+import 'product_profit_analysis_screen.dart';
+import 'role_management_screen.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
 import 'invoice_issue_screen.dart';
@@ -286,18 +294,44 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         return const PaymentScheduleScreen();
       case 'payment_register':
         return const PaymentRegisterScreen();
+      case 'payment_slip':
+        return const ReceiptProcessingScreen();
+      case 'accounts_receivable':
+        return const AccountsReceivableScreen();
       case 'cash_flow':
         return const CashFlowScreen();
+      case 'stock_inbound':
+        return const StockInboundScreen();
+      case 'stock_outbound':
+        return const StockOutboundScreen();
+      case 'time_tracking':
+        return const TimeTrackingScreen();
+      case 'report_dashboard':
+        return const ReportDashboardScreen();
       case 'analytics_dashboard':
       case 'analytics_report':
       case 'sales_analysis':
         return const AnalyticsDashboardScreen();
+      case 'sales_report':
+        return const SalesReportScreen();
+      case 'customer_sales_report':
+        return const CustomerSalesTrendScreen();
+      case 'product_margin_report':
+        return const ProductProfitAnalysisScreen();
+      case 'inventory_valuation_report':
+        return const InventoryValuationReportScreen();
+      case 'stock_adjustment':
+        return const StockAdjustmentScreen();
       case 'business_profile':
         return const BusinessProfileScreen();
       case 'inventory_location':
         return const InventoryLocationScreen();
       case 'inventory_movement':
         return const InventoryMovementScreen();
+      case 'log_management':
+        return const ActivityLogScreen();
+      case 'user_permissions':
+        return const RoleManagementScreen();
       default:
         return MenuPlaceholderScreen(item: item);
     }
