@@ -944,6 +944,15 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lightColor = isDark ? const Color(0xFF2A2A3A) : const Color(0xFFD8D8D8);
+    final darkColor = isDark ? const Color(0xFF3A3A4E) : const Color(0xFFF0F0F0);
+    final shadowLight = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.5);
+    final shadowDark = isDark
+        ? Colors.black.withValues(alpha: 0.5)
+        : Colors.black.withValues(alpha: 0.3);
+    final textColor = isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey[800]!;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -951,40 +960,22 @@ class _QuickActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: isDark
-                ? accentColor.withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.5),
-            border: Border.all(
-              color: isDark
-                  ? accentColor.withValues(alpha: 0.12)
-                  : Colors.white.withValues(alpha: 0.6),
+            gradient: LinearGradient(
+              colors: [lightColor, darkColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             boxShadow: [
-              BoxShadow(
-                color: accentColor.withValues(alpha: isDark ? 0.06 : 0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
+              BoxShadow(blurRadius: 10, offset: const Offset(-6, -6), color: shadowLight),
+              BoxShadow(blurRadius: 10, offset: const Offset(6, 6), color: shadowDark),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Column(
-                children: [
-                  Icon(icon, color: accentColor, size: 26),
-                  const SizedBox(height: 4),
-                  Text(label,
-                      style: TextStyle(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : accentColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
+          child: Column(
+            children: [
+              Icon(icon, color: accentColor, size: 26),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w600)),
+            ],
           ),
         ),
       ),
