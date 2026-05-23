@@ -7,6 +7,7 @@ import '../models/invoice_models.dart';
 import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
 import '../services/pdf_generator.dart';
+import '../services/stock_allocation_repository.dart';
 import '../services/storage_monitor.dart';
 import '../utils/theme_utils.dart';
 import '../widgets/invoice_pdf_preview_page.dart';
@@ -253,6 +254,13 @@ class _OrderInputScreenState extends State<OrderInputScreen> {
     try {
       final confirmed = order.copyWith(isDraft: false, isLocked: true);
       await _invoiceRepo.saveInvoice(confirmed);
+      // 確定時に在庫引当を作成
+      final allocRepo = StockAllocationRepository();
+      for (final item in confirmed.items) {
+        if (item.productId != null && item.quantity > 0) {
+          await allocRepo.allocateForOrder(confirmed.id, item.productId!, item.quantity);
+        }
+      }
       final pdfPath = await generateInvoicePdf(confirmed);
       if (pdfPath != null) await _invoiceRepo.saveInvoice(confirmed.copyWith(filePath: pdfPath));
       if (!mounted) return;

@@ -10,6 +10,7 @@ import '../services/customer_repository.dart';
 import '../services/app_settings_repository.dart';
 import '../services/invoice_repository.dart';
 import '../services/pdf_generator.dart';
+import '../services/stock_allocation_repository.dart';
 import '../services/stock_transaction_repository.dart';
 import '../services/storage_monitor.dart';
 import '../utils/theme_utils.dart';
@@ -291,8 +292,9 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
       if (pdfPath != null) {
         await _invoiceRepo.saveInvoice(promoted.copyWith(filePath: pdfPath));
       }
-      // 発行時に在庫を自動出庫
+      // 発行時に在庫を自動出庫＋引当解除
       final stockRepo = StockTransactionRepository();
+      final allocRepo = StockAllocationRepository();
       for (final item in promoted.items) {
         if (item.productId != null && item.quantity > 0) {
           await stockRepo.outbound(
@@ -305,6 +307,7 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
           );
         }
       }
+      await allocRepo.releaseByOrder(promoted.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('請求書を正式発行しました')));
       await _load();
