@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../models/invoice_list_style.dart';
 import '../models/invoice_models.dart';
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../services/customer_repository.dart';
 import '../services/app_settings_repository.dart';
 import '../services/invoice_repository.dart';
@@ -500,6 +501,20 @@ class _InvoiceIssueScreenState extends State<InvoiceIssueScreen> {
                                           margin: const EdgeInsets.only(right: 6),
                                           decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
                                           child: Text('赤伝済', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: cs.error)),
+                                        ),
+                                      if (!invoice.isDraft && invoice.paymentStatus == PaymentStatus.paid)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
+                                          child: Text('入金済', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green.shade700)),
+                                        )
+                                      else if (!invoice.isDraft && invoice.paymentStatus == PaymentStatus.partial)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          margin: const EdgeInsets.only(right: 6),
+                                          decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
+                                          child: Text('一部入金', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange.shade700)),
                                         ),
                                       OutlinedButton.icon(
                                         onPressed: () => _openPreview(invoice),

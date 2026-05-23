@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/invoice_models.dart';
+import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../utils/theme_utils.dart';
 
 class InvoiceListA2Card extends StatelessWidget {
@@ -161,6 +162,20 @@ class InvoiceListA2Card extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 6),
                     decoration: BoxDecoration(color: cs.secondaryContainer, borderRadius: BorderRadius.circular(10)),
                     child: Text(draftLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onSecondaryContainer)),
+                  ),
+                if (!isDraft && !isRed && !isCancelled && invoice.paymentStatus == PaymentStatus.paid)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Text('入金済', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
+                  )
+                else if (!isDraft && !isRed && !isCancelled && invoice.paymentStatus == PaymentStatus.partial)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Text('一部入金', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange.shade700)),
                   ),
                 Text(invoice.invoiceNumber, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right),
               ],
