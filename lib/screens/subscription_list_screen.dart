@@ -17,6 +17,16 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   final _nf = NumberFormat('#,###');
   final _df = DateFormat('yyyy/MM/dd');
 
+  String _cycleLabel(String c) {
+    switch (c) {
+      case 'monthly': return '月';
+      case 'quarterly': return '3ヶ月';
+      case 'half_yearly': return '6ヶ月';
+      case 'yearly': return '年';
+      default: return '${c}日';
+    }
+  }
+
   List<Subscription> _list = [];
   bool _loading = true;
 
@@ -41,9 +51,10 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     if (customer == null) return;
 
     final amountCtrl = TextEditingController();
-    int totalCycles = 12;
-    String cycle = 'monthly';
-    DateTime startDate = DateTime.now();
+  int totalCycles = 12;
+  int customDays = 45;
+  String cycle = 'monthly';
+  DateTime startDate = DateTime.now();
 
     final result = await showDialog<bool>(
       context: context,
@@ -64,7 +75,10 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                   value: cycle, decoration: const InputDecoration(labelText: 'サイクル', isDense: true),
                   items: const [
                     DropdownMenuItem(value: 'monthly', child: Text('毎月')),
+                    DropdownMenuItem(value: 'quarterly', child: Text('3ヶ月')),
+                    DropdownMenuItem(value: 'half_yearly', child: Text('6ヶ月')),
                     DropdownMenuItem(value: 'yearly', child: Text('毎年')),
+                    DropdownMenuItem(value: 'custom', child: Text('カスタム')),
                   ],
                   onChanged: (v) => setSheet(() => cycle = v!),
                 ),
@@ -75,6 +89,15 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                   onChanged: (v) => totalCycles = int.tryParse(v) ?? 0,
                   controller: TextEditingController(text: totalCycles.toString()),
                 ),
+                if (cycle == 'custom') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'サイクル日数', isDense: true, border: OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) => customDays = int.tryParse(v) ?? 45,
+                    controller: TextEditingController(text: customDays.toString()),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -99,6 +122,14 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     final amount = int.tryParse(amountCtrl.text);
     if (amount == null || amount <= 0) return;
 
+    final cycleDays = switch (cycle) {
+      'monthly' => 30,
+      'quarterly' => 90,
+      'half_yearly' => 180,
+      'yearly' => 365,
+      _ => customDays,
+    };
+
     final now = DateTime.now();
     await _repo.save(Subscription(
       id: const Uuid().v4(),
@@ -106,6 +137,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
       customerName: customer.displayName,
       amount: amount,
       cycle: cycle,
+      cycleDays: cycleDays,
       totalCycles: totalCycles,
       startDate: startDate,
       nextBillingDate: startDate,
@@ -154,7 +186,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Text('¥${_nf.format(s.amount)} / ${s.cycle == 'monthly' ? '月' : '年'}',
+                                Text('¥${_nf.format(s.amount)} / ${_cycleLabel(s.cycle)}',
                                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
                                 const Spacer(),
                                 Text('${s.completedCycles}回完了${remaining >= 0 ? " / 残$remaining回" : ""}',
