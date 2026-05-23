@@ -1102,10 +1102,10 @@ class _QuickActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
+            gradient: RadialGradient(
+              center: Alignment.center,
+              radius: 0.9,
               colors: [lightColor, darkColor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(blurRadius: 8, offset: const Offset(-6, -6), color: Colors.white.withValues(alpha: 0.6)),
