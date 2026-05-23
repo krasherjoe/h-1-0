@@ -162,6 +162,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '配送記録の一覧表示と管理',
   ),
   MenuDefinition(
+    id: 'RP',
+    title: '入金処理',
+    route: 'payment_slip',
+    category: '02. 販売管理',
+    iconName: 'payments',
+    description: '入金確認・登録・伝票管理',
+  ),
+  MenuDefinition(
     id: 'IH',
     title: '伝票一覧',
     route: 'invoice_history',
