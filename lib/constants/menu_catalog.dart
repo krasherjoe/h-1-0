@@ -170,6 +170,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '入金確認・登録・伝票管理',
   ),
   MenuDefinition(
+    id: 'AR',
+    title: '売掛金管理',
+    route: 'accounts_receivable',
+    category: '02. 販売管理',
+    iconName: 'account_balance',
+    description: '顧客別未回収額・消し込み確認',
+  ),
+  MenuDefinition(
     id: 'IH',
     title: '伝票一覧',
     route: 'invoice_history',

@@ -48,6 +48,7 @@ import 'support_desk_screen.dart';
 import 'warehouse_dashboard_screen.dart';
 import 'staff_management_screen.dart';
 import 'delivery_list_screen.dart';
+import 'accounts_receivable_screen.dart';
 import 'payment_slip_list_screen.dart';
 import 'purchase_order_screen.dart';
 import 'purchase_payment_screen.dart';
@@ -624,6 +625,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const DeliveryListScreen()));
       case 'payment_slip':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentSlipListScreen()));
+      case 'accounts_receivable':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsReceivableScreen()));
     }
   }
 
