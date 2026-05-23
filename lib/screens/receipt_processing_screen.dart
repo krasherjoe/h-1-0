@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/invoice_models.dart';
 import '../models/payment_schedule_model.dart' show PaymentStatus;
+import '../services/database_helper.dart';
 import '../services/invoice_repository.dart';
 import '../services/customer_repository.dart';
 import '../utils/theme_utils.dart';
@@ -87,12 +88,18 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
       final newReceived = inv.receivedAmount + amount;
       final newStatus = newReceived >= inv.totalAmount ? PaymentStatus.paid : PaymentStatus.partial;
 
-      // 元の請求書の入金ステータス更新
-      final updated = inv.copyWith(
-        paymentStatus: newStatus,
-        receivedAmount: newReceived,
-      );
-      await _invoiceRepo.saveInvoice(updated);
+      // receiptsテーブルに入金レコードを追加 → updatePaymentStatusで再計算
+      final db = await DatabaseHelper().database;
+      await db.insert('receipts', {
+        'id': const Uuid().v4(),
+        'invoice_id': inv.id,
+        'amount': amount,
+        'receipt_date': _paymentDate.toIso8601String(),
+        'payment_method': _paymentMethod,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      await _invoiceRepo.updatePaymentStatus(inv.id);
 
       // 入金伝票（receipt）を生成
       final slip = Invoice(
