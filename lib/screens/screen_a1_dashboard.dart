@@ -729,25 +729,27 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     );
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: cs.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 28,
-                          height: 28,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             color: typeColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(statusIcon, size: 16, color: typeColor),
+                          child: Icon(statusIcon, size: 18, color: typeColor),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -756,9 +758,9 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w500)),
-                              const SizedBox(height: 1),
+                              const SizedBox(height: 3),
                               Text(subject,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -820,30 +822,32 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: project)),
                   ),
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: cs.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2)),
+                      ],
                     ),
                     child: Row(
                       children: [
                         Column(
                           children: [
                             Container(
-                              width: 26,
-                              height: 26,
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
                                 color: cs.tertiaryContainer.withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Icon(_stageIcon(project.pipelineStage), size: 14, color: cs.tertiary),
+                              child: Icon(_stageIcon(project.pipelineStage), size: 16, color: cs.tertiary),
                             ),
-                            Text(project.pipelineStage, style: TextStyle(fontSize: 5, color: cs.onSurfaceVariant, height: 1)),
+                            Text(project.pipelineStage, style: TextStyle(fontSize: 6, color: cs.onSurfaceVariant, height: 1)),
                           ],
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
