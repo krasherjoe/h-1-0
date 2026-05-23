@@ -735,7 +735,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                       color: cs.surface,
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2)),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 3)),
                       ],
                     ),
                     child: Row(
@@ -828,7 +828,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                       color: cs.surface,
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2)),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 3)),
                       ],
                     ),
                     child: Row(
