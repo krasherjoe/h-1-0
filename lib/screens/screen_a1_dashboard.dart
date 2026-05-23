@@ -544,14 +544,20 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             ],
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _enabledQuickActions.map((id) {
-              final meta = _allActionMeta[id];
-              if (meta == null) return const SizedBox.shrink();
-              return _buildActionButton(meta, id);
-            }).toList(),
+          LayoutBuilder(
+            builder: (ctx, constraints) {
+              final perBtn = (constraints.maxWidth - 8 * (_enabledQuickActions.length - 1)) / _enabledQuickActions.length.clamp(1, 6);
+              final btnW = perBtn.clamp(70, 120).toDouble();
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _enabledQuickActions.map((id) {
+                  final meta = _allActionMeta[id];
+                  if (meta == null) return const SizedBox.shrink();
+                  return SizedBox(width: btnW, child: _buildActionButton(meta, id));
+                }).toList(),
+              );
+            },
           ),
         ],
       ),
@@ -1051,7 +1057,6 @@ class _QuickActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 82,
         padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
