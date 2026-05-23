@@ -42,6 +42,8 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   String _sortBy = "date"; // "date", "amount", "customer"
   DateTime? _startDate;
   DateTime? _endDate;
+  DocumentType? _filterDocType;
+  bool _filterDraftOnly = false;
   String _appVersion = "1.0.0";
   bool _useDashboardHome = false;
   bool _showInvoiceNumber = true;
@@ -212,6 +214,9 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
         bool matchesDate = true;
         if (_startDate != null && inv.date.isBefore(_startDate!)) matchesDate = false;
         if (_endDate != null && inv.date.isAfter(_endDate!.add(const Duration(days: 1)))) matchesDate = false;
+
+        if (_filterDocType != null && inv.documentType != _filterDocType) return false;
+        if (_filterDraftOnly && !inv.isDraft) return false;
         
         return matchesQuery && matchesDate;
       }).toList();
@@ -371,16 +376,47 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 position: const RelativeRect.fromLTRB(100, 80, 0, 0),
                 items: [
                   PopupMenuItem(
+                    value: "all",
+                    child: Text("すべて表示", style: TextStyle(fontWeight: _filterDocType == null && !_filterDraftOnly ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: "filter_estimation",
+                    child: Text("見積のみ", style: TextStyle(fontWeight: _filterDocType == DocumentType.estimation ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  PopupMenuItem(
+                    value: "filter_order",
+                    child: Text("受注のみ", style: TextStyle(fontWeight: _filterDocType == DocumentType.order ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  PopupMenuItem(
+                    value: "filter_delivery",
+                    child: Text("納品書のみ", style: TextStyle(fontWeight: _filterDocType == DocumentType.delivery ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  PopupMenuItem(
+                    value: "filter_invoice",
+                    child: Text("請求書のみ", style: TextStyle(fontWeight: _filterDocType == DocumentType.invoice ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  PopupMenuItem(
+                    value: "filter_receipt",
+                    child: Text("領収書のみ", style: TextStyle(fontWeight: _filterDocType == DocumentType.receipt ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: "filter_draft",
+                    child: Text("下書きのみ", style: TextStyle(fontWeight: _filterDraftOnly ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
                     value: "date",
-                    child: Text("日付順", style: TextStyle(color: cs.onSurface)),
+                    child: Text("日付順", style: TextStyle(fontWeight: _sortBy == "date" ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
                   ),
                   PopupMenuItem(
                     value: "amount",
-                    child: Text("金額順", style: TextStyle(color: cs.onSurface)),
+                    child: Text("金額順", style: TextStyle(fontWeight: _sortBy == "amount" ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
                   ),
                   PopupMenuItem(
                     value: "customer",
-                    child: Text("顧客名順", style: TextStyle(color: cs.onSurface)),
+                    child: Text("顧客名順", style: TextStyle(fontWeight: _sortBy == "customer" ? FontWeight.bold : FontWeight.normal, color: cs.onSurface)),
                   ),
                   const PopupMenuDivider(),
                   PopupMenuItem(
@@ -392,6 +428,19 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 if (val == null) return;
                 if (val == "project_list") {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ProjectListScreen()));
+                  return;
+                }
+                if (val.startsWith("filter_")) {
+                  switch (val) {
+                    case "filter_estimation": setState(() => _filterDocType = DocumentType.estimation);
+                    case "filter_order": setState(() => _filterDocType = DocumentType.order);
+                    case "filter_delivery": setState(() => _filterDocType = DocumentType.delivery);
+                    case "filter_invoice": setState(() => _filterDocType = DocumentType.invoice);
+                    case "filter_receipt": setState(() => _filterDocType = DocumentType.receipt);
+                    case "filter_draft": setState(() => _filterDraftOnly = !_filterDraftOnly);
+                    case "all": setState(() { _filterDocType = null; _filterDraftOnly = false; });
+                  }
+                  _applyFilterAndSort();
                   return;
                 }
                 setState(() => _sortBy = val);
