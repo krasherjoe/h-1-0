@@ -155,6 +155,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
   final Uuid _uuid = const Uuid();
   final Map<String, bool> _taxFlags = {};
+  String? _supplierIdTmp;
   String _supplierNameHint = 'タップして仕入先を選択';
   final TextEditingController _searchController = TextEditingController();
 
@@ -384,6 +385,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     _taxFlags['defaultUnitPriceIsTaxInclusive'] = product?.defaultUnitPriceIsTaxInclusive ?? false;
     _taxFlags['wholesalePriceIsTaxInclusive'] = product?.wholesalePriceIsTaxInclusive ?? false;
     _supplierNameHint = product?.supplierName ?? 'タップして仕入先を選択';
+    _supplierIdTmp = product?.supplierId;
     final result = await showRichMasterEditSheet<Product>(
       context: context,
       titleNew: '商品追加',
@@ -477,23 +479,34 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
             MasterFieldConfig(
               key: 'supplierId',
               label: '仕入先',
-              hint: _supplierNameHint,
+              hint: 'タップして選択',
               suffixBuilder: (ctrl, setDialogState, updateValue) {
-                return IconButton(
-                  icon: const Icon(Icons.business),
-                  tooltip: '仕入先を選択',
-                  onPressed: () async {
-                    final supplier = await Navigator.push<Supplier>(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SupplierMasterScreen(selectionMode: true)),
-                    );
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (ctrl.text.isNotEmpty && !ctrl.text.startsWith('sup_'))
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Text(ctrl.text, style: TextStyle(fontSize: 11, color: Colors.teal.shade700)),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.business),
+                      tooltip: '仕入先を選択',
+                      onPressed: () async {
+                        final supplier = await Navigator.push<Supplier>(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SupplierMasterScreen(selectionMode: true)),
+                        );
                     if (supplier != null) {
+                      _supplierIdTmp = supplier.id;
                       _supplierNameHint = supplier.name;
-                      ctrl.text = supplier.id;
-                      updateValue(supplier.id);
+                      ctrl.text = supplier.name;
+                      updateValue(supplier.name);
                       setDialogState(() {});
                     }
-                  },
+                      },
+                    ),
+                  ],
                 );
               },
             ),
@@ -512,7 +525,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         'category': p?.category ?? '',
         'defaultUnitPrice': (p?.defaultUnitPrice ?? 0).toString(),
         'wholesalePrice': (p?.wholesalePrice ?? 0).toString(),
-        'supplierId': p?.supplierId ?? '',
+        'supplierId': p?.supplierName ?? '',
         'stockQuantity': (p?.stockQuantity ?? 0).toString(),
         'barcode': p?.barcode ?? '',
       },
@@ -550,8 +563,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           defaultUnitPriceIsTaxInclusive: _taxFlags['defaultUnitPriceIsTaxInclusive'] ?? false,
           wholesalePrice: wholesalePrice,
           wholesalePriceIsTaxInclusive: _taxFlags['wholesalePriceIsTaxInclusive'] ?? false,
-          supplierId: values['supplierId']?.isNotEmpty == true ? values['supplierId'] : null,
-          supplierName: values['supplierId']?.isNotEmpty == true ? (_supplierNameHint.startsWith('タップ') ? values['supplierId'] : _supplierNameHint) : null,
+          supplierId: _supplierIdTmp,
+          supplierName: values['supplierId']?.isNotEmpty == true ? values['supplierId'] : null,
           stockQuantity: stockQuantity,
           barcode: (barcode?.isEmpty ?? true) ? null : barcode,
           category: (category?.isEmpty ?? true) ? null : category,
