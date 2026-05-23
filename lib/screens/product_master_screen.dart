@@ -12,6 +12,39 @@ import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/rich_master_edit_sheet.dart';
 import 'barcode_scanner_screen.dart';
 
+/// カテゴリ名のエイリアス（異表記を統一）
+const _categoryAliases = {
+  'pc': 'パソコン',
+  'pcs': 'パソコン',
+  'note': 'ノートPC',
+  'notebook': 'ノートPC',
+  'laptop': 'ノートPC',
+  'ﾉｰﾄpc': 'ノートPC',
+  'desktop': 'デスクトップ',
+  'ﾃﾞｽｸﾄｯﾌﾟ': 'デスクトップ',
+  'tablet': 'タブレット',
+  'ﾀﾌﾞﾚｯﾄ': 'タブレット',
+  'monitor': 'モニター',
+  'display': 'モニター',
+  'ﾓﾆﾀｰ': 'モニター',
+  'printer': 'プリンター',
+  'ﾌﾟﾘﾝﾀｰ': 'プリンター',
+  'keyboard': 'キーボード',
+  'kb': 'キーボード',
+  'ﾏｳｽ': 'マウス',
+  'mouse': 'マウス',
+  'cable': 'ケーブル',
+  'ｹｰﾌﾞﾙ': 'ケーブル',
+  'ｱｸｾｻﾘ': 'アクセサリ',
+  'accessory': 'アクセサリ',
+};
+
+String _normalizeCategory(String? cat) {
+  if (cat == null || cat.isEmpty) return cat ?? '';
+  final key = cat.trim().toLowerCase();
+  return _categoryAliases[key] ?? cat.trim();
+}
+
 class ProductMasterScreen extends StatefulWidget {
   final bool selectionMode;
   final bool showHidden;
@@ -599,7 +632,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           modelNumber: (modelNumber?.isEmpty ?? true) ? null : modelNumber,
           manufacturer: (manufacturer?.isEmpty ?? true) ? null : manufacturer,
           barcode: (barcode?.isEmpty ?? true) ? null : barcode,
-          category: (category?.isEmpty ?? true) ? null : category,
+          category: _normalizeCategory(category),
           odooId: product?.odooId,
           isLocked: false,
         );
