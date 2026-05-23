@@ -422,7 +422,11 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             value: '\u00a5${_formatAmount(_unpaidTotal)}',
             sub: 'タップで入金伝票',
             accentColor: cs.error,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentSlipListScreen())),
+            onTap: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsReceivableScreen()));
+              if (!mounted) return;
+              _load();
+            },
           ),
           const SizedBox(width: 12),
           _SummaryCard(
@@ -458,7 +462,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     'customer': _ActionMeta(Icons.people, '得意先', null),
     'product': _ActionMeta(Icons.inventory_2, '商品マスター', null),
     'delivery': _ActionMeta(Icons.local_shipping, '配送記録', null),
-    'payment_slip': _ActionMeta(Icons.payments, '入金伝票', null),
+    'payment_slip': _ActionMeta(Icons.payments, '入金処理', null),
+    'ar': _ActionMeta(Icons.account_balance, '売掛金管理', null),
   };
 
   Future<void> _loadQuickActions() async {
@@ -626,6 +631,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       case 'payment_slip':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentSlipListScreen()));
       case 'accounts_receivable':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsReceivableScreen()));
+      case 'ar':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsReceivableScreen()));
     }
   }
