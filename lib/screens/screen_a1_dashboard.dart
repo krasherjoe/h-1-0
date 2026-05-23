@@ -1108,7 +1108,7 @@ class _QuickActionButton extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
             boxShadow: [
-              BoxShadow(color: accentColor.withValues(alpha: isDark ? 0.15 : 0.08), blurRadius: 8, offset: const Offset(0, 2)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6, offset: const Offset(0, 3)),
             ],
           ),
           child: Column(
