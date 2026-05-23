@@ -7,6 +7,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import '../models/company_model.dart';
 import '../models/invoice_models.dart';
 import 'company_repository.dart';
 import 'company_profile_service.dart';
@@ -316,9 +317,11 @@ Future<pw.Document> buildInvoiceDocument(
                   children: [
                     pw.SizedBox(height: 10),
                     _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
-                    if (invoice.discountAmount > 0)
+                    if (invoice.discountAmount > 0 && _isExemptNoTNumber(companyInfo))
+                      _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount - invoice.tax)}"),
+                    if (invoice.discountAmount > 0 && !_isExemptNoTNumber(companyInfo))
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
-                    if (invoice.tax > 0) ...[
+                    if (invoice.tax > 0 && !_isExemptNoTNumber(companyInfo)) ...[
                       if (invoice.isTaxInclusiveMode)
                         _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}% 逆算)", "(内 ￥${amountFormatter.format(invoice.tax)})"),
                       if (!invoice.isTaxInclusiveMode)
@@ -486,6 +489,9 @@ Future<pw.Document> buildInvoiceDocument(
 }
 
 /// A4サイズのプロフェッショナルな伝票PDFを生成し、保存する
+bool _isExemptNoTNumber(CompanyInfo c) =>
+    c.isExemptTaxpayer && (c.registrationNumber == null || c.registrationNumber!.isEmpty);
+
 Future<String?> generateInvoicePdf(Invoice invoice) async {
   try {
     final pdf = await buildInvoiceDocument(invoice);
