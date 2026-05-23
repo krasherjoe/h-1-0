@@ -24,6 +24,7 @@ import 'product_master_screen.dart';
 import 'supplier_master_screen.dart';
 import 'order_input_screen.dart';
 import 'quotation_input_screen.dart';
+import 'report_dashboard_screen.dart';
 import 'sales_entry_screen.dart';
 import 'sales_return_input_screen.dart';
 import 'purchase_input_screen.dart';
@@ -678,6 +679,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const StockOutboundScreen()));
       case 'time_tracking':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const TimeTrackingScreen()));
+      case 'report_dashboard':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportDashboardScreen()));
     }
   }
 

@@ -202,6 +202,14 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '作業時間の記録と管理（タイマー付き）',
   ),
   MenuDefinition(
+    id: 'R1',
+    title: '売上レポート',
+    route: 'report_dashboard',
+    category: '02. 販売管理',
+    iconName: 'bar_chart',
+    description: '月次売上・回収状況のダッシュボード',
+  ),
+  MenuDefinition(
     id: 'IH',
     title: '伝票一覧',
     route: 'invoice_history',
