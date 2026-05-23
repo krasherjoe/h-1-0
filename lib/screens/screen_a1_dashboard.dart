@@ -729,50 +729,36 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     );
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: cs.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             color: typeColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Center(
-                            child: Text(typeLabel,
-                                style: TextStyle(
-                                    color: typeColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold)),
-                          ),
+                          child: Icon(statusIcon, size: 16, color: typeColor),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                      '${inv.date.year}/${inv.date.month.toString().padLeft(2, '0')}/${inv.date.day.toString().padLeft(2, '0')}',
-                                      style: TextStyle(
-                                          fontSize: 9,
-                                          color: cs.onSurfaceVariant)),
-                                  const SizedBox(width: 8),
-                                  Text(customerName,
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: cs.onSurfaceVariant)),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
+                              Text(subject,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500)),
+                              const SizedBox(height: 1),
                               Text(subject,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -783,13 +769,13 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Text('\u00a5${_formatAmount(inv.totalAmount)}',
                             style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: cs.onSurface)),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 2),
                         Icon(statusIcon,
                             size: 14, color: statusColor.withValues(alpha: 0.7)),
                       ],
