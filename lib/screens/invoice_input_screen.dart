@@ -751,6 +751,7 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
       backgroundColor: docColor,
       foregroundColor: docFgColor,
       leading: const BackButton(),
+      titleSpacing: 0,
       title: GestureDetector(
         onTap: _isDraft && !_isLocked && _isViewMode
             ? () async {
@@ -773,7 +774,10 @@ class _InvoiceInputFormState extends State<InvoiceInputForm> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}"),
+              Flexible(
+                child: Text("${_isViewMode ? 'D3' : 'D4'}:${_documentTypeLabel(_documentType)}${_isViewMode ? '' : '(編集)'}",
+                    overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+              ),
               if (_currentInvoice != null && _currentInvoice!.paymentStatus == PaymentStatus.paid)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
