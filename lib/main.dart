@@ -5,6 +5,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -806,6 +807,14 @@ class _MyAppState extends State<MyApp> {
           title: '販売アシスト 1 号',
           theme: theme,
           themeMode: themeString == 'system' ? ThemeMode.system : ThemeMode.light,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: [
+            const Locale('ja', 'JP'),
+            const Locale('en', 'US'),
+          ],
           builder: (context, child) {
           // キーボード表示時のせり上がり問題を回避するため、InteractiveViewer は削除
           // ズーム機能が必要な画面のみに個別に適用する（必要に応じて）
