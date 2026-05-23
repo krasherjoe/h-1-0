@@ -316,18 +316,13 @@ Future<pw.Document> buildInvoiceDocument(
                   children: [
                     pw.SizedBox(height: 10),
                     _buildSummaryRow(invoice.isTaxInclusiveMode ? "税込小計" : "小計", amountFormatter.format(invoice.subtotal)),
-                    if (_isExemptNoTNumber(companyInfo) && invoice.discountAmount > 0)
-                      _buildSummaryRow("値引き(税込調整)", "-${amountFormatter.format(invoice.discountAmount + invoice.tax)}"),
-                    if (!_isExemptNoTNumber(companyInfo) && invoice.discountAmount > 0)
+                    if (invoice.discountAmount > 0)
                       _buildSummaryRow("値引き", "-${amountFormatter.format(invoice.discountAmount)}"),
-                    if (invoice.tax > 0 && !_isExemptNoTNumber(companyInfo)) ...[
+                    if (invoice.tax > 0) ...[
                       if (invoice.isTaxInclusiveMode)
                         _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}% 逆算)", "(内 ￥${amountFormatter.format(invoice.tax)})"),
-                      if (!invoice.isTaxInclusiveMode && (companyInfo.taxDisplayMode.isEmpty || companyInfo.taxDisplayMode == 'normal'))
+                      if (!invoice.isTaxInclusiveMode)
                         _buildSummaryRow("消費税 (${(invoice.taxRate * 100).toInt()}%)", amountFormatter.format(invoice.tax)),
-                      if (!invoice.isTaxInclusiveMode && companyInfo.taxDisplayMode == 'text_only')
-                        _buildSummaryRow("消費税", "（税別）"),
-                    ],
                     ],
                     pw.Divider(),
                     _buildSummaryRow(() {
@@ -491,9 +486,6 @@ Future<pw.Document> buildInvoiceDocument(
 }
 
 /// A4サイズのプロフェッショナルな伝票PDFを生成し、保存する
-bool _isExemptNoTNumber(CompanyInfo c) =>
-    c.isExemptTaxpayer && (c.registrationNumber == null || c.registrationNumber!.isEmpty);
-
 Future<String?> generateInvoicePdf(Invoice invoice) async {
   try {
     final pdf = await buildInvoiceDocument(invoice);
