@@ -535,6 +535,43 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
 
     if (result != null) {
       if (!mounted) return;
+
+      // 類似商品チェック
+      try {
+        final all = await _productRepo.getAllProducts();
+        final similar = all.where((p) =>
+          p.id != result.id &&
+          p.name.contains(result.name) || result.name.contains(p.name)
+        ).take(5).toList();
+        if (similar.isNotEmpty) {
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('類似商品あり'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('以下の類似商品が既に登録されています'),
+                  const SizedBox(height: 8),
+                  ...similar.map((s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('・${s.name} (¥${NumberFormat('#,###').format(s.defaultUnitPrice)})',
+                        style: const TextStyle(fontSize: 13)),
+                  )),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
+                ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('そのまま保存')),
+              ],
+            ),
+          );
+          if (!mounted) return;
+          if (proceed != true) return;
+        }
+      } catch (_) {}
+
       try {
         await _productRepo.saveProduct(result);
         await _loadProducts();
