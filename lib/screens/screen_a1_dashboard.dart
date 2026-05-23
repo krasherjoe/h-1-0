@@ -161,7 +161,14 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       allInvoices.sort((a, b) => b.date.compareTo(a.date));
       _recentInvoices = allInvoices.where((i) => !i.isDraft).take(5).toList();
 
-      // 進行中案件5件（更新日時順）
+      // 進行中案件5件（更新日時順）＋金額再計算
+      _activeProjects = await _projectRepo.getAllProjects();
+      _activeProjects = _activeProjects
+          .where((p) => p.status == ProjectStatus.active)
+          .toList();
+      for (final p in _activeProjects) {
+        await _projectRepo.recalcTotalAmount(p.id);
+      }
       _activeProjects = await _projectRepo.getAllProjects();
       _activeProjects = _activeProjects
           .where((p) => p.status == ProjectStatus.active)
