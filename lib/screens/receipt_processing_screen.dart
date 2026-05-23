@@ -111,6 +111,7 @@ class _ReceiptProcessingScreenState extends State<ReceiptProcessingScreen> {
         documentType: DocumentType.receipt,
         isDraft: false, isLocked: true,
         subject: '領収: ${inv.invoiceNumber} (${_paymentMethod})',
+        sourceDocumentId: inv.id,
         paymentStatus: PaymentStatus.paid,
         receivedAmount: amount,
       );
