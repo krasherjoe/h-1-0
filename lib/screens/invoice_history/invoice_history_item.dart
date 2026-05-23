@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/invoice_models.dart';
+import '../../models/payment_schedule_model.dart' show PaymentStatus;
 import '../../utils/theme_utils.dart';
 
 class InvoiceHistoryItem extends StatelessWidget {
@@ -143,6 +144,20 @@ class InvoiceHistoryItem extends StatelessWidget {
                               '領収書発行済',
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.tertiary),
                             ),
+                          ),
+                        if (invoice.paymentStatus == PaymentStatus.paid)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(left: 6),
+                            decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                            child: Text('入金済', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
+                          )
+                        else if (invoice.paymentStatus == PaymentStatus.partial)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(left: 6),
+                            decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                            child: Text('一部入金', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.orange.shade700)),
                           ),
                       ],
                     ),
