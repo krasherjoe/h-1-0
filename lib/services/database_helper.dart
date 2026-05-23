@@ -570,7 +570,7 @@ class BackupFile {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 73;
+  static const _databaseVersion = 74;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2302,6 +2302,10 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'deliveries', 'tax_rate REAL DEFAULT 0');
       await _safeAddColumn(db, 'deliveries', 'subject TEXT');
     }
+    if (oldVersion < 74) {
+      await _safeAddColumn(db, 'products', 'supplier_id TEXT');
+      await _safeAddColumn(db, 'products', 'supplier_name TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2389,8 +2393,10 @@ class DatabaseHelper {
         barcode TEXT,
         category TEXT,
         category_id TEXT,
-        stock_quantity INTEGER,
-        is_locked INTEGER DEFAULT 0,
+          stock_quantity INTEGER,
+          supplier_id TEXT,
+          supplier_name TEXT,
+          is_locked INTEGER DEFAULT 0,
         is_hidden INTEGER DEFAULT 0,
         odoo_id TEXT,
         description TEXT,

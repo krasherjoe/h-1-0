@@ -20,6 +20,8 @@ class Product {
   final String? barcode;
   final String? category;
   final String? categoryId; // カテゴリー ID
+  final String? supplierId; // 仕入先ID
+  final String? supplierName; // 仕入先名（スナップショット）
   final int? stockQuantity; // null = 在庫管理なし、0 以上 = 在庫数
   final String? odooId;
   final bool isLocked; // ロック
@@ -43,6 +45,8 @@ class Product {
     this.barcode,
     this.category,
     this.categoryId,
+    this.supplierId,
+    this.supplierName,
     this.stockQuantity,
     this.odooId,
     this.isLocked = false,
@@ -66,6 +70,8 @@ class Product {
       'barcode': barcode,
       'category': category,
       'category_id': categoryId,
+      'supplier_id': supplierId,
+      'supplier_name': supplierName,
       'stock_quantity': stockQuantity,
       'is_locked': isLocked ? 1 : 0,
       'odoo_id': odooId,
@@ -91,6 +97,8 @@ class Product {
       barcode: map['barcode'],
       category: map['category'],
       categoryId: map['category_id'],
+      supplierId: map['supplier_id'] as String?,
+      supplierName: map['supplier_name'] as String?,
       stockQuantity: map['stock_quantity'],
       isLocked: (map['is_locked'] ?? 0) == 1,
       odooId: map['odoo_id'],
@@ -124,6 +132,8 @@ class Product {
     String? barcode,
     String? category,
     String? categoryId,
+    String? supplierId,
+    String? supplierName,
     int? stockQuantity,
     String? odooId,
     bool? isLocked,
@@ -145,6 +155,8 @@ class Product {
       barcode: barcode ?? this.barcode,
       category: category ?? this.category,
       categoryId: categoryId ?? this.categoryId,
+      supplierId: supplierId ?? this.supplierId,
+      supplierName: supplierName ?? this.supplierName,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       odooId: odooId ?? this.odooId,
       isLocked: isLocked ?? this.isLocked,

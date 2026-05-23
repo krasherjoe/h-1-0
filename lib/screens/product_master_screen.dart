@@ -5,7 +5,9 @@ import '../models/product_model.dart';
 import '../models/product_category_model.dart';
 import '../services/product_repository.dart';
 import '../services/product_category_repository.dart';
+import '../models/supplier_model.dart';
 import '../widgets/master_field_config.dart';
+import 'supplier_master_screen.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/rich_master_edit_sheet.dart';
 import 'barcode_scanner_screen.dart';
@@ -153,6 +155,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
   final ProductCategoryRepository _categoryRepo = ProductCategoryRepository();
   final Uuid _uuid = const Uuid();
   final Map<String, bool> _taxFlags = {};
+  String _supplierNameHint = 'タップして仕入先を選択';
   final TextEditingController _searchController = TextEditingController();
 
   List<Product> _products = [];
@@ -380,6 +383,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
     final theme = Theme.of(context);
     _taxFlags['defaultUnitPriceIsTaxInclusive'] = product?.defaultUnitPriceIsTaxInclusive ?? false;
     _taxFlags['wholesalePriceIsTaxInclusive'] = product?.wholesalePriceIsTaxInclusive ?? false;
+    _supplierNameHint = product?.supplierName ?? 'タップして仕入先を選択';
     final result = await showRichMasterEditSheet<Product>(
       context: context,
       titleNew: '商品追加',
@@ -470,6 +474,29 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
                 );
               },
             ),
+            MasterFieldConfig(
+              key: 'supplierId',
+              label: '仕入先',
+              hint: _supplierNameHint,
+              suffixBuilder: (ctrl, setDialogState, updateValue) {
+                return IconButton(
+                  icon: const Icon(Icons.business),
+                  tooltip: '仕入先を選択',
+                  onPressed: () async {
+                    final supplier = await Navigator.push<Supplier>(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SupplierMasterScreen(selectionMode: true)),
+                    );
+                    if (supplier != null) {
+                      _supplierNameHint = supplier.name;
+                      ctrl.text = supplier.id;
+                      updateValue(supplier.id);
+                      setDialogState(() {});
+                    }
+                  },
+                );
+              },
+            ),
             const MasterFieldConfig(
               key: 'stockQuantity',
               label: '在庫数',
@@ -485,6 +512,7 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
         'category': p?.category ?? '',
         'defaultUnitPrice': (p?.defaultUnitPrice ?? 0).toString(),
         'wholesalePrice': (p?.wholesalePrice ?? 0).toString(),
+        'supplierId': p?.supplierId ?? '',
         'stockQuantity': (p?.stockQuantity ?? 0).toString(),
         'barcode': p?.barcode ?? '',
       },
@@ -522,6 +550,8 @@ class _ProductMasterScreenState extends State<ProductMasterScreen> {
           defaultUnitPriceIsTaxInclusive: _taxFlags['defaultUnitPriceIsTaxInclusive'] ?? false,
           wholesalePrice: wholesalePrice,
           wholesalePriceIsTaxInclusive: _taxFlags['wholesalePriceIsTaxInclusive'] ?? false,
+          supplierId: values['supplierId']?.isNotEmpty == true ? values['supplierId'] : null,
+          supplierName: values['supplierId']?.isNotEmpty == true ? _supplierNameHint.startsWith('タップ') ? null : _supplierNameHint : null,
           stockQuantity: stockQuantity,
           barcode: (barcode?.isEmpty ?? true) ? null : barcode,
           category: (category?.isEmpty ?? true) ? null : category,
@@ -864,6 +894,12 @@ PopupMenuItem(
                                 ),
                               if (p.barcode != null && p.barcode!.isNotEmpty)
                                 Text(p.barcode!, style: TextStyle(fontSize: 8, color: theme.colorScheme.onSurfaceVariant)),
+                              if (p.supplierName != null && p.supplierName!.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text(p.supplierName!, style: TextStyle(fontSize: 9, color: Colors.teal.shade700)),
+                                ),
                             ],
                           ),
                           const SizedBox(height: 4),
