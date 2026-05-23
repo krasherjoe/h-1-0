@@ -48,6 +48,7 @@ import 'support_desk_screen.dart';
 import 'warehouse_dashboard_screen.dart';
 import 'staff_management_screen.dart';
 import 'delivery_list_screen.dart';
+import 'payment_slip_list_screen.dart';
 import 'purchase_order_screen.dart';
 import 'purchase_payment_screen.dart';
 import 'screen_pj1_project_list.dart';
@@ -455,6 +456,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
     'customer': _ActionMeta(Icons.people, '得意先', null),
     'product': _ActionMeta(Icons.inventory_2, '商品マスター', null),
     'delivery': _ActionMeta(Icons.local_shipping, '配送記録', null),
+    'payment_slip': _ActionMeta(Icons.payments, '入金伝票', null),
   };
 
   Future<void> _loadQuickActions() async {
@@ -619,6 +621,8 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesEntryScreen()));
       case 'delivery':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const DeliveryListScreen()));
+      case 'payment_slip':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentSlipListScreen()));
     }
   }
 
