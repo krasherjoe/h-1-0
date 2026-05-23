@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/product_model.dart';
 import '../models/product_category_model.dart';
@@ -782,15 +783,56 @@ PopupMenuItem(
                         );
                       }
                     ),
-                    subtitle: Builder(
-                      builder: (context) {
-                        return Text(
-                          "${p.category ?? '未分類'} - ￥${p.defaultUnitPrice}${p.isNonStockCategory ? '' : ' (在庫: ${p.stockQuantity?.toString() ?? '管理なし'})'}",
-                          style: TextStyle(
-                            color: theme.hintColor,
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (p.category != null && p.category!.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(3)),
+                                  child: Text(p.category!, style: TextStyle(fontSize: 9, color: theme.colorScheme.primary)),
+                                ),
+                              if (p.defaultUnitPriceIsTaxInclusive)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text('税込', style: TextStyle(fontSize: 9, color: Colors.orange.shade700)),
+                                ),
+                              if (p.wholesalePriceIsTaxInclusive)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
+                                  child: Text('仕入税込', style: TextStyle(fontSize: 9, color: Colors.blue.shade700)),
+                                ),
+                              if (p.barcode != null && p.barcode!.isNotEmpty)
+                                Text(p.barcode!, style: TextStyle(fontSize: 8, color: theme.colorScheme.onSurfaceVariant)),
+                            ],
                           ),
-                        );
-                      }
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text('販売 ¥${NumberFormat('#,###').format(p.defaultUnitPrice)}',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+                              if (p.wholesalePrice > 0) ...[
+                                const SizedBox(width: 8),
+                                Text('仕入 ¥${NumberFormat('#,###').format(p.wholesalePrice)}',
+                                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                              ],
+                              const Spacer(),
+                              if (!p.isNonStockCategory)
+                                Text('在庫: ${p.stockQuantity?.toString() ?? '管理なし'}',
+                                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     onTap: () {
                       if (_selectMode) {
