@@ -307,9 +307,12 @@ class _InvoicePdfPreviewPageState extends State<InvoicePdfPreviewPage> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('正式発行が完了しました'),
+                                        duration: Duration(seconds: 2),
                                       ),
                                     );
                                   }
+                                  await Future.delayed(const Duration(milliseconds: 500));
+                                  if (mounted) Navigator.pop(context);
                                 }
                               }
                             : null,
