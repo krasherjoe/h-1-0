@@ -544,30 +544,38 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: _enabledQuickActions.map((id) {
-              final meta = _allActionMeta[id];
-              if (meta == null) return const SizedBox.shrink();
-              return _buildActionButton(meta, id);
-            }).toList(),
+          LayoutBuilder(
+            builder: (ctx, constraints) {
+              final count = _enabledQuickActions.length;
+              final gap = 8.0;
+              final btnWidth = (constraints.maxWidth - (count - 1) * gap) / count;
+              final minWidth = 72.0;
+              final effectiveWidth = btnWidth < minWidth ? constraints.maxWidth : btnWidth;
+              return Wrap(
+                spacing: gap,
+                runSpacing: 8,
+                children: _enabledQuickActions.map((id) {
+                  final meta = _allActionMeta[id];
+                  if (meta == null) return const SizedBox.shrink();
+                  return _buildActionButton(meta, id,
+                    width: btnWidth < minWidth ? (constraints.maxWidth - gap) / 2 : effectiveWidth);
+                }).toList(),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(_ActionMeta meta, String id) {
-    return Expanded(
-      child: Padding(
-        padding: EdgeInsets.only(left: _enabledQuickActions.first == id ? 0 : 8),
-        child: _QuickActionButton(
-          icon: meta.icon,
-          label: meta.label,
-          accentColor: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : Theme.of(context).colorScheme.primary,
-          onTap: () => _handleQuickAction(id),
-        ),
-      ),
+  Widget _buildActionButton(_ActionMeta meta, String id, {double? width}) {
+    final btn = _QuickActionButton(
+        icon: meta.icon,
+        label: meta.label,
+        accentColor: meta.docType != null ? documentTypeBadgeColor(meta.docType!) : Theme.of(context).colorScheme.primary,
+        onTap: () => _handleQuickAction(id),
     );
+    return width != null ? SizedBox(width: width, child: btn) : btn;
   }
 
   void _handleQuickAction(String id) {
