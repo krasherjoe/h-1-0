@@ -2002,6 +2002,25 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 77) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS stock_transactions (
+          id TEXT PRIMARY KEY,
+          product_id TEXT NOT NULL,
+          product_name TEXT NOT NULL,
+          warehouse_id TEXT,
+          warehouse_name TEXT,
+          quantity INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          reference_id TEXT,
+          reference_number TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_tx_product ON stock_transactions(product_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_tx_created ON stock_transactions(created_at)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
