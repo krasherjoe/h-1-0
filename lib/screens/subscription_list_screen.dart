@@ -146,6 +146,49 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     await _load();
   }
 
+  Future<void> _batchGenerate() async {
+    final now = DateTime.now();
+    final due = _list.where((s) =>
+      s.isActive &&
+      s.nextBillingDate != null &&
+      !s.nextBillingDate!.isAfter(now) &&
+      (s.totalCycles == 0 || s.completedCycles < s.totalCycles)
+    ).toList();
+
+    if (due.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('生成期限の定期請求はありません')),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('一括生成'),
+        content: Text('${due.length}件の定期請求の請求書を生成しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('生成')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    var ok = 0, ng = 0;
+    for (final s in due) {
+      try {
+        await _repo.generateInvoice(s);
+        ok++;
+      } catch (_) { ng++; }
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${ok}件生成${ng > 0 ? "（${ng}件失敗）" : ""}')),
+    );
+    await _load();
+  }
+
   Future<void> _generateInvoice(Subscription sub) async {
     try {
       final invoice = await _repo.generateInvoice(sub);
@@ -166,8 +209,23 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('定期請求管理')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create, icon: const Icon(Icons.add), label: const Text('新規定期'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'batch_gen',
+            onPressed: _batchGenerate,
+            icon: const Icon(Icons.receipt_long, size: 20),
+            label: const Text('一括生成', style: TextStyle(fontSize: 12)),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'new_sub',
+            onPressed: _create,
+            icon: const Icon(Icons.add),
+            label: const Text('新規定期'),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
