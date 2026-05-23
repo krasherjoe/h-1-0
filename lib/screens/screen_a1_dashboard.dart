@@ -756,20 +756,24 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(subject,
+                              Text(inv.customerNameForDisplay,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500)),
                               const SizedBox(height: 3),
-                              Text(subject,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.6))),
+                              Row(
+                                children: [
+                                  Text(subject,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: cs.onSurfaceVariant
+                                              .withValues(alpha: 0.6))),
+                                ],
+                              ),
                             ],
                           ),
                         ),
