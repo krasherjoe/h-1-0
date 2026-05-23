@@ -834,11 +834,11 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                     MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: project)),
                   ),
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: cs.surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
                     ),
                     child: Row(
@@ -846,19 +846,18 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
                         Column(
                           children: [
                             Container(
-                              width: 36,
-                              height: 36,
+                              width: 26,
+                              height: 26,
                               decoration: BoxDecoration(
                                 color: cs.tertiaryContainer.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Icon(_stageIcon(project.pipelineStage), size: 18, color: cs.tertiary),
+                              child: Icon(_stageIcon(project.pipelineStage), size: 14, color: cs.tertiary),
                             ),
-                            const SizedBox(height: 2),
-                            Text(project.pipelineStage, style: TextStyle(fontSize: 7, color: cs.onSurfaceVariant)),
+                            Text(project.pipelineStage, style: TextStyle(fontSize: 5, color: cs.onSurfaceVariant, height: 1)),
                           ],
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
