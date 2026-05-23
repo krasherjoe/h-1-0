@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../models/invoice_models.dart';
 import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../services/invoice_repository.dart';
@@ -52,6 +53,58 @@ class _AccountsReceivableScreenState extends State<AccountsReceivableScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _showBadDebtAction(Invoice inv) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('貸倒処理'),
+        content: Text('${inv.customerNameForDisplay}\n未回収額: ￥${_nf.format(inv.remainingAmount)}\n\nこの請求を貸倒処理（赤伝発行）しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'write_off'),
+            child: Text('貸倒処理する', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+    if (result != 'write_off') return;
+    await _issueRedInvoice(inv);
+  }
+
+  Future<void> _issueRedInvoice(Invoice inv) async {
+    try {
+      // 赤伝を作成（数量を反転、合計をマイナスに）
+      final redItems = inv.items.map((i) => i.negate()).toList();
+      final red = Invoice(
+        id: const Uuid().v4(),
+        customer: inv.customer,
+        date: DateTime.now(),
+        items: redItems,
+        taxRate: inv.taxRate,
+        documentType: DocumentType.invoice,
+        isDraft: false, isLocked: true,
+        subject: '貸倒: ${inv.invoiceNumber}',
+        sourceDocumentId: inv.id,
+        paymentStatus: PaymentStatus.paid,
+        receivedAmount: 0,
+      );
+      await _invoiceRepo.saveInvoice(red);
+
+      // 元の請求書を貸倒済みに更新
+      await _invoiceRepo.updatePaymentStatus(inv.id);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${inv.customerNameForDisplay} を貸倒処理しました（赤伝発行済）')),
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('貸倒処理に失敗: $e')));
     }
   }
 
@@ -112,7 +165,10 @@ class _AccountsReceivableScreenState extends State<AccountsReceivableScreen> {
                           final aging = days <= 30 ? '30日以内' : days <= 60 ? '60日以内' : '60日超';
                           final agingColor = days <= 30 ? Colors.orange : days <= 60 ? Colors.deepOrange : cs.error;
                           return Card(
-                            child: Padding(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onLongPress: () => _showBadDebtAction(inv),
+                              child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +205,8 @@ class _AccountsReceivableScreenState extends State<AccountsReceivableScreen> {
                                 ],
                               ),
                             ),
-                          );
+                          ),
+                        );
                         },
                       ),
                     ),
