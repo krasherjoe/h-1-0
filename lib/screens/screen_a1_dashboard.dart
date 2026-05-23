@@ -41,6 +41,8 @@ import 'staff_master_screen.dart';
 import 'settings_screen.dart';
 import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
+import 'stock_inbound_screen.dart';
+import 'stock_outbound_screen.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
 import 'invoice_issue_screen.dart';
@@ -668,6 +670,10 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsReceivableScreen()));
       case 'ar':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountsReceivableScreen()));
+      case 'stock_inbound':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const StockInboundScreen()));
+      case 'stock_outbound':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const StockOutboundScreen()));
     }
   }
 

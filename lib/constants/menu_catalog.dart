@@ -178,6 +178,22 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '顧客別未回収額・消し込み確認',
   ),
   MenuDefinition(
+    id: 'WHI',
+    title: '在庫入庫',
+    route: 'stock_inbound',
+    category: '04. 在庫・倉庫管理',
+    iconName: 'inbox',
+    description: '商品の入庫処理（仕入出・返品等）',
+  ),
+  MenuDefinition(
+    id: 'WHO',
+    title: '在庫出庫',
+    route: 'stock_outbound',
+    category: '04. 在庫・倉庫管理',
+    iconName: 'outbox',
+    description: '商品の出庫処理（売上・移動等）',
+  ),
+  MenuDefinition(
     id: 'IH',
     title: '伝票一覧',
     route: 'invoice_history',

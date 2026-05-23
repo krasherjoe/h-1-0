@@ -30,6 +30,8 @@ import 'staff_master_screen.dart';
 import 'settings_screen.dart';
 import 'master_hub_page.dart';
 import 'menu_placeholder_screen.dart';
+import 'stock_inbound_screen.dart';
+import 'stock_outbound_screen.dart';
 import 'stocktake_input_screen.dart';
 import 'stock_transfer_screen.dart';
 import 'invoice_issue_screen.dart';
@@ -166,6 +168,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return const ReceiptProcessingScreen();
       case 'accounts_receivable':
         return const AccountsReceivableScreen();
+      case 'stock_inbound':
+        return const StockInboundScreen();
+      case 'stock_outbound':
+        return const StockOutboundScreen();
       case 'purchase_order_input':
         return const PurchaseOrderListScreen();
       case 'purchase_return_input':
