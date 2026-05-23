@@ -548,8 +548,9 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
             builder: (ctx, constraints) {
               final gap = 4.0;
               final perBtn = (constraints.maxWidth - gap * (_enabledQuickActions.length - 1)) / _enabledQuickActions.length.clamp(1, 6);
-              final btnW = perBtn.clamp(66, 120).toDouble();
+              final btnW = perBtn.clamp(60, 120).toDouble();
               return Wrap(
+                alignment: WrapAlignment.center,
                 spacing: gap,
                 runSpacing: 6,
                 children: _enabledQuickActions.map((id) {
