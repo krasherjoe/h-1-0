@@ -894,11 +894,11 @@ PopupMenuItem(
                                 ),
                               if (p.barcode != null && p.barcode!.isNotEmpty)
                                 Text(p.barcode!, style: TextStyle(fontSize: 8, color: theme.colorScheme.onSurfaceVariant)),
-                              if (p.supplierName != null && p.supplierName!.isNotEmpty)
+                              if (p.supplierId != null || p.supplierName != null)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(3)),
-                                  child: Text(p.supplierName!, style: TextStyle(fontSize: 9, color: Colors.teal.shade700)),
+                                  child: Text(p.supplierName ?? p.supplierId!, style: TextStyle(fontSize: 9, color: Colors.teal.shade700)),
                                 ),
                             ],
                           ),
