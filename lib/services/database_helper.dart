@@ -177,7 +177,7 @@ class LocalBackupService {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 76;
+  static const _databaseVersion = 78;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2021,6 +2021,26 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_tx_product ON stock_transactions(product_id)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_tx_created ON stock_transactions(created_at)');
     }
+    if (oldVersion < 78) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS inventory (
+          id TEXT PRIMARY KEY,
+          product_id TEXT NOT NULL,
+          product_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 0,
+          reserved_quantity INTEGER NOT NULL DEFAULT 0,
+          location TEXT,
+          warehouse_id TEXT NOT NULL,
+          warehouse_name TEXT NOT NULL,
+          unit_cost REAL,
+          reorder_point INTEGER,
+          safety_stock INTEGER,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_warehouse ON inventory(warehouse_id)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -2542,6 +2562,43 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX idx_stock_allocations_product ON stock_allocations(product_id)',
     );
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS stock_transactions (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        warehouse_id TEXT,
+        warehouse_name TEXT,
+        quantity INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        reference_id TEXT,
+        reference_number TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_stock_tx_product ON stock_transactions(product_id)');
+    await db.execute('CREATE INDEX idx_stock_tx_created ON stock_transactions(created_at)');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS inventory (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        reserved_quantity INTEGER NOT NULL DEFAULT 0,
+        location TEXT,
+        warehouse_id TEXT NOT NULL,
+        warehouse_name TEXT NOT NULL,
+        unit_cost REAL,
+        reorder_point INTEGER,
+        safety_stock INTEGER,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_warehouse ON inventory(warehouse_id)');
 
     await db.execute('''
       CREATE TABLE flow_status_logs (
