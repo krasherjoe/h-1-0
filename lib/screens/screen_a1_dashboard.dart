@@ -257,8 +257,6 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         return const OrderInputScreen();
       case 'quotation_input':
         return const QuotationInputScreen();
-      case 'order_entry':
-        return const OrderInputScreen();
       case 'sales_entry':
         return const SalesEntryScreen();
       case 'sales_return_input':

@@ -32,8 +32,10 @@ const List<String> kMenuCategoryOrder = [
   '02. 販売管理',
   '03. 仕入管理',
   '04. 在庫管理',
-  '05. 集計分析',
-  '06. システム設定',
+  '05. 案件・工数管理',
+  '06. 集計分析',
+  '07. システム設定',
+  '08. 業種設定',
 ];
 
 const Map<String, String> kMenuCategoryDescriptions = {
@@ -41,8 +43,10 @@ const Map<String, String> kMenuCategoryDescriptions = {
   '02. 販売管理': '見積〜請求までの販売プロセス',
   '03. 仕入管理': '発注・仕入・支払を含む購買プロセス',
   '04. 在庫管理': '倉庫在庫の把握と移動・棚卸・調整',
-  '05. 集計分析': '日報や推移・粗利などの集計レポート',
-  '06. システム設定': 'ユーザーやログなど基盤設定',
+  '05. 案件・工数管理': '案件の進捗と作業時間の管理',
+  '06. 集計分析': '日報や推移・粗利などの集計レポート',
+  '07. システム設定': 'ユーザーやログなど基盤設定',
+  '08. 業種設定': '業種固有の設定',
 };
 
 const List<MenuDefinition> kMenuDefinitions = [
@@ -181,7 +185,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     id: 'WHI',
     title: '在庫入庫',
     route: 'stock_inbound',
-    category: '04. 在庫・倉庫管理',
+    category: '04. 在庫管理',
     iconName: 'inbox',
     description: '商品の入庫処理（仕入出・返品等）',
   ),
@@ -189,7 +193,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     id: 'WHO',
     title: '在庫出庫',
     route: 'stock_outbound',
-    category: '04. 在庫・倉庫管理',
+    category: '04. 在庫管理',
     iconName: 'outbox',
     description: '商品の出庫処理（売上・移動等）',
   ),
