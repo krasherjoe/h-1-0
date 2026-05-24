@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// 売上分析画面（シンプル版）
 class SalesAnalysisScreen extends StatefulWidget {
@@ -126,6 +127,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
   }
 
   Widget _buildSummaryCards() {
+    final nf = NumberFormat('#,###');
     final totalRevenue = _monthlyData.fold<double>(0, (s, i) => s + (i['revenue'] as double));
     final totalProfit = _monthlyData.fold<double>(0, (s, i) => s + (i['profit'] as double));
     final totalOrders = _monthlyData.fold<int>(0, (s, i) => s + (i['orders'] as int));
@@ -136,13 +138,13 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _summaryCard('総売上', '¥${totalRevenue.toStringAsFixed(0)}', Icons.trending_up, cs.primary),
+          _summaryCard('総売上', '¥${nf.format(totalRevenue.toInt())}', Icons.trending_up, cs.primary),
           const SizedBox(width: 8),
-          _summaryCard('総利益', '¥${totalProfit.toStringAsFixed(0)}', Icons.show_chart, cs.primary),
+          _summaryCard('総利益', '¥${nf.format(totalProfit.toInt())}', Icons.show_chart, cs.primary),
           const SizedBox(width: 8),
-          _summaryCard('総注文数', totalOrders.toString(), Icons.shopping_cart, cs.tertiary),
+          _summaryCard('総注文数', nf.format(totalOrders), Icons.shopping_cart, cs.tertiary),
           const SizedBox(width: 8),
-          _summaryCard('平均単価', '¥${avgOrderValue.toStringAsFixed(0)}', Icons.calculate, cs.secondary),
+          _summaryCard('平均単価', '¥${nf.format(avgOrderValue.toInt())}', Icons.calculate, cs.secondary),
         ],
       ),
     );
