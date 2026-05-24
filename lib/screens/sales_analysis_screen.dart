@@ -170,14 +170,23 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
           children: [
             Text('月次売上推移', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface)),
             const SizedBox(height: 12),
-            SizedBox(height: 200, child: CustomPaint(
-              painter: BarChartPainter(
-                data: _monthlyData.map((m) => ((m['revenue'] as double) / 10000).roundToDouble()).toList(),
-                maxValue: (_maxMonthly / 10000).ceilToDouble(),
-                labels: _monthlyData.map((m) => m['month'] as String).toList(),
-                color: cs.primary,
+            SizedBox(
+              height: 200,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (_monthlyData.length * 60.0).clamp(300, 800),
+                  child: CustomPaint(
+                    painter: BarChartPainter(
+                      data: _monthlyData.map((m) => (m['revenue'] as double) / 10000).toList(),
+                      maxValue: (_maxMonthly / 10000).ceilToDouble(),
+                      labels: _monthlyData.map((m) => m['month'] as String).toList(),
+                      color: cs.primary,
+                    ),
+                  ),
+                ),
               ),
-            )),
+            ),
           ],
         ),
       ),
@@ -195,7 +204,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             const SizedBox(height: 12),
             SizedBox(height: 200, child: CustomPaint(
               painter: BarChartPainter(
-                data: _categoryData.map((c) => ((c['revenue'] as double) / 10000).roundToDouble()).toList(),
+                data: _categoryData.map((c) => (c['revenue'] as double) / 10000).toList(),
                 maxValue: (_maxCategory / 10000).ceilToDouble(),
                 labels: _categoryData.map((c) => c['category'] as String).toList(),
                 color: cs.tertiary,
