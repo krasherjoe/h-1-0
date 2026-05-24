@@ -114,7 +114,10 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Future<void> _load() async {
-    try { _appVersion = (await PackageInfo.fromPlatform()).version; } catch (_) {}
+    try {
+      final info = await PackageInfo.fromPlatform();
+      _appVersion = '${info.version}+${info.buildNumber}';
+    } catch (_) {}
     final rawMenu = await _repo.getDashboardMenu();
     final isDebug = AppConfig.enableDebugFeatures;
     final normalizedMenu = isDebug ? rawMenu.map((e) => e.copyWith(enabled: true)).toList() : rawMenu;
@@ -950,7 +953,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('販売アシスト1号 ${_appVersion}'),
+        title: Text('A1: 販売アシスト1号 ${_appVersion}'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
           IconButton(
