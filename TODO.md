@@ -352,6 +352,8 @@ adb uninstall com.example.h_1
 3. 残存する flutter analyze 警告の整理（テストファイルのみ、本番コードは問題なし）
 
 ## 📋 将来計画（未着手）
+- [ ] **経理モジュール（カード管理・仕訳・消費税対応）**: 代表者カード／法人カードの管理、カード明細取込・突合、仕訳（借方/貸方）、未払金管理、消費税区分（課税/非課税/対象外）、決算書出力
+  - トリガー: 代表者カードの管理が必要になったら検討・設計着手
 - [ ] **サーバーモード（DNA設計）**: ProxmoxのUbuntu+FlutterSDKでアプリをサーバー稼働
   - 基盤: `lib/server/api_handler.dart`（汎用CRUD API）✅ 作成済み
   - 設定: `lib/screens/screen_rc_remote_config.dart`（RC:接続設定）✅ 作成済み
