@@ -177,7 +177,7 @@ class LocalBackupService {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 80;
+  static const _databaseVersion = 81;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2054,6 +2054,33 @@ class DatabaseHelper {
     if (oldVersion < 80) {
       await _safeAddColumn(db, 'payments', 'purchase_ids TEXT');
     }
+    if (oldVersion < 81) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchases (
+          id TEXT PRIMARY KEY,
+          document_number TEXT NOT NULL,
+          date TEXT NOT NULL,
+          supplier_id TEXT,
+          due_date TEXT,
+          subtotal INTEGER NOT NULL DEFAULT 0,
+          tax_amount INTEGER NOT NULL DEFAULT 0,
+          total INTEGER NOT NULL DEFAULT 0,
+          tax_rate REAL NOT NULL DEFAULT 0.1,
+          notes TEXT,
+          subject TEXT,
+          status TEXT NOT NULL DEFAULT 'draft',
+          purchase_status TEXT NOT NULL DEFAULT 'draft',
+          payment_status TEXT NOT NULL DEFAULT 'unpaid',
+          invoice_number TEXT,
+          delivery_location TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_purchases_supplier ON purchases(supplier_id)');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -3087,6 +3114,33 @@ class DatabaseHelper {
     ''');
     await db.execute('CREATE INDEX idx_time_logs_task ON time_logs(task_id)');
     await db.execute('CREATE INDEX idx_time_logs_project ON time_logs(project_id)');
+
+    // 仕入テーブル（v81追加）
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS purchases (
+        id TEXT PRIMARY KEY,
+        document_number TEXT NOT NULL,
+        date TEXT NOT NULL,
+        supplier_id TEXT,
+        due_date TEXT,
+        subtotal INTEGER NOT NULL DEFAULT 0,
+        tax_amount INTEGER NOT NULL DEFAULT 0,
+        total INTEGER NOT NULL DEFAULT 0,
+        tax_rate REAL NOT NULL DEFAULT 0.1,
+        notes TEXT,
+        subject TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        purchase_status TEXT NOT NULL DEFAULT 'draft',
+        payment_status TEXT NOT NULL DEFAULT 'unpaid',
+        invoice_number TEXT,
+        delivery_location TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_purchases_supplier ON purchases(supplier_id)');
 
     // 発注管理テーブル（v36）
     await db.execute('''
