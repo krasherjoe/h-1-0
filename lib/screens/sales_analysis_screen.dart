@@ -5,6 +5,7 @@ import '../models/payment_schedule_model.dart' show PaymentStatus;
 import '../services/customer_repository.dart';
 import '../services/database_helper.dart';
 import '../services/invoice_repository.dart';
+import '../services/product_repository.dart';
 
 /// SA:売上分析（実DB連携）
 class SalesAnalysisScreen extends StatefulWidget {
@@ -21,7 +22,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
   List<Map<String, dynamic>> _monthlyData = [];
   List<Map<String, dynamic>> _categoryData = [];
   int _year = DateTime.now().year;
-  int _totalRevenue = 0, _totalOrders = 0;
+  int _totalRevenue = 0, _totalOrders = 0, _totalProfit = 0;
 
   @override
   void initState() {
@@ -39,21 +40,40 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
         (inv.documentType == DocumentType.invoice || inv.documentType == DocumentType.estimation)
       ).toList();
 
+      // 商品の仕入単価をプリロード
+      final products = await ProductRepository().getAllProducts();
+      final wholesale = <String, int>{};
+      for (final p in products) {
+        if (p.wholesalePrice > 0) wholesale[p.id] = p.wholesalePrice;
+      }
+
       _totalRevenue = invoices.fold(0, (s, i) => s + i.totalAmount);
       _totalOrders = invoices.length;
+      _totalProfit = 0;
 
       // 月次データ
       final monthly = List.generate(12, (i) => {
         'month': '${i + 1}月',
         'revenue': 0.0,
+        'profit': 0,
         'orders': 0,
-        'paid': 0,
       });
       for (final inv in invoices) {
         final m = inv.date.month - 1;
         monthly[m]['revenue'] = (monthly[m]['revenue'] as double) + inv.totalAmount.toDouble();
         monthly[m]['orders'] = (monthly[m]['orders'] as int) + 1;
-        if (inv.paymentStatus == PaymentStatus.paid) monthly[m]['paid'] = (monthly[m]['paid'] as int) + inv.totalAmount;
+        // 粗利計算（明細の販売額 - 仕入単価）
+        int profit = 0;
+        for (final item in inv.items) {
+          final wp = item.productId != null ? wholesale[item.productId] : null;
+          if (wp != null && wp > 0) {
+            profit += (item.unitPrice - wp) * item.quantity;
+          }
+        }
+        if (profit > 0) {
+          monthly[m]['profit'] = (monthly[m]['profit'] as int) + profit;
+          _totalProfit += profit;
+        }
       }
       _monthlyData = monthly;
 
@@ -118,15 +138,18 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
 
   Widget _buildSummaryCards(ColorScheme cs) {
     final avgOrder = _totalOrders > 0 ? _totalRevenue / _totalOrders : 0.0;
+    final margin = _totalRevenue > 0 ? (_totalProfit / _totalRevenue * 100).toStringAsFixed(1) : '0.0';
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _card('総売上', '¥${_nf.format(_totalRevenue)}', Icons.trending_up, cs.primary),
           const SizedBox(width: 8),
-          _card('請求件数', '${_nf.format(_totalOrders)}件', Icons.receipt, cs.tertiary),
+          _card('粗利益', '¥${_nf.format(_totalProfit)}', Icons.show_chart, Colors.green),
           const SizedBox(width: 8),
-          _card('平均単価', '¥${_nf.format(avgOrder.toInt())}', Icons.calculate, cs.secondary),
+          _card('粗利率', '${margin}%', Icons.percent, cs.tertiary),
+          const SizedBox(width: 8),
+          _card('請求件数', '${_nf.format(_totalOrders)}件', Icons.receipt, cs.secondary),
         ],
       ),
     );
@@ -227,11 +250,12 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             const SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [DataColumn(label: Text('月')), DataColumn(label: Text('売上')), DataColumn(label: Text('件数'))],
+              child:               DataTable(
+                columns: const [DataColumn(label: Text('月')), DataColumn(label: Text('売上')), DataColumn(label: Text('粗利')), DataColumn(label: Text('件数'))],
                 rows: _monthlyData.map((m) => DataRow(cells: [
                   DataCell(Text(m['month'] as String)),
                   DataCell(Text('¥${_nf.format((m['revenue'] as double).toInt())}')),
+                  DataCell(Text('¥${_nf.format((m['profit'] as int))}')),
                   DataCell(Text('${(m['orders'] as int)}件')),
                 ])).toList(),
               ),
