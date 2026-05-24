@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/app_settings_repository.dart';
 import '../services/database_helper.dart';
@@ -86,6 +87,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
 
   bool _loading = true;
   List<DashboardMenuItem> _menu = [];
+  String _appVersion = '';
   bool _historyUnlocked = false;
   bool _showCategoryDescriptions = true;
   bool _recentCollapsed = false;
@@ -112,6 +114,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
   }
 
   Future<void> _load() async {
+    try { _appVersion = (await PackageInfo.fromPlatform()).version; } catch (_) {}
     final rawMenu = await _repo.getDashboardMenu();
     final isDebug = AppConfig.enableDebugFeatures;
     final normalizedMenu = isDebug ? rawMenu.map((e) => e.copyWith(enabled: true)).toList() : rawMenu;
@@ -947,7 +950,7 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('A1:ダッシュボード'),
+        title: Text('販売アシスト1号 ${_appVersion}'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
           IconButton(
