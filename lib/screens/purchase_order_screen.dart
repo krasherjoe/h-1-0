@@ -256,6 +256,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   String? _supplierId;
   String? _supplierName;
   String? _projectId;
+  String? _paymentMethod;
   bool _isSaving = false;
 
   final List<LineItemFormData> _lines = [];
@@ -270,8 +271,8 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
       _status = order.status;
       _supplierId = order.supplierId;
       _supplierName = order.supplierSnapshot;
-      _subjectController.text = order.subject ?? '';
       _projectId = order.projectId;
+      _paymentMethod = order.paymentMethod;
       _notesController.text = order.notes ?? '';
       for (final item in order.items) {
         final data = LineItemFormData(
@@ -462,6 +463,7 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
         status: _status,
         subject: _subjectController.text.trim().isEmpty ? null : _subjectController.text.trim(),
         projectId: _projectId,
+        paymentMethod: _paymentMethod,
         subtotal: totals['subtotal'] ?? 0,
         taxAmount: totals['tax'] ?? 0,
         total: totals['total'] ?? 0,
@@ -566,31 +568,26 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
                 ),
               ),
             ),
-             const SizedBox(height: 12),
+            const SizedBox(height: 12),
             TextField(
               controller: _subjectController,
               decoration: const InputDecoration(labelText: '案件名', hintText: '例: △△建設 新築工事', border: OutlineInputBorder(), isDense: true),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('ステータス', style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    DropdownButton<PurchaseOrderStatus>(
-                      value: _status,
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => _status = value);
-                      },
-                      items: PurchaseOrderStatus.values
-                          .map((status) => DropdownMenuItem(value: status, child: Text(status.displayName)))
-                          .toList(),
-                    ),
+              child: ListTile(
+                title: const Text('支払方法'),
+                trailing: DropdownButton<String>(
+                  value: _paymentMethod,
+                  hint: const Text('選択'),
+                  items: const [
+                    DropdownMenuItem(value: '銀行振込', child: Text('銀行振込')),
+                    DropdownMenuItem(value: '現金', child: Text('現金')),
+                    DropdownMenuItem(value: 'カード', child: Text('カード払い')),
+                    DropdownMenuItem(value: '代表者立替', child: Text('代表者立替')),
+                    DropdownMenuItem(value: 'その他', child: Text('その他')),
                   ],
+                  onChanged: (value) => setState(() => _paymentMethod = value),
                 ),
               ),
             ),

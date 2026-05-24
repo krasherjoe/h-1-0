@@ -94,6 +94,7 @@ class PurchaseOrder {
     this.notes,
     this.subject,
     this.projectId,
+    this.paymentMethod,
     this.items = const [],
   });
 
@@ -110,6 +111,7 @@ class PurchaseOrder {
   final String? notes;
   final String? subject;
   final String? projectId;
+  final String? paymentMethod;
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<PurchaseOrderItem> items;
@@ -128,6 +130,7 @@ class PurchaseOrder {
     String? notes,
     String? subject,
     String? projectId,
+    String? paymentMethod,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<PurchaseOrderItem>? items,
@@ -146,6 +149,7 @@ class PurchaseOrder {
       notes: notes ?? this.notes,
       subject: subject ?? this.subject,
       projectId: projectId ?? this.projectId,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
@@ -165,6 +169,7 @@ class PurchaseOrder {
         'supplier_snapshot': supplierSnapshot,
         'notes': notes,
         'subject': subject,
+        'payment_method': paymentMethod,
         'project_id': projectId,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
@@ -175,6 +180,7 @@ class PurchaseOrder {
         documentNumber: map['document_number'] as String,
         orderDate: DateTime.parse(map['order_date'] as String),
         expectedDate: map['expected_date'] != null ? DateTime.parse(map['expected_date'] as String) : null,
+        paymentMethod: map['payment_method'] as String?,
         status: PurchaseOrderStatus.values.firstWhere(
           (e) => e.name == map['status'],
           orElse: () => PurchaseOrderStatus.draft,
