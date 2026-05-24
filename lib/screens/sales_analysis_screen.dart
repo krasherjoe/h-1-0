@@ -225,14 +225,23 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
           children: [
             Text('商品別売上', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface)),
             const SizedBox(height: 12),
-            SizedBox(height: 200, child: CustomPaint(
-              painter: BarChartPainter(
-                data: _categoryData.map((c) => (c['revenue'] as double) / 10000).toList(),
-                maxValue: (_maxCategory / 10000).ceilToDouble(),
-                labels: _categoryData.map((c) => c['category'] as String).toList(),
-                color: cs.tertiary,
+            SizedBox(
+              height: 200,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: (_categoryData.length * 120.0).clamp(200, 600),
+                  child: CustomPaint(
+                    painter: BarChartPainter(
+                      data: _categoryData.map((c) => (c['revenue'] as double) / 10000).toList(),
+                      maxValue: (_maxCategory / 10000).ceilToDouble(),
+                      labels: _categoryData.map((c) => c['category'] as String).toList(),
+                      color: cs.tertiary,
+                    ),
+                  ),
+                ),
               ),
-            )),
+            ),
           ],
         ),
       ),
