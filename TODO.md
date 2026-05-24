@@ -360,3 +360,17 @@ adb uninstall com.example.h_1
 - [ ] **定期請求 機能拡張**: 請求書自動生成の定期実行、カレンダー連携
 - [ ] **Google Calendar 連携**: 入金予定日のカレンダー自動登録（認証スコープ追加済み）
 
+## 🚧 未完成メニュー画面（サンプルデータ・未実装）
+
+### 全く使えない（サンプルデータのみ）
+- [ ] **WD:倉庫ダッシュボード** — `lib/screens/warehouse_dashboard_screen.dart`
+- [ ] **SM:担当者管理** — `lib/screens/staff_management_screen.dart`
+- [ ] **SD:サポートデスク** — `lib/screens/support_desk_screen.dart`
+- [ ] **SA:売上分析** — `lib/screens/sales_analysis_screen.dart`
+
+### 中途半端（一覧のみ実装）
+- [ ] **SR1:売上返品入力** — 作成・詳細が未実装
+- [ ] **PR1:仕入返品入力** — 作成・詳細が未実装
+- [ ] **ES:見積入力** — 詳細画面が未実装（Q1は別途完動）
+- [ ] **PY:支払予定管理** — 支払登録が未実装
+
