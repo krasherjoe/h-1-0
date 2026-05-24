@@ -5,6 +5,7 @@ import '../widgets/generic_list_screen.dart';
 import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../models/purchase_model.dart';
+import 'purchase_input_screen.dart';
 
 class PurchaseReturnInputScreen extends StatefulWidget {
   const PurchaseReturnInputScreen({super.key});
@@ -39,11 +40,13 @@ class _PurchaseReturnInputScreenState extends State<PurchaseReturnInputScreen> {
           date: purchase.date,
           status: purchase.status,
           themeColor: Theme.of(context).colorScheme.error,
-          onTap: () {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('返品詳細画面は今後実装予定です')),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PurchaseInputScreen(existingPurchaseId: purchase.id)),
             );
+            if (!mounted) return;
+            onRefresh();
           },
           actions: [
             CardAction(
@@ -114,9 +117,9 @@ class _PurchaseReturnInputScreenState extends State<PurchaseReturnInputScreen> {
 
       // 新規作成
       onCreateNew: () async {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('返品作成画面は今後実装予定です')),
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PurchaseInputScreen()),
         );
       },
 
@@ -127,10 +130,10 @@ class _PurchaseReturnInputScreenState extends State<PurchaseReturnInputScreen> {
         subtitle: '返品処理を登録してください',
         actionLabel: '新規返品',
         iconColor: Theme.of(context).colorScheme.error,
-        onAction: () {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('返品作成画面は今後実装予定です')),
+        onAction: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PurchaseInputScreen()),
           );
         },
       ),

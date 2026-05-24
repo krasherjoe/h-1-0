@@ -4,6 +4,7 @@ import '../widgets/document_card.dart';
 import '../widgets/empty_state_widget.dart';
 import '../models/sales_model.dart';
 import '../services/sales_repository.dart';
+import 'sales_input_screen.dart';
 
 /// 売上返品入力画面（汎用テンプレート使用）
 class SalesReturnInputScreen extends StatefulWidget {
@@ -39,11 +40,13 @@ class _SalesReturnInputScreenState extends State<SalesReturnInputScreen> {
           date: sales.date,
           status: sales.status,
 themeColor: Theme.of(context).colorScheme.error,
-          onTap: () {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('返品詳細画面は今後実装予定です')),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SalesInputScreen(existingSalesId: sales.id)),
             );
+            if (!mounted) return;
+            onRefresh();
           },
           actions: [
             CardAction(
@@ -118,9 +121,9 @@ themeColor: Theme.of(context).colorScheme.error,
 
       // 新規作成
       onCreateNew: () async {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('返品作成画面は今後実装予定です')),
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SalesInputScreen()),
         );
       },
 
@@ -129,12 +132,12 @@ themeColor: Theme.of(context).colorScheme.error,
         icon: Icons.assignment_return,
         title: '返品がありません',
         subtitle: '返品処理を登録してください',
-        actionLabel: '新規返品作成',
+        actionLabel: '新規返品',
         iconColor: Theme.of(context).colorScheme.error,
-        onAction: () {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('返品作成画面は今後実装予定です')),
+        onAction: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SalesInputScreen()),
           );
         },
       ),
