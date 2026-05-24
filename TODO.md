@@ -362,15 +362,13 @@ adb uninstall com.example.h_1
 
 ## 🚧 未完成メニュー画面（サンプルデータ・未実装）
 
-### 全く使えない（サンプルデータのみ）
-- [ ] **WD:倉庫ダッシュボード** — `lib/screens/warehouse_dashboard_screen.dart`
-- [ ] **SM:担当者管理** — `lib/screens/staff_management_screen.dart`
-- [ ] **SD:サポートデスク** — `lib/screens/support_desk_screen.dart`
-- [ ] **SA:売上分析** — `lib/screens/sales_analysis_screen.dart`
-
-### 中途半端（一覧のみ実装）
-- [ ] **SR1:売上返品入力** — 作成・詳細が未実装
-- [ ] **PR1:仕入返品入力** — 作成・詳細が未実装
-- [ ] **ES:見積入力** — 詳細画面が未実装（Q1は別途完動）
-- [ ] **PY:支払予定管理** — 支払登録が未実装
+### 完了（本実装・リダイレクト）
+- [x] **WD:倉庫ダッシュボード** — 実DB連携＋アクション実装
+- [x] **SM:担当者管理** → ST:担当者マスターにリダイレクト
+- [x] **SD:サポートデスク** — 空状態表示（テーブル未作成）
+- [x] **SA:売上分析** — 実DB連携（月次＋カテゴリ別）
+- [x] **SR1:売上返品入力** — 作成・詳細をSalesInputScreenに接続
+- [x] **PR1:仕入返品入力** — 作成・詳細をPurchaseInputScreenに接続
+- [x] **ES:見積入力** — 詳細画面をInvoiceDetailPageに接続（service_locator不足は元から）
+- [x] **PY:支払予定管理** — 支払登録実装
 
