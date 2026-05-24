@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/purchase_model.dart';
+import '../models/purchase_order_models.dart';
 import '../models/supplier_model.dart';
 import '../models/product_model.dart';
 import '../widgets/document_card.dart';
 import '../services/purchase_repository.dart';
+import '../services/purchase_order_service.dart';
 import '../services/product_repository.dart';
 import '../services/database_helper.dart';
 import '../models/base_document.dart';
@@ -40,6 +42,9 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
   bool _isLoading = true;
 
   List<_LineItem> _items = [];
+  String? _linkedOrderId;
+  String? _linkedOrderNumber;
+  final PurchaseOrderService _orderService = PurchaseOrderService();
 
   @override
   void initState() {
@@ -70,6 +75,8 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
     _dueDate = purchase.dueDate;
     _taxRate = purchase.taxRate;
     _isDraft = purchase.status == DocumentStatus.draft;
+    _linkedOrderId = purchase.purchaseOrderId;
+    _linkedOrderNumber = purchase.purchaseOrderNumber;
 
     final productRepo = ProductRepository();
     final loadedItems = <_LineItem>[];
@@ -106,6 +113,39 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
     );
     if (result != null && mounted) {
       setState(() => _selectedSupplier = result);
+    }
+  }
+
+  Future<void> _pickPurchaseOrder() async {
+    final orders = await _orderService.fetchOrders(status: PurchaseOrderStatus.approved);
+    if (!mounted) return;
+    if (orders.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('承認済みの発注がありません')),
+      );
+      return;
+    }
+    final selected = await showModalBottomSheet<PurchaseOrder>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _PurchaseOrderPickerSheet(orders: orders),
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _linkedOrderId = selected.id;
+        _linkedOrderNumber = selected.documentNumber;
+        if (_selectedSupplier == null) {
+          _selectedSupplier = Supplier(
+            id: selected.supplierId ?? '',
+            displayName: selected.supplierSnapshot ?? '不明',
+            formalName: selected.supplierSnapshot ?? '不明',
+            updatedAt: DateTime.now(),
+          );
+        }
+      });
     }
   }
 
@@ -256,6 +296,8 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
       paymentStatus: PaymentStatus.unpaid,
       invoiceNumber: _invoiceNumberController.text.isNotEmpty ? _invoiceNumberController.text : null,
       deliveryLocation: _deliveryLocationController.text.isNotEmpty ? _deliveryLocationController.text : null,
+      purchaseOrderId: _linkedOrderId,
+      purchaseOrderNumber: _linkedOrderNumber,
     );
 
     try {
@@ -323,6 +365,28 @@ class _PurchaseInputScreenState extends State<PurchaseInputScreen> {
               subtitle: _selectedSupplier?.contactPerson != null ? Text('担当者: ${_selectedSupplier!.contactPerson}') : null,
               trailing: const Icon(Icons.chevron_right),
               onTap: _pickSupplier,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 発注連携
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.receipt),
+              title: Text(_linkedOrderNumber ?? '発注と連携'),
+              subtitle: Text(_linkedOrderId != null ? '発注番号: $_linkedOrderNumber' : 'タップして発注を選択'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_linkedOrderId != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () => setState(() { _linkedOrderId = null; _linkedOrderNumber = null; }),
+                    ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              onTap: _pickPurchaseOrder,
             ),
           ),
           const SizedBox(height: 12),
@@ -621,4 +685,53 @@ class _LineItem {
 }
 
 // Quantity field state accessor for dialog
+
+class _PurchaseOrderPickerSheet extends StatelessWidget {
+  const _PurchaseOrderPickerSheet({required this.orders});
+
+  final List<PurchaseOrder> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('yyyy/MM/dd');
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).canvasColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 50, height: 4,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Text('発注を選択', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                return ListTile(
+                  leading: const Icon(Icons.receipt),
+                  title: Text(order.documentNumber),
+                  subtitle: Text('${order.supplierSnapshot ?? "不明"} / ${dateFormat.format(order.orderDate)}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.pop(context, order),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 

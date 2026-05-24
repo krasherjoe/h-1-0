@@ -8,6 +8,7 @@ import '../services/purchase_order_service.dart';
 import '../services/supplier_repository.dart';
 import '../services/project_repository.dart';
 import '../services/stock_transaction_repository.dart';
+import '../services/database_helper.dart';
 import '../widgets/line_item_editor.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
@@ -33,6 +34,7 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
   List<PurchaseOrder> _orders = const [];
   PurchaseOrderStatus? _filterStatus;
   final Map<String, String> _supplierNames = {};
+  final Map<String, String> _receiptStatus = {};
 
   @override
   void initState() {
@@ -50,6 +52,20 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
         final supplier = await _supplierRepository.findById(id);
         if (supplier != null) {
           _supplierNames[id] = supplier.name;
+        }
+      }
+      final db = await DatabaseHelper().database;
+      for (final order in orders) {
+        final result = await db.rawQuery(
+          'SELECT COUNT(*) as cnt, SUM(CASE WHEN purchase_status = ? THEN 1 ELSE 0 END) as received FROM purchases WHERE purchase_order_id = ?',
+          ['received', order.id],
+        );
+        if (result.isNotEmpty) {
+          final count = result.first['cnt'] as int;
+          final received = result.first['received'] as int;
+          if (count > 0) {
+            _receiptStatus[order.id] = count == received ? '入荷完了' : '一部入荷';
+          }
         }
       }
       if (!mounted) return;
@@ -198,6 +214,8 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
               if (supplier.isNotEmpty) Text(supplier),
               const SizedBox(height: 2),
               Text('金額: ${_currencyFormat.format(order.total)}'),
+              if (_receiptStatus.containsKey(order.id))
+                Text('入荷: ${_receiptStatus[order.id]}', style: TextStyle(color: _receiptStatus[order.id] == '入荷完了' ? Colors.green : cs.secondary, fontSize: 12)),
               if (order.items.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 ...order.items.take(3).map((item) => Text('・${item.description}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant))),

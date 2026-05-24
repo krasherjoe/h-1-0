@@ -11,6 +11,8 @@ class Purchase extends BaseDocument {
   final PaymentStatus paymentStatus;
   final String? invoiceNumber;
   final String? deliveryLocation;
+  final String? purchaseOrderId;
+  final String? purchaseOrderNumber;
 
   Purchase({
     required super.id,
@@ -32,6 +34,8 @@ class Purchase extends BaseDocument {
     this.paymentStatus = PaymentStatus.unpaid,
     this.invoiceNumber,
     this.deliveryLocation,
+    this.purchaseOrderId,
+    this.purchaseOrderNumber,
   });
 
   @override
@@ -77,6 +81,8 @@ class Purchase extends BaseDocument {
       'payment_status': paymentStatus.name,
       'invoice_number': invoiceNumber,
       'delivery_location': deliveryLocation,
+      'purchase_order_id': purchaseOrderId,
+      'purchase_order_number': purchaseOrderNumber,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -110,6 +116,8 @@ class Purchase extends BaseDocument {
       dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
       invoiceNumber: map['invoice_number'] as String?,
       deliveryLocation: map['delivery_location'] as String?,
+      purchaseOrderId: map['purchase_order_id'] as String?,
+      purchaseOrderNumber: map['purchase_order_number'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -135,6 +143,8 @@ class Purchase extends BaseDocument {
     PaymentStatus? paymentStatus,
     String? invoiceNumber,
     String? deliveryLocation,
+    String? purchaseOrderId,
+    String? purchaseOrderNumber,
   }) {
     return Purchase(
       id: id ?? this.id,
@@ -156,6 +166,8 @@ class Purchase extends BaseDocument {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       deliveryLocation: deliveryLocation ?? this.deliveryLocation,
+      purchaseOrderId: purchaseOrderId ?? this.purchaseOrderId,
+      purchaseOrderNumber: purchaseOrderNumber ?? this.purchaseOrderNumber,
     );
   }
 

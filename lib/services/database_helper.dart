@@ -177,7 +177,7 @@ class LocalBackupService {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 81;
+  static const _databaseVersion = 82;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2081,6 +2081,10 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_purchases_date ON purchases(date)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_purchases_supplier ON purchases(supplier_id)');
     }
+    if (oldVersion < 82) {
+      await _safeAddColumn(db, 'purchases', 'purchase_order_id TEXT');
+      await _safeAddColumn(db, 'purchases', 'purchase_order_number TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -3134,6 +3138,8 @@ class DatabaseHelper {
         payment_status TEXT NOT NULL DEFAULT 'unpaid',
         invoice_number TEXT,
         delivery_location TEXT,
+        purchase_order_id TEXT,
+        purchase_order_number TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
