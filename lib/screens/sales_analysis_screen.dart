@@ -15,19 +15,19 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
 
   // サンプルデータ（実際にはデータベースから取得）
   final List<Map<String, dynamic>> _monthlyData = [
-    {'month': '1月', 'revenue': 1200000, 'profit': 240000, 'orders': 45},
-    {'month': '2月', 'revenue': 1500000, 'profit': 320000, 'orders': 52},
-    {'month': '3月', 'revenue': 1800000, 'profit': 410000, 'orders': 61},
-    {'month': '4月', 'revenue': 1600000, 'profit': 350000, 'orders': 58},
-    {'month': '5月', 'revenue': 2100000, 'profit': 520000, 'orders': 73},
-    {'month': '6月', 'revenue': 2300000, 'profit': 580000, 'orders': 81},
+    {'month': '1月', 'revenue': 1200000.0, 'profit': 240000.0, 'orders': 45},
+    {'month': '2月', 'revenue': 1500000.0, 'profit': 320000.0, 'orders': 52},
+    {'month': '3月', 'revenue': 1800000.0, 'profit': 410000.0, 'orders': 61},
+    {'month': '4月', 'revenue': 1600000.0, 'profit': 350000.0, 'orders': 58},
+    {'month': '5月', 'revenue': 2100000.0, 'profit': 520000.0, 'orders': 73},
+    {'month': '6月', 'revenue': 2300000.0, 'profit': 580000.0, 'orders': 81},
   ];
 
   final List<Map<String, dynamic>> _categoryData = [
-    {'category': '製品A', 'revenue': 3500000, 'profit': 890000, 'quantity': 120},
-    {'category': '製品B', 'revenue': 2800000, 'profit': 620000, 'quantity': 95},
-    {'category': '製品C', 'revenue': 1900000, 'profit': 380000, 'quantity': 67},
-    {'category': '製品D', 'revenue': 1200000, 'profit': 180000, 'quantity': 43},
+    {'category': '製品A', 'revenue': 3500000.0, 'profit': 890000.0, 'quantity': 120},
+    {'category': '製品B', 'revenue': 2800000.0, 'profit': 620000.0, 'quantity': 95},
+    {'category': '製品C', 'revenue': 1900000.0, 'profit': 380000.0, 'quantity': 67},
+    {'category': '製品D', 'revenue': 1200000.0, 'profit': 180000.0, 'quantity': 43},
   ];
 
   @override
