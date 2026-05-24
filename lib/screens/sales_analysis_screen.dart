@@ -126,84 +126,53 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
   }
 
   Widget _buildSummaryCards() {
-    final totalRevenue = _monthlyData.fold<double>(
-      0,
-      (sum, item) => sum + (item['revenue'] as double),
-    );
-    final totalProfit = _monthlyData.fold<double>(
-      0,
-      (sum, item) => sum + (item['profit'] as double),
-    );
-    final totalOrders = _monthlyData.fold<int>(
-      0,
-      (sum, item) => sum + (item['orders'] as int),
-    );
+    final totalRevenue = _monthlyData.fold<double>(0, (s, i) => s + (i['revenue'] as double));
+    final totalProfit = _monthlyData.fold<double>(0, (s, i) => s + (i['profit'] as double));
+    final totalOrders = _monthlyData.fold<int>(0, (s, i) => s + (i['orders'] as int));
     final avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     final cs = Theme.of(context).colorScheme;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSummaryCard(
-            '総売上',
-            '¥${totalRevenue.toStringAsFixed(0)}',
-            Icons.trending_up,
-            cs.primary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildSummaryCard(
-            '総利益',
-            '¥${totalProfit.toStringAsFixed(0)}',
-            Icons.show_chart,
-            cs.primaryContainer,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildSummaryCard(
-            '総注文数',
-            totalOrders.toString(),
-            Icons.shopping_cart,
-            cs.tertiary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildSummaryCard(
-            '平均単価',
-            '¥${avgOrderValue.toStringAsFixed(0)}',
-            Icons.calculate,
-            cs.secondary,
-          ),
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _summaryCard('総売上', '¥${totalRevenue.toStringAsFixed(0)}', Icons.trending_up, cs.primary),
+          const SizedBox(width: 8),
+          _summaryCard('総利益', '¥${totalProfit.toStringAsFixed(0)}', Icons.show_chart, cs.primary),
+          const SizedBox(width: 8),
+          _summaryCard('総注文数', totalOrders.toString(), Icons.shopping_cart, cs.tertiary),
+          const SizedBox(width: 8),
+          _summaryCard('平均単価', '¥${avgOrderValue.toStringAsFixed(0)}', Icons.calculate, cs.secondary),
+        ],
+      ),
     );
   }
 
-  Widget _buildSummaryCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _summaryCard(String title, String value, IconData icon, Color color) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              title,
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-          ],
+      child: SizedBox(
+        width: 200,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                    Text(title, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
