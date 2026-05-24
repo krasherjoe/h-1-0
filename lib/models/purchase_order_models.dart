@@ -95,6 +95,9 @@ class PurchaseOrder {
     this.subject,
     this.projectId,
     this.paymentMethod,
+    this.representativeId,
+    this.representativeName,
+    this.reimbursementStatus,
     this.items = const [],
   });
 
@@ -112,9 +115,14 @@ class PurchaseOrder {
   final String? subject;
   final String? projectId;
   final String? paymentMethod;
+  final String? representativeId;
+  final String? representativeName;
+  final String? reimbursementStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<PurchaseOrderItem> items;
+
+  bool get isRepresentativeCard => representativeId != null;
 
   PurchaseOrder copyWith({
     String? id,
@@ -131,6 +139,9 @@ class PurchaseOrder {
     String? subject,
     String? projectId,
     String? paymentMethod,
+    String? representativeId,
+    String? representativeName,
+    String? reimbursementStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<PurchaseOrderItem>? items,
@@ -150,6 +161,9 @@ class PurchaseOrder {
       subject: subject ?? this.subject,
       projectId: projectId ?? this.projectId,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      representativeId: representativeId ?? this.representativeId,
+      representativeName: representativeName ?? this.representativeName,
+      reimbursementStatus: reimbursementStatus ?? this.reimbursementStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
@@ -170,6 +184,9 @@ class PurchaseOrder {
         'notes': notes,
         'subject': subject,
         'payment_method': paymentMethod,
+        'representative_id': representativeId,
+        'representative_name': representativeName,
+        'reimbursement_status': reimbursementStatus,
         'project_id': projectId,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
@@ -181,6 +198,9 @@ class PurchaseOrder {
         orderDate: DateTime.parse(map['order_date'] as String),
         expectedDate: map['expected_date'] != null ? DateTime.parse(map['expected_date'] as String) : null,
         paymentMethod: map['payment_method'] as String?,
+        representativeId: map['representative_id'] as String?,
+        representativeName: map['representative_name'] as String?,
+        reimbursementStatus: map['reimbursement_status'] as String?,
         status: PurchaseOrderStatus.values.firstWhere(
           (e) => e.name == map['status'],
           orElse: () => PurchaseOrderStatus.draft,

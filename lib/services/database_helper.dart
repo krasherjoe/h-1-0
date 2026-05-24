@@ -177,7 +177,7 @@ class LocalBackupService {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 83;
+  static const _databaseVersion = 84;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2088,6 +2088,11 @@ class DatabaseHelper {
     if (oldVersion < 83) {
       await _safeAddColumn(db, 'purchase_orders', 'payment_method TEXT');
     }
+    if (oldVersion < 84) {
+      await _safeAddColumn(db, 'purchase_orders', 'representative_id TEXT');
+      await _safeAddColumn(db, 'purchase_orders', 'representative_name TEXT');
+      await _safeAddColumn(db, 'purchase_orders', 'reimbursement_status TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -3165,6 +3170,9 @@ class DatabaseHelper {
         tax_amount INTEGER NOT NULL,
         total INTEGER NOT NULL,
         payment_method TEXT,
+        representative_id TEXT,
+        representative_name TEXT,
+        reimbursement_status TEXT,
         notes TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,

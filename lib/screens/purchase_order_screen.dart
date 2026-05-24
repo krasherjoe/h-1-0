@@ -4,11 +4,13 @@ import 'package:uuid/uuid.dart';
 
 import '../models/purchase_order_models.dart';
 import '../models/supplier_model.dart';
+import '../models/staff_model.dart';
 import '../services/purchase_order_service.dart';
 import '../services/supplier_repository.dart';
 import '../services/project_repository.dart';
 import '../services/stock_transaction_repository.dart';
 import '../services/database_helper.dart';
+import '../services/staff_repository.dart';
 import '../widgets/line_item_editor.dart';
 import '../widgets/paste_buffer_dialog.dart';
 import '../widgets/screen_id_title.dart';
@@ -210,6 +212,8 @@ class _PurchaseOrderListScreenState extends State<PurchaseOrderListScreen> {
                 Text(order.subject!, style: TextStyle(fontWeight: FontWeight.w500, color: cs.primary, fontSize: 12)),
               Text('発注日: ${_dateFormat.format(order.orderDate)}'),
               if (order.expectedDate != null) Text('入荷予定: ${_dateFormat.format(order.expectedDate!)}'),
+              if (order.paymentMethod != null)
+                Text('支払: ${order.paymentMethod}${order.isRepresentativeCard ? " (${order.representativeName})" : ""}'),
               const SizedBox(height: 2),
               if (supplier.isNotEmpty) Text(supplier),
               const SizedBox(height: 2),
@@ -257,6 +261,8 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
   String? _supplierName;
   String? _projectId;
   String? _paymentMethod;
+  Staff? _selectedRepresentative;
+  String? _reimbursementStatus;
   bool _isSaving = false;
 
   final List<LineItemFormData> _lines = [];
@@ -273,6 +279,14 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
       _supplierName = order.supplierSnapshot;
       _projectId = order.projectId;
       _paymentMethod = order.paymentMethod;
+      _reimbursementStatus = order.reimbursementStatus;
+      if (order.representativeName != null) {
+        _selectedRepresentative = Staff(
+          id: order.representativeId ?? '',
+          name: order.representativeName!,
+          updatedAt: DateTime.now(),
+        );
+      }
       _notesController.text = order.notes ?? '';
       for (final item in order.items) {
         final data = LineItemFormData(
@@ -464,6 +478,9 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
         subject: _subjectController.text.trim().isEmpty ? null : _subjectController.text.trim(),
         projectId: _projectId,
         paymentMethod: _paymentMethod,
+        representativeId: _selectedRepresentative?.id,
+        representativeName: _selectedRepresentative?.name,
+        reimbursementStatus: _selectedRepresentative != null ? (_reimbursementStatus ?? 'unpaid') : null,
         subtotal: totals['subtotal'] ?? 0,
         taxAmount: totals['tax'] ?? 0,
         total: totals['total'] ?? 0,
@@ -575,19 +592,70 @@ class _PurchaseOrderEditorPageState extends State<PurchaseOrderEditorPage> {
             ),
             const SizedBox(height: 12),
             Card(
-              child: ListTile(
-                title: const Text('支払方法'),
-                trailing: DropdownButton<String>(
-                  value: _paymentMethod,
-                  hint: const Text('選択'),
-                  items: const [
-                    DropdownMenuItem(value: '銀行振込', child: Text('銀行振込')),
-                    DropdownMenuItem(value: '現金', child: Text('現金')),
-                    DropdownMenuItem(value: 'カード', child: Text('カード払い')),
-                    DropdownMenuItem(value: '代表者立替', child: Text('代表者立替')),
-                    DropdownMenuItem(value: 'その他', child: Text('その他')),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _paymentMethod,
+                      decoration: const InputDecoration(labelText: '支払方法'),
+                      items: const [
+                        DropdownMenuItem(value: '銀行振込', child: Text('銀行振込')),
+                        DropdownMenuItem(value: '現金', child: Text('現金')),
+                        DropdownMenuItem(value: 'カード', child: Text('カード払い')),
+                        DropdownMenuItem(value: '代表者立替', child: Text('代表者立替')),
+                        DropdownMenuItem(value: 'その他', child: Text('その他')),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          _paymentMethod = v;
+                          if (v != 'カード') _selectedRepresentative = null;
+                        });
+                      },
+                    ),
+                    if (_paymentMethod == 'カード') ...[
+                      SwitchListTile.adaptive(
+                        title: const Text('代表者のカードを使用'),
+                        subtitle: const Text('立て替え精算が必要な場合'),
+                        value: _selectedRepresentative != null,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (on) {
+                          if (!on) {
+                            setState(() { _selectedRepresentative = null; _reimbursementStatus = null; });
+                          }
+                        },
+                      ),
+                      if (_selectedRepresentative != null) ...[
+                        FutureBuilder<List<Staff>>(
+                          future: StaffRepository().fetchStaff(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) return const CircularProgressIndicator();
+                            final staff = snapshot.data!;
+                            return DropdownButtonFormField<Staff>(
+                              value: _selectedRepresentative,
+                              decoration: const InputDecoration(labelText: '立て替えた担当者'),
+                              items: staff.map((s) => DropdownMenuItem(value: s, child: Text(s.name))).toList(),
+                              onChanged: (v) => setState(() => _selectedRepresentative = v),
+                            );
+                          },
+                        ),
+                        if (_reimbursementStatus != null)
+                          Row(
+                            children: [
+                              Chip(
+                                label: Text(
+                                  _reimbursementStatus == 'paid' ? '精算済' : '未精算',
+                                  style: TextStyle(color: _reimbursementStatus == 'paid' ? Colors.green : Colors.red, fontSize: 12),
+                                ),
+                              ),
+                              if (_reimbursementStatus == 'unpaid')
+                                TextButton(onPressed: () => setState(() => _reimbursementStatus = 'paid'), child: const Text('精算済にする')),
+                            ],
+                          ),
+                      ],
+                    ],
                   ],
-                  onChanged: (value) => setState(() => _paymentMethod = value),
                 ),
               ),
             ),
