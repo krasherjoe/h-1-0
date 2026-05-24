@@ -12,6 +12,10 @@ class Payment {
   final String? bankAccount;     // 振込口座
   final List<String> purchaseIds; // 対象仕入IDリスト
   final String? notes;           // 備考
+  final String? representativeId;   // 立替代表者ID
+  final String? representativeName; // 立替代表者名
+  final String? reimbursementStatus; // 精算状態: unpaid / paid
+  final DateTime? reimbursementDate;  // 精算日
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,10 +29,17 @@ class Payment {
     this.bankAccount,
     this.purchaseIds = const [],
     this.notes,
+    this.representativeId,
+    this.representativeName,
+    this.reimbursementStatus,
+    this.reimbursementDate,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
+
+  bool get isAdvancePayment => paymentMethod == PaymentMethod.advancePayment;
+  bool get isReimbursed => reimbursementStatus == 'paid';
 
   /// MapからPaymentを生成
   factory Payment.fromMap(Map<String, dynamic> map, Supplier supplier) {
@@ -45,6 +56,12 @@ class Payment {
       bankAccount: map['bank_account'],
       purchaseIds: (map['purchase_ids'] as String?)?.split(',') ?? [],
       notes: map['notes'],
+      representativeId: map['representative_id'] as String?,
+      representativeName: map['representative_name'] as String?,
+      reimbursementStatus: map['reimbursement_status'] as String?,
+      reimbursementDate: map['reimbursement_date'] != null
+          ? DateTime.tryParse(map['reimbursement_date'] as String)
+          : null,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -62,6 +79,10 @@ class Payment {
       'bank_account': bankAccount,
       'purchase_ids': purchaseIds.join(','),
       'notes': notes,
+      'representative_id': representativeId,
+      'representative_name': representativeName,
+      'reimbursement_status': reimbursementStatus,
+      'reimbursement_date': reimbursementDate?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -78,6 +99,10 @@ class Payment {
     String? bankAccount,
     List<String>? purchaseIds,
     String? notes,
+    String? representativeId,
+    String? representativeName,
+    String? reimbursementStatus,
+    DateTime? reimbursementDate,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -91,6 +116,10 @@ class Payment {
       bankAccount: bankAccount ?? this.bankAccount,
       purchaseIds: purchaseIds ?? this.purchaseIds,
       notes: notes ?? this.notes,
+      representativeId: representativeId ?? this.representativeId,
+      representativeName: representativeName ?? this.representativeName,
+      reimbursementStatus: reimbursementStatus ?? this.reimbursementStatus,
+      reimbursementDate: reimbursementDate ?? this.reimbursementDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -111,6 +140,8 @@ class Payment {
         return '現金';
       case PaymentMethod.creditCard:
         return 'クレジットカード';
+      case PaymentMethod.advancePayment:
+        return '代表者立替';
       case PaymentMethod.other:
         return 'その他';
     }
@@ -131,6 +162,8 @@ class Payment {
         return cs.tertiary;
       case PaymentMethod.creditCard:
         return cs.secondary;
+      case PaymentMethod.advancePayment:
+        return cs.error;
       case PaymentMethod.other:
         return cs.onSurfaceVariant;
     }
@@ -139,8 +172,9 @@ class Payment {
 
 /// 支払方法
 enum PaymentMethod {
-  bankTransfer,  // 銀行振込
-  cash,          // 現金
-  creditCard,    // クレジットカード
-  other,         // その他
+  bankTransfer,     // 銀行振込
+  cash,             // 現金
+  creditCard,       // クレジットカード
+  advancePayment,   // 代表者立替
+  other,            // その他
 }

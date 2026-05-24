@@ -2041,6 +2041,16 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_product ON inventory(product_id)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_inventory_warehouse ON inventory(warehouse_id)');
     }
+    if (oldVersion < 79) {
+      await _safeAddColumn(db, 'payments', 'representative_id TEXT');
+      await _safeAddColumn(db, 'payments', 'representative_name TEXT');
+      await _safeAddColumn(db, 'payments', 'reimbursement_status TEXT DEFAULT "unpaid"');
+      await _safeAddColumn(db, 'payments', 'reimbursement_date TEXT');
+      await _safeAddColumn(db, 'purchase_payments', 'representative_id TEXT');
+      await _safeAddColumn(db, 'purchase_payments', 'representative_name TEXT');
+      await _safeAddColumn(db, 'purchase_payments', 'reimbursement_status TEXT DEFAULT "unpaid"');
+      await _safeAddColumn(db, 'purchase_payments', 'reimbursement_date TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {

@@ -406,6 +406,10 @@ class PurchasePayment {
     this.supplierId,
     this.method,
     this.notes,
+    this.representativeId,
+    this.representativeName,
+    this.reimbursementStatus,
+    this.reimbursementDate,
   });
 
   final String id;
@@ -416,8 +420,15 @@ class PurchasePayment {
   final String? method;
   final PurchasePaymentStatus status;
   final String? notes;
+  final String? representativeId;
+  final String? representativeName;
+  final String? reimbursementStatus;
+  final DateTime? reimbursementDate;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  bool get isAdvancePayment => method == '代表者立替';
+  bool get isReimbursed => reimbursementStatus == 'paid';
 
   PurchasePayment copyWith({
     String? id,
@@ -428,6 +439,10 @@ class PurchasePayment {
     String? method,
     PurchasePaymentStatus? status,
     String? notes,
+    String? representativeId,
+    String? representativeName,
+    String? reimbursementStatus,
+    DateTime? reimbursementDate,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -440,6 +455,10 @@ class PurchasePayment {
       method: method ?? this.method,
       status: status ?? this.status,
       notes: notes ?? this.notes,
+      representativeId: representativeId ?? this.representativeId,
+      representativeName: representativeName ?? this.representativeName,
+      reimbursementStatus: reimbursementStatus ?? this.reimbursementStatus,
+      reimbursementDate: reimbursementDate ?? this.reimbursementDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -454,6 +473,10 @@ class PurchasePayment {
         'method': method,
         'status': status.name,
         'notes': notes,
+        'representative_id': representativeId,
+        'representative_name': representativeName,
+        'reimbursement_status': reimbursementStatus,
+        'reimbursement_date': reimbursementDate?.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -470,6 +493,12 @@ class PurchasePayment {
           orElse: () => PurchasePaymentStatus.scheduled,
         ),
         notes: map['notes'] as String?,
+        representativeId: map['representative_id'] as String?,
+        representativeName: map['representative_name'] as String?,
+        reimbursementStatus: map['reimbursement_status'] as String?,
+        reimbursementDate: map['reimbursement_date'] != null
+            ? DateTime.tryParse(map['reimbursement_date'] as String)
+            : null,
         createdAt: DateTime.parse(map['created_at'] as String),
         updatedAt: DateTime.parse(map['updated_at'] as String),
       );

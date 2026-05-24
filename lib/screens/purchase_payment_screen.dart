@@ -4,9 +4,11 @@ import 'package:uuid/uuid.dart';
 
 import '../models/purchase_order_models.dart';
 import '../models/supplier_model.dart';
+import '../models/staff_model.dart';
 import '../services/purchase_order_service.dart';
 import '../services/purchase_payment_service.dart';
 import '../services/supplier_repository.dart';
+import '../services/staff_repository.dart';
 import '../widgets/screen_id_title.dart';
 import 'supplier_picker_modal.dart';
 
@@ -234,7 +236,27 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
         leading: _selectMode ? Checkbox(value: checked, onChanged: (_) {
           setState(() { if (checked) _selectedIds.remove(payment.id); else _selectedIds.add(payment.id); });
         }) : null,
-        title: Text('${_currencyFormat.format(payment.amount)} / ${payment.method ?? '支払方法未設定'}'),
+        title: Row(
+          children: [
+            Expanded(child: Text('${_currencyFormat.format(payment.amount)} / ${payment.method ?? '支払方法未設定'}')),
+            if (payment.isAdvancePayment)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: payment.isReimbursed ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  payment.isReimbursed ? '精算済' : '未精算',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: payment.isReimbursed ? Colors.green : Colors.red,
+                  ),
+                ),
+              ),
+          ],
+        ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Column(
@@ -243,6 +265,8 @@ class _PurchasePaymentListScreenState extends State<PurchasePaymentListScreen> {
               Text('支払日: ${_dateFormat.format(payment.paymentDate)}'),
               const SizedBox(height: 4),
               Text(_supplierLabel(payment)),
+              if (payment.representativeName != null)
+                Text('立替: ${payment.representativeName}'),
               const SizedBox(height: 4),
               Text(_orderLabel(payment)),
             ],
@@ -301,6 +325,8 @@ class _PurchasePaymentEditorPageState extends State<PurchasePaymentEditorPage> {
   String? _purchaseOrderNumber;
   String? _method = '銀行振込';
   bool _isSaving = false;
+  Staff? _selectedRepresentative;
+  String? _reimbursementStatus;
 
   @override
   void initState() {
@@ -314,8 +340,16 @@ class _PurchasePaymentEditorPageState extends State<PurchasePaymentEditorPage> {
       _method = payment.method ?? _method;
       _amountController.text = payment.amount.toString();
       _notesController.text = payment.notes ?? '';
+      _reimbursementStatus = payment.reimbursementStatus;
       _loadSupplierName(payment.supplierId);
       _loadOrderNumber(payment.purchaseOrderId);
+      if (payment.representativeName != null) {
+        _selectedRepresentative = Staff(
+          id: payment.representativeId ?? '',
+          name: payment.representativeName!,
+          updatedAt: DateTime.now(),
+        );
+      }
     }
   }
 
@@ -405,6 +439,7 @@ class _PurchasePaymentEditorPageState extends State<PurchasePaymentEditorPage> {
     try {
       final paymentId = widget.payment?.id ?? _uuid.v4();
       final now = DateTime.now();
+      final isAdvance = _method == '代表者立替';
       final payment = PurchasePayment(
         id: paymentId,
         purchaseOrderId: _purchaseOrderId,
@@ -414,6 +449,11 @@ class _PurchasePaymentEditorPageState extends State<PurchasePaymentEditorPage> {
         method: _method,
         status: _status,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        representativeId: isAdvance ? _selectedRepresentative?.id : null,
+        representativeName: isAdvance ? _selectedRepresentative?.name : null,
+        reimbursementStatus: isAdvance
+            ? (_reimbursementStatus ?? 'unpaid')
+            : null,
         createdAt: widget.payment?.createdAt ?? now,
         updatedAt: now,
       );
@@ -496,10 +536,64 @@ class _PurchasePaymentEditorPageState extends State<PurchasePaymentEditorPage> {
                 DropdownMenuItem(value: '現金', child: Text('現金')),
                 DropdownMenuItem(value: '振替', child: Text('口座振替')),
                 DropdownMenuItem(value: 'カード', child: Text('カード払い')),
+                DropdownMenuItem(value: '代表者立替', child: Text('代表者立替')),
                 DropdownMenuItem(value: 'その他', child: Text('その他')),
               ],
               onChanged: (value) => setState(() => _method = value),
             ),
+            if (_method == '代表者立替') ...[
+              const SizedBox(height: 12),
+              FutureBuilder<List<Staff>>(
+                future: StaffRepository().fetchStaff(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const CircularProgressIndicator();
+                  }
+                  final staff = snapshot.data!;
+                  return DropdownButtonFormField<Staff>(
+                    value: _selectedRepresentative,
+                    decoration: const InputDecoration(
+                      labelText: '立て替えた担当者',
+                    ),
+                    items: staff.map((s) {
+                      return DropdownMenuItem(
+                        value: s,
+                        child: Text(s.name),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedRepresentative = value);
+                    },
+                  );
+                },
+              ),
+              if (_reimbursementStatus != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Chip(
+                      label: Text(
+                        _reimbursementStatus == 'paid' ? '精算済' : '未精算',
+                        style: TextStyle(
+                          color: _reimbursementStatus == 'paid'
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                    ),
+                    if (_reimbursementStatus == 'unpaid')
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _reimbursementStatus = 'paid';
+                          });
+                        },
+                        child: const Text('精算済にする'),
+                      ),
+                  ],
+                ),
+              ],
+            ],
             const SizedBox(height: 12),
             Card(
               child: ListTile(

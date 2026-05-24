@@ -370,6 +370,8 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
         return Icons.money;
       case PaymentMethod.creditCard:
         return Icons.credit_card;
+      case PaymentMethod.advancePayment:
+        return Icons.person_outline;
       case PaymentMethod.other:
         return Icons.more_horiz;
     }
@@ -383,6 +385,8 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
         return cs.secondary;
       case PaymentMethod.creditCard:
         return cs.tertiary;
+      case PaymentMethod.advancePayment:
+        return cs.error;
       case PaymentMethod.other:
         return cs.onSurfaceVariant;
     }
@@ -396,6 +400,8 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
         return '現金';
       case PaymentMethod.creditCard:
         return 'クレジットカード';
+      case PaymentMethod.advancePayment:
+        return '代表者立替';
       case PaymentMethod.other:
         return 'その他';
     }

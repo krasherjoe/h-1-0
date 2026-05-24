@@ -4,9 +4,11 @@ import 'package:uuid/uuid.dart';
 import '../services/payment_repository.dart';
 import '../services/payment_schedule_repository.dart';
 import '../services/supplier_repository.dart';
+import '../services/staff_repository.dart';
 import '../models/payment_model.dart';
 import '../models/payment_schedule_model.dart';
 import '../models/supplier_model.dart';
+import '../models/staff_model.dart';
 
 class PaymentRegisterScreen extends StatefulWidget {
   const PaymentRegisterScreen({super.key});
@@ -26,6 +28,7 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
   List<PaymentSchedule> _selectedSchedules = [];
   List<PaymentSchedule> _availableSchedules = [];
   bool _isLoading = false;
+  Staff? _selectedRepresentative;
 
   @override
   void initState() {
@@ -230,6 +233,36 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
                               ),
                             ),
                           ],
+                          if (_selectedPaymentMethod ==
+                              PaymentMethod.advancePayment) ...[
+                            const SizedBox(height: 8),
+                            FutureBuilder<List<Staff>>(
+                              future: StaffRepository().fetchStaff(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const CircularProgressIndicator();
+                                }
+                                final staff = snapshot.data!;
+                                return DropdownButtonFormField<Staff>(
+                                  value: _selectedRepresentative,
+                                  decoration: const InputDecoration(
+                                    labelText: '立て替えた担当者',
+                                  ),
+                                  items: staff.map((s) {
+                                    return DropdownMenuItem(
+                                      value: s,
+                                      child: Text(s.name),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedRepresentative = value;
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _notesController,
@@ -268,6 +301,8 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
         return '現金';
       case PaymentMethod.creditCard:
         return 'クレジットカード';
+      case PaymentMethod.advancePayment:
+        return '代表者立替';
       case PaymentMethod.other:
         return 'その他';
     }
@@ -285,11 +320,20 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
       return;
     }
 
+    if (_selectedPaymentMethod == PaymentMethod.advancePayment &&
+        _selectedRepresentative == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('立て替えた担当者を選択してください')),
+      );
+      return;
+    }
+
     try {
       final paymentRepo = PaymentRepository();
       final scheduleRepo = PaymentScheduleRepository();
 
       // 支払実績を登録
+      final isAdvance = _selectedPaymentMethod == PaymentMethod.advancePayment;
       final payment = Payment(
         id: const Uuid().v4(),
         paymentNumber: paymentRepo.generatePaymentNumber(),
@@ -302,6 +346,9 @@ class _PaymentRegisterScreenState extends State<PaymentRegisterScreen> {
             : _bankAccountController.text,
         purchaseIds: _selectedSchedules.map((s) => s.purchase.id).toList(),
         notes: _notesController.text.isEmpty ? null : _notesController.text,
+        representativeId: isAdvance ? _selectedRepresentative?.id : null,
+        representativeName: isAdvance ? _selectedRepresentative?.name : null,
+        reimbursementStatus: isAdvance ? 'unpaid' : null,
       );
 
       await paymentRepo.savePayment(payment);
