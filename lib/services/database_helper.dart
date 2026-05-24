@@ -177,7 +177,7 @@ class LocalBackupService {
 }
 
 class DatabaseHelper {
-  static const _databaseVersion = 78;
+  static const _databaseVersion = 80;
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static Future<Database>? _databaseFuture; // 複数同時呼び出しを防ぐFutureキャッシュ
@@ -2051,6 +2051,9 @@ class DatabaseHelper {
       await _safeAddColumn(db, 'purchase_payments', 'reimbursement_status TEXT DEFAULT "unpaid"');
       await _safeAddColumn(db, 'purchase_payments', 'reimbursement_date TEXT');
     }
+    if (oldVersion < 80) {
+      await _safeAddColumn(db, 'payments', 'purchase_ids TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -3169,6 +3172,66 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_returns_supplier ON purchase_returns(supplier_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_returns_status ON purchase_returns(status)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_purchase_payments_order ON purchase_payments(purchase_order_id)');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        payment_number TEXT NOT NULL,
+        payment_date TEXT NOT NULL,
+        supplier_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        payment_method TEXT NOT NULL,
+        bank_account TEXT,
+        purchase_ids TEXT,
+        representative_id TEXT,
+        representative_name TEXT,
+        reimbursement_status TEXT DEFAULT 'unpaid',
+        reimbursement_date TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (supplier_id) REFERENCES suppliers (id)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payments_supplier ON payments(supplier_id)');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payment_purchases (
+        id TEXT PRIMARY KEY,
+        payment_id TEXT NOT NULL,
+        purchase_id TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        FOREIGN KEY (payment_id) REFERENCES payments (id),
+        FOREIGN KEY (purchase_id) REFERENCES purchases (id)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_purchases_payment ON payment_purchases(payment_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_purchases_purchase ON payment_purchases(purchase_id)');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payment_schedules (
+        id TEXT PRIMARY KEY,
+        purchase_id TEXT NOT NULL,
+        due_date TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'unpaid',
+        paid_date TEXT,
+        payment_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (purchase_id) REFERENCES purchases (id),
+        FOREIGN KEY (payment_id) REFERENCES payments (id)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_purchase ON payment_schedules(purchase_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date ON payment_schedules(due_date)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_payment_schedules_status ON payment_schedules(status)');
+
+    await _safeAddColumn(db, 'purchase_payments', 'representative_id TEXT');
+    await _safeAddColumn(db, 'purchase_payments', 'representative_name TEXT');
+    await _safeAddColumn(db, 'purchase_payments', 'reimbursement_status TEXT DEFAULT "unpaid"');
+    await _safeAddColumn(db, 'purchase_payments', 'reimbursement_date TEXT');
   }
 
 
