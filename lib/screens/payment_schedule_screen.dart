@@ -41,19 +41,9 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
             _showScheduleDialog(schedule);
           },
           actions: [
-            CardAction(
-              label: '支払登録',
-              icon: Icons.receipt_long,
-              onPressed: () {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('支払登録画面は今後実装予定です')),
-                );
-              },
-            ),
             if (schedule.status == PaymentStatus.unpaid)
               CardAction(
-                label: '支払済',
+                label: '支払登録',
                 icon: Icons.check_circle,
                 onPressed: () async {
                   await _markAsPaid(schedule, onRefresh);

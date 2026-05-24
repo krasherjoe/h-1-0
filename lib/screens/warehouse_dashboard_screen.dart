@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/database_helper.dart';
+import 'stock_inquiry_screen.dart';
+import 'stock_transfer_screen.dart';
+import 'stock_outbound_screen.dart';
+import 'stock_inbound_screen.dart';
 
 class WarehouseDashboardScreen extends StatefulWidget {
   const WarehouseDashboardScreen({super.key});
@@ -8,39 +13,47 @@ class WarehouseDashboardScreen extends StatefulWidget {
 }
 
 class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
-  final List<Map<String, dynamic>> _warehouses = [];
+  List<Map<String, dynamic>> _warehouses = [];
+  bool _isLoading = true;
   String _selectedWarehouseId = '';
 
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
+    _loadData();
   }
 
-  void _loadSampleData() {
-    setState(() {
-      _warehouses.addAll([
-        {
-          'id': 'WH-001',
-          'name': 'メイン倉庫',
-          'totalProducts': 245,
-          'lowStockItems': 12,
-          'outOfStockItems': 3,
-          'totalValue': 4500000,
-        },
-        {
-          'id': 'WH-002',
-          'name': 'サブ倉庫A',
-          'totalProducts': 89,
-          'lowStockItems': 5,
-          'outOfStockItems': 1,
-          'totalValue': 890000,
-        },
-      ]);
-      if (_warehouses.isNotEmpty) {
-        _selectedWarehouseId = _warehouses.first['id'];
+  Future<void> _loadData() async {
+    try {
+      final db = await DatabaseHelper().database;
+      final rows = await db.query('warehouses', orderBy: 'name ASC');
+      final loaded = <Map<String, dynamic>>[];
+      for (final wh in rows) {
+        final id = wh['id'] as String;
+        final counts = await db.rawQuery('''
+          SELECT COUNT(*) as total,
+                 SUM(CASE WHEN CAST(quantity AS INTEGER) < 10 THEN 1 ELSE 0 END) as low,
+                 SUM(CASE WHEN CAST(quantity AS INTEGER) = 0 THEN 1 ELSE 0 END) as out
+          FROM warehouse_stock WHERE warehouse_id = ?
+        ''', [id]);
+        loaded.add({
+          'id': id,
+          'name': wh['name'] as String? ?? '',
+          'totalProducts': (counts.first['total'] as num?)?.toInt() ?? 0,
+          'lowStockItems': (counts.first['low'] as num?)?.toInt() ?? 0,
+          'outOfStockItems': (counts.first['out'] as num?)?.toInt() ?? 0,
+        });
       }
-    });
+      setState(() {
+        _warehouses = loaded;
+        if (_warehouses.isNotEmpty) {
+          _selectedWarehouseId = _warehouses.first['id'];
+        }
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Map<String, dynamic>? get _selectedWarehouse {
@@ -60,11 +73,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('データ更新（未実装）')),
-              );
-            },
+            onPressed: () => _loadData(),
           ),
         ],
       ),
@@ -176,9 +185,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           '在庫一覧',
                           Icons.list_alt,
                           () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('在庫一覧表示（未実装）')),
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const StockInquiryScreen()));
                           },
                         ),
                         const SizedBox(height: 8),
@@ -186,9 +193,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           '入出庫履歴',
                           Icons.history,
                           () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('入出庫履歴表示（未実装）')),
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const StockInboundScreen()));
                           },
                         ),
                         const SizedBox(height: 8),
@@ -196,9 +201,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           '在庫移動',
                           Icons.swap_horiz,
                           () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('在庫移動画面へ（未実装）')),
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const StockTransferScreen()));
                           },
                         ),
                       ],

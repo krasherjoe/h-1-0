@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import '../utils/theme_utils.dart';
-import 'package:uuid/uuid.dart';
-
-import '../models/customer_model.dart';
+import '../services/service_locator.dart' as di;
 import '../models/invoice_models.dart';
-import '../services/customer_repository.dart';
 import '../services/invoice_repository.dart';
+import 'invoice_input_screen.dart';
+import 'invoice_detail_page.dart';
 import 'customer_master_screen.dart';
 
 class EstimateInputScreen extends StatefulWidget {
@@ -115,9 +113,11 @@ class _EstimateInputScreenState extends State<EstimateInputScreen> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('見積詳細画面は今後実装予定です')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => InvoiceDetailPage(invoice: est),
+                            ),
                           );
                         },
                         child: Padding(
