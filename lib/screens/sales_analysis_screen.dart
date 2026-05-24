@@ -79,7 +79,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _selectedPeriod,
+                value: _selectedPeriod,
                 decoration: const InputDecoration(
                   labelText: '集計期間',
                   border: OutlineInputBorder(),
@@ -102,7 +102,7 @@ class _SalesAnalysisScreenState extends State<SalesAnalysisScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _selectedChartType,
+                value: _selectedChartType,
                 decoration: const InputDecoration(
                   labelText: 'チャートタイプ',
                   border: OutlineInputBorder(),
