@@ -39,7 +39,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("売上・資金管理レポート"),
+        title: const Text("R1:売上日報"),
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: _isLoading

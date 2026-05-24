@@ -316,8 +316,9 @@ class _ScreenA1DashboardState extends State<ScreenA1Dashboard> {
         return const ReportDashboardScreen();
       case 'analytics_dashboard':
       case 'analytics_report':
-      case 'sales_analysis':
         return const AnalyticsDashboardScreen();
+      case 'sales_analysis':
+        return const SalesAnalysisScreen();
       case 'sales_report':
         return const SalesReportScreen();
       case 'customer_sales_report':

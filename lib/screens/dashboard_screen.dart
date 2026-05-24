@@ -219,17 +219,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'cash_flow':
         return const CashFlowScreen();
       case 'analytics_dashboard':
-        return const AnalyticsDashboardScreen();
       case 'analytics_report':
+        return const AnalyticsDashboardScreen();
       case 'sales_analysis':
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('SA:売上分析'),
-          ),
-          body: Center(
-            child: Text('売上分析機能は準備中です'),
-          ),
-        );
+        return const SalesAnalysisScreen();
       case 'business_profile':
         return const BusinessProfileScreen();
       case 'inventory_location':

@@ -202,7 +202,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '作業時間の記録と管理（タイマー付き）',
   ),
   MenuDefinition(
-    id: 'R1',
+    id: 'R2',
     title: '売上レポート',
     route: 'report_dashboard',
     category: '02. 販売管理',
@@ -352,7 +352,7 @@ const List<MenuDefinition> kMenuDefinitions = [
     description: '売上データの分析とレポート',
   ),
   MenuDefinition(
-    id: 'R3',
+    id: 'PA',
     title: '商品別粗利分析',
     route: 'product_margin_report',
     category: '05. 集計分析',
